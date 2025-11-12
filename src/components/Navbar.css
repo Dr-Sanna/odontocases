@@ -1,0 +1,98 @@
+.navbar {
+  position: fixed;
+  top: 0;
+  width: 100%;
+  height: var(--ifm-navbar-height);
+  background-color: var(--ifm-navbar-background-color);
+  padding: var(--ifm-navbar-padding-vertical) var(--ifm-navbar-padding-horizontal);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: transform 0.3s ease-in-out, background-color 0.2s;
+  z-index: 1000;
+  box-shadow: var(--ifm-navbar-shadow);
+  font-family: var(--ifm-font-family-base);
+  box-sizing: border-box;
+}
+
+.navbar-left {
+  display: flex;
+  align-items: center;
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  margin-right: 1rem;
+}
+
+img.logo{
+  margin-right: .5rem;
+}
+
+.logo-container span {
+  font-weight: bold;
+  color: var(--ifm-navbar-link-color);
+  transition: color 0.2s;
+}
+
+.logo-container:hover .logo {
+  animation: shake 0.4s ease;
+}
+
+.logo-container:hover span {
+  color: var(--ifm-link-hover-color);
+transition: background-color 0.2s, color 0.2s;
+}
+
+.logo {
+  height: 32px;
+  width: 32px;
+  object-fit: contain;
+  transition: transform 0.2s ease;
+}
+
+.nav-links {
+  display: flex;
+  font-weight: var(--ifm-font-weight-semibold);
+}
+
+
+.nav-links a {
+  color: var(--ifm-navbar-link-color);
+  text-decoration: none;
+  transition: background-color 0.2s, color 0.2s;
+  padding: var(--ifm-navbar-item-padding-vertical) var(--ifm-navbar-item-padding-horizontal);
+}
+
+.nav-links a:hover {
+  color: var(--ifm-link-hover-color);
+}
+
+.nav-links a.active {
+  color: var(--ifm-color-primary);
+}
+
+.navbar-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.github-icon {
+  width: 24px;
+  height: 24px;
+}
+
+.theme-toggle {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  line-height: 1;
+}

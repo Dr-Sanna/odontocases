@@ -1,0 +1,15 @@
+.pagetitle {
+  margin: 0 0 8px;
+}
+.pagetitle__title {
+  margin: 0 0 8px;
+  font-size: 2rem;
+  line-height: 1.25;
+  font-weight: 700;
+}
+.pagetitle__desc {
+  margin: 0;
+  opacity: .9;
+  font-size: 1rem;
+  line-height: 1.6;
+}

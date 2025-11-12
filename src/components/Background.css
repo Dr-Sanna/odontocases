@@ -1,0 +1,29 @@
+/* src/components/Background.css */
+
+.global-background {
+  position: fixed;
+  top: var(--ifm-navbar-height);
+  left: 0;
+  width: 100vw;
+  height: calc(100vh - var(--ifm-navbar-height));
+  z-index: -1;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  pointer-events: none;
+}
+
+.global-background img {
+  height: 100%;
+  object-fit: contain;
+}
+
+/* 🌕 Opacité maximale sur la homepage */
+.global-background.home {
+  opacity: 1;
+}
+
+/* 🌑 Opacité réduite sur les autres pages */
+.global-background.secondary {
+  opacity: 0.25;
+}
