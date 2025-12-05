@@ -1,4 +1,3 @@
-import background from '../assets/background.png';
 import './Background.css';
 
 export default function Background({ variant = 'secondary' }) {
@@ -8,7 +7,7 @@ export default function Background({ variant = 'secondary' }) {
       aria-hidden="true"
     >
       <img
-        src={background}
+        src="/background.png"
         alt=""
         loading="eager"
         decoding="sync"
