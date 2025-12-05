@@ -1,37 +1,60 @@
+/* src/components/Background.css */
+
 .global-background {
   position: fixed;
   top: var(--ifm-navbar-height, 64px);
   left: 0;
   width: 100vw;
   height: calc(100vh - var(--ifm-navbar-height, 64px));
+  pointer-events: none;
+
+  /* ✅ IMPORTANT : derrière .app-content (z-index:2) */
   z-index: -1;
+
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  pointer-events: none;
 
-  /* évite certains micro "jumps" GPU */
+  opacity: 0.25;
+  transition: opacity 200ms ease;
+
+  /* stabilité visuelle */
   transform: translateZ(0);
   backface-visibility: hidden;
+  will-change: opacity;
 }
 
 .global-background img {
   height: 100%;
   width: auto;
+  max-width: 100%;
   object-fit: contain;
-
-  /* évite la sélection / drag visuel */
-  user-select: none;
-  -webkit-user-drag: none;
-
-  /* rend le compositing plus stable */
+  display: block;
   transform: translateZ(0);
 }
 
+/* ✅ HOME = 100% */
 .global-background.home {
   opacity: 1;
 }
 
+/* ✅ PAGES = 25% */
 .global-background.secondary {
   opacity: 0.25;
+}
+
+/* ✅ caché (ex: CaseDetail) */
+.global-background.hidden {
+  opacity: 0;
+}
+
+/* ✅ on coupe la transition uniquement quand on repasse sur home */
+.global-background.no-transition {
+  transition: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .global-background {
+    transition: none !important;
+  }
 }
