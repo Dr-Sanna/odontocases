@@ -1,11 +1,19 @@
-// src/components/Background.jsx
-import background from '../assets/background.png'
-import './Background.css'
+import background from '../assets/background.png';
+import './Background.css';
 
-export default function Background({ variant = 'default' }) {
+export default function Background({ variant = 'secondary' }) {
   return (
-    <div className={`global-background ${variant === 'home' ? 'home' : 'secondary'}`}>
-      <img src={background} alt="background" />
+    <div
+      className={`global-background ${variant === 'home' ? 'home' : 'secondary'}`}
+      aria-hidden="true"
+    >
+      <img
+        src={background}
+        alt=""
+        loading="eager"
+        decoding="sync"
+        draggable="false"
+      />
     </div>
-  )
+  );
 }

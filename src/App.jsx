@@ -1,18 +1,25 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
+import ScrollToTop from './components/ScrollToTop';
+import Background from './components/Background';
+
 import HomePage from './pages/HomePage';
 import CasCliniques from './pages/CasCliniques';
+import CaseDetail from './pages/CaseDetail';
 import Randomisation from './pages/Randomisation';
 import Documentation from './pages/Documentation';
 import LiensUtiles from './pages/LiensUtiles';
-import ScrollToTop from './components/ScrollToTop'; // 👈 importe le composant
-import CaseDetail from './pages/CaseDetail';
 
 export default function App() {
+  const location = useLocation();
+  const isHome = location.pathname === '/';
+
   return (
     <>
       <Navbar />
-      <ScrollToTop />   {/* 👈 remet la page en haut à chaque navigation */}
+      <Background variant={isHome ? 'home' : 'secondary'} />
+      <ScrollToTop />
+
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/cas-cliniques" element={<CasCliniques />} />

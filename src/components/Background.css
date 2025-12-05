@@ -1,29 +1,37 @@
-/* src/components/Background.css */
-
 .global-background {
   position: fixed;
-  top: var(--ifm-navbar-height);
+  top: var(--ifm-navbar-height, 64px);
   left: 0;
   width: 100vw;
-  height: calc(100vh - var(--ifm-navbar-height));
+  height: calc(100vh - var(--ifm-navbar-height, 64px));
   z-index: -1;
   display: flex;
   justify-content: flex-end;
   align-items: center;
   pointer-events: none;
+
+  /* évite certains micro "jumps" GPU */
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 .global-background img {
   height: 100%;
+  width: auto;
   object-fit: contain;
+
+  /* évite la sélection / drag visuel */
+  user-select: none;
+  -webkit-user-drag: none;
+
+  /* rend le compositing plus stable */
+  transform: translateZ(0);
 }
 
-/* 🌕 Opacité maximale sur la homepage */
 .global-background.home {
   opacity: 1;
 }
 
-/* 🌑 Opacité réduite sur les autres pages */
 .global-background.secondary {
   opacity: 0.25;
 }

@@ -1,6 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import Background from '../components/Background';
 import './HomePage.css';
 
 export default function HomePage() {
@@ -16,8 +15,6 @@ export default function HomePage() {
 
   return (
     <div className="homepage">
-      <Background variant="home" />
-
       <main className="hero">
         <section className="hero-text">
           <h1 className="hero-title">Odontocases</h1>
