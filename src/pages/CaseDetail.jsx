@@ -3,13 +3,11 @@
  * CaseDetail.jsx
  * --------------
  * - Content (Markdown) + images cliquables (lightbox)
- * - Q/R : H2 "Questions", numérotation "1. ", flèche turquoise animée
+ * - Q/R : H2 "Questions", numérotation "1. ", triangle plein Docusaurus
  * - Sidebar animée (rail), tri numérique, prefetch
  * - Puce de type AU-DESSUS du titre
- * - Padding droite global sur tout le contenu (lecture + QA + extras)
- * - Extras : references, copyright (après les questions)
- * - ✅ Fix mobile : bouton toggle sidebar toujours accessible
- * - ✅ Breadcrumb : ajoute un niveau "type" entre "Cas cliniques" et le titre
+ * - Padding droite global sur tout le contenu
+ * - Extras : references, copyright
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -46,15 +44,6 @@ function compareBySlugNumberAsc(a, b) {
   return sa.localeCompare(sb, 'fr', { numeric: true, sensitivity: 'base' });
 }
 
-// Petite icône flèche (utilisée pour chaque question)
-function QaArrow() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
-      <path fill="currentColor" d="M8.59 16.59 13.17 12 8.59 7.41 10 6l6 6-6 6z" />
-    </svg>
-  );
-}
-
 function typeLabelFromKey(typeKey) {
   if (typeKey === 'qa') return 'Q/R';
   if (typeKey === 'quiz') return 'Quizz';
@@ -66,7 +55,6 @@ export default function CaseDetail() {
   const { slug } = useParams();
   const location = useLocation();
 
-  // Prefetch passé depuis la liste
   const pre = location.state?.prefetch;
   const provisional = pre && pre.slug === slug ? pre : null;
 
@@ -98,7 +86,6 @@ export default function CaseDetail() {
     });
   };
 
-  // Chargement (cache instantané + fetch)
   useEffect(() => {
     let ignore = false;
 
@@ -123,16 +110,7 @@ export default function CaseDetail() {
           populate: populateQa
             ? { cover: { fields: ['url', 'formats'] }, qa_blocks: { populate: '*' } }
             : { cover: { fields: ['url', 'formats'] } },
-          fields: [
-            'title',
-            'slug',
-            'type',
-            'excerpt',
-            'content',
-            'updatedAt',
-            'references',
-            'copyright',
-          ],
+          fields: ['title', 'slug', 'type', 'excerpt', 'content', 'updatedAt', 'references', 'copyright'],
           pagination: { page: 1, pageSize: 1 },
         },
       });
@@ -159,11 +137,7 @@ export default function CaseDetail() {
           setError('Cas introuvable ou non publié.');
         } else {
           const coverAttr = attrs?.cover?.data?.attributes || attrs?.cover || null;
-          const apiCover =
-            imgUrl(coverAttr, 'large') ||
-            imgUrl(coverAttr, 'medium') ||
-            imgUrl(coverAttr) ||
-            null;
+          const apiCover = imgUrl(coverAttr, 'large') || imgUrl(coverAttr, 'medium') || imgUrl(coverAttr) || null;
 
           const full = { ...attrs, coverUrl: apiCover || item?.coverUrl || null };
           setItem(full);
@@ -191,9 +165,9 @@ export default function CaseDetail() {
 
   const qaList = Array.isArray(item?.qa_blocks) ? item.qa_blocks : [];
 
-  // ✅ Breadcrumbs avec niveau "type"
   const typeKey = item?.type || provisional?.type || null;
   const crumbTypeLabel = typeLabelFromKey(typeKey);
+
   const breadcrumbItems = useMemo(() => {
     const base = [
       { label: 'Accueil', to: '/' },
@@ -211,8 +185,8 @@ export default function CaseDetail() {
     return base;
   }, [crumbTypeLabel, typeKey, item?.title]);
 
-  // Lightbox pour les images du contenu
-  const [lightbox, setLightbox] = useState(null); // {src, alt} | null
+  // Lightbox
+  const [lightbox, setLightbox] = useState(null);
   const contentRef = useRef(null);
 
   useEffect(() => {
@@ -251,7 +225,6 @@ export default function CaseDetail() {
       />
 
       <main className="cd-main">
-        {/* Toggle mobile toujours accessible */}
         <button
           type="button"
           className="cd-mobile-toggle"
@@ -269,9 +242,7 @@ export default function CaseDetail() {
             <span className={`cd-chip cd-${item?.type || 'qa'}`}>{typeLabel}</span>
           </div>
 
-          <PageTitle description={item?.excerpt || ''}>
-            {item?.title || 'Cas clinique'}
-          </PageTitle>
+          <PageTitle description={item?.excerpt || ''}>{item?.title || 'Cas clinique'}</PageTitle>
         </div>
 
         {error && <div className="cd-state error">{error}</div>}
@@ -304,9 +275,6 @@ export default function CaseDetail() {
                 return (
                   <details key={qa?.id ?? `${slug}-qa-${i}`} className="qa-item">
                     <summary className="qa-q">
-                      <span className="qa-arrow" aria-hidden="true">
-                        <QaArrow />
-                      </span>
                       <span className="qa-num">{i + 1}.</span>
                       <span className="qa-text">{q}</span>
                     </summary>
@@ -372,7 +340,7 @@ function AsideSameType({ currentSlug, currentType, collapsed, onToggle, prefetch
   const [loadingList, setLoadingList] = useState(false);
   const [errList, setErrList] = useState('');
 
-  const [anim, setAnim] = useState(''); // '', 'opening', 'closing'
+  const [anim, setAnim] = useState('');
   const animTimerRef = useRef(null);
 
   const handleToggle = () => {
@@ -395,7 +363,6 @@ function AsideSameType({ currentSlug, currentType, collapsed, onToggle, prefetch
     []
   );
 
-  // Boot instantané via prefetch/session
   useEffect(() => {
     let booted = false;
 
@@ -427,7 +394,6 @@ function AsideSameType({ currentSlug, currentType, collapsed, onToggle, prefetch
     setLoadingList(!booted);
   }, [prefetchRelated, currentType]);
 
-  // Fetch complet (rafraîchit la liste)
   useEffect(() => {
     let ignore = false;
 
@@ -480,7 +446,6 @@ function AsideSameType({ currentSlug, currentType, collapsed, onToggle, prefetch
     };
   }, [currentType]);
 
-  // Prefetch des cas listés (limite 20)
   useEffect(() => {
     if (!Array.isArray(related) || related.length === 0) return;
     const limited = related.slice(0, 20);

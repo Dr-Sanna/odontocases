@@ -247,7 +247,7 @@
 /* ✅ Boutons TypePicker : AUCUNE ombre au repos, petite ombre nette au survol */
 .cc-typecard {
   appearance: none;
-  border: 2px solid rgba(0, 0, 0, 0.14);
+  border: 1px solid rgba(0, 0, 0, 0.14);
   background: #fff;
   border-radius: 14px;
   padding: 16px 18px;

@@ -208,8 +208,7 @@
   display: grid;
   gap: 20px;
 
-  /* ✅ clamp corrigé : min < preferred < max
-     Ici min=max => 200px fixe, donc reste toujours à 200px */
+  /* 200px fixes */
   padding-right: clamp(200px, 6vw, 200px);
 }
 
@@ -217,8 +216,6 @@
 .cd-content {
   line-height: 1.7;
   font-size: 1.05rem;
-
-  /* ✅ important : empêche un enfant de grid de forcer une largeur > container */
   min-width: 0;
 }
 
@@ -262,22 +259,17 @@
   text-decoration: underline;
 }
 
-/* Images du contenu (zoomable) — ✅ corrige les images trop larges */
+/* Images du contenu (zoomable) */
 .cd-content img {
   display: block;
   margin: 12px auto;
   cursor: zoom-in;
   border-radius: 8px;
 
-  /* ✅ ne dépasse jamais la largeur utile (donc respecte casedetail + padding-right) */
   max-width: 100%;
   width: auto;
   height: auto;
-
-  /* garde le plafond hauteur */
   max-height: 60vh;
-
-  /* safe si un style externe force une width */
   object-fit: contain;
 }
 
@@ -299,12 +291,12 @@
 }
 
 /* =========================
-   Q/A : wrap aligné sous le texte (pas sous le chevron) + pas de gras
+   Q/A : triangle Docusaurus + alignement 1ʳᵉ ligne
    ========================= */
 .qa-section {
   margin-top: 24px;
   display: grid;
-  gap: 12px;
+  gap: 1rem;
 }
 
 .qa-title {
@@ -317,39 +309,60 @@
 .qa-item {
   background: var(--ifm-alert-background-color);
   border: 1px solid var(--ifm-alert-border-color);
-  border-radius: 10px;
-  padding: 16px;
+  border-radius: var(--ifm-alert-border-radius);
+
+  /* Aération “Infima-like” */
+  padding: var(--ifm-alert-padding-vertical)
+           var(--ifm-alert-padding-horizontal);
 }
 
-.qa-item summary {
+.qa-item > summary {
   cursor: pointer;
+  padding-left: 1rem;
   list-style: none;
+  position: relative;
+
+  display: list-item;
   outline: none;
   font-weight: 500;
-  position: relative;
-  display: block;
-  padding-left: 20px;
+
+  line-height: var(--ifm-line-height-base);
 }
 
-.qa-item summary::-webkit-details-marker {
+.qa-item > summary::-webkit-details-marker {
   display: none;
 }
+.qa-item > summary::marker {
+  content: "";
+}
 
-/* Chevron "hors flux" : les retours à la ligne s'alignent sur le texte */
-.qa-arrow {
+/* Triangle plein */
+.qa-item > summary::before {
+  content: "";
+  border-width: var(--docusaurus-details-summary-arrow-size);
+  border-style: solid;
+  border-color: transparent transparent transparent var(--docusaurus-details-decoration-color);
+  transition: var(--docusaurus-details-transition);
+  transform-origin: calc(var(--docusaurus-details-summary-arrow-size) / 2) 50%;
   position: absolute;
   left: 0;
-  top: 0.15em;
-  display: inline-flex;
-  color: #22d3ee;
-  transition: transform 0.2s ease;
+
+  top: 0.82em; /* fallback */
+  transform: translateY(-50%) rotate(0deg);
 }
 
-.qa-item[open] .qa-arrow {
-  transform: rotate(90deg);
+/* alignement parfait sur la 1ʳᵉ ligne si support lh */
+@supports (top: 1lh) {
+  .qa-item > summary::before {
+    top: 0.5lh;
+  }
 }
 
-/* Numéro inline (fait partie de la ligne, aucune largeur réservée) */
+.qa-item[open] > summary::before {
+  transform: translateY(-50%) rotate(90deg);
+}
+
+/* Numéro + texte */
 .qa-num {
   display: inline;
   color: #0b4660;
@@ -358,14 +371,13 @@
   margin-right: 6px;
 }
 
-/* Texte inline */
 .qa-text {
   display: inline;
   font-weight: inherit;
 }
 
 .qa-item[open] > summary {
-  border-bottom: 1px solid #22d3ee;
+  border-bottom: 1px solid var(--ifm-alert-border-color);
   padding-bottom: 16px;
   margin-bottom: 8px;
 }
@@ -451,11 +463,11 @@
 
 [data-theme="dark"] .qa-item {
   background: #122033;
-  border-color: #22d3ee;
+  border-color: var(--ifm-alert-border-color);
 }
 
 [data-theme="dark"] .qa-item[open] > summary {
-  border-color: #22d3ee;
+  border-color: var(--ifm-alert-border-color);
 }
 
 [data-theme="dark"] .cd-references,

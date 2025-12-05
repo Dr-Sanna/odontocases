@@ -44,6 +44,23 @@
   --ifm-alert-border-color: var(--ifm-color-info-dark);
   --ifm-alert-background-color: var(--ifm-color-info-contrast-background);
   
+  /* Line-height global (donne la “hauteur” visuelle du summary) */
+  --ifm-line-height-base: 1.65;
+
+  /* Padding des alertes (c’est souvent ça qui fait l’aération “invisible” quand tu compares) */
+  --ifm-alert-padding-vertical: 1rem;
+  --ifm-alert-padding-horizontal: 1rem;
+  --ifm-alert-border-radius: 0.4rem;
+
+  /* Transition “fast” (utile si tu veux rester cohérent) */
+  --ifm-transition-fast: 200ms;
+
+  /* Variables Docusaurus details */
+  --docusaurus-details-summary-arrow-size: 0.38rem;
+  --docusaurus-details-transition: transform 0.2s ease;
+  --docusaurus-details-decoration-color: var(--ifm-alert-border-color);
+
+
 }
 
 [data-theme=light] {
