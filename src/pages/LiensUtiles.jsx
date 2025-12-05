@@ -1,13 +1,22 @@
-import PageTitle from '../components/PageTitle'
-import Background from '../components/Background'
+import PageTitle from '../components/PageTitle';
+import Background from '../components/Background';
 
 export default function LiensUtiles() {
   return (
     <>
       <Background variant="secondary" />
-      <PageTitle>
-        Liens Utiles
-      </PageTitle>
+
+      <div className="page-header">
+        <div className="container">
+          <PageTitle description="Retrouve une sélection de ressources externes fiables : recommandations, articles, cours et outils cliniques.">
+            Liens utiles
+          </PageTitle>
+        </div>
+      </div>
+
+      <div className="container">
+        {/* contenu à venir */}
+      </div>
     </>
-  )
+  );
 }

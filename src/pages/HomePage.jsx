@@ -20,7 +20,8 @@ export default function HomePage() {
 
       <main className="hero">
         <section className="hero-text">
-          <h1 className="hero-title">Dr Sanna Randomizer</h1>
+          <h1 className="hero-title">Odontocases</h1>
+
           <p className="hero-subtitle">
             Bibliothèque interactive de cas cliniques et outil de randomisation dédiés aux pathologies orales.
           </p>
@@ -34,14 +35,14 @@ export default function HomePage() {
               aria-label="Recherche de cas cliniques"
             />
           </form>
-        </section>
 
-        <nav className="hero-actions">
-          <HomeCard title="Cas cliniques" to="/cas-cliniques" />
-          <HomeCard title="Randomisation" to="/randomisation" />
-          <HomeCard title="Documentation" to="/documentation" />
-          <HomeCard title="Liens utiles" to="/liens-utiles" />
-        </nav>
+          <nav className="hero-actions">
+            <HomeCard title="Cas cliniques" to="/cas-cliniques" />
+            <HomeCard title="Randomisation" to="/randomisation" />
+            <HomeCard title="Documentation" to="/documentation" />
+            <HomeCard title="Liens utiles" to="/liens-utiles" />
+          </nav>
+        </section>
       </main>
     </div>
   );

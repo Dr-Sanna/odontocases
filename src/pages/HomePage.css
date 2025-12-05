@@ -1,3 +1,5 @@
+/* src/pages/HomePage.css */
+
 /* Page container */
 .homepage {
   position: relative;
@@ -5,81 +7,81 @@
   overflow: hidden;
 }
 
-/* Hero section */
+/* Hero section : commence plus haut + moins de marge à gauche/droite */
 .hero {
   position: relative;
   z-index: 1;
   min-height: 100vh;
-  display: grid;
-  grid-template-rows: 1fr auto;
-  align-items: center;
-  padding: clamp(24px, 5vw, 48px);
-  gap: clamp(24px, 4vw, 40px);
+
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+
+  padding:
+    calc(var(--ifm-navbar-height) + clamp(14px, 6vh, 72px))
+    clamp(16px, 4.5vw, 48px)
+    clamp(52px, 16vh, 220px);
 }
 
-/* Texte gauche */
+/* Bloc texte principal */
 .hero-text {
-  max-width: 760px;
+  max-width: 820px;
+  display: grid;
+  gap: clamp(16px, 4vh, 44px);
 }
 
+/* Titre */
 .hero-title {
   font-size: clamp(32px, 6vw, 56px);
   line-height: 1.05;
   font-weight: bold;
   letter-spacing: -0.02em;
-  margin: 0 0 12px 0;
+  margin: 0;
 }
 
+/* Description */
 .hero-subtitle {
   font-size: clamp(16px, 2vw, 20px);
   line-height: 1.6;
   opacity: 0.9;
-  margin: 0 0 20px 0;
+  margin: 0;
+  max-width: 37rem;
 }
 
-/* Barre de recherche (Home uniquement) */
+/* Barre de recherche */
 .hero-search {
-  margin-top: 8px;
+  margin: 0;
 }
 
 .hero-search input {
-  width: min(560px, 90vw);
+  width: min(620px, 92vw);
   padding: 12px 14px;
-  border: 1px solid rgba(0,0,0,0.12);
+  border: 1px solid rgba(0, 0, 0, 0.12);
   border-radius: 12px;
   font-size: 16px;
   outline: none;
-  background: rgba(255,255,255,0.9);
+  background: rgba(255, 255, 255, 0.92);
   backdrop-filter: saturate(140%) blur(6px);
 }
 
 .hero-search input:focus {
   border-color: var(--ifm-color-primary, #2563eb);
-  box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
 
-/* Boutons (cartes) */
+/* Boutons sous la barre de recherche : grille 2×2 */
 .hero-actions {
+  /* ✅ boutons un peu plus bas */
+  margin-top: clamp(22px, 5.2vh, 56px);
+
   display: grid;
-  grid-template-columns: repeat(4, minmax(160px, 1fr));
-  gap: clamp(12px, 2.2vw, 20px);
-  align-items: start;
+  grid-template-columns: repeat(2, minmax(180px, 1fr));
+  gap: clamp(12px, 2.2vw, 18px);
+  align-items: stretch;
+  max-width: 620px;
 }
 
-@media (max-width: 980px) {
-  .hero {
-    grid-template-rows: auto auto;
-  }
-  .hero-actions {
-    grid-template-columns: repeat(2, minmax(160px, 1fr));
-  }
-}
-@media (max-width: 520px) {
-  .hero-actions {
-    grid-template-columns: 1fr;
-  }
-}
-
+/* Cartes : style "manga shadow", plus hautes */
 .home-card {
   display: grid;
   place-items: center;
@@ -87,41 +89,69 @@
   user-select: none;
   -webkit-tap-highlight-color: transparent;
 
-  padding: 16px 18px;
+  min-height: 68px;
+  padding: 18px 18px;
+
   border-radius: 18px;
-  border: 1px solid rgba(0,0,0,0.08);
-  background: white;
+  border: 2px solid rgba(0, 0, 0, 0.14);
+  background: #fff;
   color: #111;
-  font-weight: 700;
+  font-weight: 800;
   font-size: 16px;
 
-  box-shadow: 0 10px 30px rgba(0,0,0,0.06);
-  transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease, background .2s ease;
+  box-shadow: none;
+  transition: box-shadow 0.14s ease, border-color 0.14s ease, background 0.14s ease;
 }
 
+/* Ombre nette au survol */
 .home-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 16px 36px rgba(0,0,0,0.10);
-  border-color: rgba(0,0,0,0.12);
+  box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.16);
+  border-color: rgba(0, 0, 0, 0.22);
 }
 
 .home-card:active {
-  transform: translateY(0);
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.16);
 }
 
-/* Thème dark (CSS pur, pas de nesting) */
+/* Dark mode */
 [data-theme="dark"] .home-card {
-  background: rgba(30,30,32,0.9);
+  background: rgba(30, 30, 32, 0.92);
   color: #f3f3f3;
-  border-color: rgba(255,255,255,0.1);
-  box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow: none;
 }
 
 [data-theme="dark"] .home-card:hover {
-  background: rgba(40,40,44,0.95);
-  border-color: rgba(255,255,255,0.16);
+  box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.72);
+  border-color: rgba(255, 255, 255, 0.18);
 }
 
-/* Si ton composant Background a besoin d'un calage, tu peux le positionner via ce genre de règle :
-   .homepage .Background { position:absolute; inset:0; z-index:0; }
-   (à adapter selon ton implémentation) */
+[data-theme="dark"] .home-card:active {
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.72);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .hero {
+    padding: calc(var(--ifm-navbar-height) + 22px) 14px 56px;
+  }
+
+  .hero-text {
+    max-width: 100%;
+    gap: 18px;
+  }
+
+  .hero-search input {
+    width: min(620px, 92vw);
+  }
+
+  .hero-actions {
+    grid-template-columns: 1fr;
+    margin-top: 22px;
+    max-width: 620px;
+  }
+
+  .home-card {
+    min-height: 64px;
+  }
+}

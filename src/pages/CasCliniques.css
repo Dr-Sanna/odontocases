@@ -1,11 +1,11 @@
 /* ===============================
    CasCliniques.css
-   Onglets + grille + cartes
+   Onglets + grille + cartes + TypePicker
    =============================== */
 
 /* ----- Barre d’onglets (type de cas) ----- */
 .cc-toolbar {
-  margin-bottom: 24px;              /* espace clair entre onglets et grille */
+  margin-bottom: 24px;
 }
 
 .cc-tabs {
@@ -17,7 +17,7 @@
 
 .cc-tab {
   appearance: none;
-  border: 1px solid rgba(0,0,0,0.08);
+  border: 1px solid rgba(0, 0, 0, 0.08);
   background: #fff;
   color: #111;
   padding: 8px 12px;
@@ -25,41 +25,58 @@
   font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background .15s ease, border-color .15s ease, transform .06s ease;
+  transition: background 0.15s ease, border-color 0.15s ease;
 }
-.cc-tab:hover { background: #f7f8fa; border-color: rgba(0,0,0,0.12); }
-.cc-tab:active { transform: translateY(1px); }
-.cc-tab.active { background: #eef4ff; border-color: #dce8ff; }
+
+.cc-tab:hover {
+  background: #f7f8fa;
+  border-color: rgba(0, 0, 0, 0.12);
+}
+
+.cc-tab.active {
+  background: #eef4ff;
+  border-color: #dce8ff;
+}
 
 /* Dark mode onglets */
 [data-theme="dark"] .cc-tab {
-  background: #1f1f23; color: #f3f3f3; border-color: rgba(255,255,255,0.12);
+  background: #1f1f23;
+  color: #f3f3f3;
+  border-color: rgba(255, 255, 255, 0.12);
 }
 [data-theme="dark"] .cc-tab:hover {
-  background: #26262b; border-color: rgba(255,255,255,0.18);
+  background: #26262b;
+  border-color: rgba(255, 255, 255, 0.18);
 }
 [data-theme="dark"] .cc-tab.active {
-  background: #1f2940; border-color: #2a3a5a;
+  background: #1f2940;
+  border-color: #2a3a5a;
 }
 
 /* ----- Grille de cartes (4 colonnes) ----- */
 .cc-grid {
-  margin-top: 8px;                  
+  margin-top: 8px;
   display: grid;
-  grid-template-columns: repeat(4, minmax(220px, 1fr)); /* 4 colonnes */
+  grid-template-columns: repeat(4, minmax(220px, 1fr));
   gap: 18px;
   padding-top: 8px !important;
-  padding-bottom: 32px !important;   /* espace en bas */
+  padding-bottom: 32px !important;
 }
 
 @media (max-width: 1200px) {
-  .cc-grid { grid-template-columns: repeat(3, minmax(240px, 1fr)); }
+  .cc-grid {
+    grid-template-columns: repeat(3, minmax(240px, 1fr));
+  }
 }
 @media (max-width: 800px) {
-  .cc-grid { grid-template-columns: repeat(2, minmax(240px, 1fr)); }
+  .cc-grid {
+    grid-template-columns: repeat(2, minmax(240px, 1fr));
+  }
 }
 @media (max-width: 500px) {
-  .cc-grid { grid-template-columns: 1fr; }
+  .cc-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ----- Carte (hauteur uniforme) ----- */
@@ -72,18 +89,22 @@
   background: #fff;
   text-decoration: none;
   color: inherit;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.06);
-  transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
 
-  /* Hauteur uniforme pour toutes les cartes */
-  height: 320px;                    /* ajuste (300–340px) si besoin */
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+  transition: box-shadow 0.12s ease, border-color 0.12s ease;
+
+  height: 320px;
 }
+
 .cc-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 14px 26px rgba(0,0,0,0.10);
+  box-shadow: 0 14px 26px rgba(0, 0, 0, 0.1);
   border-color: #dde0ea;
 }
-.cc-card--disabled { pointer-events: none; opacity: .75; }
+
+.cc-card--disabled {
+  pointer-events: none;
+  opacity: 0.75;
+}
 
 .cc-thumb {
   background: #f5f5f7;
@@ -91,12 +112,11 @@
   background-position: center;
 }
 
-/* Corps de carte : bloc meta + bloc texte */
 .cc-body {
   padding: 12px 14px 14px;
   display: grid;
   gap: 6px;
-  grid-template-rows: auto 1fr;     /* meta + (titre) qui prend le reste */
+  grid-template-rows: auto 1fr;
 }
 
 .cc-meta {
@@ -107,15 +127,21 @@
 
 /* Chip type */
 .cc-chip {
-  font-size: .85rem;
-  padding: .25rem .6rem;
+  font-size: 0.85rem;
+  padding: 0.25rem 0.6rem;
   border-radius: 999px;
   background: #f1f1f1;
   border: 1px solid transparent;
 }
-.cc-chip.cc-qa { background: #e8f5e9; }
-.cc-chip.cc-quiz { background: #e3f2fd; }
-.cc-chip.cc-presentation { background: #fff3e0; }
+.cc-chip.cc-qa {
+  background: #e8f5e9;
+}
+.cc-chip.cc-quiz {
+  background: #e3f2fd;
+}
+.cc-chip.cc-presentation {
+  background: #fff3e0;
+}
 
 /* Titre : clamp 2 lignes */
 .cc-title {
@@ -132,30 +158,38 @@
   text-overflow: ellipsis;
 }
 
-/* Extrait : on ne l'affiche pas (cartes plus compactes) */
-.cc-excerpt { display: none !important; }
+/* Extrait : on ne l'affiche pas */
+.cc-excerpt {
+  display: none !important;
+}
 
 /* Dark mode cartes */
 [data-theme="dark"] .cc-card {
   background: #191a1e;
   border-color: #2a2b31;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.45);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
 }
 [data-theme="dark"] .cc-card:hover {
   border-color: #34353c;
-  box-shadow: 0 14px 28px rgba(0,0,0,0.6);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.6);
 }
-[data-theme="dark"] .cc-thumb { background: #202226; }
-[data-theme="dark"] .cc-chip { background: #2a2b31; }
+[data-theme="dark"] .cc-thumb {
+  background: #202226;
+}
+[data-theme="dark"] .cc-chip {
+  background: #2a2b31;
+}
 
 /* ----- États de liste ----- */
 .cc-state {
   grid-column: 1 / -1;
   padding: 24px;
   text-align: center;
-  opacity: .9;
+  opacity: 0.9;
 }
-.cc-state.error { color: #b00020; }
+.cc-state.error {
+  color: #b00020;
+}
 
 /* ----- Pagination ----- */
 .cc-pagination {
@@ -163,8 +197,9 @@
   align-items: center;
   justify-content: center;
   gap: 12px;
-  margin: 12px 0 32px;       /* + d’air en bas */
+  margin: 12px 0 32px;
 }
+
 .cc-pagination button {
   appearance: none;
   padding: 8px 12px;
@@ -174,12 +209,21 @@
   cursor: pointer;
   font-weight: 600;
 }
-.cc-pagination button:disabled { opacity: .5; cursor: not-allowed; }
-.cc-pagination span { font-weight: 600; }
+
+.cc-pagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cc-pagination span {
+  font-weight: 600;
+}
 
 /* Dark mode pagination */
 [data-theme="dark"] .cc-pagination button {
-  background: #202226; border-color: #2e3036; color: #f3f3f3;
+  background: #202226;
+  border-color: #2e3036;
+  color: #f3f3f3;
 }
 
 /* ----- Sélecteur de type initial (écran d’accueil CasCliniques) ----- */
@@ -195,25 +239,33 @@
   margin-top: 10px;
 }
 @media (max-width: 840px) {
-  .cc-typegrid { grid-template-columns: 1fr; }
+  .cc-typegrid {
+    grid-template-columns: 1fr;
+  }
 }
 
+/* ✅ Boutons TypePicker : AUCUNE ombre au repos, petite ombre nette au survol */
 .cc-typecard {
   appearance: none;
-  border: 1px solid #eaeaf0;
+  border: 2px solid rgba(0, 0, 0, 0.14);
   background: #fff;
   border-radius: 14px;
   padding: 16px 18px;
   text-align: left;
   cursor: pointer;
-  transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease, background .12s ease;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+
+  box-shadow: none; /* ✅ pas d'ombre au repos */
+  transition: box-shadow 0.14s ease, border-color 0.14s ease, background 0.14s ease;
 }
+
 .cc-typecard:hover {
-  transform: translateY(-2px);
-  border-color: #dde0ea;
-  box-shadow: 0 14px 26px rgba(0,0,0,0.10);
-  background: #fafcff;
+  box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.16);
+  border-color: rgba(0, 0, 0, 0.22);
+  background: #fff;
+}
+
+.cc-typecard:active {
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.16);
 }
 
 .cc-type {
@@ -222,17 +274,25 @@
   font-size: 1.05rem;
   margin-bottom: 4px;
 }
+
 .cc-typedesc {
   display: block;
-  opacity: .9;
-  font-size: .95rem;
+  opacity: 0.9;
+  font-size: 0.95rem;
   line-height: 1.5;
 }
 
-/* Dark mode typepicker */
+/* Dark mode TypePicker */
 [data-theme="dark"] .cc-typecard {
-  background: #191a1e; border-color: #2a2b31; box-shadow: 0 8px 20px rgba(0,0,0,0.45);
+  background: #191a1e;
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow: none; /* ✅ pas d'ombre au repos */
 }
 [data-theme="dark"] .cc-typecard:hover {
-  border-color: #34353c; box-shadow: 0 14px 28px rgba(0,0,0,0.6); background: #1f2227;
+  background: #191a1e;
+  box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.72);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+[data-theme="dark"] .cc-typecard:active {
+  box-shadow: 3px 3px 0 rgba(0,  0, 0, 0.72);
 }

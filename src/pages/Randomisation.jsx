@@ -1,13 +1,22 @@
-import PageTitle from '../components/PageTitle'
-import Background from '../components/Background'
+import PageTitle from '../components/PageTitle';
+import Background from '../components/Background';
 
 export default function Randomisation() {
   return (
     <>
       <Background variant="secondary" />
-      <PageTitle description="Générez des cas aléatoires pour tester vos capacités de diagnostic et renforcer votre raisonnement clinique.">
-        Randomisation
-      </PageTitle>
+
+      <div className="page-header">
+        <div className="container">
+          <PageTitle description="Génère des cas aléatoires pour t’entraîner au diagnostic, te chronométrer et varier les situations cliniques.">
+            Randomisation
+          </PageTitle>
+        </div>
+      </div>
+
+      <div className="container">
+        {/* contenu à venir */}
+      </div>
     </>
-  )
+  );
 }

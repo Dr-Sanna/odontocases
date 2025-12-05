@@ -10,7 +10,7 @@
 /* 🌐 Variables globales */
 :root {
    /* Thème par défaut */
-  ---ifm-font-color-base: var(--ifm-color-content);
+  --ifm-font-color-base: var(--ifm-color-content);
 
   /* Fontes */
   --ifm-font-family-base: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
@@ -102,3 +102,4 @@ body {
   padding-top: calc(var(--ifm-navbar-height) + 16px);
   margin-bottom: 12px;
 }
+

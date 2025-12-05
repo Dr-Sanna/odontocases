@@ -18,6 +18,7 @@
 .navbar-left {
   display: flex;
   align-items: center;
+  min-width: 0;
 }
 
 .logo-container {
@@ -27,16 +28,19 @@
   color: inherit;
   cursor: pointer;
   margin-right: 1rem;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
-img.logo{
-  margin-right: .5rem;
+img.logo {
+  margin-right: 0.5rem;
 }
 
 .logo-container span {
   font-weight: bold;
   color: var(--ifm-navbar-link-color);
   transition: color 0.2s;
+  white-space: nowrap;
 }
 
 .logo-container:hover .logo {
@@ -45,7 +49,7 @@ img.logo{
 
 .logo-container:hover span {
   color: var(--ifm-link-hover-color);
-transition: background-color 0.2s, color 0.2s;
+  transition: background-color 0.2s, color 0.2s;
 }
 
 .logo {
@@ -58,8 +62,8 @@ transition: background-color 0.2s, color 0.2s;
 .nav-links {
   display: flex;
   font-weight: var(--ifm-font-weight-semibold);
+  gap: 0;
 }
-
 
 .nav-links a {
   color: var(--ifm-navbar-link-color);
@@ -82,9 +86,24 @@ transition: background-color 0.2s, color 0.2s;
   gap: 1rem;
 }
 
+/* GitHub (SVG inline) */
+.github-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: var(--ifm-navbar-link-color);
+  -webkit-tap-highlight-color: transparent;
+}
+
 .github-icon {
   width: 24px;
   height: 24px;
+  color: inherit;
+}
+
+.github-link:hover {
+  color: var(--ifm-link-hover-color);
 }
 
 .theme-toggle {
@@ -95,4 +114,13 @@ transition: background-color 0.2s, color 0.2s;
   padding: 0;
   margin: 0;
   line-height: 1;
+}
+
+.theme-toggle:focus-visible,
+.github-link:focus-visible,
+.nav-links a:focus-visible,
+.logo-container:focus-visible {
+  outline: 2px solid var(--ifm-color-primary, #2563eb);
+  outline-offset: 4px;
+  border-radius: 10px;
 }
