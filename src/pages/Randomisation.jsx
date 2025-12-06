@@ -1,10 +1,8 @@
 import PageTitle from '../components/PageTitle';
-import Background from '../components/Background';
 
 export default function Randomisation() {
   return (
     <>
-      <Background variant="secondary" />
 
       <div className="page-header">
         <div className="container">

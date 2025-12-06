@@ -11,7 +11,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import PageTitle from '../components/PageTitle';
-import Background from '../components/Background';
 import { strapiFetch, imgUrl } from '../lib/strapi';
 import './CasCliniques.css';
 
@@ -190,7 +189,7 @@ export default function CasCliniques() {
 
   return (
     <>
-      <Background variant="secondary" />
+      
 
       <div className="page-header">
         <div className="container">

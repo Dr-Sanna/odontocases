@@ -120,3 +120,39 @@ body {
   margin-bottom: 12px;
 }
 
+/* Background global : fixé en haut-gauche, compatible mobile/tablette */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+
+  /* image */
+  background-image: url("/background.png");
+  background-repeat: no-repeat;
+  background-position: right top;
+  background-size: contain;
+
+  /* invisible par défaut */
+  opacity: 0;
+
+  /* animation uniquement quand on va vers "secondary" */
+  transition: opacity 200ms ease;
+}
+
+/* Home: visible à 100% (sans transition quand on y revient) */
+body.bg-home::before {
+  opacity: 1;
+  transition: none;
+}
+
+/* Pages secondaires: opacité réduite */
+body.bg-secondary::before {
+  opacity: 0.25;
+}
+
+/* CaseDetail: pas du tout visible */
+body.bg-none::before {
+  opacity: 0;
+}

@@ -6,8 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Odontocases</title>
 
-    <!-- preload du background (fichier dans /public) -->
-    <link rel="preload" as="image" href="/background.png" />
+    <!-- preload du background (évite le flash / chargement tardif) -->
+    <link rel="preload" as="image" href="/background.png" fetchpriority="high" />
   </head>
   <body>
     <div id="root"></div>
