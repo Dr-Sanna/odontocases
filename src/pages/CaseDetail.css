@@ -516,7 +516,8 @@
 
   /* le main ne doit pas bouger */
   .cd-main {
-    padding: 0 16px 32px;
+    padding: 1rem;
+    padding-bottom: 2rem;
   }
 
   .casedetail {
