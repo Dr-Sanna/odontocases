@@ -1,17 +1,13 @@
 // src/pages/CaseDetail.jsx
 /**
- * CaseDetail.jsx
- * --------------
- * - Content (Markdown) + images cliquables (lightbox)
- * - Q/R : H2 "Questions", numérotation "1. ", triangle plein Docusaurus
- * - Sidebar animée (rail), tri numérique, prefetch
- * - Puce de type AU-DESSUS du titre
- * - Padding droite global sur tout le contenu
- * - Extras : references, copyright
+ * - Mobile/tablette: drawer (piloté par Navbar via context), fermé par défaut
+ * - Desktop: collapse rail (localStorage)
+ * - Q/R: triangle plein Docusaurus via ::before (CSS)
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
+
 import PageTitle from '../components/PageTitle';
 import Breadcrumbs from '../components/Breadcrumbs';
 import { strapiFetch, imgUrl } from '../lib/strapi';
@@ -20,11 +16,41 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeSanitize from 'rehype-sanitize';
 import { BottomExpandIcon, BottomCollapseIcon } from '../components/Icons';
+
+import { useCaseDetailSidebar } from '../ui/CaseDetailSidebarContext';
+
 import './CaseDetail.css';
 
 const CASES_ENDPOINT = import.meta.env.VITE_CASES_ENDPOINT || '/cases';
 const LS_KEY_COLLAPSE = 'cd-sidebar-collapsed';
 const PUB_STATE = import.meta.env.DEV ? 'preview' : 'live';
+
+function useIsNarrow(maxWidthPx = 980) {
+  const get = () => {
+    if (typeof window === 'undefined' || !window.matchMedia) return false;
+    return window.matchMedia(`(max-width: ${maxWidthPx}px)`).matches;
+  };
+
+  const [isNarrow, setIsNarrow] = useState(get);
+
+  useEffect(() => {
+    if (!window.matchMedia) return;
+    const mq = window.matchMedia(`(max-width: ${maxWidthPx}px)`);
+    const onChange = () => setIsNarrow(mq.matches);
+
+    // init + subscribe
+    onChange();
+    if (mq.addEventListener) mq.addEventListener('change', onChange);
+    else mq.addListener(onChange);
+
+    return () => {
+      if (mq.removeEventListener) mq.removeEventListener('change', onChange);
+      else mq.removeListener(onChange);
+    };
+  }, [maxWidthPx]);
+
+  return isNarrow;
+}
 
 /** Tri numérique par slug (extrait le premier groupe de chiffres). */
 function compareBySlugNumberAsc(a, b) {
@@ -55,6 +81,10 @@ export default function CaseDetail() {
   const { slug } = useParams();
   const location = useLocation();
 
+  const isNarrow = useIsNarrow(980);
+  const { mobileOpen, setMobileOpen } = useCaseDetailSidebar();
+
+  // Prefetch passé depuis la liste
   const pre = location.state?.prefetch;
   const provisional = pre && pre.slug === slug ? pre : null;
 
@@ -68,7 +98,8 @@ export default function CaseDetail() {
     return null;
   });
 
-  const [collapsed, setCollapsed] = useState(() => {
+  // Desktop collapse (rail)
+  const [collapsedDesktop, setCollapsedDesktop] = useState(() => {
     try {
       return localStorage.getItem(LS_KEY_COLLAPSE) === '1';
     } catch {
@@ -76,8 +107,49 @@ export default function CaseDetail() {
     }
   });
 
+  // Mobile: fermé par défaut à chaque entrée/changement de slug
+  useEffect(() => {
+    if (isNarrow) setMobileOpen(false);
+  }, [slug, isNarrow, setMobileOpen]);
+
+  // Quand le drawer mobile est ouvert: esc + lock scroll
+  useEffect(() => {
+    if (!isNarrow) return;
+
+    const prevOverflow = document.body.style.overflow;
+    const prevOverscroll = document.body.style.overscrollBehavior;
+
+    if (mobileOpen) {
+      document.body.style.overflow = 'hidden';
+      document.body.style.overscrollBehavior = 'contain';
+    } else {
+      document.body.style.overflow = prevOverflow || '';
+      document.body.style.overscrollBehavior = prevOverscroll || '';
+    }
+
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') setMobileOpen(false);
+    };
+
+    if (mobileOpen) document.addEventListener('keydown', onKeyDown);
+
+    return () => {
+      document.body.style.overflow = prevOverflow || '';
+      document.body.style.overscrollBehavior = prevOverscroll || '';
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [mobileOpen, isNarrow, setMobileOpen]);
+
+  // collapsed effectif selon breakpoint
+  const collapsed = isNarrow ? !mobileOpen : collapsedDesktop;
+
   const toggleSidebar = () => {
-    setCollapsed((prev) => {
+    if (isNarrow) {
+      setMobileOpen((v) => !v);
+      return;
+    }
+
+    setCollapsedDesktop((prev) => {
       const next = !prev;
       try {
         localStorage.setItem(LS_KEY_COLLAPSE, next ? '1' : '0');
@@ -86,6 +158,7 @@ export default function CaseDetail() {
     });
   };
 
+  // Chargement (cache instantané + fetch)
   useEffect(() => {
     let ignore = false;
 
@@ -137,7 +210,8 @@ export default function CaseDetail() {
           setError('Cas introuvable ou non publié.');
         } else {
           const coverAttr = attrs?.cover?.data?.attributes || attrs?.cover || null;
-          const apiCover = imgUrl(coverAttr, 'large') || imgUrl(coverAttr, 'medium') || imgUrl(coverAttr) || null;
+          const apiCover =
+            imgUrl(coverAttr, 'large') || imgUrl(coverAttr, 'medium') || imgUrl(coverAttr) || null;
 
           const full = { ...attrs, coverUrl: apiCover || item?.coverUrl || null };
           setItem(full);
@@ -214,27 +288,40 @@ export default function CaseDetail() {
     return () => document.removeEventListener('keydown', onKey);
   }, [lightbox]);
 
+  const drawerOpen = isNarrow && mobileOpen;
+
   return (
-    <div className={`cd-shell ${collapsed ? 'is-collapsed' : ''}`}>
+    <div
+      className={[
+        'cd-shell',
+        collapsed ? 'is-collapsed' : '',
+        drawerOpen ? 'is-drawer-open' : '',
+      ].join(' ')}
+    >
       <AsideSameType
         currentSlug={slug}
         currentType={item?.type}
         collapsed={collapsed}
         onToggle={toggleSidebar}
         prefetchRelated={location.state?.relatedPrefetch || null}
+        isNarrow={isNarrow}
       />
 
-      <main className="cd-main">
-        <button
-          type="button"
-          className="cd-mobile-toggle"
-          onClick={toggleSidebar}
-          aria-label={collapsed ? 'Ouvrir la liste' : 'Fermer la liste'}
-          title={collapsed ? 'Ouvrir la liste' : 'Fermer la liste'}
-        >
-          {collapsed ? '☰' : '×'}
-        </button>
+      {/* scrim mobile/tablette */}
+      {drawerOpen && (
+        <div
+          className="cd-drawer-scrim"
+          role="button"
+          tabIndex={0}
+          aria-label="Fermer le menu"
+          onClick={() => setMobileOpen(false)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') setMobileOpen(false);
+          }}
+        />
+      )}
 
+      <main className="cd-main" aria-hidden={drawerOpen ? 'true' : 'false'}>
         <div className="cd-page-header">
           <Breadcrumbs items={breadcrumbItems} />
 
@@ -335,7 +422,7 @@ export default function CaseDetail() {
 /**
  * AsideSameType (préfetch + animation)
  */
-function AsideSameType({ currentSlug, currentType, collapsed, onToggle, prefetchRelated }) {
+function AsideSameType({ currentSlug, currentType, collapsed, onToggle, prefetchRelated, isNarrow }) {
   const [related, setRelated] = useState([]);
   const [loadingList, setLoadingList] = useState(false);
   const [errList, setErrList] = useState('');
@@ -344,14 +431,17 @@ function AsideSameType({ currentSlug, currentType, collapsed, onToggle, prefetch
   const animTimerRef = useRef(null);
 
   const handleToggle = () => {
-    const nextCollapsed = !collapsed;
-    setAnim(nextCollapsed ? 'closing' : 'opening');
+    // Desktop: conserve ton anim “rail”
+    if (!isNarrow) {
+      const nextCollapsed = !collapsed;
+      setAnim(nextCollapsed ? 'closing' : 'opening');
 
-    if (animTimerRef.current) clearTimeout(animTimerRef.current);
-    animTimerRef.current = setTimeout(() => {
-      setAnim('');
-      animTimerRef.current = null;
-    }, 240);
+      if (animTimerRef.current) clearTimeout(animTimerRef.current);
+      animTimerRef.current = setTimeout(() => {
+        setAnim('');
+        animTimerRef.current = null;
+      }, 240);
+    }
 
     onToggle();
   };
@@ -363,6 +453,7 @@ function AsideSameType({ currentSlug, currentType, collapsed, onToggle, prefetch
     []
   );
 
+  // Boot instantané via prefetch/session
   useEffect(() => {
     let booted = false;
 
@@ -394,6 +485,7 @@ function AsideSameType({ currentSlug, currentType, collapsed, onToggle, prefetch
     setLoadingList(!booted);
   }, [prefetchRelated, currentType]);
 
+  // Fetch complet
   useEffect(() => {
     let ignore = false;
 
@@ -446,6 +538,7 @@ function AsideSameType({ currentSlug, currentType, collapsed, onToggle, prefetch
     };
   }, [currentType]);
 
+  // Prefetch (limite 20)
   useEffect(() => {
     if (!Array.isArray(related) || related.length === 0) return;
     const limited = related.slice(0, 20);
@@ -465,8 +558,8 @@ function AsideSameType({ currentSlug, currentType, collapsed, onToggle, prefetch
       ? 'Présentations'
       : 'Cas';
 
-  const showOverlay = collapsed || anim !== '';
-  const isAnimating = anim !== '';
+  const showOverlay = !isNarrow && (collapsed || anim !== '');
+  const isAnimating = !isNarrow && anim !== '';
   const overlayShowsExpand = collapsed || anim === 'closing';
 
   return (
@@ -505,39 +598,41 @@ function AsideSameType({ currentSlug, currentType, collapsed, onToggle, prefetch
           )}
         </div>
 
-        {showOverlay ? (
-          <div
-            className="cd-side-toggle"
-            title={overlayShowsExpand ? 'Développer la barre latérale' : 'Réduire la barre latérale'}
-            aria-label={overlayShowsExpand ? 'Développer la barre latérale' : 'Réduire la barre latérale'}
-            role="button"
-            tabIndex={0}
-            onClick={isAnimating ? undefined : handleToggle}
-            onKeyDown={(e) => {
-              if (!isAnimating && (e.key === 'Enter' || e.key === ' ')) {
-                e.preventDefault();
-                handleToggle();
-              }
-            }}
-          >
-            {overlayShowsExpand ? (
-              <BottomExpandIcon className="expandButtonIcon_H1n0" />
-            ) : (
+        {/* Desktop uniquement: toggle rail en bas */}
+        {!isNarrow &&
+          (showOverlay ? (
+            <div
+              className="cd-side-toggle"
+              title={overlayShowsExpand ? 'Développer la barre latérale' : 'Réduire la barre latérale'}
+              aria-label={overlayShowsExpand ? 'Développer la barre latérale' : 'Réduire la barre latérale'}
+              role="button"
+              tabIndex={0}
+              onClick={isAnimating ? undefined : handleToggle}
+              onKeyDown={(e) => {
+                if (!isAnimating && (e.key === 'Enter' || e.key === ' ')) {
+                  e.preventDefault();
+                  handleToggle();
+                }
+              }}
+            >
+              {overlayShowsExpand ? (
+                <BottomExpandIcon className="expandButtonIcon_H1n0" />
+              ) : (
+                <BottomCollapseIcon className="collapseSidebarButtonIcon_DI0B" />
+              )}
+            </div>
+          ) : (
+            <button
+              type="button"
+              title="Réduire la barre latérale"
+              aria-label="Réduire la barre latérale"
+              className="cd-side-toggle"
+              onClick={handleToggle}
+              disabled={isAnimating}
+            >
               <BottomCollapseIcon className="collapseSidebarButtonIcon_DI0B" />
-            )}
-          </div>
-        ) : (
-          <button
-            type="button"
-            title="Réduire la barre latérale"
-            aria-label="Réduire la barre latérale"
-            className="cd-side-toggle"
-            onClick={handleToggle}
-            disabled={isAnimating}
-          >
-            <BottomCollapseIcon className="collapseSidebarButtonIcon_DI0B" />
-          </button>
-        )}
+            </button>
+          ))}
       </div>
     </aside>
   );

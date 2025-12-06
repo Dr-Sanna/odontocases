@@ -10,6 +10,8 @@ import LiensUtiles from './pages/LiensUtiles';
 import ScrollToTop from './components/ScrollToTop';
 import CaseDetail from './pages/CaseDetail';
 
+import { CaseDetailSidebarProvider } from './ui/CaseDetailSidebarContext';
+
 function BackgroundRouteSync() {
   const { pathname } = useLocation();
 
@@ -19,7 +21,7 @@ function BackgroundRouteSync() {
     body.classList.remove('bg-home', 'bg-secondary', 'bg-none');
 
     // Case detail : /cas-cliniques/:slug
-    const isCaseDetail = /^\/cas-cliniques\/[^/]+/.test(pathname);
+    const isCaseDetail = /^\/cas-cliniques\/[^/]+$/.test(pathname);
 
     if (pathname === '/') body.classList.add('bg-home');
     else if (isCaseDetail) body.classList.add('bg-none');
@@ -31,7 +33,7 @@ function BackgroundRouteSync() {
 
 export default function App() {
   return (
-    <>
+    <CaseDetailSidebarProvider>
       <BackgroundRouteSync />
 
       <Navbar />
@@ -45,6 +47,6 @@ export default function App() {
         <Route path="/documentation" element={<Documentation />} />
         <Route path="/liens-utiles" element={<LiensUtiles />} />
       </Routes>
-    </>
+    </CaseDetailSidebarProvider>
   );
 }

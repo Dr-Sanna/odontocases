@@ -1,7 +1,7 @@
 /* src/pages/CaseDetail.css */
 
 /* =========================
-   Shell plein écran
+   Shell
    ========================= */
 .cd-shell {
   display: grid;
@@ -12,7 +12,7 @@
 }
 
 /* =========================
-   Menu latéral (gauche)
+   Sidebar (desktop)
    ========================= */
 .cd-side {
   position: sticky;
@@ -25,7 +25,8 @@
 
   width: 300px;
   overflow: hidden;
-  transition: width 0.2s ease, transform 0.2s ease;
+  transition: width 0.2s ease, transform 0.22s ease;
+  z-index: 2;
 }
 
 .cd-side.is-collapsed {
@@ -43,7 +44,7 @@
   height: 100%;
 }
 
-/* Bloc contenu (header + liste) — masqué par clip */
+/* contenu sidebar masqué par clip (desktop rail) */
 .cd-side-scroll {
   display: grid;
   grid-template-rows: auto 1fr;
@@ -123,7 +124,7 @@
   font-weight: 600;
 }
 
-/* Toggle sidebar */
+/* Toggle sidebar (desktop) */
 .cd-side-toggle {
   width: 100%;
   height: 48px;
@@ -177,12 +178,12 @@
    ========================= */
 .cd-main {
   min-width: 0;
-  padding: 0 24px 40px;
+  padding: 1rem;
+  padding-bottom: 2rem;
 }
 
 .cd-page-header {
-  padding-top: calc(var(--ifm-navbar-height));
-  margin-bottom: 12px;
+  margin-bottom: 0.5rem;
 }
 
 /* Puce AU-DESSUS du titre */
@@ -207,8 +208,6 @@
 .casedetail {
   display: grid;
   gap: 20px;
-
-  /* 200px fixes */
   padding-right: clamp(200px, 6vw, 200px);
 }
 
@@ -291,7 +290,7 @@
 }
 
 /* =========================
-   Q/A : triangle Docusaurus + alignement 1ʳᵉ ligne
+   Q/A : triangle plein Docusaurus (calage top:.45rem)
    ========================= */
 .qa-section {
   margin-top: 24px;
@@ -310,22 +309,22 @@
   background: var(--ifm-alert-background-color);
   border: 1px solid var(--ifm-alert-border-color);
   border-radius: var(--ifm-alert-border-radius);
-
-  /* Aération “Infima-like” */
-  padding: var(--ifm-alert-padding-vertical)
-           var(--ifm-alert-padding-horizontal);
+  padding: var(--ifm-alert-padding-vertical) var(--ifm-alert-padding-horizontal);
 }
 
+/* summary */
 .qa-item > summary {
   cursor: pointer;
   padding-left: 1rem;
   list-style: none;
   position: relative;
 
-  display: list-item;
+  /* rend le bloc très légèrement “plus haut” comme Infima */
+  padding-top: 0.12rem;
+  padding-bottom: 0.12rem;
+
   outline: none;
   font-weight: 500;
-
   line-height: var(--ifm-line-height-base);
 }
 
@@ -336,7 +335,7 @@
   content: "";
 }
 
-/* Triangle plein */
+/* Triangle plein : copie du comportement Docusaurus */
 .qa-item > summary::before {
   content: "";
   border-width: var(--docusaurus-details-summary-arrow-size);
@@ -345,21 +344,13 @@
   transition: var(--docusaurus-details-transition);
   transform-origin: calc(var(--docusaurus-details-summary-arrow-size) / 2) 50%;
   position: absolute;
+  top: 0.45rem;     /* <- valeur Docusaurus */
   left: 0;
-
-  top: 0.82em; /* fallback */
-  transform: translateY(-50%) rotate(0deg);
-}
-
-/* alignement parfait sur la 1ʳᵉ ligne si support lh */
-@supports (top: 1lh) {
-  .qa-item > summary::before {
-    top: 0.5lh;
-  }
+  transform: rotate(0deg);
 }
 
 .qa-item[open] > summary::before {
-  transform: translateY(-50%) rotate(90deg);
+  transform: rotate(90deg);
 }
 
 /* Numéro + texte */
@@ -399,7 +390,7 @@
 }
 
 /* =========================
-   Extras : Références & Copyright
+   Extras
    ========================= */
 .cd-extras {
   display: grid;
@@ -477,29 +468,53 @@
 }
 
 /* =========================
-   Responsive
+   Mobile/tablette: drawer + scrim
    ========================= */
+.cd-drawer-scrim {
+  display: none;
+}
+
+/* comme demandé: sur mobile, menu fermé par défaut et ouverture via navbar */
 @media (max-width: 980px) {
   .cd-shell {
     grid-template-columns: 1fr;
   }
 
+  /* sidebar off-canvas */
   .cd-side {
     position: fixed;
     left: 0;
     top: calc(var(--ifm-navbar-height, 64px));
-    width: min(80vw, 320px);
+    width: min(86vw, 320px);
     height: calc(100vh - var(--ifm-navbar-height, 64px));
-    z-index: 50;
-    transform: translateX(0);
-    transition: transform 0.2s ease;
-  }
+    z-index: 60;
 
-  .cd-shell.is-collapsed .cd-side,
-  .cd-side.is-collapsed {
+    /* fermé par défaut */
     transform: translateX(-100%);
+    width: min(86vw, 320px);
+
+    /* pas de rail-collapse en mobile */
+    transition: transform 0.22s ease;
   }
 
+  /* ouverture */
+  .cd-shell.is-drawer-open .cd-side {
+    transform: translateX(0);
+  }
+
+  /* scrim au-dessus du contenu */
+  .cd-drawer-scrim {
+    display: block;
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: calc(var(--ifm-navbar-height, 64px));
+    bottom: 0;
+    z-index: 55;
+    background: rgba(0, 0, 0, 0.35);
+  }
+
+  /* le main ne doit pas bouger */
   .cd-main {
     padding: 0 16px 32px;
   }
@@ -507,9 +522,16 @@
   .casedetail {
     padding-right: 16px;
   }
+
+  /* desktop-only toggle en bas: caché en mobile */
+  .cd-side-toggle {
+    display: none;
+  }
 }
 
-/* Skeleton */
+/* =========================
+   Skeleton
+   ========================= */
 .cd-skel {
   display: grid;
   gap: 10px;

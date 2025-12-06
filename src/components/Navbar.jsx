@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Link, NavLink } from 'react-router-dom';
+import { Link, NavLink, useLocation } from 'react-router-dom';
+import { useCaseDetailSidebar } from '../ui/CaseDetailSidebarContext';
 import './Navbar.css';
 
 const THEME_KEY = 'theme'; // 'light' | 'dark'
@@ -18,8 +19,16 @@ function getInitialTheme() {
   return prefersDark ? 'dark' : 'light';
 }
 
+function isCaseDetailPath(pathname) {
+  return /^\/cas-cliniques\/[^/]+$/.test(pathname);
+}
+
 export default function Navbar() {
   const [theme, setTheme] = useState(getInitialTheme);
+  const { pathname } = useLocation();
+  const isCaseDetail = isCaseDetailPath(pathname);
+
+  const { mobileOpen, setMobileOpen } = useCaseDetailSidebar();
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -28,11 +37,31 @@ export default function Navbar() {
     } catch {}
   }, [theme]);
 
+  // si tu quittes CaseDetail -> ferme le drawer mobile
+  useEffect(() => {
+    if (!isCaseDetail) setMobileOpen(false);
+  }, [isCaseDetail, setMobileOpen]);
+
   const toggleTheme = () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
+
+  const toggleCaseDetailMenu = () => setMobileOpen((v) => !v);
 
   return (
     <nav className="navbar">
       <div className="navbar-left">
+        {/* Bouton drawer (visible seulement mobile/tablette via CSS) */}
+        {isCaseDetail && (
+          <button
+            type="button"
+            className="cd-nav-toggle"
+            aria-label={mobileOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
+            aria-expanded={mobileOpen}
+            onClick={toggleCaseDetailMenu}
+          >
+            <span className="cd-nav-toggle-bars" aria-hidden="true" />
+          </button>
+        )}
+
         <Link to="/" className="logo-container" draggable="false" aria-label="Retour à l’accueil">
           <img src="/logo.svg" alt="Logo" className="logo" />
           <span>Dr Sanna</span>

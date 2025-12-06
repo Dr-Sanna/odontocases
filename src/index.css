@@ -116,7 +116,7 @@ body {
 
 .page-header {
   /* espace uniforme sous la navbar pour le haut de page (breadcrumbs + titre) */
-  padding-top: calc(var(--ifm-navbar-height) + 16px);
+  padding-top: 16px;
   margin-bottom: 12px;
 }
 
@@ -155,4 +155,9 @@ body.bg-secondary::before {
 /* CaseDetail: pas du tout visible */
 body.bg-none::before {
   opacity: 0;
+}
+
+h1:first-child {
+    --ifm-h1-font-size: 3rem;
+    margin-bottom: calc(var(--ifm-h1-vertical-rhythm-bottom) * var(--ifm-leading));
 }

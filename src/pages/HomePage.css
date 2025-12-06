@@ -3,7 +3,7 @@
 /* Page container */
 .homepage {
   position: relative;
-  min-height: 100vh;
+  min-height: calc(100vh - var(--ifm-navbar-height));
   overflow: hidden;
 }
 
@@ -11,17 +11,19 @@
 .hero {
   position: relative;
   z-index: 1;
-  min-height: 100vh;
+
+  min-height: calc(100vh - var(--ifm-navbar-height));
 
   display: flex;
   align-items: flex-start;
   justify-content: flex-start;
 
   padding:
-    calc(var(--ifm-navbar-height) + clamp(14px, 6vh, 72px))
+    clamp(14px, 6vh, 72px)
     clamp(16px, 4.5vw, 48px)
     clamp(52px, 16vh, 220px);
 }
+
 
 /* Bloc texte principal */
 .hero-text {
@@ -133,8 +135,9 @@
 /* Responsive */
 @media (max-width: 640px) {
   .hero {
-    padding: calc(var(--ifm-navbar-height) + 22px) 14px 56px;
+    padding: 22px 14px 56px;
   }
+
 
   .hero-text {
     max-width: 100%;
