@@ -322,13 +322,10 @@
   padding-left: 1rem;
   list-style: none;
   position: relative;
-
-  /* rend le bloc très légèrement “plus haut” comme Infima */
   padding-top: 0.12rem;
   padding-bottom: 0.12rem;
-
   outline: none;
-  font-weight: 500;
+  font-weight: 600;
   line-height: var(--ifm-line-height-base);
 }
 
