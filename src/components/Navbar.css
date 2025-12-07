@@ -96,7 +96,7 @@ img.logo {
 
 .nav-links {
   display: flex;
-  font-weight: var(--ifm-font-weight-semibold);
+  font-weight: 600;
   gap: 0;
 }
 
