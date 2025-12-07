@@ -148,6 +148,23 @@ body {
 html {
   font: var(--ifm-font-size-base) / var(--ifm-line-height-base) var(--ifm-font-family-base);
 }
+/* ✅ Typo globale cohérente (évite les différences Firefox/Chrome) */
+:where(body) {
+  font-family: var(--ifm-font-family-base);
+  font-weight: 400;
+}
+
+/* Héritage de la typo pour tous les contrôles (Firefox/Chrome diffèrent sinon) */
+:where(button, input, textarea, select, optgroup) {
+  font: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+}
+
+/* Optionnel : évite les “faux gras” synthétisés */
+:where(html) {
+  font-synthesis: none;
+}
 
 
 /* 🤸 Animation du logo */
