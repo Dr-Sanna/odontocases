@@ -19,7 +19,6 @@
   top: calc(var(--ifm-navbar-height, 64px));
   align-self: start;
   height: calc(100vh - var(--ifm-navbar-height, 64px));
-  background: #fff;
   border-right: 1px solid #ececf1;
   box-shadow: inset -1px 0 0 rgba(0, 0, 0, 0.02);
 
@@ -27,6 +26,7 @@
   overflow: hidden;
   transition: width 0.2s ease, transform 0.22s ease;
   z-index: 2;
+  font-weight: var(--ifm-font-weight-semibold);
 }
 
 .cd-side.is-collapsed {
@@ -94,6 +94,7 @@
   padding: 8px 6px 8px 8px;
   list-style: none;
   overflow: auto;
+  line-height: 1.25;
 }
 
 .cd-side-list li + li {
@@ -102,10 +103,10 @@
 
 .cd-side-link {
   display: block;
-  padding: 8px 10px;
+  padding: var(--ifm-menu-link-padding-vertical) var(--ifm-menu-link-padding-horizontal);
   border-radius: 8px;
   text-decoration: none;
-  color: inherit;
+  color: var(--ifm-menu-color);
   border: 1px solid transparent;
   white-space: nowrap;
   overflow: hidden;
@@ -114,13 +115,12 @@
 }
 
 .cd-side-link:hover {
-  background: #f8f9fb;
-  border-color: #eef0f4;
+  background-color: var(--ifm-menu-color-background-hover);
 }
 
 .cd-side-link.active {
-  background: #eef4ff;
-  border-color: #dce8ff;
+  background-color: var(--ifm-menu-color-background-active);
+  color: var(--ifm-menu-color-active);
   font-weight: 600;
 }
 
@@ -186,6 +186,10 @@
   margin-bottom: 0.5rem;
 }
 
+.cd-page-header article>:first-child {
+  margin-top: 0;
+}
+
 /* Puce AU-DESSUS du titre */
 .cd-type-chip {
   margin: 2px 0 8px;
@@ -198,7 +202,7 @@
   background: #f1f1f1;
 }
 
-.cd-qa { background: #e8f5e9; }
+.cd-qa { background: var(--ifm-color-success-contrast-background); }
 .cd-quiz { background: #e3f2fd; }
 .cd-presentation { background: #fff3e0; }
 
@@ -424,29 +428,6 @@
 /* =========================
    Mode sombre
    ========================= */
-[data-theme="dark"] .cd-side {
-  background: #191a1e;
-  border-right-color: #2a2b31;
-}
-
-[data-theme="dark"] .cd-side-link:hover {
-  background: #22242a;
-  border-color: #2f3138;
-}
-
-[data-theme="dark"] .cd-side-link.active {
-  background: #1f2940;
-  border-color: #2a3a5a;
-}
-
-[data-theme="dark"] .cd-side-toggle {
-  background: transparent;
-  color: #f3f3f3;
-}
-
-[data-theme="dark"] .cd-side-toggle:hover {
-  background: #22242a;
-}
 
 [data-theme="dark"] .cd-content code {
   background: #1e1e20;

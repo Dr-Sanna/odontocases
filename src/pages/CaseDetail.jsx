@@ -323,6 +323,7 @@ export default function CaseDetail() {
 
       <main className="cd-main" aria-hidden={drawerOpen ? 'true' : 'false'}>
         <div className="cd-page-header">
+          <article>
           <Breadcrumbs items={breadcrumbItems} />
 
           <div className="cd-type-chip">
@@ -330,6 +331,7 @@ export default function CaseDetail() {
           </div>
 
           <PageTitle description={item?.excerpt || ''}>{item?.title || 'Cas clinique'}</PageTitle>
+          </article>
         </div>
 
         {error && <div className="cd-state error">{error}</div>}

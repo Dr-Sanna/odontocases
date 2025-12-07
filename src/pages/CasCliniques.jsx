@@ -306,7 +306,7 @@ function TypePicker({ onPick }) {
       <div className="cc-typegrid">
         <button className="cc-typecard" onClick={() => onPick('qa')} type="button">
           <span className="cc-type">Q/R</span>
-          <span className="cc-typedesc">Question / Réponse guidée</span>
+          <span className="cc-typedesc">12 articles issus du CNECO</span>
         </button>
         <button className="cc-typecard" onClick={() => onPick('quiz')} type="button">
           <span className="cc-type">Quizz</span>

@@ -15,12 +15,20 @@
   /* Fontes */
   --ifm-font-family-base: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
   --ifm-font-weight-semibold: 500;
+  --ifm-font-size-base: 100%;
+
+    /* Line-height global (donne la “hauteur” visuelle du summary) */
+  --ifm-line-height-base: 1.65;
 
   /* Couleurs primaires */
   --site-primary-hue-saturation: 167 68%;
   --site-primary-hue-saturation-light: 167 56%;
+  --ifm-color-emphasis-700: var(--ifm-color-gray-700);
   --ifm-color-emphasis-900: var(--ifm-color-gray-900);
+  --ifm-color-gray-300: #dadde1;
+  --ifm-color-gray-700: #606770;
   --ifm-color-gray-900: #1c1e21;
+  --ifm-hover-overlay: #0000000d;
 
   /* Navbar et links */
   --ifm-navbar-background-color: var(--ifm-background-surface-color);
@@ -40,56 +48,93 @@
   --ifm-navbar-shadow: var(--ifm-global-shadow-lw);
   --ifm-global-shadow-lw: 0 1px 2px 0 rgba(0, 0, 0, .1);
 
-  /* Menu alert (qa) */
+  /* Alert */
   --ifm-alert-border-color: var(--ifm-color-info-dark);
   --ifm-alert-background-color: var(--ifm-color-info-contrast-background);
-  
-  /* Line-height global (donne la “hauteur” visuelle du summary) */
-  --ifm-line-height-base: 1.65;
-
-  /* Padding des alertes (c’est souvent ça qui fait l’aération “invisible” quand tu compares) */
   --ifm-alert-padding-vertical: 1rem;
   --ifm-alert-padding-horizontal: 1rem;
   --ifm-alert-border-radius: 0.4rem;
 
-  /* Transition “fast” (utile si tu veux rester cohérent) */
+  /* Transition “fast” */
   --ifm-transition-fast: 200ms;
+  --ifm-transition-timing-default: cubic-bezier(.08, .52, .52, 1);
 
   /* Variables Docusaurus details */
   --docusaurus-details-summary-arrow-size: 0.38rem;
   --docusaurus-details-transition: transform 0.2s ease;
   --docusaurus-details-decoration-color: var(--ifm-alert-border-color);
 
+  /* Breadcrumbs */
+  --ifm-breadcrumb-size-multiplier: .8;
+  --ifm-breadcrumb-border-radius: 1.5rem;
+  --ifm-breadcrumb-padding-vertical: .4rem;
+  --ifm-breadcrumb-padding-horizontal: .8rem;
+  --ifm-breadcrumb-item-background-active: var(--ifm-hover-overlay);
+  --ifm-breadcrumb-color-active: var(--ifm-color-primary-darker) !important;
+  --ifm-breadcrumb-spacing: .5rem; 
+  --ifm-breadcrumb-separator: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpolygon points='79.093 0 48.907 30.187 146.72 128 48.907 225.813 79.093 256 207.093 128'/%3E%3C/svg%3E");
+  --ifm-breadcrumb-separator-filter: none;
+  --ifm-breadcrumb-separator-size: .5rem;
+  --ifm-breadcrumb-separator-size-multiplier: 1.25;
 
+  /* liste */
+  --ifm-list-margin: 1rem;
+  --ifm-list-left-padding: 2rem;
+
+  /* Menu */
+  --ifm-menu-color: var(--ifm-color-emphasis-700);
+  --ifm-menu-color-background-hover: var(--ifm-hover-overlay);
+  --ifm-menu-color-background-active: var(--ifm-hover-overlay);
+  --ifm-menu-color-active: var(--ifm-color-primary-darker) !important;
+  --ifm-menu-link-padding-vertical: .375rem;
+  --ifm-menu-link-padding-horizontal: .75rem;
+}
+
+  ul, ol {
+    margin: 0 0 var(--ifm-list-margin);
+    padding-left: var(--ifm-list-left-padding);
 }
 
 [data-theme=light] {
-    --ifm-color-primary: hsl(var(--site-primary-hue-saturation) 30%);
-    --ifm-color-primary-dark: hsl(var(--site-primary-hue-saturation) 26%);
-    --ifm-color-primary-darker: hsl(var(--site-primary-hue-saturation) 23%);
-    --ifm-color-primary-darkest: hsl(var(--site-primary-hue-saturation) 17%);
-    --ifm-color-primary-light: hsl(var(--site-primary-hue-saturation-light) 39%);
-    --ifm-color-primary-lighter: hsl(var(--site-primary-hue-saturation-light) 47%);
-    --ifm-color-primary-lightest: hsl(var(--site-primary-hue-saturation-light) 58%);
-    --ifm-background-color: #fff;
+    --ifm-color-primary: #2E8555;
+    --ifm-color-primary-dark: #29784C;
+    --ifm-color-primary-darker: #277148;
+    --ifm-color-primary-darkest: #205D3B;
+    --ifm-color-primary-light: #33925D;
+    --ifm-color-primary-lighter: #359962;
+    --ifm-color-primary-lightest: #3CAD6E;
+    --ifm-background-color: #ffffff;
     --ifm-color-content: var(--ifm-color-emphasis-900);
     --ifm-color-info-dark: #4cb3d4;
     --ifm-color-info-contrast-background: #eef9fd;
+    --ifm-color-success-contrast-background: #e6f6e6;
+    
 }
 
 [data-theme=dark] {
-    --ifm-color-primary: hsl(var(--site-primary-hue-saturation) 45%);
-    --ifm-color-primary-dark: hsl(var(--site-primary-hue-saturation) 41%);
-    --ifm-color-primary-darker: hsl(var(--site-primary-hue-saturation) 38%);
-    --ifm-color-primary-darkest: hsl(var(--site-primary-hue-saturation) 32%);
-    --ifm-color-primary-light: hsl(var(--site-primary-hue-saturation-light) 54%);
-    --ifm-color-primary-lighter: hsl(var(--site-primary-hue-saturation-light) 62%);
-    --ifm-color-primary-lightest: hsl(var(--site-primary-hue-saturation-light) 73%);
+  --ifm-color-primary: #25C2A0;
+    --ifm-color-primary-dark: #21AF90;
+    --ifm-color-primary-darker: #1FA588;
+    --ifm-color-primary-darkest: #1A8870;
+    --ifm-color-primary-light: #29D5B0;
+    --ifm-color-primary-lighter: #32D8B4;
+    --ifm-color-primary-lightest: #4FDDBF;
+    --ifm-background-color: #181920;
     --ifm-background-surface-color: #242526;
-    --ifm-background-color: #1b1b1d;
     --ifm-color-content: #e3e3e3;
+    --ifm-hover-overlay: #ffffff0d;
+    --ifm-color-emphasis-700: var(--ifm-color-gray-300);
+
+    /* Info */
     --ifm-color-info-dark: #4cb3d4;
     --ifm-color-info-contrast-background: #193c47;
+
+    /*Success*/
+    --ifm-color-success-contrast-background: #003100;
+
+    /*Breadcrumb*/
+    --ifm-breadcrumb-separator-filter: invert(64%) sepia(11%) saturate(0%) hue-rotate(149deg) brightness(99%) contrast(95%);
+    
 }
 
 /* 🎯 Application de base */
@@ -99,6 +144,11 @@ body {
   background-color: var(--ifm-background-color);
   color: var(--ifm-color-content);
 }
+
+html {
+  font: var(--ifm-font-size-base) / var(--ifm-line-height-base) var(--ifm-font-family-base);
+}
+
 
 /* 🤸 Animation du logo */
 @keyframes shake {
@@ -161,3 +211,4 @@ h1:first-child {
     --ifm-h1-font-size: 3rem;
     margin-bottom: calc(var(--ifm-h1-vertical-rhythm-bottom) * var(--ifm-leading));
 }
+
