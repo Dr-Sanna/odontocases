@@ -26,7 +26,7 @@
   overflow: hidden;
   transition: width 0.2s ease, transform 0.22s ease;
   z-index: 2;
-  font-weight: var(--ifm-font-weight-semibold);
+  font-weight: 600;
 }
 
 .cd-side.is-collapsed {

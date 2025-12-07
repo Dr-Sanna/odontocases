@@ -128,13 +128,14 @@
 /* Chip type */
 .cc-chip {
   font-size: 0.85rem;
+  font-weight: 600;
   padding: 0.25rem 0.6rem;
   border-radius: 999px;
   background: #f1f1f1;
   border: 1px solid transparent;
 }
 .cc-chip.cc-qa {
-  background: #e8f5e9;
+  background: var(--ifm-color-success-contrast-background);
 }
 .cc-chip.cc-quiz {
   background: #e3f2fd;
