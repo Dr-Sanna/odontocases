@@ -1,4 +1,10 @@
-/* src/pages/CaseDetail.css */
+/* src/pages/CaseDetail.css
+   - Nettoyé / trié
+   - Fix header sidebar (ne s’étire plus)
+   - Scroll tactile OK (liste scrollable réelle)
+   - Desktop: rail + clip-path anim conservé
+   - Mobile: off-canvas + scrim, sans clip-path/anim (fiable)
+*/
 
 /* =========================
    Shell
@@ -12,20 +18,22 @@
 }
 
 /* =========================
-   Sidebar (desktop)
+   Sidebar (base)
    ========================= */
 .cd-side {
   position: sticky;
-  top: calc(var(--ifm-navbar-height, 64px));
+  top: var(--ifm-navbar-height);
   align-self: start;
-  height: calc(100vh - var(--ifm-navbar-height, 64px));
+  height: calc(100vh - var(--ifm-navbar-height));
+  width: 300px;
+
   border-right: 1px solid #ececf1;
   box-shadow: inset -1px 0 0 rgba(0, 0, 0, 0.02);
-  background: var(--ifm-background-color);
-  width: 300px;
+  background: var(--ifm-background-surface-color);
+
   overflow: hidden;
   transition: width 0.2s ease, transform 0.22s ease;
-  z-index: 2;
+  z-index: 60;
   font-weight: 600;
 }
 
@@ -37,18 +45,27 @@
   pointer-events: none;
 }
 
+/* Layout interne: header fixe + liste scrollable + footer (toggle) */
 .cd-side-inner {
   position: relative;
-  display: grid;
-  grid-template-rows: 1fr auto;
   height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0; /* IMPORTANT pour le scroll interne */
 }
 
-/* contenu sidebar masqué par clip (desktop rail) */
+/* zone scroll (header + states + liste) */
 .cd-side-scroll {
-  display: grid;
-  grid-template-rows: auto 1fr;
-  min-height: 0;
+  flex: 1 1 auto;
+  min-height: 0; /* IMPORTANT */
+  display: flex;
+  flex-direction: column;
+}
+
+/* =========================
+   Desktop rail: clip-path + anim
+   ========================= */
+.cd-side-scroll {
   clip-path: inset(0 0 0 0);
 }
 
@@ -64,11 +81,25 @@
   animation: cd-hide 0.2s ease forwards;
 }
 
-/* bouton "Revenir en arrière" (mobile drawer) */
-.cd-side-top {
-  padding: 10px 10px 0;
+@keyframes cd-reveal {
+  from { clip-path: inset(0 100% 0 0); }
+  to   { clip-path: inset(0 0 0 0); }
 }
 
+@keyframes cd-hide {
+  from { clip-path: inset(0 0 0 0); }
+  to   { clip-path: inset(0 100% 0 0); }
+}
+
+/* =========================
+   Sidebar: header / états / liste
+   ========================= */
+.cd-side-top {
+  padding: 10px 10px 0;
+  flex: 0 0 auto;
+}
+
+/* bouton "Revenir en arrière" (drawer) */
 .cd-side-back {
   width: 100%;
   appearance: none;
@@ -87,24 +118,16 @@
   background-color: var(--ifm-menu-color-background-hover);
 }
 
-
-@keyframes cd-reveal {
-  from { clip-path: inset(0 100% 0 0); }
-  to   { clip-path: inset(0 0 0 0); }
-}
-
-@keyframes cd-hide {
-  from { clip-path: inset(0 0 0 0); }
-  to   { clip-path: inset(0 100% 0 0); }
-}
-
 .cd-side-header {
+  flex: 0 0 auto; /* FIX: ne s’étire pas */
   padding: 12px 14px;
   font-weight: 700;
   border-bottom: 1px solid #eee;
+  background: var(--ifm-background-surface-color);
 }
 
 .cd-side-state {
+  flex: 0 0 auto;
   padding: 12px 14px;
   opacity: 0.8;
 }
@@ -114,10 +137,18 @@
 }
 
 .cd-side-list {
+  flex: 1 1 auto;       /* FIX: prend le reste */
+  min-height: 0;        /* FIX: permet le scroll */
   margin: 0;
-  padding: 8px 6px 8px 8px;
+  padding: 8px 6px 14px 8px;
   list-style: none;
-  overflow: auto;
+
+  overflow-y: auto;     /* FIX: scroll vertical réel */
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+
   line-height: 1.25;
 }
 
@@ -132,9 +163,11 @@
   text-decoration: none;
   color: var(--ifm-menu-color);
   border: 1px solid transparent;
+
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+
   transition: background 0.12s ease, border-color 0.12s ease;
 }
 
@@ -148,8 +181,11 @@
   font-weight: 600;
 }
 
-/* Toggle sidebar (desktop) */
+/* =========================
+   Toggle sidebar (desktop rail footer)
+   ========================= */
 .cd-side-toggle {
+  flex: 0 0 auto;
   width: 100%;
   height: 48px;
   margin: 0;
@@ -157,9 +193,11 @@
   border: 0;
   border-top: 1px solid #e3e3ea;
   background: transparent;
+
   display: flex;
   align-items: center;
   justify-content: center;
+
   cursor: pointer;
   transition: background 0.12s ease;
 }
@@ -169,7 +207,7 @@
 }
 
 .cd-side-toggle:focus-visible {
-  outline: 2px solid var(--ifm-color-primary, #2563eb);
+  outline: 2px solid var(--ifm-color-primary);
   outline-offset: -2px;
 }
 
@@ -180,8 +218,6 @@
   right: 0;
   bottom: 0;
   top: auto;
-  height: 48px;
-  border-top: 1px solid #e3e3ea;
   z-index: 1;
 }
 
@@ -210,7 +246,7 @@
   margin-bottom: 0.5rem;
 }
 
-.cd-page-header article>:first-child {
+.cd-page-header article > :first-child {
   margin-top: 0;
 }
 
@@ -282,7 +318,7 @@
 }
 
 .cd-content a {
-  color: var(--ifm-color-primary, #2563eb);
+  color: var(--ifm-color-primary);
   text-decoration: underline;
 }
 
@@ -318,7 +354,7 @@
 }
 
 /* =========================
-   Q/A : triangle plein Docusaurus (calage top:.45rem)
+   Q/A (details)
    ========================= */
 .qa-section {
   margin-top: 24px;
@@ -340,7 +376,6 @@
   padding: var(--ifm-alert-padding-vertical) var(--ifm-alert-padding-horizontal);
 }
 
-/* summary */
 .qa-item > summary {
   cursor: pointer;
   padding-left: 1rem;
@@ -360,7 +395,6 @@
   content: "";
 }
 
-/* Triangle plein : copie du comportement Docusaurus */
 .qa-item > summary::before {
   content: "";
   border-width: var(--docusaurus-details-summary-arrow-size);
@@ -369,7 +403,7 @@
   transition: var(--docusaurus-details-transition);
   transform-origin: calc(var(--docusaurus-details-summary-arrow-size) / 2) 50%;
   position: absolute;
-  top: 0.45rem;     /* <- valeur Docusaurus */
+  top: 0.45rem;
   left: 0;
   transform: rotate(0deg);
 }
@@ -378,7 +412,6 @@
   transform: rotate(90deg);
 }
 
-/* Numéro + texte */
 .qa-num {
   display: inline;
   font-weight: inherit;
@@ -446,9 +479,63 @@
 }
 
 /* =========================
-   Mode sombre
+   Mobile/tablette: drawer + scrim
    ========================= */
+.cd-drawer-scrim {
+  display: none;
+}
 
+@media (max-width: 980px) {
+  .cd-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .cd-side {
+    position: fixed;
+    left: 0;
+    top: var(--ifm-navbar-height);
+    height: calc(100vh - var(--ifm-navbar-height));
+    width: min(86vw, 320px);
+    transform: translateX(-100%);
+    transition: transform 0.22s ease;
+    z-index: 60;
+    background: var(--ifm-background-surface-color);
+  }
+
+  .cd-shell.is-drawer-open .cd-side {
+    transform: translateX(0);
+  }
+
+  /* Sur mobile: fiabiliser scroll tactile (pas de clip/anim) */
+  .cd-side-scroll {
+    clip-path: none !important;
+    animation: none !important;
+  }
+
+  .cd-drawer-scrim {
+    display: block;
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: var(--ifm-navbar-height);
+    bottom: 0;
+    z-index: 55;
+    background: rgba(0, 0, 0, 0.35);
+  }
+
+  .casedetail {
+    padding-right: 16px;
+  }
+
+  /* desktop-only toggle: caché sur mobile */
+  .cd-side-toggle {
+    display: none;
+  }
+}
+
+/* =========================
+   Mode sombre (compléments)
+   ========================= */
 [data-theme="dark"] .cd-content code {
   background: #1e1e20;
 }
@@ -466,69 +553,6 @@
 [data-theme="dark"] .cd-copyright {
   border-top-color: #2a3a5a;
   color: #d6d9df;
-}
-
-/* =========================
-   Mobile/tablette: drawer + scrim
-   ========================= */
-.cd-drawer-scrim {
-  display: none;
-}
-
-/* comme demandé: sur mobile, menu fermé par défaut et ouverture via navbar */
-@media (max-width: 980px) {
-  .cd-shell {
-    grid-template-columns: 1fr;
-  }
-
-  /* sidebar off-canvas */
-  .cd-side {
-    position: fixed;
-    left: 0;
-    top: calc(var(--ifm-navbar-height, 64px));
-    width: min(86vw, 320px);
-    height: calc(100vh - var(--ifm-navbar-height, 64px));
-    z-index: 60;
-
-    /* fermé par défaut */
-    transform: translateX(-100%);
-    width: min(86vw, 320px);
-
-    /* pas de rail-collapse en mobile */
-    transition: transform 0.22s ease;
-  }
-
-  /* ouverture */
-  .cd-shell.is-drawer-open .cd-side {
-    transform: translateX(0);
-  }
-
-  /* scrim au-dessus du contenu */
-  .cd-drawer-scrim {
-    display: block;
-    position: fixed;
-    left: 0;
-    right: 0;
-    top: calc(var(--ifm-navbar-height, 64px));
-    bottom: 0;
-    z-index: 55;
-    background: rgba(0, 0, 0, 0.35);
-  }
-
-  /* le main ne doit pas bouger */
-  .cd-main {
-    padding: 1rem;
-    padding-bottom: 2rem;
-  }
-
-  .casedetail {
-    padding-right: 16px;
-  }
-
-  /* desktop-only toggle en bas: caché en mobile */
-  .cd-side-toggle {
-    display: none;
-  }
 }
 
 /* =========================
@@ -561,7 +585,9 @@
   100% { background-position: 240px 0; }
 }
 
-/* Tables CKEditor (HTML) + tables Markdown */
+/* =========================
+   Tables CKEditor (HTML) + tables Markdown
+   ========================= */
 .cd-content figure.table {
   margin: 0.9em 0;
 }
@@ -571,18 +597,16 @@
   border-collapse: collapse;
   margin: 0.9em 0;
 
-  /* scroll horizontal propre sur mobile */
-  display: block;
+  display: block; /* scroll horizontal */
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
 }
 
-/* ✅ CKEditor resized : aide à respecter les % du colgroup */
+/* CKEditor resized : aide à respecter les % du colgroup */
 .cd-content table.ck-table-resized {
   table-layout: fixed;
 }
 
-/* garder le comportement de vraie table à l’intérieur du scroll */
 .cd-content table thead,
 .cd-content table tbody,
 .cd-content table tfoot {
@@ -614,45 +638,37 @@
 /* =========================
    Harmonisation images dans tableaux (CKEditor)
    ========================= */
-
-/* En tableau: pas de grosses marges auto */
 .cd-content td img,
 .cd-content td figure.image,
 .cd-content td figure.table {
   margin: 0;
 }
 
-/* CKEditor met souvent un width inline sur figure.image (centered + resized) :
-   en tableau, on autorise à remplir la cellule */
 .cd-content td figure.image {
   width: 100% !important;
   max-width: 100% !important;
 }
 
-/* Image dans cellule: remplit la largeur, mais hauteur bornée -> rendu homogène */
 .cd-content td img {
   display: block;
   width: 100%;
   max-width: 100%;
   height: auto;
-
-  /* ajuste ces bornes selon ton goût */
   max-height: clamp(72px, 18vw, 250px);
-
   object-fit: contain;
   border-radius: 8px;
-
-  /* enlève l'effet "trop d’air" en vertical */
   vertical-align: middle;
 }
 
-/* Optionnel: si tu as des cellules avec uniquement une image, tu peux réduire le padding */
 .cd-content td:has(img),
 .cd-content td:has(figure.image) {
   padding-top: 0.35rem;
   padding-bottom: 0.35rem;
 }
 
+/* =========================
+   Drawer back (si utilisé)
+   ========================= */
 .cd-drawer-back {
   width: 100%;
   appearance: none;
@@ -660,13 +676,13 @@
   background: transparent;
   text-align: left;
   padding: 12px 14px;
-  border-bottom: 1px solid rgba(0,0,0,0.08);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   font-weight: 700;
   cursor: pointer;
 }
 
 [data-theme="dark"] .cd-drawer-back {
-  border-bottom-color: rgba(255,255,255,0.10);
+  border-bottom-color: rgba(255, 255, 255, 0.10);
 }
 
 .cd-drawer-back:hover {
