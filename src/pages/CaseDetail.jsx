@@ -2,6 +2,7 @@
 /**
  * - Mobile/tablette: drawer (piloté par Navbar via context), fermé par défaut
  * - Desktop: collapse rail (localStorage)
+ * - CKEditor: support HTML (tables, colgroup/col widths) via rehype-raw + sanitize schema
  * - Q/R: triangle plein Docusaurus via ::before (CSS)
  */
 
@@ -12,11 +13,14 @@ import PageTitle from '../components/PageTitle';
 import Breadcrumbs from '../components/Breadcrumbs';
 import { strapiFetch, imgUrl } from '../lib/strapi';
 import { getCaseFromCache, setCaseToCache, prefetchCase } from '../lib/caseCache';
+
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import rehypeSanitize from 'rehype-sanitize';
-import { BottomExpandIcon, BottomCollapseIcon } from '../components/Icons';
 
+import rehypeRaw from 'rehype-raw';
+import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
+
+import { BottomExpandIcon, BottomCollapseIcon } from '../components/Icons';
 import { useCaseDetailSidebar } from '../ui/CaseDetailSidebarContext';
 
 import './CaseDetail.css';
@@ -38,7 +42,6 @@ function useIsNarrow(maxWidthPx = 980) {
     const mq = window.matchMedia(`(max-width: ${maxWidthPx}px)`);
     const onChange = () => setIsNarrow(mq.matches);
 
-    // init + subscribe
     onChange();
     if (mq.addEventListener) mq.addEventListener('change', onChange);
     else mq.addListener(onChange);
@@ -77,6 +80,74 @@ function typeLabelFromKey(typeKey) {
   return null;
 }
 
+/**
+ * ✅ Schéma sanitize pour CKEditor :
+ * - autorise les tables + colgroup/col + style="width:..."
+ * - garde img width/height/style (utile si CKEditor met des dimensions)
+ */
+const ckeditorSchema = (() => {
+  const tagNames = new Set([...(defaultSchema.tagNames || [])]);
+  [
+    'table',
+    'thead',
+    'tbody',
+    'tfoot',
+    'tr',
+    'td',
+    'th',
+    'colgroup',
+    'col',
+    'figure',
+    'figcaption',
+  ].forEach((t) => tagNames.add(t));
+
+  const attributes = {
+    ...(defaultSchema.attributes || {}),
+    table: [...(defaultSchema.attributes?.table || []), 'className', 'style'],
+    thead: [...(defaultSchema.attributes?.thead || []), 'className', 'style'],
+    tbody: [...(defaultSchema.attributes?.tbody || []), 'className', 'style'],
+    tfoot: [...(defaultSchema.attributes?.tfoot || []), 'className', 'style'],
+    tr: [...(defaultSchema.attributes?.tr || []), 'className', 'style'],
+    td: [
+      ...(defaultSchema.attributes?.td || []),
+      'className',
+      'style',
+      'colspan',
+      'rowspan',
+    ],
+    th: [
+      ...(defaultSchema.attributes?.th || []),
+      'className',
+      'style',
+      'colspan',
+      'rowspan',
+      'scope',
+    ],
+    colgroup: [...(defaultSchema.attributes?.colgroup || []), 'className', 'style', 'span'],
+    col: [...(defaultSchema.attributes?.col || []), 'className', 'style', 'span'],
+    figure: [...(defaultSchema.attributes?.figure || []), 'className', 'style'],
+    figcaption: [...(defaultSchema.attributes?.figcaption || []), 'className', 'style'],
+    img: [...(defaultSchema.attributes?.img || []), 'style', 'width', 'height'],
+  };
+
+  return {
+    ...defaultSchema,
+    tagNames: Array.from(tagNames),
+    attributes,
+  };
+})();
+
+function Markdown({ children }) {
+  return (
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm]}
+      rehypePlugins={[rehypeRaw, [rehypeSanitize, ckeditorSchema]]}
+    >
+      {children}
+    </ReactMarkdown>
+  );
+}
+
 export default function CaseDetail() {
   const { slug } = useParams();
   const location = useLocation();
@@ -112,7 +183,7 @@ export default function CaseDetail() {
     if (isNarrow) setMobileOpen(false);
   }, [slug, isNarrow, setMobileOpen]);
 
-  // Quand le drawer mobile est ouvert: esc + lock scroll
+  // Drawer mobile: esc + lock scroll
   useEffect(() => {
     if (!isNarrow) return;
 
@@ -277,7 +348,7 @@ export default function CaseDetail() {
 
     el.addEventListener('click', onClick);
     return () => el.removeEventListener('click', onClick);
-  }, [item?.content]);
+  }, [item?.content, qaList?.length]);
 
   useEffect(() => {
     if (!lightbox) return;
@@ -324,13 +395,13 @@ export default function CaseDetail() {
       <main className="cd-main" aria-hidden={drawerOpen ? 'true' : 'false'}>
         <div className="cd-page-header">
           <article>
-          <Breadcrumbs items={breadcrumbItems} />
+            <Breadcrumbs items={breadcrumbItems} />
 
-          <div className="cd-type-chip">
-            <span className={`cd-chip cd-${item?.type || 'qa'}`}>{typeLabel}</span>
-          </div>
+            <div className="cd-type-chip">
+              <span className={`cd-chip cd-${item?.type || 'qa'}`}>{typeLabel}</span>
+            </div>
 
-          <PageTitle description={item?.excerpt || ''}>{item?.title || 'Cas clinique'}</PageTitle>
+            <PageTitle description={item?.excerpt || ''}>{item?.title || 'Cas clinique'}</PageTitle>
           </article>
         </div>
 
@@ -348,9 +419,7 @@ export default function CaseDetail() {
         <article className="casedetail" ref={contentRef}>
           {item?.content && (
             <div className="cd-content">
-              <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSanitize]}>
-                {item.content}
-              </ReactMarkdown>
+              <Markdown>{item.content}</Markdown>
             </div>
           )}
 
@@ -369,9 +438,7 @@ export default function CaseDetail() {
                     </summary>
 
                     <div className="qa-a">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSanitize]}>
-                        {ans}
-                      </ReactMarkdown>
+                      <Markdown>{ans}</Markdown>
                     </div>
                   </details>
                 );
@@ -384,18 +451,14 @@ export default function CaseDetail() {
               {item?.references && (
                 <div className="cd-references">
                   <h3>Références</h3>
-                  <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSanitize]}>
-                    {item.references}
-                  </ReactMarkdown>
+                  <Markdown>{item.references}</Markdown>
                 </div>
               )}
 
               {item?.copyright && (
                 <div className="cd-copyright">
                   <h3>Copyright</h3>
-                  <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSanitize]}>
-                    {item.copyright}
-                  </ReactMarkdown>
+                  <Markdown>{item.copyright}</Markdown>
                 </div>
               )}
             </section>
@@ -433,7 +496,7 @@ function AsideSameType({ currentSlug, currentType, collapsed, onToggle, prefetch
   const animTimerRef = useRef(null);
 
   const handleToggle = () => {
-    // Desktop: conserve ton anim “rail”
+    // Desktop: conserve l'anim “rail”
     if (!isNarrow) {
       const nextCollapsed = !collapsed;
       setAnim(nextCollapsed ? 'closing' : 'opening');

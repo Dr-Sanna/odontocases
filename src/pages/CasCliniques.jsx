@@ -17,7 +17,7 @@ import './CasCliniques.css';
 const TYPE_TABS = [
   { key: 'all', label: 'Tous' },
   { key: 'qa', label: 'Q/R' },
-  { key: 'quiz', label: 'Quizz' },
+  { key: 'quiz', label: 'Quiz' },
   { key: 'presentation', label: 'Présentation' },
 ];
 
@@ -53,7 +53,7 @@ function compareBySlugNumberAsc(aNode, bNode) {
 
 function typeLabel(type) {
   if (type === 'qa') return 'Q/R';
-  if (type === 'quiz') return 'Quizz';
+  if (type === 'quiz') return 'Quiz';
   return 'Présentation';
 }
 
@@ -309,8 +309,8 @@ function TypePicker({ onPick }) {
           <span className="cc-typedesc">12 articles issus du CNECO</span>
         </button>
         <button className="cc-typecard" onClick={() => onPick('quiz')} type="button">
-          <span className="cc-type">Quizz</span>
-          <span className="cc-typedesc">Quizz interactif</span>
+          <span className="cc-type">Quiz</span>
+          <span className="cc-typedesc">Quiz interactif</span>
         </button>
         <button className="cc-typecard" onClick={() => onPick('presentation')} type="button">
           <span className="cc-type">Présentation</span>

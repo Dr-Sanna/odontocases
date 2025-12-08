@@ -537,3 +537,95 @@
   0%   { background-position: -240px 0; }
   100% { background-position: 240px 0; }
 }
+
+/* Tables CKEditor (HTML) + tables Markdown */
+.cd-content figure.table {
+  margin: 0.9em 0;
+}
+
+.cd-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.9em 0;
+
+  /* scroll horizontal propre sur mobile */
+  display: block;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ✅ CKEditor resized : aide à respecter les % du colgroup */
+.cd-content table.ck-table-resized {
+  table-layout: fixed;
+}
+
+/* garder le comportement de vraie table à l’intérieur du scroll */
+.cd-content table thead,
+.cd-content table tbody,
+.cd-content table tfoot {
+  display: table;
+  width: 100%;
+}
+
+.cd-content th,
+.cd-content td {
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  padding: 0.5rem 0.65rem;
+  vertical-align: top;
+}
+
+.cd-content th {
+  font-weight: 700;
+  background: rgba(0, 0, 0, 0.03);
+}
+
+[data-theme="dark"] .cd-content th,
+[data-theme="dark"] .cd-content td {
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+[data-theme="dark"] .cd-content th {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* =========================
+   Harmonisation images dans tableaux (CKEditor)
+   ========================= */
+
+/* En tableau: pas de grosses marges auto */
+.cd-content td img,
+.cd-content td figure.image,
+.cd-content td figure.table {
+  margin: 0;
+}
+
+/* CKEditor met souvent un width inline sur figure.image (centered + resized) :
+   en tableau, on autorise à remplir la cellule */
+.cd-content td figure.image {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* Image dans cellule: remplit la largeur, mais hauteur bornée -> rendu homogène */
+.cd-content td img {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+
+  /* ajuste ces bornes selon ton goût */
+  max-height: clamp(72px, 18vw, 250px);
+
+  object-fit: contain;
+  border-radius: 8px;
+
+  /* enlève l'effet "trop d’air" en vertical */
+  vertical-align: middle;
+}
+
+/* Optionnel: si tu as des cellules avec uniquement une image, tu peux réduire le padding */
+.cd-content td:has(img),
+.cd-content td:has(figure.image) {
+  padding-top: 0.35rem;
+  padding-bottom: 0.35rem;
+}
