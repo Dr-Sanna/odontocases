@@ -1,13 +1,18 @@
 // src/pages/CaseDetail.jsx
 /**
- * - Mobile/tablette: drawer (piloté par Navbar via context), fermé par défaut
- * - Desktop: collapse rail (localStorage)
- * - CKEditor: support HTML (tables, colgroup/col widths) via rehype-raw + sanitize schema
- * - Q/R: triangle plein Docusaurus via ::before (CSS)
+ * Mobile/tablette:
+ * - Le bouton Navbar ouvre le drawer "cases"
+ * - En haut du drawer: bouton "Revenir" -> bascule en "nav" (les 4 liens)
+ *
+ * Desktop:
+ * - sidebar sticky + rail collapse (localStorage)
+ *
+ * CKEditor:
+ * - HTML autorisé via rehype-raw + sanitize schema (tables, colgroup, styles width)
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useParams, Link, useLocation } from 'react-router-dom';
+import { useParams, Link, NavLink, useLocation } from 'react-router-dom';
 
 import PageTitle from '../components/PageTitle';
 import Breadcrumbs from '../components/Breadcrumbs';
@@ -30,19 +35,16 @@ const LS_KEY_COLLAPSE = 'cd-sidebar-collapsed';
 const PUB_STATE = import.meta.env.DEV ? 'preview' : 'live';
 
 function useIsNarrow(maxWidthPx = 980) {
-  const get = () => {
-    if (typeof window === 'undefined' || !window.matchMedia) return false;
-    return window.matchMedia(`(max-width: ${maxWidthPx}px)`).matches;
-  };
-
+  const get = () => window.matchMedia?.(`(max-width: ${maxWidthPx}px)`)?.matches ?? false;
   const [isNarrow, setIsNarrow] = useState(get);
 
   useEffect(() => {
-    if (!window.matchMedia) return;
-    const mq = window.matchMedia(`(max-width: ${maxWidthPx}px)`);
-    const onChange = () => setIsNarrow(mq.matches);
+    const mq = window.matchMedia?.(`(max-width: ${maxWidthPx}px)`);
+    if (!mq) return;
 
+    const onChange = () => setIsNarrow(mq.matches);
     onChange();
+
     if (mq.addEventListener) mq.addEventListener('change', onChange);
     else mq.addListener(onChange);
 
@@ -55,7 +57,6 @@ function useIsNarrow(maxWidthPx = 980) {
   return isNarrow;
 }
 
-/** Tri numérique par slug (extrait le premier groupe de chiffres). */
 function compareBySlugNumberAsc(a, b) {
   const sa = String(a?.slug ?? '');
   const sb = String(b?.slug ?? '');
@@ -80,11 +81,6 @@ function typeLabelFromKey(typeKey) {
   return null;
 }
 
-/**
- * ✅ Schéma sanitize pour CKEditor :
- * - autorise les tables + colgroup/col + style="width:..."
- * - garde img width/height/style (utile si CKEditor met des dimensions)
- */
 const ckeditorSchema = (() => {
   const tagNames = new Set([...(defaultSchema.tagNames || [])]);
   [
@@ -108,21 +104,8 @@ const ckeditorSchema = (() => {
     tbody: [...(defaultSchema.attributes?.tbody || []), 'className', 'style'],
     tfoot: [...(defaultSchema.attributes?.tfoot || []), 'className', 'style'],
     tr: [...(defaultSchema.attributes?.tr || []), 'className', 'style'],
-    td: [
-      ...(defaultSchema.attributes?.td || []),
-      'className',
-      'style',
-      'colspan',
-      'rowspan',
-    ],
-    th: [
-      ...(defaultSchema.attributes?.th || []),
-      'className',
-      'style',
-      'colspan',
-      'rowspan',
-      'scope',
-    ],
+    td: [...(defaultSchema.attributes?.td || []), 'className', 'style', 'colspan', 'rowspan'],
+    th: [...(defaultSchema.attributes?.th || []), 'className', 'style', 'colspan', 'rowspan', 'scope'],
     colgroup: [...(defaultSchema.attributes?.colgroup || []), 'className', 'style', 'span'],
     col: [...(defaultSchema.attributes?.col || []), 'className', 'style', 'span'],
     figure: [...(defaultSchema.attributes?.figure || []), 'className', 'style'],
@@ -130,11 +113,7 @@ const ckeditorSchema = (() => {
     img: [...(defaultSchema.attributes?.img || []), 'style', 'width', 'height'],
   };
 
-  return {
-    ...defaultSchema,
-    tagNames: Array.from(tagNames),
-    attributes,
-  };
+  return { ...defaultSchema, tagNames: Array.from(tagNames), attributes };
 })();
 
 function Markdown({ children }) {
@@ -155,6 +134,9 @@ export default function CaseDetail() {
   const isNarrow = useIsNarrow(980);
   const { mobileOpen, setMobileOpen } = useCaseDetailSidebar();
 
+  // ✅ vue du drawer mobile sur CaseDetail
+  const [drawerView, setDrawerView] = useState('cases'); // 'cases' | 'nav'
+
   // Prefetch passé depuis la liste
   const pre = location.state?.prefetch;
   const provisional = pre && pre.slug === slug ? pre : null;
@@ -169,7 +151,6 @@ export default function CaseDetail() {
     return null;
   });
 
-  // Desktop collapse (rail)
   const [collapsedDesktop, setCollapsedDesktop] = useState(() => {
     try {
       return localStorage.getItem(LS_KEY_COLLAPSE) === '1';
@@ -178,10 +159,22 @@ export default function CaseDetail() {
     }
   });
 
-  // Mobile: fermé par défaut à chaque entrée/changement de slug
+  // Mobile: à chaque slug, on ferme
   useEffect(() => {
     if (isNarrow) setMobileOpen(false);
   }, [slug, isNarrow, setMobileOpen]);
+
+  // ✅ en mobile, quand on ouvre -> on revient sur la liste de cas
+  useEffect(() => {
+    if (isNarrow && mobileOpen) setDrawerView('cases');
+  }, [isNarrow, mobileOpen]);
+
+  // ✅ si on quitte la page, on force la fermeture (robuste)
+  useEffect(() => {
+    return () => {
+      setMobileOpen(false);
+    };
+  }, [setMobileOpen]);
 
   // Drawer mobile: esc + lock scroll
   useEffect(() => {
@@ -211,7 +204,6 @@ export default function CaseDetail() {
     };
   }, [mobileOpen, isNarrow, setMobileOpen]);
 
-  // collapsed effectif selon breakpoint
   const collapsed = isNarrow ? !mobileOpen : collapsedDesktop;
 
   const toggleSidebar = () => {
@@ -219,7 +211,6 @@ export default function CaseDetail() {
       setMobileOpen((v) => !v);
       return;
     }
-
     setCollapsedDesktop((prev) => {
       const next = !prev;
       try {
@@ -229,7 +220,7 @@ export default function CaseDetail() {
     });
   };
 
-  // Chargement (cache instantané + fetch)
+  // Chargement (cache + fetch)
   useEffect(() => {
     let ignore = false;
 
@@ -362,13 +353,7 @@ export default function CaseDetail() {
   const drawerOpen = isNarrow && mobileOpen;
 
   return (
-    <div
-      className={[
-        'cd-shell',
-        collapsed ? 'is-collapsed' : '',
-        drawerOpen ? 'is-drawer-open' : '',
-      ].join(' ')}
-    >
+    <div className={['cd-shell', collapsed ? 'is-collapsed' : '', drawerOpen ? 'is-drawer-open' : ''].join(' ')}>
       <AsideSameType
         currentSlug={slug}
         currentType={item?.type}
@@ -376,9 +361,11 @@ export default function CaseDetail() {
         onToggle={toggleSidebar}
         prefetchRelated={location.state?.relatedPrefetch || null}
         isNarrow={isNarrow}
+        drawerView={drawerView}
+        setDrawerView={setDrawerView}
+        closeMobile={() => setMobileOpen(false)}
       />
 
-      {/* scrim mobile/tablette */}
       {drawerOpen && (
         <div
           className="cd-drawer-scrim"
@@ -392,7 +379,7 @@ export default function CaseDetail() {
         />
       )}
 
-      <main className="cd-main" aria-hidden={drawerOpen ? 'true' : 'false'}>
+      <main className="cd-main" aria-hidden={drawerOpen}>
         <div className="cd-page-header">
           <article>
             <Breadcrumbs items={breadcrumbItems} />
@@ -484,10 +471,17 @@ export default function CaseDetail() {
   );
 }
 
-/**
- * AsideSameType (préfetch + animation)
- */
-function AsideSameType({ currentSlug, currentType, collapsed, onToggle, prefetchRelated, isNarrow }) {
+function AsideSameType({
+  currentSlug,
+  currentType,
+  collapsed,
+  onToggle,
+  prefetchRelated,
+  isNarrow,
+  drawerView,
+  setDrawerView,
+  closeMobile,
+}) {
   const [related, setRelated] = useState([]);
   const [loadingList, setLoadingList] = useState(false);
   const [errList, setErrList] = useState('');
@@ -496,7 +490,6 @@ function AsideSameType({ currentSlug, currentType, collapsed, onToggle, prefetch
   const animTimerRef = useRef(null);
 
   const handleToggle = () => {
-    // Desktop: conserve l'anim “rail”
     if (!isNarrow) {
       const nextCollapsed = !collapsed;
       setAnim(nextCollapsed ? 'closing' : 'opening');
@@ -507,18 +500,11 @@ function AsideSameType({ currentSlug, currentType, collapsed, onToggle, prefetch
         animTimerRef.current = null;
       }, 240);
     }
-
     onToggle();
   };
 
-  useEffect(
-    () => () => {
-      if (animTimerRef.current) clearTimeout(animTimerRef.current);
-    },
-    []
-  );
+  useEffect(() => () => animTimerRef.current && clearTimeout(animTimerRef.current), []);
 
-  // Boot instantané via prefetch/session
   useEffect(() => {
     let booted = false;
 
@@ -539,8 +525,7 @@ function AsideSameType({ currentSlug, currentType, collapsed, onToggle, prefetch
         if (raw) {
           const arr = JSON.parse(raw);
           if (Array.isArray(arr) && arr.length) {
-            const list = arr.filter((it) => it?.slug).sort(compareBySlugNumberAsc);
-            setRelated(list);
+            setRelated(arr.filter((it) => it?.slug).sort(compareBySlugNumberAsc));
             booted = true;
           }
         }
@@ -550,7 +535,6 @@ function AsideSameType({ currentSlug, currentType, collapsed, onToggle, prefetch
     setLoadingList(!booted);
   }, [prefetchRelated, currentType]);
 
-  // Fetch complet
   useEffect(() => {
     let ignore = false;
 
@@ -582,11 +566,10 @@ function AsideSameType({ currentSlug, currentType, collapsed, onToggle, prefetch
         const normalized = list
           .map((n) => (n?.attributes ? n.attributes : n))
           .filter(Boolean)
-          .filter((it) => it.slug);
+          .filter((it) => it.slug)
+          .sort(compareBySlugNumberAsc);
 
-        normalized.sort(compareBySlugNumberAsc);
         setRelated(normalized);
-
         try {
           sessionStorage.setItem(`cd-prefetch-${currentType}`, JSON.stringify(normalized));
         } catch {}
@@ -603,12 +586,9 @@ function AsideSameType({ currentSlug, currentType, collapsed, onToggle, prefetch
     };
   }, [currentType]);
 
-  // Prefetch (limite 20)
   useEffect(() => {
     if (!Array.isArray(related) || related.length === 0) return;
-    const limited = related.slice(0, 20);
-
-    for (const it of limited) {
+    for (const it of related.slice(0, 20)) {
       if (!it?.slug || it.slug === currentSlug) continue;
       prefetchCase(it.slug, { publicationState: PUB_STATE }).catch(() => {});
     }
@@ -627,43 +607,90 @@ function AsideSameType({ currentSlug, currentType, collapsed, onToggle, prefetch
   const isAnimating = !isNarrow && anim !== '';
   const overlayShowsExpand = collapsed || anim === 'closing';
 
+  const showNavInsteadOfCases = isNarrow && drawerView === 'nav';
+
   return (
     <aside className={`cd-side ${collapsed ? 'is-collapsed' : ''} ${anim} ${isAnimating ? 'is-animating' : ''}`}>
       <div className="cd-side-inner">
         <div className="cd-side-scroll">
-          <div className="cd-side-header">{labelType}</div>
+          {showNavInsteadOfCases ? (
+            <>
+              <div className="cd-side-header">Menu</div>
 
-          {loadingList && <div className="cd-side-state">Chargement…</div>}
-          {errList && !loadingList && <div className="cd-side-state error">{errList}</div>}
+              <ul className="cd-side-list">
+                <li>
+                  <button type="button" className="cd-side-back" onClick={() => setDrawerView('cases')}>
+                    ← Liste des cas
+                  </button>
+                </li>
 
-          {!errList && (
-            <ul className="cd-side-list">
-              {related.map((it) => {
-                const active = it.slug === currentSlug;
-                return (
-                  <li key={it.slug}>
-                    {active ? (
-                      <span className="cd-side-link active" aria-current="page">
-                        {it.title || it.slug}
-                      </span>
-                    ) : (
-                      <Link
-                        className="cd-side-link"
-                        to={`/cas-cliniques/${it.slug}`}
-                        onMouseEnter={() => prefetchCase(it.slug, { publicationState: PUB_STATE }).catch(() => {})}
-                        onFocus={() => prefetchCase(it.slug, { publicationState: PUB_STATE }).catch(() => {})}
-                      >
-                        {it.title || it.slug}
-                      </Link>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
+                <li>
+                  <NavLink className="cd-side-link" to="/cas-cliniques" onClick={closeMobile}>
+                    Cas cliniques
+                  </NavLink>
+                </li>
+                <li>
+                  <NavLink className="cd-side-link" to="/randomisation" onClick={closeMobile}>
+                    Randomisation
+                  </NavLink>
+                </li>
+                <li>
+                  <NavLink className="cd-side-link" to="/documentation" onClick={closeMobile}>
+                    Documentation
+                  </NavLink>
+                </li>
+                <li>
+                  <NavLink className="cd-side-link" to="/liens-utiles" onClick={closeMobile}>
+                    Liens utiles
+                  </NavLink>
+                </li>
+              </ul>
+            </>
+          ) : (
+            <>
+              {isNarrow && (
+                <div className="cd-side-top">
+                  <button type="button" className="cd-side-back" onClick={() => setDrawerView('nav')}>
+                    ← Revenir
+                  </button>
+                </div>
+              )}
+
+              <div className="cd-side-header">{labelType}</div>
+
+              {loadingList && <div className="cd-side-state">Chargement…</div>}
+              {errList && !loadingList && <div className="cd-side-state error">{errList}</div>}
+
+              {!errList && (
+                <ul className="cd-side-list">
+                  {related.map((it) => {
+                    const active = it.slug === currentSlug;
+                    return (
+                      <li key={it.slug}>
+                        {active ? (
+                          <span className="cd-side-link active" aria-current="page">
+                            {it.title || it.slug}
+                          </span>
+                        ) : (
+                          <Link
+                            className="cd-side-link"
+                            to={`/cas-cliniques/${it.slug}`}
+                            onClick={() => isNarrow && closeMobile()}
+                            onMouseEnter={() => prefetchCase(it.slug, { publicationState: PUB_STATE }).catch(() => {})}
+                            onFocus={() => prefetchCase(it.slug, { publicationState: PUB_STATE }).catch(() => {})}
+                          >
+                            {it.title || it.slug}
+                          </Link>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </>
           )}
         </div>
 
-        {/* Desktop uniquement: toggle rail en bas */}
         {!isNarrow &&
           (showOverlay ? (
             <div

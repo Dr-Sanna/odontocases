@@ -10,6 +10,7 @@ import LiensUtiles from './pages/LiensUtiles';
 import ScrollToTop from './components/ScrollToTop';
 import CaseDetail from './pages/CaseDetail';
 
+import { MobileDrawerProvider } from './ui/MobileDrawerContext';
 import { CaseDetailSidebarProvider } from './ui/CaseDetailSidebarContext';
 
 function BackgroundRouteSync() {
@@ -17,11 +18,9 @@ function BackgroundRouteSync() {
 
   useEffect(() => {
     const body = document.body;
-
     body.classList.remove('bg-home', 'bg-secondary', 'bg-none');
 
-    // Case detail : /cas-cliniques/:slug
-    const isCaseDetail = /^\/cas-cliniques\/[^/]+$/.test(pathname);
+    const isCaseDetail = /^\/cas-cliniques\/[^/]+/.test(pathname);
 
     if (pathname === '/') body.classList.add('bg-home');
     else if (isCaseDetail) body.classList.add('bg-none');
@@ -33,20 +32,22 @@ function BackgroundRouteSync() {
 
 export default function App() {
   return (
-    <CaseDetailSidebarProvider>
-      <BackgroundRouteSync />
+    <MobileDrawerProvider>
+      <CaseDetailSidebarProvider>
+        <BackgroundRouteSync />
 
-      <Navbar />
-      <ScrollToTop />
+        <Navbar />
+        <ScrollToTop />
 
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/cas-cliniques" element={<CasCliniques />} />
-        <Route path="/cas-cliniques/:slug" element={<CaseDetail />} />
-        <Route path="/randomisation" element={<Randomisation />} />
-        <Route path="/documentation" element={<Documentation />} />
-        <Route path="/liens-utiles" element={<LiensUtiles />} />
-      </Routes>
-    </CaseDetailSidebarProvider>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/cas-cliniques" element={<CasCliniques />} />
+          <Route path="/cas-cliniques/:slug" element={<CaseDetail />} />
+          <Route path="/randomisation" element={<Randomisation />} />
+          <Route path="/documentation" element={<Documentation />} />
+          <Route path="/liens-utiles" element={<LiensUtiles />} />
+        </Routes>
+      </CaseDetailSidebarProvider>
+    </MobileDrawerProvider>
   );
 }

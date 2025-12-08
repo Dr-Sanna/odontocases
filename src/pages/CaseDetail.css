@@ -21,7 +21,7 @@
   height: calc(100vh - var(--ifm-navbar-height, 64px));
   border-right: 1px solid #ececf1;
   box-shadow: inset -1px 0 0 rgba(0, 0, 0, 0.02);
-
+  background: var(--ifm-background-color);
   width: 300px;
   overflow: hidden;
   transition: width 0.2s ease, transform 0.22s ease;
@@ -63,6 +63,30 @@
 .cd-side.closing .cd-side-scroll {
   animation: cd-hide 0.2s ease forwards;
 }
+
+/* bouton "Revenir en arrière" (mobile drawer) */
+.cd-side-top {
+  padding: 10px 10px 0;
+}
+
+.cd-side-back {
+  width: 100%;
+  appearance: none;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+
+  padding: var(--ifm-menu-link-padding-vertical) var(--ifm-menu-link-padding-horizontal);
+  border-radius: 8px;
+  color: var(--ifm-menu-color);
+  font: inherit;
+}
+
+.cd-side-back:hover {
+  background-color: var(--ifm-menu-color-background-hover);
+}
+
 
 @keyframes cd-reveal {
   from { clip-path: inset(0 100% 0 0); }
@@ -357,7 +381,6 @@
 /* Numéro + texte */
 .qa-num {
   display: inline;
-  color: #0b4660;
   font-weight: inherit;
   white-space: nowrap;
   margin-right: 6px;
@@ -628,4 +651,24 @@
 .cd-content td:has(figure.image) {
   padding-top: 0.35rem;
   padding-bottom: 0.35rem;
+}
+
+.cd-drawer-back {
+  width: 100%;
+  appearance: none;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+[data-theme="dark"] .cd-drawer-back {
+  border-bottom-color: rgba(255,255,255,0.10);
+}
+
+.cd-drawer-back:hover {
+  background: var(--ifm-hover-overlay);
 }

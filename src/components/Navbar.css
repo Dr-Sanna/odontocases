@@ -166,3 +166,106 @@ img.logo {
     display: inline-flex;
   }
 }
+
+.nav-burger {
+  display: none;
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--ifm-navbar-link-color);
+  font-size: 1.35rem;
+  line-height: 1;
+  padding: 0.4rem 0.55rem;
+  border-radius: 10px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.nav-burger:focus-visible {
+  outline: 2px solid var(--ifm-color-primary);
+  outline-offset: 3px;
+}
+
+@media (max-width: 980px) {
+  .nav-burger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 0.25rem;
+  }
+
+  .nav-links {
+    display: none; /* liens passent dans drawer */
+  }
+}
+/* bouton menu mobile */
+.navbar-menu-button {
+  display: none;
+  appearance: none;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0.35rem 0.5rem;
+  border-radius: 10px;
+  color: var(--ifm-navbar-link-color);
+}
+
+.navbar-menu-button:hover {
+  background: var(--ifm-hover-overlay);
+}
+
+@media (max-width: 980px) {
+  .navbar-menu-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 0.35rem;
+  }
+
+  .nav-links {
+    display: none;
+  }
+}
+
+/* drawer nav (mobile) */
+.md-scrim {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: var(--ifm-navbar-height);
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 900;
+}
+
+.md-drawer {
+  position: fixed;
+  left: 0;
+  top: var(--ifm-navbar-height);
+  width: min(86vw, 320px);
+  height: calc(100vh - var(--ifm-navbar-height));
+  background: var(--ifm-background-surface-color);
+  border-right: 1px solid rgba(0, 0, 0, 0.08);
+  z-index: 950;
+  padding: 10px;
+}
+
+.md-nav {
+  display: grid;
+  gap: 6px;
+}
+
+.md-link {
+  display: block;
+  padding: var(--ifm-menu-link-padding-vertical) var(--ifm-menu-link-padding-horizontal);
+  border-radius: 10px;
+  text-decoration: none;
+  color: var(--ifm-menu-color);
+}
+
+.md-link:hover {
+  background: var(--ifm-menu-color-background-hover);
+}
