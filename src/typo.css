@@ -1,0 +1,173 @@
+:root {
+    --ifm-heading-color: inherit;
+    --ifm-heading-margin-top: 0;
+    --ifm-heading-margin-bottom: var(--ifm-spacing-vertical);
+    --ifm-heading-font-family: var(--ifm-font-family-base);
+    --ifm-heading-font-weight: var(--ifm-font-weight-bold);
+    --ifm-heading-line-height: 1.25;
+    --ifm-leading-desktop: 1.25;
+    --ifm-leading: calc(var(--ifm-leading-desktop) * 1rem);
+    --ifm-paragraph-margin-bottom: var(--ifm-leading);
+    --ifm-h1-vertical-rhythm-top: 3;
+    --ifm-h2-vertical-rhythm-top: 2;
+    --ifm-h3-vertical-rhythm-top: 1.5;
+    --ifm-heading-vertical-rhythm-top: 1.25;
+    --ifm-h1-vertical-rhythm-bottom: 1.25;
+    --ifm-heading-vertical-rhythm-bottom: 1;
+    --ifm-h1-font-size: 2.5rem;
+    --ifm-h2-font-size: 2rem;
+    --ifm-h3-font-size: 1.4rem;
+    --ifm-h4-font-size: 1rem;
+    --ifm-h5-font-size: .875rem;
+    --ifm-h6-font-size: .85rem;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: var(--ifm-heading-color);
+  font-family: var(--ifm-heading-font-family);
+  font-weight: var(--ifm-heading-font-weight);
+  line-height: var(--ifm-heading-line-height);
+  margin: var(--ifm-heading-margin-top) 0 var(--ifm-heading-margin-bottom) 0;
+}
+
+
+
+h2 {
+  font-size: var(--ifm-h2-font-size);
+  margin-bottom: calc(var(--ifm-heading-vertical-rhythm-bottom) * var(--ifm-leading));
+  margin-top: calc(var(--ifm-h2-vertical-rhythm-top) * var(--ifm-leading));
+}
+ h3 {
+  font-size: var(--ifm-h3-font-size);
+  margin-bottom: calc(var(--ifm-heading-vertical-rhythm-bottom) * var(--ifm-leading));
+  margin-top: calc(var(--ifm-h3-vertical-rhythm-top) * var(--ifm-leading));
+}
+
+  ul, ol {
+    margin: 0 0 var(--ifm-list-margin);
+    padding-left: var(--ifm-list-left-padding);
+    margin-bottom: var(--ifm-leading);
+}
+
+.cd-content p {
+    margin: 0 0 var(--ifm-paragraph-margin-bottom);
+}
+
+.cd-content li + li {
+  margin-top: 0.2em;
+}
+
+.cd-content code {
+  background: #f6f8fa;
+  padding: 0.1em 0.3em;
+  border-radius: 4px;
+}
+
+.cd-content pre code {
+  display: block;
+  padding: 12px;
+  border-radius: 8px;
+  overflow-x: auto;
+  background: #0b1020;
+  color: #e6edf3;
+}
+
+.cd-content a {
+  color: var(--ifm-color-primary);
+  text-decoration: underline;
+}
+
+/* Images du contenu (zoomable) */
+.cd-content img {
+  display: block;
+  margin: 12px auto;
+  cursor: zoom-in;
+  border-radius: 8px;
+
+  max-width: 100%;
+  width: auto;
+  height: auto;
+  max-height: 60vh;
+  object-fit: contain;
+}
+
+/* =========================
+   Tables CKEditor (HTML) + tables Markdown
+   ========================= */
+.cd-content figure.table {
+  margin: 0.9em 0;
+}
+
+.cd-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.9em 0;
+
+  display: block; /* scroll horizontal */
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* CKEditor resized : aide à respecter les % du colgroup */
+.cd-content table.ck-table-resized {
+  table-layout: fixed;
+}
+
+.cd-content table thead,
+.cd-content table tbody,
+.cd-content table tfoot {
+  display: table;
+  width: 100%;
+}
+
+.cd-content th,
+.cd-content td {
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  padding: 0.5rem 0.65rem;
+  vertical-align: top;
+}
+
+.cd-content th {
+  font-weight: 700;
+  background: rgba(0, 0, 0, 0.03);
+}
+
+[data-theme="dark"] .cd-content th,
+[data-theme="dark"] .cd-content td {
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+[data-theme="dark"] .cd-content th {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* =========================
+   Harmonisation images dans tableaux (CKEditor)
+   ========================= */
+.cd-content td img,
+.cd-content td figure.image,
+.cd-content td figure.table {
+  margin: 0;
+}
+
+.cd-content td figure.image {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.cd-content td img {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  max-height: clamp(72px, 18vw, 250px);
+  object-fit: contain;
+  border-radius: 8px;
+  vertical-align: middle;
+}
+
+.cd-content td:has(img),
+.cd-content td:has(figure.image) {
+  padding-top: 0.35rem;
+  padding-bottom: 0.35rem;
+}

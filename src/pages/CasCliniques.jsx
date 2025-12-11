@@ -306,15 +306,15 @@ function TypePicker({ onPick }) {
       <div className="cc-typegrid">
         <button className="cc-typecard" onClick={() => onPick('qa')} type="button">
           <span className="cc-type">Q/R</span>
-          <span className="cc-typedesc">12 articles issus du CNECO</span>
+          <span className="cc-typedesc">12 items d'internat issus du CNECO</span>
         </button>
         <button className="cc-typecard" onClick={() => onPick('quiz')} type="button">
-          <span className="cc-type">Quiz</span>
-          <span className="cc-typedesc">Quiz interactif</span>
+          <span className="cc-type">Quiz diagnostic</span>
+          <span className="cc-typedesc">60 cas issus du SFCO</span>
         </button>
         <button className="cc-typecard" onClick={() => onPick('presentation')} type="button">
           <span className="cc-type">Présentation</span>
-          <span className="cc-typedesc">Cas présenté simplement</span>
+          <span className="cc-typedesc">Case Reports issus de la littérature</span>
         </button>
       </div>
     </section>

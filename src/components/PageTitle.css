@@ -3,9 +3,9 @@
 }
 .pagetitle__title {
   margin: 0 0 8px;
-  font-size: 2rem;
-  line-height: 1.25;
-  font-weight: 700;
+  font-size: var(--ifm-h1-font-size);
+  line-height: var(--ifm-heading-line-height);
+  font-weight: var(--ifm-font-weight-bold);
 }
 .pagetitle__desc {
   margin: 0;

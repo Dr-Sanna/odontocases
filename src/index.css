@@ -14,8 +14,13 @@
 
   /* Fontes */
   --ifm-font-family-base: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
-  --ifm-font-weight-semibold: 500;
+  --ifm-font-weight-semibold: 600;
+  --ifm-font-weight-bold: 700;
   --ifm-font-size-base: 100%;
+  --ifm-global-spacing: 1rem;
+  --ifm-spacing-vertical: var(--ifm-global-spacing);
+  --ifm-spacing-horizontal: var(--ifm-global-spacing);
+  
 
     /* Line-height global (donne la “hauteur” visuelle du summary) */
   --ifm-line-height-base: 1.65;
@@ -38,9 +43,6 @@
   --ifm-navbar-height: 3.75rem;
   --ifm-navbar-padding-horizontal: var(--ifm-spacing-horizontal);
   --ifm-navbar-padding-vertical: calc(var(--ifm-spacing-vertical) * .5);
-  --ifm-spacing-vertical: var(--ifm-global-spacing);
-  --ifm-spacing-horizontal: var(--ifm-global-spacing);
-  --ifm-global-spacing: 1rem;
   --ifm-navbar-item-padding-horizontal: .75rem;
   --ifm-navbar-item-padding-vertical: .25rem;
 
@@ -224,8 +226,5 @@ body.bg-none::before {
   opacity: 0;
 }
 
-h1:first-child {
-    --ifm-h1-font-size: 3rem;
-    margin-bottom: calc(var(--ifm-h1-vertical-rhythm-bottom) * var(--ifm-leading));
-}
+
 
