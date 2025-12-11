@@ -99,13 +99,12 @@ h2 {
 }
 
 .cd-content table {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 0.9em 0;
-
-  display: block; /* scroll horizontal */
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
+ width: 100%;
+ border-collapse: collapse;
+ margin: 0 0 var(--ifm-paragraph-margin-bottom);
+ display: block; /* scroll horizontal */
+ overflow-x: auto;
+ -webkit-overflow-scrolling: touch;
 }
 
 /* CKEditor resized : aide à respecter les % du colgroup */
