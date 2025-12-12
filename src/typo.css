@@ -83,7 +83,6 @@ h2 {
   margin: 12px auto;
   cursor: zoom-in;
   border-radius: 8px;
-
   max-width: 100%;
   width: auto;
   height: auto;
@@ -99,7 +98,7 @@ h2 {
 }
 
 .cd-content table {
- width: 100%;
+
  border-collapse: collapse;
  margin: 0 0 var(--ifm-paragraph-margin-bottom);
  display: block; /* scroll horizontal */
@@ -116,7 +115,7 @@ h2 {
 .cd-content table tbody,
 .cd-content table tfoot {
   display: table;
-  width: 100%;
+
 }
 
 .cd-content th,
@@ -152,6 +151,7 @@ h2 {
 .cd-content td figure.image {
   width: 100% !important;
   max-width: 100% !important;
+  overflow: hidden;
 }
 
 .cd-content td img {
@@ -159,14 +159,54 @@ h2 {
   width: 100%;
   max-width: 100%;
   height: auto;
-  max-height: clamp(72px, 18vw, 250px);
+  max-height: clamp(72px, 25vw, 300px);
   object-fit: contain;
-  border-radius: 8px;
-  vertical-align: middle;
+  border-radius: 0;
 }
 
 .cd-content td:has(img),
 .cd-content td:has(figure.image) {
   padding-top: 0.35rem;
   padding-bottom: 0.35rem;
+  vertical-align: middle;
 }
+
+/* ===== Callouts Obsidian-like dans CaseDetail ===== */
+
+/* ===== Callouts Obsidian-like dans CaseDetail ===== */
+
+.cd-callout {
+  margin: 1rem 0;
+  border-radius: 0.6rem;
+  padding: 0.75rem 0.9rem 0.8rem 0.9rem;
+}
+
+/* Variante info */
+.cd-callout-info {
+  border-left: 4px solid var(--ifm-color-info-dark);
+  background: var(--ifm-color-info-contrast-background);
+  box-shadow: var(--ifm-alert-shadow);
+}
+
+/* Header (titre + icône) */
+.cd-callout-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 600;
+  margin-bottom: 0.8rem;
+}
+
+.cd-callout-icon svg {
+  display: block;
+}
+
+/* Contenu du callout : évite un gros margin-top sur le premier paragraphe */
+.cd-callout-content > :first-child {
+  margin-top: 0;
+}
+
+.cd-callout-content>:last-child {
+    margin-bottom: 0;
+}
+

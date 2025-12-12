@@ -56,6 +56,7 @@
   --ifm-alert-padding-vertical: 1rem;
   --ifm-alert-padding-horizontal: 1rem;
   --ifm-alert-border-radius: 0.4rem;
+  --ifm-alert-shadow: var(--ifm-global-shadow-lw);
 
   /* Transition “fast” */
   --ifm-transition-fast: 200ms;
@@ -92,10 +93,7 @@
   --ifm-menu-link-padding-horizontal: .75rem;
 }
 
-  ul, ol {
-    margin: 0 0 var(--ifm-list-margin);
-    padding-left: var(--ifm-list-left-padding);
-}
+
 
 [data-theme=light] {
     --ifm-color-primary: #2E8555;

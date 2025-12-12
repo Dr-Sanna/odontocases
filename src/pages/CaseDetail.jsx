@@ -9,6 +9,8 @@
  *
  * CKEditor:
  * - HTML autorisé via rehype-raw + sanitize schema (tables, colgroup, styles width)
+ * - Callouts Obsidian-style : > [!info] ... ou > [!info] Titre ...
+ *   rendus en <blockquote class="cd-callout cd-callout-info"> avec heading + contenu
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -25,6 +27,8 @@ import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 
+import { visit } from 'unist-util-visit';
+
 import { BottomExpandIcon, BottomCollapseIcon } from '../components/Icons';
 import { useCaseDetailSidebar } from '../ui/CaseDetailSidebarContext';
 
@@ -34,17 +38,22 @@ const CASES_ENDPOINT = import.meta.env.VITE_CASES_ENDPOINT || '/cases';
 const LS_KEY_COLLAPSE = 'cd-sidebar-collapsed';
 const PUB_STATE = import.meta.env.DEV ? 'preview' : 'live';
 
+/** Breakpoint helper */
 function useIsNarrow(maxWidthPx = 980) {
-  const get = () => window.matchMedia?.(`(max-width: ${maxWidthPx}px)`)?.matches ?? false;
+  const get = () => {
+    if (typeof window === 'undefined' || !window.matchMedia) return false;
+    return window.matchMedia(`(max-width: ${maxWidthPx}px)`).matches;
+  };
+
   const [isNarrow, setIsNarrow] = useState(get);
 
   useEffect(() => {
-    const mq = window.matchMedia?.(`(max-width: ${maxWidthPx}px)`);
-    if (!mq) return;
+    if (typeof window === 'undefined' || !window.matchMedia) return;
 
+    const mq = window.matchMedia(`(max-width: ${maxWidthPx}px)`);
     const onChange = () => setIsNarrow(mq.matches);
-    onChange();
 
+    onChange();
     if (mq.addEventListener) mq.addEventListener('change', onChange);
     else mq.addListener(onChange);
 
@@ -57,6 +66,7 @@ function useIsNarrow(maxWidthPx = 980) {
   return isNarrow;
 }
 
+/** Tri numérique par slug (extrait le premier groupe de chiffres). */
 function compareBySlugNumberAsc(a, b) {
   const sa = String(a?.slug ?? '');
   const sb = String(b?.slug ?? '');
@@ -81,6 +91,13 @@ function typeLabelFromKey(typeKey) {
   return null;
 }
 
+/**
+ * Schéma sanitize pour CKEditor + callouts :
+ * - tables + colgroup/col + style="width:..."
+ * - img width/height/style
+ * - blockquote: className + data-callout
+ * - div/span: className (pour les headings de callout)
+ */
 const ckeditorSchema = (() => {
   const tagNames = new Set([...(defaultSchema.tagNames || [])]);
   [
@@ -104,25 +121,148 @@ const ckeditorSchema = (() => {
     tbody: [...(defaultSchema.attributes?.tbody || []), 'className', 'style'],
     tfoot: [...(defaultSchema.attributes?.tfoot || []), 'className', 'style'],
     tr: [...(defaultSchema.attributes?.tr || []), 'className', 'style'],
-    td: [...(defaultSchema.attributes?.td || []), 'className', 'style', 'colspan', 'rowspan'],
-    th: [...(defaultSchema.attributes?.th || []), 'className', 'style', 'colspan', 'rowspan', 'scope'],
+    td: [
+      ...(defaultSchema.attributes?.td || []),
+      'className',
+      'style',
+      'colspan',
+      'rowspan',
+    ],
+    th: [
+      ...(defaultSchema.attributes?.th || []),
+      'className',
+      'style',
+      'colspan',
+      'rowspan',
+      'scope',
+    ],
     colgroup: [...(defaultSchema.attributes?.colgroup || []), 'className', 'style', 'span'],
     col: [...(defaultSchema.attributes?.col || []), 'className', 'style', 'span'],
     figure: [...(defaultSchema.attributes?.figure || []), 'className', 'style'],
     figcaption: [...(defaultSchema.attributes?.figcaption || []), 'className', 'style'],
     img: [...(defaultSchema.attributes?.img || []), 'style', 'width', 'height'],
+
+    blockquote: [
+      ...(defaultSchema.attributes?.blockquote || []),
+      'className',
+      'data-callout',
+    ],
+
+    // ⬇️ pour que les classes sur nos <div> / <span> de callout ne soient pas supprimées
+    div: [...(defaultSchema.attributes?.div || []), 'className'],
+    span: [...(defaultSchema.attributes?.span || []), 'className'],
   };
 
-  return { ...defaultSchema, tagNames: Array.from(tagNames), attributes };
+  return {
+    ...defaultSchema,
+    tagNames: Array.from(tagNames),
+    attributes,
+  };
 })();
 
+/**
+ * Corrige les blockquotes échappés par Strapi:
+ * "\>" en début de ligne → ">"
+ */
+function normalizeEscapedBlockquotes(src) {
+  if (typeof src !== 'string') return src;
+  return src.replace(/^[ \t]*\\>\s?/gm, '> ');
+}
+
+/** Échappement simple HTML pour le titre */
+function escapeHtml(str) {
+  if (typeof str !== 'string') return '';
+  return str.replace(/[&<>"]/g, (ch) => {
+    if (ch === '&') return '&amp;';
+    if (ch === '<') return '&lt;';
+    if (ch === '>') return '&gt;';
+    return '&quot;';
+  });
+}
+
+/**
+ * Plugin remark pour callouts style Obsidian:
+ *
+ * > [!info]
+ * > Texte…
+ *
+ * ou
+ *
+ * > [!info] Titre personnalisé
+ * > Texte…
+ */
+function remarkObsidianCallouts() {
+  return (tree) => {
+    visit(tree, 'blockquote', (node) => {
+      if (!Array.isArray(node.children) || node.children.length === 0) return;
+
+      const firstParagraph = node.children[0];
+      if (
+        !firstParagraph ||
+        firstParagraph.type !== 'paragraph' ||
+        !Array.isArray(firstParagraph.children) ||
+        firstParagraph.children.length === 0
+      ) {
+        return;
+      }
+
+      const firstChild = firstParagraph.children[0];
+      if (!firstChild || firstChild.type !== 'text') return;
+
+      // Cas 1 : "[!info]" seul
+      const fullLineMatch = firstChild.value.match(/^\s*\[\!(\w+)\]\s*$/i);
+      // Cas 2 : "[!info] Mon titre"
+      const withTitleMatch = firstChild.value.match(/^\s*\[\!(\w+)\]\s+(.+?)\s*$/i);
+
+      if (!fullLineMatch && !withTitleMatch) return;
+
+      const rawType = (fullLineMatch || withTitleMatch)[1].toLowerCase();
+      const calloutType = rawType === 'info' ? 'info' : 'info';
+
+      const titleTextRaw = withTitleMatch ? withTitleMatch[2].trim() : '';
+      const title = titleTextRaw || 'Info';
+      const safeTitle = escapeHtml(title);
+
+      // On retire le paragraphe contenant le marker
+      node.children.shift();
+
+      const innerChildren = node.children;
+
+      if (!node.data) node.data = {};
+      if (!node.data.hProperties) node.data.hProperties = {};
+      const h = node.data.hProperties;
+
+      const baseClasses = Array.isArray(h.className)
+        ? h.className
+        : h.className
+        ? [h.className]
+        : [];
+
+      h.className = [...baseClasses, 'cd-callout', `cd-callout-${calloutType}`];
+      h['data-callout'] = calloutType;
+
+      const icon = 'ℹ️'; // emoji temporaire
+
+      const headingHtml = `<div class="cd-callout-heading"><span class="cd-callout-icon">${icon}</span><span class="cd-callout-title">${safeTitle}</span></div><div class="cd-callout-content">`;
+
+      node.children = [
+        { type: 'html', value: headingHtml },
+        ...innerChildren,
+        { type: 'html', value: '</div>' },
+      ];
+    });
+  };
+}
+
 function Markdown({ children }) {
+  const source = normalizeEscapedBlockquotes(String(children ?? ''));
+
   return (
     <ReactMarkdown
-      remarkPlugins={[remarkGfm]}
+      remarkPlugins={[remarkGfm, remarkObsidianCallouts]}
       rehypePlugins={[rehypeRaw, [rehypeSanitize, ckeditorSchema]]}
     >
-      {children}
+      {source}
     </ReactMarkdown>
   );
 }
@@ -134,10 +274,8 @@ export default function CaseDetail() {
   const isNarrow = useIsNarrow(980);
   const { mobileOpen, setMobileOpen } = useCaseDetailSidebar();
 
-  // ✅ vue du drawer mobile sur CaseDetail
-  const [drawerView, setDrawerView] = useState('cases'); // 'cases' | 'nav'
+  const [drawerView, setDrawerView] = useState('cases');
 
-  // Prefetch passé depuis la liste
   const pre = location.state?.prefetch;
   const provisional = pre && pre.slug === slug ? pre : null;
 
@@ -159,24 +297,21 @@ export default function CaseDetail() {
     }
   });
 
-  // Mobile: à chaque slug, on ferme
   useEffect(() => {
     if (isNarrow) setMobileOpen(false);
   }, [slug, isNarrow, setMobileOpen]);
 
-  // ✅ en mobile, quand on ouvre -> on revient sur la liste de cas
   useEffect(() => {
     if (isNarrow && mobileOpen) setDrawerView('cases');
   }, [isNarrow, mobileOpen]);
 
-  // ✅ si on quitte la page, on force la fermeture (robuste)
-  useEffect(() => {
-    return () => {
+  useEffect(
+    () => () => {
       setMobileOpen(false);
-    };
-  }, [setMobileOpen]);
+    },
+    [setMobileOpen]
+  );
 
-  // Drawer mobile: esc + lock scroll
   useEffect(() => {
     if (!isNarrow) return;
 
@@ -220,7 +355,6 @@ export default function CaseDetail() {
     });
   };
 
-  // Chargement (cache + fetch)
   useEffect(() => {
     let ignore = false;
 
@@ -245,7 +379,16 @@ export default function CaseDetail() {
           populate: populateQa
             ? { cover: { fields: ['url', 'formats'] }, qa_blocks: { populate: '*' } }
             : { cover: { fields: ['url', 'formats'] } },
-          fields: ['title', 'slug', 'type', 'excerpt', 'content', 'updatedAt', 'references', 'copyright'],
+          fields: [
+            'title',
+            'slug',
+            'type',
+            'excerpt',
+            'content',
+            'updatedAt',
+            'references',
+            'copyright',
+          ],
           pagination: { page: 1, pageSize: 1 },
         },
       });
@@ -259,8 +402,11 @@ export default function CaseDetail() {
           res = await loadWithPopulate(true);
         } catch (err) {
           const msg = err?.message || '';
-          if (/Invalid key qa_blocks/i.test(msg)) res = await loadWithPopulate(false);
-          else throw err;
+          if (/Invalid key qa_blocks/i.test(msg)) {
+            res = await loadWithPopulate(false);
+          } else {
+            throw err;
+          }
         }
 
         const node = Array.isArray(res?.data) ? res.data[0] : null;
@@ -321,7 +467,6 @@ export default function CaseDetail() {
     return base;
   }, [crumbTypeLabel, typeKey, item?.title]);
 
-  // Lightbox
   const [lightbox, setLightbox] = useState(null);
   const contentRef = useRef(null);
 
@@ -353,7 +498,13 @@ export default function CaseDetail() {
   const drawerOpen = isNarrow && mobileOpen;
 
   return (
-    <div className={['cd-shell', collapsed ? 'is-collapsed' : '', drawerOpen ? 'is-drawer-open' : ''].join(' ')}>
+    <div
+      className={[
+        'cd-shell',
+        collapsed ? 'is-collapsed' : '',
+        drawerOpen ? 'is-drawer-open' : '',
+      ].join(' ')}
+    >
       <AsideSameType
         currentSlug={slug}
         currentType={item?.type}
@@ -388,7 +539,9 @@ export default function CaseDetail() {
               <span className={`cd-chip cd-${item?.type || 'qa'}`}>{typeLabel}</span>
             </div>
 
-            <PageTitle description={item?.excerpt || ''}>{item?.title || 'Cas clinique'}</PageTitle>
+            <PageTitle description={item?.excerpt || ''}>
+              {item?.title || 'Cas clinique'}
+            </PageTitle>
           </article>
         </div>
 
@@ -503,7 +656,12 @@ function AsideSameType({
     onToggle();
   };
 
-  useEffect(() => () => animTimerRef.current && clearTimeout(animTimerRef.current), []);
+  useEffect(
+    () => () => {
+      if (animTimerRef.current) clearTimeout(animTimerRef.current);
+    },
+    []
+  );
 
   useEffect(() => {
     let booted = false;
@@ -525,7 +683,8 @@ function AsideSameType({
         if (raw) {
           const arr = JSON.parse(raw);
           if (Array.isArray(arr) && arr.length) {
-            setRelated(arr.filter((it) => it?.slug).sort(compareBySlugNumberAsc));
+            const list = arr.filter((it) => it?.slug).sort(compareBySlugNumberAsc);
+            setRelated(list);
             booted = true;
           }
         }
@@ -570,6 +729,7 @@ function AsideSameType({
           .sort(compareBySlugNumberAsc);
 
         setRelated(normalized);
+
         try {
           sessionStorage.setItem(`cd-prefetch-${currentType}`, JSON.stringify(normalized));
         } catch {}
@@ -588,7 +748,9 @@ function AsideSameType({
 
   useEffect(() => {
     if (!Array.isArray(related) || related.length === 0) return;
-    for (const it of related.slice(0, 20)) {
+    const limited = related.slice(0, 20);
+
+    for (const it of limited) {
       if (!it?.slug || it.slug === currentSlug) continue;
       prefetchCase(it.slug, { publicationState: PUB_STATE }).catch(() => {});
     }
@@ -610,7 +772,14 @@ function AsideSameType({
   const showNavInsteadOfCases = isNarrow && drawerView === 'nav';
 
   return (
-    <aside className={`cd-side ${collapsed ? 'is-collapsed' : ''} ${anim} ${isAnimating ? 'is-animating' : ''}`}>
+    <aside
+      className={[
+        'cd-side',
+        collapsed ? 'is-collapsed' : '',
+        anim,
+        isAnimating ? 'is-animating' : '',
+      ].join(' ')}
+    >
       <div className="cd-side-inner">
         <div className="cd-side-scroll">
           {showNavInsteadOfCases ? (
@@ -619,7 +788,11 @@ function AsideSameType({
 
               <ul className="cd-side-list">
                 <li>
-                  <button type="button" className="cd-side-back" onClick={() => setDrawerView('cases')}>
+                  <button
+                    type="button"
+                    className="cd-side-back"
+                    onClick={() => setDrawerView('cases')}
+                  >
                     ← Liste des cas
                   </button>
                 </li>
@@ -650,7 +823,11 @@ function AsideSameType({
             <>
               {isNarrow && (
                 <div className="cd-side-top">
-                  <button type="button" className="cd-side-back" onClick={() => setDrawerView('nav')}>
+                  <button
+                    type="button"
+                    className="cd-side-back"
+                    onClick={() => setDrawerView('nav')}
+                  >
                     ← Revenir
                   </button>
                 </div>
@@ -659,7 +836,9 @@ function AsideSameType({
               <div className="cd-side-header">{labelType}</div>
 
               {loadingList && <div className="cd-side-state">Chargement…</div>}
-              {errList && !loadingList && <div className="cd-side-state error">{errList}</div>}
+              {errList && !loadingList && (
+                <div className="cd-side-state error">{errList}</div>
+              )}
 
               {!errList && (
                 <ul className="cd-side-list">
@@ -676,8 +855,16 @@ function AsideSameType({
                             className="cd-side-link"
                             to={`/cas-cliniques/${it.slug}`}
                             onClick={() => isNarrow && closeMobile()}
-                            onMouseEnter={() => prefetchCase(it.slug, { publicationState: PUB_STATE }).catch(() => {})}
-                            onFocus={() => prefetchCase(it.slug, { publicationState: PUB_STATE }).catch(() => {})}
+                            onMouseEnter={() =>
+                              prefetchCase(it.slug, { publicationState: PUB_STATE }).catch(
+                                () => {}
+                              )
+                            }
+                            onFocus={() =>
+                              prefetchCase(it.slug, { publicationState: PUB_STATE }).catch(
+                                () => {}
+                              )
+                            }
                           >
                             {it.title || it.slug}
                           </Link>
@@ -695,8 +882,16 @@ function AsideSameType({
           (showOverlay ? (
             <div
               className="cd-side-toggle"
-              title={overlayShowsExpand ? 'Développer la barre latérale' : 'Réduire la barre latérale'}
-              aria-label={overlayShowsExpand ? 'Développer la barre latérale' : 'Réduire la barre latérale'}
+              title={
+                overlayShowsExpand
+                  ? 'Développer la barre latérale'
+                  : 'Réduire la barre latérale'
+              }
+              aria-label={
+                overlayShowsExpand
+                  ? 'Développer la barre latérale'
+                  : 'Réduire la barre latérale'
+              }
               role="button"
               tabIndex={0}
               onClick={isAnimating ? undefined : handleToggle}
