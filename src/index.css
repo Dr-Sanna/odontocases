@@ -56,6 +56,8 @@
   --ifm-alert-padding-horizontal: 1rem;
   --ifm-alert-border-radius: 0.4rem;
   --ifm-alert-shadow: var(--ifm-global-shadow-lw);
+  --ifm-alert-border-color: var(--ifm-color-info-dark);
+  --ifm-alert-background-color: var(--ifm-color-info-contrast-background);
 
   /* Alert Info */
   --ifm-color-info-dark: #4cb3d4;
