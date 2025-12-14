@@ -26,11 +26,9 @@
   align-self: start;
   height: calc(100vh - var(--ifm-navbar-height));
   width: 300px;
-
-  border-right: 1px solid #ececf1;
+  border-right: 1px solid var(--ifm-toc-border-color);
   box-shadow: inset -1px 0 0 rgba(0, 0, 0, 0.02);
   background: var(--ifm-background-color);
-
   overflow: hidden;
   transition: width 0.2s ease, transform 0.22s ease;
   z-index: 60;
@@ -122,8 +120,8 @@
   flex: 0 0 auto; /* FIX: ne s’étire pas */
   padding: 12px 14px;
   font-weight: 700;
-  border-bottom: 1px solid #eee;
-  background: var(--ifm-background-surface-color);
+  border-bottom: 1px solid var(--ifm-toc-border-color);;
+  background: var(--ifm-background-color);
 }
 
 .cd-side-state {
@@ -159,15 +157,13 @@
 .cd-side-link {
   display: block;
   padding: var(--ifm-menu-link-padding-vertical) var(--ifm-menu-link-padding-horizontal);
-  border-radius: 8px;
+  border-radius: .25rem;
   text-decoration: none;
   color: var(--ifm-menu-color);
   border: 1px solid transparent;
-
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-
   transition: background 0.12s ease, border-color 0.12s ease;
 }
 
@@ -191,19 +187,17 @@
   margin: 0;
   padding: 0;
   border: 0;
-  border-top: 1px solid #e3e3ea;
-  background: transparent;
-
+  border-top: 1px solid var(--ifm-toc-border-color);
+  background: var(--docusaurus-collapse-button-bg);
   display: flex;
   align-items: center;
   justify-content: center;
-
   cursor: pointer;
   transition: background 0.12s ease;
 }
 
 .cd-side-toggle:hover {
-  background: #f8f9fb;
+  background: var(--docusaurus-collapse-button-bg-hover);
 }
 
 .cd-side-toggle:focus-visible {
