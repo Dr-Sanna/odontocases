@@ -39,6 +39,7 @@
   --ifm-navbar-background-color: var(--ifm-background-surface-color);
   --ifm-background-surface-color: #fff;
   --ifm-navbar-link-color: var(--ifm-font-color-base);
+  --ifm-link-color: var(--ifm-color-primary);
   --ifm-link-hover-color: var(--ifm-color-primary);
   --ifm-navbar-height: 3.75rem;
   --ifm-navbar-padding-horizontal: var(--ifm-spacing-horizontal);

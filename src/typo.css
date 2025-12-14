@@ -72,10 +72,18 @@ h2 {
   color: #e6edf3;
 }
 
-.cd-content a {
+/* Links content et copyright */
+.cd-content a,
+.cd-copyright a {
   color: var(--ifm-color-primary);
+  text-decoration: none;
+}
+
+.cd-content a:hover,
+.cd-copyright a:hover {
   text-decoration: underline;
 }
+
 
 /* Images du contenu (zoomable) */
 .cd-content img {
