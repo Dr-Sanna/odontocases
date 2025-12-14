@@ -9,8 +9,10 @@
  *
  * CKEditor:
  * - HTML autorisé via rehype-raw + sanitize schema (tables, colgroup, styles width)
- * - Callouts Obsidian-style : > [!info] ... ou > [!info] Titre ...
- *   rendus en <blockquote class="cd-callout cd-callout-info"> avec heading + contenu
+ * - Callouts Obsidian-style :
+ *   > [!info] ...  (neutre)
+ *   > [!info]- ... (replié par défaut)
+ *   > [!info]+ ... (déplié par défaut)
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -96,7 +98,8 @@ function typeLabelFromKey(typeKey) {
  * - tables + colgroup/col + style="width:..."
  * - img width/height/style
  * - blockquote: className + data-callout
- * - div/span: className (pour les headings de callout)
+ * - div/span: className (heading callout)
+ * - details/summary: pour callouts pliables
  */
 const ckeditorSchema = (() => {
   const tagNames = new Set([...(defaultSchema.tagNames || [])]);
@@ -112,6 +115,9 @@ const ckeditorSchema = (() => {
     'col',
     'figure',
     'figcaption',
+    // callouts pliables
+    'details',
+    'summary',
   ].forEach((t) => tagNames.add(t));
 
   const attributes = {
@@ -121,13 +127,7 @@ const ckeditorSchema = (() => {
     tbody: [...(defaultSchema.attributes?.tbody || []), 'className', 'style'],
     tfoot: [...(defaultSchema.attributes?.tfoot || []), 'className', 'style'],
     tr: [...(defaultSchema.attributes?.tr || []), 'className', 'style'],
-    td: [
-      ...(defaultSchema.attributes?.td || []),
-      'className',
-      'style',
-      'colspan',
-      'rowspan',
-    ],
+    td: [...(defaultSchema.attributes?.td || []), 'className', 'style', 'colspan', 'rowspan'],
     th: [
       ...(defaultSchema.attributes?.th || []),
       'className',
@@ -136,21 +136,26 @@ const ckeditorSchema = (() => {
       'rowspan',
       'scope',
     ],
-    colgroup: [...(defaultSchema.attributes?.colgroup || []), 'className', 'style', 'span'],
+    colgroup: [
+      ...(defaultSchema.attributes?.colgroup || []),
+      'className',
+      'style',
+      'span',
+    ],
     col: [...(defaultSchema.attributes?.col || []), 'className', 'style', 'span'],
     figure: [...(defaultSchema.attributes?.figure || []), 'className', 'style'],
     figcaption: [...(defaultSchema.attributes?.figcaption || []), 'className', 'style'],
     img: [...(defaultSchema.attributes?.img || []), 'style', 'width', 'height'],
 
-    blockquote: [
-      ...(defaultSchema.attributes?.blockquote || []),
-      'className',
-      'data-callout',
-    ],
+    blockquote: [...(defaultSchema.attributes?.blockquote || []), 'className', 'data-callout'],
 
-    // ⬇️ pour que les classes sur nos <div> / <span> de callout ne soient pas supprimées
+    // pour que les classes sur nos <div>/<span> ne soient pas supprimées
     div: [...(defaultSchema.attributes?.div || []), 'className'],
     span: [...(defaultSchema.attributes?.span || []), 'className'],
+
+    // callouts pliables
+    details: [...(defaultSchema.attributes?.details || []), 'className', 'open'],
+    summary: [...(defaultSchema.attributes?.summary || []), 'className'],
   };
 
   return {
@@ -162,7 +167,7 @@ const ckeditorSchema = (() => {
 
 /**
  * Corrige les blockquotes échappés par Strapi:
- * "\>" en début de ligne → ">"
+ * "\>" en début de ligne → "> "
  */
 function normalizeEscapedBlockquotes(src) {
   if (typeof src !== 'string') return src;
@@ -183,15 +188,41 @@ function escapeHtml(str) {
 /**
  * Plugin remark pour callouts style Obsidian:
  *
- * > [!info]
- * > Texte…
+ * > [!info] Titre
+ * > ...
  *
- * ou
+ * Options:
+ * - neutre : [!info]
+ * - replié : [!info]-
+ * - déplié : [!info]+
  *
- * > [!info] Titre personnalisé
- * > Texte…
+ * Rendu:
+ * - neutre -> <blockquote> + heading div + content div
+ * - +/-    -> <blockquote> + <details> (open si +) + <summary> + content
  */
 function remarkObsidianCallouts() {
+  const KNOWN = new Set([
+    'info',
+    'note',
+    'tip',
+    'warning',
+    'danger',
+    'success',
+    'question',
+    'important',
+  ]);
+
+  const ICON = {
+    info: 'ℹ️',
+    note: '📝',
+    tip: '💡',
+    warning: '⚠️',
+    danger: '⛔',
+    success: '✅',
+    question: '❓',
+    important: '📌',
+  };
+
   return (tree) => {
     visit(tree, 'blockquote', (node) => {
       if (!Array.isArray(node.children) || node.children.length === 0) return;
@@ -209,19 +240,23 @@ function remarkObsidianCallouts() {
       const firstChild = firstParagraph.children[0];
       if (!firstChild || firstChild.type !== 'text') return;
 
-      // Cas 1 : "[!info]" seul
-      const fullLineMatch = firstChild.value.match(/^\s*\[\!(\w+)\]\s*$/i);
-      // Cas 2 : "[!info] Mon titre"
-      const withTitleMatch = firstChild.value.match(/^\s*\[\!(\w+)\]\s+(.+?)\s*$/i);
+      // [!type]([+-])? titre?
+      const m = firstChild.value.match(/^\s*\[\!(\w+)\]([+-])?\s*(.*?)\s*$/i);
+      if (!m) return;
 
-      if (!fullLineMatch && !withTitleMatch) return;
+      const rawType = String(m[1] || '').toLowerCase();
+      const fold = m[2] || ''; // '' | '-' | '+'
+      const titleTextRaw = String(m[3] || '').trim();
 
-      const rawType = (fullLineMatch || withTitleMatch)[1].toLowerCase();
-      const calloutType = rawType === 'info' ? 'info' : 'info';
+      const calloutType = KNOWN.has(rawType) ? rawType : 'info';
+      const title =
+        titleTextRaw ||
+        (calloutType === 'info'
+          ? 'Info'
+          : calloutType.charAt(0).toUpperCase() + calloutType.slice(1));
 
-      const titleTextRaw = withTitleMatch ? withTitleMatch[2].trim() : '';
-      const title = titleTextRaw || 'Info';
       const safeTitle = escapeHtml(title);
+      const icon = ICON[calloutType] || 'ℹ️';
 
       // On retire le paragraphe contenant le marker
       node.children.shift();
@@ -241,15 +276,26 @@ function remarkObsidianCallouts() {
       h.className = [...baseClasses, 'cd-callout', `cd-callout-${calloutType}`];
       h['data-callout'] = calloutType;
 
-      const icon = 'ℹ️'; // emoji temporaire
+      const headingCore = `<span class="cd-callout-icon">${icon}</span><span class="cd-callout-title">${safeTitle}</span>`;
 
-      const headingHtml = `<div class="cd-callout-heading"><span class="cd-callout-icon">${icon}</span><span class="cd-callout-title">${safeTitle}</span></div><div class="cd-callout-content">`;
+      if (fold === '-' || fold === '+') {
+        const openAttr = fold === '+' ? ' open' : '';
+        const headingHtml = `<details class="cd-callout-details"${openAttr}><summary class="cd-callout-heading">${headingCore}<span class="cd-callout-chevron" aria-hidden="true"></span></summary><div class="cd-callout-content">`;
 
-      node.children = [
-        { type: 'html', value: headingHtml },
-        ...innerChildren,
-        { type: 'html', value: '</div>' },
-      ];
+        node.children = [
+          { type: 'html', value: headingHtml },
+          ...innerChildren,
+          { type: 'html', value: '</div></details>' },
+        ];
+      } else {
+        const headingHtml = `<div class="cd-callout-heading">${headingCore}</div><div class="cd-callout-content">`;
+
+        node.children = [
+          { type: 'html', value: headingHtml },
+          ...innerChildren,
+          { type: 'html', value: '</div>' },
+        ];
+      }
     });
   };
 }
@@ -379,16 +425,7 @@ export default function CaseDetail() {
           populate: populateQa
             ? { cover: { fields: ['url', 'formats'] }, qa_blocks: { populate: '*' } }
             : { cover: { fields: ['url', 'formats'] } },
-          fields: [
-            'title',
-            'slug',
-            'type',
-            'excerpt',
-            'content',
-            'updatedAt',
-            'references',
-            'copyright',
-          ],
+          fields: ['title', 'slug', 'type', 'excerpt', 'content', 'updatedAt', 'references', 'copyright'],
           pagination: { page: 1, pageSize: 1 },
         },
       });
@@ -498,13 +535,7 @@ export default function CaseDetail() {
   const drawerOpen = isNarrow && mobileOpen;
 
   return (
-    <div
-      className={[
-        'cd-shell',
-        collapsed ? 'is-collapsed' : '',
-        drawerOpen ? 'is-drawer-open' : '',
-      ].join(' ')}
-    >
+    <div className={['cd-shell', collapsed ? 'is-collapsed' : '', drawerOpen ? 'is-drawer-open' : ''].join(' ')}>
       <AsideSameType
         currentSlug={slug}
         currentType={item?.type}
@@ -539,9 +570,7 @@ export default function CaseDetail() {
               <span className={`cd-chip cd-${item?.type || 'qa'}`}>{typeLabel}</span>
             </div>
 
-            <PageTitle description={item?.excerpt || ''}>
-              {item?.title || 'Cas clinique'}
-            </PageTitle>
+            <PageTitle description={item?.excerpt || ''}>{item?.title || 'Cas clinique'}</PageTitle>
           </article>
         </div>
 
@@ -772,14 +801,7 @@ function AsideSameType({
   const showNavInsteadOfCases = isNarrow && drawerView === 'nav';
 
   return (
-    <aside
-      className={[
-        'cd-side',
-        collapsed ? 'is-collapsed' : '',
-        anim,
-        isAnimating ? 'is-animating' : '',
-      ].join(' ')}
-    >
+    <aside className={['cd-side', collapsed ? 'is-collapsed' : '', anim, isAnimating ? 'is-animating' : ''].join(' ')}>
       <div className="cd-side-inner">
         <div className="cd-side-scroll">
           {showNavInsteadOfCases ? (
@@ -788,11 +810,7 @@ function AsideSameType({
 
               <ul className="cd-side-list">
                 <li>
-                  <button
-                    type="button"
-                    className="cd-side-back"
-                    onClick={() => setDrawerView('cases')}
-                  >
+                  <button type="button" className="cd-side-back" onClick={() => setDrawerView('cases')}>
                     ← Liste des cas
                   </button>
                 </li>
@@ -823,11 +841,7 @@ function AsideSameType({
             <>
               {isNarrow && (
                 <div className="cd-side-top">
-                  <button
-                    type="button"
-                    className="cd-side-back"
-                    onClick={() => setDrawerView('nav')}
-                  >
+                  <button type="button" className="cd-side-back" onClick={() => setDrawerView('nav')}>
                     ← Revenir
                   </button>
                 </div>
@@ -836,9 +850,7 @@ function AsideSameType({
               <div className="cd-side-header">{labelType}</div>
 
               {loadingList && <div className="cd-side-state">Chargement…</div>}
-              {errList && !loadingList && (
-                <div className="cd-side-state error">{errList}</div>
-              )}
+              {errList && !loadingList && <div className="cd-side-state error">{errList}</div>}
 
               {!errList && (
                 <ul className="cd-side-list">
@@ -856,14 +868,10 @@ function AsideSameType({
                             to={`/cas-cliniques/${it.slug}`}
                             onClick={() => isNarrow && closeMobile()}
                             onMouseEnter={() =>
-                              prefetchCase(it.slug, { publicationState: PUB_STATE }).catch(
-                                () => {}
-                              )
+                              prefetchCase(it.slug, { publicationState: PUB_STATE }).catch(() => {})
                             }
                             onFocus={() =>
-                              prefetchCase(it.slug, { publicationState: PUB_STATE }).catch(
-                                () => {}
-                              )
+                              prefetchCase(it.slug, { publicationState: PUB_STATE }).catch(() => {})
                             }
                           >
                             {it.title || it.slug}
@@ -882,16 +890,8 @@ function AsideSameType({
           (showOverlay ? (
             <div
               className="cd-side-toggle"
-              title={
-                overlayShowsExpand
-                  ? 'Développer la barre latérale'
-                  : 'Réduire la barre latérale'
-              }
-              aria-label={
-                overlayShowsExpand
-                  ? 'Développer la barre latérale'
-                  : 'Réduire la barre latérale'
-              }
+              title={overlayShowsExpand ? 'Développer la barre latérale' : 'Réduire la barre latérale'}
+              aria-label={overlayShowsExpand ? 'Développer la barre latérale' : 'Réduire la barre latérale'}
               role="button"
               tabIndex={0}
               onClick={isAnimating ? undefined : handleToggle}

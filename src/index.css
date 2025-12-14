@@ -51,12 +51,17 @@
   --ifm-global-shadow-lw: 0 1px 2px 0 rgba(0, 0, 0, .1);
 
   /* Alert */
-  --ifm-alert-border-color: var(--ifm-color-info-dark);
-  --ifm-alert-background-color: var(--ifm-color-info-contrast-background);
+
   --ifm-alert-padding-vertical: 1rem;
   --ifm-alert-padding-horizontal: 1rem;
   --ifm-alert-border-radius: 0.4rem;
   --ifm-alert-shadow: var(--ifm-global-shadow-lw);
+
+  /* Alert Info */
+  --ifm-color-info-dark: #4cb3d4;
+
+  /* Alert Warning */
+  --ifm-color-warning-dark: #e6a700;
 
   /* Transition “fast” */
   --ifm-transition-fast: 200ms;
@@ -105,8 +110,14 @@
     --ifm-color-primary-lightest: #3CAD6E;
     --ifm-background-color: #ffffff;
     --ifm-color-content: var(--ifm-color-emphasis-900);
-    --ifm-color-info-dark: #4cb3d4;
+
+    /* Info */
     --ifm-color-info-contrast-background: #eef9fd;
+
+    /* Warning */
+    --ifm-color-warning-contrast-background: #fff8e6;
+
+    /* Success */
     --ifm-color-success-contrast-background: #e6f6e6;
     
 }
@@ -128,6 +139,10 @@
     /* Info */
     --ifm-color-info-dark: #4cb3d4;
     --ifm-color-info-contrast-background: #193c47;
+
+    /* Warning */
+    --ifm-color-warning-dark: #e6a700;
+    --ifm-color-warning-contrast-background: #4d3800;
 
     /*Success*/
     --ifm-color-success-contrast-background: #003100;

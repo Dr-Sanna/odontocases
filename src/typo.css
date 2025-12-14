@@ -179,13 +179,19 @@ h2 {
   margin: 1rem 0;
   border-radius: 0.6rem;
   padding: 0.75rem 0.9rem 0.8rem 0.9rem;
+  box-shadow: var(--ifm-alert-shadow);
 }
 
 /* Variante info */
 .cd-callout-info {
   border-left: 4px solid var(--ifm-color-info-dark);
   background: var(--ifm-color-info-contrast-background);
-  box-shadow: var(--ifm-alert-shadow);
+}
+
+/* Variante warning */
+.cd-callout-warning {
+  border-left: 4px solid var(--ifm-color-warning-dark);
+  background: var(--ifm-color-warning-contrast-background);
 }
 
 /* Header (titre + icône) */
@@ -210,3 +216,60 @@ h2 {
     margin-bottom: 0;
 }
 
+/* ===== Callouts pliables (Obsidian [!type]- / [!type]+) ===== */
+
+.cd-callout-details {
+  /* évite des marges natives de details selon navigateurs */
+  margin: 0;
+  padding: 0;
+}
+
+/* summary doit garder ton layout flex de .cd-callout-heading */
+.cd-callout-details > summary.cd-callout-heading {
+  cursor: pointer;
+  user-select: none;
+  margin-bottom: 0; /* le margin-bottom est géré par le contenu quand open */
+}
+
+/* supprime le marker natif */
+.cd-callout-details > summary {
+  list-style: none;
+}
+.cd-callout-details > summary::-webkit-details-marker {
+  display: none;
+}
+
+/* chevron */
+.cd-callout-chevron {
+  margin-left: auto;
+  width: 0.6rem;
+  height: 0.6rem;
+  display: inline-block;
+  position: relative;
+}
+
+.cd-callout-chevron::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(-45deg);            /* ✅ fermé = droite */
+  transition: transform 160ms ease;
+}
+
+/* ✅ déplié = haut */
+.cd-callout-details[open] .cd-callout-chevron::before {
+  transform: rotate(-135deg);
+}
+
+
+/* spacing: quand fermé, on évite un “trou” */
+.cd-callout-details:not([open]) .cd-callout-content {
+  display: none;
+}
+
+/* quand ouvert, on remet un espace sous le header */
+.cd-callout-details[open] > summary.cd-callout-heading {
+  margin-bottom: 0.8rem; /* comme ta version non pliable */
+}
