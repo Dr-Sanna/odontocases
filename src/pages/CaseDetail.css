@@ -257,8 +257,8 @@
 }
 
 .cd-qa { background: var(--ifm-color-success-contrast-background); }
-.cd-quiz { background: #e3f2fd; }
-.cd-presentation { background: #fff3e0; }
+.cd-quiz { background: var(--ifm-color-info-contrast-background); }
+.cd-presentation { background: var(--ifm-color-warning-contrast-background); }
 
 /* =========================
    Article (lecture)

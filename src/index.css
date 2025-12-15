@@ -65,13 +65,16 @@
   --ifm-alert-background-color: var(--ifm-color-info-contrast-background);
 
   /* Info */
+  --ifm-color-info: #54c7ec;
   --ifm-color-info-dark: #4cb3d4;
 
   /* Warning */
+  --ifm-color-warning: #ffba00;
   --ifm-color-warning-dark: #e6a700;
 
   /* Danger */
   --ifm-color-danger: #fa383e;
+  --ifm-color-danger-dark: #e13238;
 
   /* Transition “fast” */
   --ifm-transition-fast: 200ms;

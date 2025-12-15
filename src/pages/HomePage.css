@@ -11,13 +11,10 @@
 .hero {
   position: relative;
   z-index: 1;
-
   min-height: calc(100vh - var(--ifm-navbar-height));
-
   display: flex;
   align-items: flex-start;
   justify-content: flex-start;
-
   padding:
     clamp(14px, 6vh, 72px)
     clamp(16px, 4.5vw, 48px)
@@ -75,7 +72,6 @@
 .hero-actions {
   /* ✅ boutons un peu plus bas */
   margin-top: clamp(22px, 5.2vh, 56px);
-
   display: grid;
   grid-template-columns: repeat(2, minmax(180px, 1fr));
   gap: clamp(12px, 2.2vw, 18px);
@@ -90,25 +86,22 @@
   text-decoration: none;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
-
   min-height: 68px;
   padding: 18px 18px;
-
   border-radius: 18px;
   border: 1px solid rgba(0, 0, 0, 0.14);
-  background: #fff;
+  background: var(--ifm-background-surface-color);
   color: #111;
   font-weight: 800;
   font-size: 16px;
-
-  box-shadow: none;
+  box-shadow: var(--ifm-alert-shadow);
   transition: box-shadow 0.14s ease, border-color 0.14s ease, background 0.14s ease;
 }
 
 /* Ombre nette au survol */
 .home-card:hover {
-  box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.16);
-  border-color: rgba(0, 0, 0, 0.22);
+  box-shadow: 0 3px 6px #0003;
+  border-color: var(--ifm-color-primary);
 }
 
 .home-card:active {
@@ -117,15 +110,13 @@
 
 /* Dark mode */
 [data-theme="dark"] .home-card {
-  background: rgba(30, 30, 32, 0.92);
   color: #f3f3f3;
-  border-color: rgba(255, 255, 255, 0.14);
+  border: 1px solid var(--ifm-color-emphasis-200);
   box-shadow: none;
 }
 
 [data-theme="dark"] .home-card:hover {
-  box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.72);
-  border-color: rgba(255, 255, 255, 0.18);
+  border-color: var(--ifm-color-primary);
 }
 
 [data-theme="dark"] .home-card:active {

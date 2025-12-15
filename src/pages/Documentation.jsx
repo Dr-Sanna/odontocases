@@ -6,7 +6,7 @@ export default function Documentation() {
 
       <div className="page-header">
         <div className="container">
-          <PageTitle description="Accède à des fiches synthétiques et structurées pour réviser la pathologie orale plus efficacement.">
+          <PageTitle description="Atlas de pathologies buccales, items principaux et risques médicaux à connaître dans la pratique quotidienne">
             Documentation
           </PageTitle>
         </div>

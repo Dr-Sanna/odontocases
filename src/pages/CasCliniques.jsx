@@ -193,7 +193,7 @@ export default function CasCliniques() {
 
       <div className="page-header">
         <div className="container">
-          <PageTitle description="Entraînez-vous avec des cas cliniques illustrés, adaptés à la pratique en pathologie orale.">
+          <PageTitle description="Bibliothèque de cas cliniques pour s'entraîner, adaptés à la pratique en pathologie orale.">
             Cas Cliniques
           </PageTitle>
         </div>
