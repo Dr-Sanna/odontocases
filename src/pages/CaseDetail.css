@@ -531,3 +531,202 @@
 .cd-drawer-back:hover {
   background: var(--ifm-hover-overlay);
 }
+
+/* ===== Quiz blocks ===== */
+.quiz-section {
+  margin-top: calc(-1 * var(--ifm-paragraph-margin-bottom));
+}
+
+/* Card quiz */
+.quiz-item {
+  margin: 1rem 0;
+  padding: 0.9rem;
+  border-radius: 0.6rem;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+[data-theme="dark"] .quiz-item {
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+/* Question */
+.quiz-question {
+  display: flex;
+  gap: 0.6rem;
+  font-weight: 650;
+  margin-bottom: 0.8rem;
+}
+
+.quiz-num {
+  flex: 0 0 auto;
+}
+
+.quiz-text {
+  flex: 1;
+}
+
+/* Options */
+.quiz-options {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.quiz-option {
+  padding: 0.55rem 0.65rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(0, 0, 0, 0.10);
+  transition: background 140ms ease, border-color 140ms ease;
+  cursor: pointer;
+}
+
+[data-theme="dark"] .quiz-option {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+/* Hover */
+.quiz-option:hover {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+[data-theme="dark"] .quiz-option:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* Label + checkbox alignment */
+.quiz-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  cursor: pointer;
+}
+
+.quiz-check {
+  margin-top: 0.22rem; /* ajuste 0.18–0.28 si besoin */
+}
+
+.quiz-label-text {
+  line-height: 1.35;
+}
+
+/* Selected */
+.quiz-option.is-selected {
+  border-color: rgba(0, 0, 0, 0.25);
+  background: rgba(0, 0, 0, 0.03);
+}
+
+[data-theme="dark"] .quiz-option.is-selected {
+  border-color: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* Feedback (par proposition) */
+.quiz-feedback {
+  margin-top: 0.5rem;
+  padding-left: 1.55rem; /* aligne avec le texte après la checkbox */
+  opacity: 0.95;
+}
+
+.quiz-feedback > :first-child {
+  margin-top: 0;
+}
+
+.quiz-feedback > :last-child {
+  margin-bottom: 0;
+}
+
+/* Actions */
+.quiz-actions {
+  margin-top: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.quiz-verify,
+.quiz-reset {
+  padding: 0.45rem 0.7rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  background: transparent;
+  cursor: pointer;
+}
+
+[data-theme="dark"] .quiz-verify,
+[data-theme="dark"] .quiz-reset {
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.quiz-verify:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.quiz-result {
+  margin-left: auto;
+  font-weight: 600;
+}
+
+/* Markers after verify */
+.quiz-option.is-correct {
+  border-color: var(--ifm-color-primary) !important;
+}
+
+.quiz-option.is-wrong {
+  border-color: var(--ifm-color-danger) !important;
+}
+
+/* Explanation (globale du quiz, affichée après vérification) */
+.quiz-explanation {
+  margin-top: 0.8rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: 0.6rem;
+  border: 1px solid rgba(0, 0, 0, 0.10);
+  background: rgba(0, 0, 0, 0.02);
+}
+
+[data-theme="dark"] .quiz-explanation {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.quiz-explanation > :first-child {
+  margin-top: 0;
+}
+
+.quiz-explanation > :last-child {
+  margin-bottom: 0;
+}
+/* Le label couvre toute la carte => clic partout */
+.quiz-label-block {
+  display: flex;
+  width: 100%;
+}
+
+/* Ligne checkbox + texte (pour aligner et élargir le hit area) */
+.quiz-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+}
+
+/* Le texte doit occuper la largeur et afficher le curseur “clic” */
+.quiz-row .quiz-label-text {
+  flex: 1;
+  cursor: pointer;
+  line-height: 1.35;
+}
+
+/* Garder le curseur pointer partout, y compris sur la checkbox */
+.quiz-check {
+  cursor: pointer;
+}
+
+.quiz-check:disabled {
+  cursor: not-allowed;
+}
+
+.quiz-row .quiz-label-text {
+  cursor: pointer;
+}
+

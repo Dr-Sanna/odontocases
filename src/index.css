@@ -64,11 +64,14 @@
   --ifm-alert-border-color: var(--ifm-color-info-dark);
   --ifm-alert-background-color: var(--ifm-color-info-contrast-background);
 
-  /* Alert Info */
+  /* Info */
   --ifm-color-info-dark: #4cb3d4;
 
-  /* Alert Warning */
+  /* Warning */
   --ifm-color-warning-dark: #e6a700;
+
+  /* Danger */
+  --ifm-color-danger: #fa383e;
 
   /* Transition “fast” */
   --ifm-transition-fast: 200ms;
@@ -135,7 +138,7 @@
 }
 
 [data-theme=dark] {
-  --ifm-color-primary: #25C2A0;
+    --ifm-color-primary: #25C2A0;
     --ifm-color-primary-dark: #21AF90;
     --ifm-color-primary-darker: #1FA588;
     --ifm-color-primary-darkest: #1A8870;

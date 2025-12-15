@@ -20,6 +20,8 @@ import { useParams, Link, NavLink, useLocation } from 'react-router-dom';
 
 import PageTitle from '../components/PageTitle';
 import Breadcrumbs from '../components/Breadcrumbs';
+import QuizBlock from '../components/QuizBlock';
+
 import { strapiFetch, imgUrl } from '../lib/strapi';
 import { getCaseFromCache, setCaseToCache, prefetchCase } from '../lib/caseCache';
 
@@ -88,7 +90,7 @@ function compareBySlugNumberAsc(a, b) {
 
 function typeLabelFromKey(typeKey) {
   if (typeKey === 'qa') return 'Q/R';
-  if (typeKey === 'quiz') return 'Quizz';
+  if (typeKey === 'quiz') return 'Quiz';
   if (typeKey === 'presentation') return 'Présentation';
   return null;
 }
@@ -136,12 +138,7 @@ const ckeditorSchema = (() => {
       'rowspan',
       'scope',
     ],
-    colgroup: [
-      ...(defaultSchema.attributes?.colgroup || []),
-      'className',
-      'style',
-      'span',
-    ],
+    colgroup: [...(defaultSchema.attributes?.colgroup || []), 'className', 'style', 'span'],
     col: [...(defaultSchema.attributes?.col || []), 'className', 'style', 'span'],
     figure: [...(defaultSchema.attributes?.figure || []), 'className', 'style'],
     figcaption: [...(defaultSchema.attributes?.figcaption || []), 'className', 'style'],
@@ -416,16 +413,37 @@ export default function CaseDetail() {
       setLoading(true);
     }
 
-    async function loadWithPopulate(populateQa) {
+    async function loadWithPopulate({ withQa, withQuiz }) {
+      const populate = {
+        cover: { fields: ['url', 'formats'] },
+      };
+
+      if (withQa) populate.qa_blocks = { populate: '*' };
+
+      if (withQuiz) {
+        populate.quiz_blocks = {
+          populate: {
+            propositions: true,
+          },
+        };
+      }
+
       return strapiFetch(CASES_ENDPOINT, {
         params: {
           filters: { slug: { $eq: slug } },
           locale: 'all',
           publicationState: PUB_STATE,
-          populate: populateQa
-            ? { cover: { fields: ['url', 'formats'] }, qa_blocks: { populate: '*' } }
-            : { cover: { fields: ['url', 'formats'] } },
-          fields: ['title', 'slug', 'type', 'excerpt', 'content', 'updatedAt', 'references', 'copyright'],
+          populate,
+          fields: [
+            'title',
+            'slug',
+            'type',
+            'excerpt',
+            'content',
+            'updatedAt',
+            'references',
+            'copyright',
+          ],
           pagination: { page: 1, pageSize: 1 },
         },
       });
@@ -435,12 +453,20 @@ export default function CaseDetail() {
       setError('');
       try {
         let res;
+
         try {
-          res = await loadWithPopulate(true);
+          res = await loadWithPopulate({ withQa: true, withQuiz: true });
         } catch (err) {
           const msg = err?.message || '';
-          if (/Invalid key qa_blocks/i.test(msg)) {
-            res = await loadWithPopulate(false);
+
+          const qaInvalid = /Invalid key qa_blocks/i.test(msg);
+          const quizInvalid = /Invalid key quiz_blocks/i.test(msg);
+
+          if (qaInvalid || quizInvalid) {
+            res = await loadWithPopulate({
+              withQa: !qaInvalid,
+              withQuiz: !quizInvalid,
+            });
           } else {
             throw err;
           }
@@ -456,7 +482,10 @@ export default function CaseDetail() {
         } else {
           const coverAttr = attrs?.cover?.data?.attributes || attrs?.cover || null;
           const apiCover =
-            imgUrl(coverAttr, 'large') || imgUrl(coverAttr, 'medium') || imgUrl(coverAttr) || null;
+            imgUrl(coverAttr, 'large') ||
+            imgUrl(coverAttr, 'medium') ||
+            imgUrl(coverAttr) ||
+            null;
 
           const full = { ...attrs, coverUrl: apiCover || item?.coverUrl || null };
           setItem(full);
@@ -478,11 +507,12 @@ export default function CaseDetail() {
 
   const typeLabel = useMemo(() => {
     if (item?.type === 'qa') return 'Q/R';
-    if (item?.type === 'quiz') return 'Quizz';
+    if (item?.type === 'quiz') return 'Quiz';
     return 'Présentation';
   }, [item?.type]);
 
   const qaList = Array.isArray(item?.qa_blocks) ? item.qa_blocks : [];
+  const quizList = Array.isArray(item?.quiz_blocks) ? item.quiz_blocks : [];
 
   const typeKey = item?.type || provisional?.type || null;
   const crumbTypeLabel = typeLabelFromKey(typeKey);
@@ -521,7 +551,7 @@ export default function CaseDetail() {
 
     el.addEventListener('click', onClick);
     return () => el.removeEventListener('click', onClick);
-  }, [item?.content, qaList?.length]);
+  }, [item?.content, qaList?.length, quizList?.length]);
 
   useEffect(() => {
     if (!lightbox) return;
@@ -535,7 +565,13 @@ export default function CaseDetail() {
   const drawerOpen = isNarrow && mobileOpen;
 
   return (
-    <div className={['cd-shell', collapsed ? 'is-collapsed' : '', drawerOpen ? 'is-drawer-open' : ''].join(' ')}>
+    <div
+      className={[
+        'cd-shell',
+        collapsed ? 'is-collapsed' : '',
+        drawerOpen ? 'is-drawer-open' : '',
+      ].join(' ')}
+    >
       <AsideSameType
         currentSlug={slug}
         currentType={item?.type}
@@ -570,7 +606,9 @@ export default function CaseDetail() {
               <span className={`cd-chip cd-${item?.type || 'qa'}`}>{typeLabel}</span>
             </div>
 
-            <PageTitle description={item?.excerpt || ''}>{item?.title || 'Cas clinique'}</PageTitle>
+            <PageTitle description={item?.excerpt || ''}>
+              {item?.title || 'Cas clinique'}
+            </PageTitle>
           </article>
         </div>
 
@@ -612,6 +650,24 @@ export default function CaseDetail() {
                   </details>
                 );
               })}
+            </section>
+          )}
+
+          {quizList.length > 0 && (
+            <section className="quiz-section">
+              <h2 className="quiz-title">Quiz</h2>
+
+              {quizList.map((qb, i) => (
+                <QuizBlock
+                  key={qb?.id ?? `${slug}-quiz-${i}`}
+                  block={qb}
+                  index={i}
+                  total={quizList.length}
+                  seedKey={`${slug}-${qb?.id ?? i}`}
+                  Markdown={Markdown}
+                />
+              ))}
+
             </section>
           )}
 
@@ -789,7 +845,7 @@ function AsideSameType({
     currentType === 'qa'
       ? 'Cas Q/R'
       : currentType === 'quiz'
-      ? 'Quizz'
+      ? 'Quiz'
       : currentType === 'presentation'
       ? 'Présentations'
       : 'Cas';
@@ -801,7 +857,14 @@ function AsideSameType({
   const showNavInsteadOfCases = isNarrow && drawerView === 'nav';
 
   return (
-    <aside className={['cd-side', collapsed ? 'is-collapsed' : '', anim, isAnimating ? 'is-animating' : ''].join(' ')}>
+    <aside
+      className={[
+        'cd-side',
+        collapsed ? 'is-collapsed' : '',
+        anim,
+        isAnimating ? 'is-animating' : '',
+      ].join(' ')}
+    >
       <div className="cd-side-inner">
         <div className="cd-side-scroll">
           {showNavInsteadOfCases ? (
@@ -810,7 +873,11 @@ function AsideSameType({
 
               <ul className="cd-side-list">
                 <li>
-                  <button type="button" className="cd-side-back" onClick={() => setDrawerView('cases')}>
+                  <button
+                    type="button"
+                    className="cd-side-back"
+                    onClick={() => setDrawerView('cases')}
+                  >
                     ← Liste des cas
                   </button>
                 </li>
@@ -841,7 +908,11 @@ function AsideSameType({
             <>
               {isNarrow && (
                 <div className="cd-side-top">
-                  <button type="button" className="cd-side-back" onClick={() => setDrawerView('nav')}>
+                  <button
+                    type="button"
+                    className="cd-side-back"
+                    onClick={() => setDrawerView('nav')}
+                  >
                     ← Revenir
                   </button>
                 </div>
@@ -850,7 +921,9 @@ function AsideSameType({
               <div className="cd-side-header">{labelType}</div>
 
               {loadingList && <div className="cd-side-state">Chargement…</div>}
-              {errList && !loadingList && <div className="cd-side-state error">{errList}</div>}
+              {errList && !loadingList && (
+                <div className="cd-side-state error">{errList}</div>
+              )}
 
               {!errList && (
                 <ul className="cd-side-list">
@@ -868,10 +941,14 @@ function AsideSameType({
                             to={`/cas-cliniques/${it.slug}`}
                             onClick={() => isNarrow && closeMobile()}
                             onMouseEnter={() =>
-                              prefetchCase(it.slug, { publicationState: PUB_STATE }).catch(() => {})
+                              prefetchCase(it.slug, { publicationState: PUB_STATE }).catch(
+                                () => {}
+                              )
                             }
                             onFocus={() =>
-                              prefetchCase(it.slug, { publicationState: PUB_STATE }).catch(() => {})
+                              prefetchCase(it.slug, { publicationState: PUB_STATE }).catch(
+                                () => {}
+                              )
                             }
                           >
                             {it.title || it.slug}
@@ -890,8 +967,16 @@ function AsideSameType({
           (showOverlay ? (
             <div
               className="cd-side-toggle"
-              title={overlayShowsExpand ? 'Développer la barre latérale' : 'Réduire la barre latérale'}
-              aria-label={overlayShowsExpand ? 'Développer la barre latérale' : 'Réduire la barre latérale'}
+              title={
+                overlayShowsExpand
+                  ? 'Développer la barre latérale'
+                  : 'Réduire la barre latérale'
+              }
+              aria-label={
+                overlayShowsExpand
+                  ? 'Développer la barre latérale'
+                  : 'Réduire la barre latérale'
+              }
               role="button"
               tabIndex={0}
               onClick={isAnimating ? undefined : handleToggle}
