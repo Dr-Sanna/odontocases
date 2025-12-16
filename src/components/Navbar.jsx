@@ -6,6 +6,7 @@ import { useMobileDrawer } from '../ui/MobileDrawerContext';
 import { useCaseDetailSidebar } from '../ui/CaseDetailSidebarContext';
 
 const THEME_KEY = 'theme';
+const BLUR_KEY = 'blur_images';
 
 function getInitialTheme() {
   try {
@@ -19,6 +20,14 @@ function getInitialTheme() {
     window.matchMedia('(prefers-color-scheme: dark)').matches;
 
   return prefersDark ? 'dark' : 'light';
+}
+
+function getInitialBlur() {
+  try {
+    return localStorage.getItem(BLUR_KEY) === '1';
+  } catch {
+    return false;
+  }
 }
 
 function useIsNarrow(maxWidthPx = 980) {
@@ -54,16 +63,26 @@ export default function Navbar() {
   );
 
   const [theme, setTheme] = useState(getInitialTheme);
+  const [blurImages, setBlurImages] = useState(getInitialBlur);
 
   const { navOpen, setNavOpen, toggleNav, closeNav } = useMobileDrawer();
   const { mobileOpen, setMobileOpen } = useCaseDetailSidebar();
 
+  // Thème
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     try {
       localStorage.setItem(THEME_KEY, theme);
     } catch {}
   }, [theme]);
+
+  // Blur (classe sur <html>)
+  useEffect(() => {
+    document.documentElement.classList.toggle('blur-images', blurImages);
+    try {
+      localStorage.setItem(BLUR_KEY, blurImages ? '1' : '0');
+    } catch {}
+  }, [blurImages]);
 
   // Lock scroll uniquement pour le drawer "nav"
   useEffect(() => {
@@ -142,6 +161,17 @@ export default function Navbar() {
         </div>
 
         <div className="navbar-right">
+          {/* Toggle Blur (à gauche de GitHub) */}
+          <label className="blur-toggle" title="Flouter les images">
+            <input
+              type="checkbox"
+              checked={blurImages}
+              onChange={(e) => setBlurImages(e.target.checked)}
+              aria-label="Flouter les images"
+            />
+            <span className="blur-toggle-label">Blur</span>
+          </label>
+
           <a
             className="github-link"
             href="https://github.com/Dr-Sanna"
@@ -174,7 +204,13 @@ export default function Navbar() {
       {/* Drawer NAV : uniquement mobile et uniquement hors CaseDetail */}
       {isNarrow && !isCaseDetail && navOpen && (
         <>
-          <div className="md-scrim" onClick={closeNav} role="button" tabIndex={0} aria-label="Fermer le menu" />
+          <div
+            className="md-scrim"
+            onClick={closeNav}
+            role="button"
+            tabIndex={0}
+            aria-label="Fermer le menu"
+          />
           <aside className="md-drawer" aria-label="Menu mobile">
             <nav className="md-nav">
               <NavLink to="/cas-cliniques" className="md-link" onClick={() => setNavOpen(false)}>

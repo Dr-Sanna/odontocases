@@ -108,8 +108,7 @@
   --ifm-menu-color-active: var(--ifm-color-primary-darker) !important;
   --ifm-menu-link-padding-vertical: .375rem;
   --ifm-menu-link-padding-horizontal: .75rem;
-
-  
+   
 }
 
 
@@ -302,4 +301,42 @@ body.bg-none::before {
 .cd-presentation, .cc-chip.cc-presentation {  
   --ifm-alert-foreground-color: var(--ifm-color-danger-contrast-foreground);
   --ifm-alert-background-color: var(--ifm-color-danger-contrast-background);
+}
+
+  /* blur pour les moldus */
+/* Blur désactivé par défaut : rien */
+
+/* Activé seulement quand <html> a la classe "blur-images" */
+html.blur-images img,
+html.blur-images .cc-thumb {
+  filter: blur(20px);
+}
+
+/* Exceptions : logo net */
+html.blur-images .logo-container img {
+  filter: none;
+}
+
+/* (optionnel) éviter de flouter des images de la navbar si tu en ajoutes plus tard */
+html.blur-images .navbar img {
+  filter: none;
+}
+.blur-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: 10px; /* espace avant GitHub */
+  user-select: none;
+  vertical-align: middle;
+}
+
+.blur-toggle input {
+  width: 16px;
+  height: 16px;
+}
+
+.blur-toggle-label {
+  font-size: 0.9rem;
+  vertical-align: middle;
+  line-height: 1;
 }
