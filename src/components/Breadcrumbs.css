@@ -10,6 +10,10 @@
     padding-left: 0;
 }
 
+.breadcrumbs li + li {
+  margin-top: 0;
+}
+
 .breadcrumbs__item {
   display: inline-block;
 }
