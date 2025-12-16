@@ -49,14 +49,16 @@
   --ifm-navbar-padding-vertical: calc(var(--ifm-spacing-vertical) * .5);
   --ifm-navbar-item-padding-horizontal: .75rem;
   --ifm-navbar-item-padding-vertical: .25rem;
-  
 
   /* Ombres */
   --ifm-navbar-shadow: var(--ifm-global-shadow-lw);
   --ifm-global-shadow-lw: 0 1px 2px 0 rgba(0, 0, 0, .1);
 
-  /* Alert */
+    /* Transition “fast” */
+  --ifm-transition-fast: 200ms;
+  --ifm-transition-timing-default: cubic-bezier(.08, .52, .52, 1);
 
+  /* Alert */
   --ifm-alert-padding-vertical: 1rem;
   --ifm-alert-padding-horizontal: 1rem;
   --ifm-alert-border-radius: 0.4rem;
@@ -68,17 +70,18 @@
   --ifm-color-info: #54c7ec;
   --ifm-color-info-dark: #4cb3d4;
 
+
   /* Warning */
   --ifm-color-warning: #ffba00;
   --ifm-color-warning-dark: #e6a700;
 
+  /*Success*/
+  --ifm-color-success: #00a400;
+  --ifm-color-success-dark: #009400;
+
   /* Danger */
   --ifm-color-danger: #fa383e;
   --ifm-color-danger-dark: #e13238;
-
-  /* Transition “fast” */
-  --ifm-transition-fast: 200ms;
-  --ifm-transition-timing-default: cubic-bezier(.08, .52, .52, 1);
 
   /* Variables Docusaurus details */
   --docusaurus-details-summary-arrow-size: 0.38rem;
@@ -98,10 +101,6 @@
   --ifm-breadcrumb-separator-size: .5rem;
   --ifm-breadcrumb-separator-size-multiplier: 1.25;
 
-  /* liste */
-  --ifm-list-margin: 1rem;
-  --ifm-list-left-padding: 2rem;
-
   /* Menu */
   --ifm-menu-color: var(--ifm-color-emphasis-700);
   --ifm-menu-color-background-hover: var(--ifm-hover-overlay);
@@ -109,6 +108,8 @@
   --ifm-menu-color-active: var(--ifm-color-primary-darker) !important;
   --ifm-menu-link-padding-vertical: .375rem;
   --ifm-menu-link-padding-horizontal: .75rem;
+
+  
 }
 
 
@@ -127,16 +128,24 @@
 
     /* Info */
     --ifm-color-info-contrast-background: #eef9fd;
+    --ifm-color-info-contrast-foreground: #193c47;
 
     /* Warning */
     --ifm-color-warning-contrast-background: #fff8e6;
+    --ifm-color-warning-contrast-foreground: #4d3800;
 
     /* Success */
     --ifm-color-success-contrast-background: #e6f6e6;
+    --ifm-color-success-contrast-foreground: #003100;
+
+        /*Danger*/
+    --ifm-color-danger-contrast-background: #ffebec;
+    --ifm-color-danger-contrast-foreground: #4b1113;
 
         /*Bouton collapse*/
     --docusaurus-collapse-button-bg: transparent;
     --docusaurus-collapse-button-bg-hover: #0000001a;
+    
     
 }
 
@@ -156,15 +165,20 @@
     --ifm-color-emphasis-700: var(--ifm-color-gray-300);
 
     /* Info */
-    --ifm-color-info-dark: #4cb3d4;
     --ifm-color-info-contrast-background: #193c47;
+    --ifm-color-info-contrast-foreground: #eef9fd;
 
     /* Warning */
-    --ifm-color-warning-dark: #e6a700;
     --ifm-color-warning-contrast-background: #4d3800;
+    --ifm-color-warning-contrast-foreground: #fff8e6;
 
     /*Success*/
     --ifm-color-success-contrast-background: #003100;
+    --ifm-color-success-contrast-foreground: #e6f6e6;
+
+    /*Danger*/
+    --ifm-color-danger-contrast-background: #4b1113;
+    --ifm-color-danger-contrast-foreground: #ffebec;
 
     /*Breadcrumb*/
     --ifm-breadcrumb-separator-filter: invert(64%) sepia(11%) saturate(0%) hue-rotate(149deg) brightness(99%) contrast(95%);
@@ -262,5 +276,30 @@ body.bg-none::before {
   opacity: 0;
 }
 
+/* Chip casedetail*/
+.cd-type-chip {
+  margin: 2px 0 8px;
+}
 
+.cd-chip, .cc-chip {
+  font-size: 0.85rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 8px;
+  color: var(--ifm-alert-foreground-color);
+  background: var(--ifm-alert-background-color);
+}
 
+.cd-qa, .cc-chip.cc-qa { 
+  --ifm-alert-foreground-color: var(--ifm-color-success-contrast-foreground);
+  --ifm-alert-background-color: var(--ifm-color-success-contrast-background); 
+}
+
+.cd-quiz, .cc-chip.cc-quiz {
+  --ifm-alert-foreground-color: var(--ifm-color-info-contrast-foreground); 
+  --ifm-alert-background-color: var(--ifm-color-info-contrast-background);
+}
+
+.cd-presentation, .cc-chip.cc-presentation {  
+  --ifm-alert-foreground-color: var(--ifm-color-danger-contrast-foreground);
+  --ifm-alert-background-color: var(--ifm-color-danger-contrast-background);
+}

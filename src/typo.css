@@ -20,6 +20,11 @@
     --ifm-h4-font-size: 1rem;
     --ifm-h5-font-size: .875rem;
     --ifm-h6-font-size: .85rem;
+   /* liste */
+    --ifm-list-margin: 1rem;
+    --ifm-list-left-padding: 2rem;
+    --ifm-list-item-margin: .25rem;
+    --ifm-list-paragraph-margin: 1rem;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -45,18 +50,25 @@ h2 {
   margin-top: calc(var(--ifm-h3-vertical-rhythm-top) * var(--ifm-leading));
 }
 
+/* Listes */
   ul, ol {
     margin: 0 0 var(--ifm-list-margin);
     padding-left: var(--ifm-list-left-padding);
     margin-bottom: var(--ifm-leading);
 }
 
-.cd-content p {
-    margin: 0 0 var(--ifm-paragraph-margin-bottom);
+li+li {
+    margin-top: var(--ifm-list-item-margin);
 }
 
-.cd-content li + li {
-  margin-top: 0.2em;
+li > ul,
+li > ol {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.cd-content p {
+    margin: 0 0 var(--ifm-paragraph-margin-bottom);
 }
 
 .cd-content code {
@@ -188,20 +200,35 @@ h2 {
 .cd-callout {
   margin: 1rem 0;
   border-radius: 0.6rem;
-  padding: 0.75rem 0.9rem 0.8rem 0.9rem;
+  padding: var(--ifm-alert-padding-vertical) var(--ifm-alert-padding-horizontal);
   box-shadow: var(--ifm-alert-shadow);
+  color: var(--ifm-alert-foreground-color);
 }
 
 /* Variante info */
 .cd-callout-info {
+  --ifm-alert-foreground-color: var(--ifm-color-info-contrast-foreground);
   border-left: 4px solid var(--ifm-color-info-dark);
   background: var(--ifm-color-info-contrast-background);
 }
 
 /* Variante warning */
 .cd-callout-warning {
+ --ifm-alert-foreground-color: var(--ifm-color-warning-contrast-foreground);
   border-left: 4px solid var(--ifm-color-warning-dark);
   background: var(--ifm-color-warning-contrast-background);
+}
+
+.cd-callout-success {
+ --ifm-alert-foreground-color: var(--ifm-color-success-contrast-foreground);
+  border-left: 4px solid var(--ifm-color-success-dark);
+  background: var(--ifm-color-success-contrast-background);
+}
+
+.cd-callout-danger {
+ --ifm-alert-foreground-color: var(--ifm-color-danger-contrast-foreground);
+  border-left: 4px solid var(--ifm-color-danger-dark);
+  background: var(--ifm-color-danger-contrast-background);
 }
 
 /* Header (titre + icône) */

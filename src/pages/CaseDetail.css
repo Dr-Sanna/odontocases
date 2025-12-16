@@ -224,7 +224,8 @@
 }
 
 .cd-side.is-collapsed .cd-side-toggle:hover {
-  background: #f8f9fb;
+  background-color: var(--docusaurus-collapse-button-bg-hover);
+  transition: background-color var(--ifm-transition-fast);
 }
 
 /* =========================
@@ -243,22 +244,6 @@
 .cd-page-header article > :first-child {
   margin-top: 0;
 }
-
-/* Puce AU-DESSUS du titre */
-.cd-type-chip {
-  margin: 2px 0 8px;
-}
-
-.cd-chip {
-  font-size: 0.85rem;
-  padding: 0.25rem 0.6rem;
-  border-radius: 8px;
-  background: #f1f1f1;
-}
-
-.cd-qa { background: var(--ifm-color-success-contrast-background); }
-.cd-quiz { background: var(--ifm-color-info-contrast-background); }
-.cd-presentation { background: var(--ifm-color-warning-contrast-background); }
 
 /* =========================
    Article (lecture)
@@ -291,6 +276,7 @@
 .qa-section {
   display: grid;
   gap: 1rem;
+  margin-top: calc(-1 * var(--ifm-paragraph-margin-bottom));
 }
 
 .qa-item {
@@ -351,7 +337,7 @@
 .qa-item[open] > summary {
   border-bottom: 1px solid var(--ifm-alert-border-color);
   padding-bottom: 16px;
-  margin-bottom: 8px;
+  margin-bottom: 1rem;
 }
 
 .qa-a {
@@ -367,8 +353,15 @@
 }
 
 .qa-a p {
-  margin: 0.6em 0;
+  margin-top: 0;
+  margin-bottom: var(--ifm-paragraph-margin-bottom);
 }
+
+.qa-a p:last-child,
+.qa-a ul:last-child {
+  margin-bottom: 0;
+}
+
 
 /* =========================
    Extras
