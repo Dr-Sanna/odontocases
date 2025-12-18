@@ -723,3 +723,92 @@
   cursor: pointer;
 }
 
+.cd-children {
+  margin-top: 1.2rem;
+}
+
+.cd-children-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.cd-child-card {
+  display: block;
+  padding: 0.85rem;
+  border-radius: 0.6rem;
+  border: 1px solid rgba(0,0,0,0.12);
+  text-decoration: none;
+    overflow: hidden;
+}
+
+/* Image : taille fixe, jamais plus grande que la carte */
+.cd-child-cover {
+  display: block;
+  width: 100%;
+  height: 120px;        /* ajuste: 100–160px */
+  max-height: 120px;
+  object-fit: cover;    /* ou contain si tu préfères */
+  margin: 0 0 0.6rem 0; /* écrase les margins éventuels */
+  border-radius: 0.5rem;
+}
+
+[data-theme="dark"] .cd-child-card {
+  border-color: rgba(255,255,255,0.14);
+}
+
+.cd-child-card:hover {
+  background: rgba(0,0,0,0.03);
+}
+
+[data-theme="dark"] .cd-child-card:hover {
+  background: rgba(255,255,255,0.05);
+}
+
+.cd-child-title {
+  font-weight: 650;
+}
+
+.cd-child-excerpt {
+  margin-top: 0.35rem;
+  opacity: 0.9;
+  font-size: 0.95em;
+}
+
+.cd-side-parent-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cd-side-chevron {
+  margin-left: auto;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 0.45rem;
+  border: 1px solid rgba(0,0,0,0.12);
+  background: transparent;
+  cursor: pointer;
+}
+
+[data-theme="dark"] .cd-side-chevron {
+  border-color: rgba(255,255,255,0.14);
+}
+
+.cd-side-children {
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+  padding-left: 0.9rem; /* indentation */
+  border-left: 1px solid rgba(0,0,0,0.10);
+}
+
+[data-theme="dark"] .cd-side-children {
+  border-left-color: rgba(255,255,255,0.12);
+}
+
+.cd-side-child-link {
+  display: block;
+  padding-left: 0.25rem;
+  opacity: 0.95;
+}

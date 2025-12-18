@@ -13,6 +13,10 @@
  *   > [!info] ...  (neutre)
  *   > [!info]- ... (replié par défaut)
  *   > [!info]+ ... (déplié par défaut)
+ *
+ * 2 niveaux "conteneur" :
+ * - kind: 'container' => affiche child_cases (cartes)
+ * - sidebar: chevron sur les conteneurs pour afficher/masquer les enfants
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -41,6 +45,8 @@ import './CaseDetail.css';
 const CASES_ENDPOINT = import.meta.env.VITE_CASES_ENDPOINT || '/cases';
 const LS_KEY_COLLAPSE = 'cd-sidebar-collapsed';
 const PUB_STATE = import.meta.env.DEV ? 'preview' : 'live';
+
+const LS_KEY_EXPANDED_PREFIX = 'cd-expanded-containers:'; // + type
 
 /** Breakpoint helper */
 function useIsNarrow(maxWidthPx = 980) {
@@ -95,6 +101,27 @@ function typeLabelFromKey(typeKey) {
   return null;
 }
 
+/** Normalise Strapi v4/v5: data/attributes ou objet direct */
+function normalizeEntity(node) {
+  if (!node) return null;
+  if (node.attributes) return { id: node.id, ...node.attributes };
+  return node;
+}
+function normalizeRelation(rel) {
+  if (!rel) return null;
+  // v4: { data: {...} } / v5 parfois direct
+  if (rel.data === null) return null;
+  if (rel.data) return normalizeEntity(rel.data);
+  return normalizeEntity(rel);
+}
+function normalizeRelationArray(rel) {
+  if (!rel) return [];
+  if (Array.isArray(rel)) return rel.map(normalizeEntity).filter(Boolean);
+  if (Array.isArray(rel.data)) return rel.data.map(normalizeEntity).filter(Boolean);
+  if (Array.isArray(rel?.results)) return rel.results.map(normalizeEntity).filter(Boolean);
+  return [];
+}
+
 /**
  * Schéma sanitize pour CKEditor + callouts :
  * - tables + colgroup/col + style="width:..."
@@ -117,7 +144,6 @@ const ckeditorSchema = (() => {
     'col',
     'figure',
     'figcaption',
-    // callouts pliables
     'details',
     'summary',
   ].forEach((t) => tagNames.add(t));
@@ -146,11 +172,9 @@ const ckeditorSchema = (() => {
 
     blockquote: [...(defaultSchema.attributes?.blockquote || []), 'className', 'data-callout'],
 
-    // pour que les classes sur nos <div>/<span> ne soient pas supprimées
     div: [...(defaultSchema.attributes?.div || []), 'className'],
     span: [...(defaultSchema.attributes?.span || []), 'className'],
 
-    // callouts pliables
     details: [...(defaultSchema.attributes?.details || []), 'className', 'open'],
     summary: [...(defaultSchema.attributes?.summary || []), 'className'],
   };
@@ -192,22 +216,9 @@ function escapeHtml(str) {
  * - neutre : [!info]
  * - replié : [!info]-
  * - déplié : [!info]+
- *
- * Rendu:
- * - neutre -> <blockquote> + heading div + content div
- * - +/-    -> <blockquote> + <details> (open si +) + <summary> + content
  */
 function remarkObsidianCallouts() {
-  const KNOWN = new Set([
-    'info',
-    'note',
-    'tip',
-    'warning',
-    'danger',
-    'success',
-    'question',
-    'important',
-  ]);
+  const KNOWN = new Set(['info', 'note', 'tip', 'warning', 'danger', 'success', 'question', 'important']);
 
   const ICON = {
     info: 'ℹ️',
@@ -237,7 +248,6 @@ function remarkObsidianCallouts() {
       const firstChild = firstParagraph.children[0];
       if (!firstChild || firstChild.type !== 'text') return;
 
-      // [!type]([+-])? titre?
       const m = firstChild.value.match(/^\s*\[\!(\w+)\]([+-])?\s*(.*?)\s*$/i);
       if (!m) return;
 
@@ -248,16 +258,12 @@ function remarkObsidianCallouts() {
       const calloutType = KNOWN.has(rawType) ? rawType : 'info';
       const title =
         titleTextRaw ||
-        (calloutType === 'info'
-          ? 'Info'
-          : calloutType.charAt(0).toUpperCase() + calloutType.slice(1));
+        (calloutType === 'info' ? 'Info' : calloutType.charAt(0).toUpperCase() + calloutType.slice(1));
 
       const safeTitle = escapeHtml(title);
       const icon = ICON[calloutType] || 'ℹ️';
 
-      // On retire le paragraphe contenant le marker
       node.children.shift();
-
       const innerChildren = node.children;
 
       if (!node.data) node.data = {};
@@ -413,7 +419,7 @@ export default function CaseDetail() {
       setLoading(true);
     }
 
-    async function loadWithPopulate({ withQa, withQuiz }) {
+    async function loadWithPopulate({ withQa, withQuiz, withChildren, withParent }) {
       const populate = {
         cover: { fields: ['url', 'formats'] },
       };
@@ -428,6 +434,20 @@ export default function CaseDetail() {
         };
       }
 
+      if (withChildren) {
+        populate.child_cases = {
+          fields: ['title', 'slug', 'excerpt', 'type', 'kind'],
+          populate: { cover: { fields: ['url', 'formats'] } },
+          sort: ['title:asc'],
+        };
+      }
+
+      if (withParent) {
+        populate.parent_case = {
+          fields: ['title', 'slug', 'type', 'kind'],
+        };
+      }
+
       return strapiFetch(CASES_ENDPOINT, {
         params: {
           filters: { slug: { $eq: slug } },
@@ -438,6 +458,7 @@ export default function CaseDetail() {
             'title',
             'slug',
             'type',
+            'kind',
             'excerpt',
             'content',
             'updatedAt',
@@ -455,17 +476,26 @@ export default function CaseDetail() {
         let res;
 
         try {
-          res = await loadWithPopulate({ withQa: true, withQuiz: true });
+          res = await loadWithPopulate({
+            withQa: true,
+            withQuiz: true,
+            withChildren: true,
+            withParent: true,
+          });
         } catch (err) {
           const msg = err?.message || '';
 
           const qaInvalid = /Invalid key qa_blocks/i.test(msg);
           const quizInvalid = /Invalid key quiz_blocks/i.test(msg);
+          const childInvalid = /Invalid key child_cases/i.test(msg);
+          const parentInvalid = /Invalid key parent_case/i.test(msg);
 
-          if (qaInvalid || quizInvalid) {
+          if (qaInvalid || quizInvalid || childInvalid || parentInvalid) {
             res = await loadWithPopulate({
               withQa: !qaInvalid,
               withQuiz: !quizInvalid,
+              withChildren: !childInvalid,
+              withParent: !parentInvalid,
             });
           } else {
             throw err;
@@ -473,24 +503,40 @@ export default function CaseDetail() {
         }
 
         const node = Array.isArray(res?.data) ? res.data[0] : null;
-        const attrs = node?.attributes ? node.attributes : node;
+        const attrs = normalizeEntity(node);
 
         if (ignore) return;
 
         if (!attrs) {
           setError('Cas introuvable ou non publié.');
-        } else {
-          const coverAttr = attrs?.cover?.data?.attributes || attrs?.cover || null;
-          const apiCover =
-            imgUrl(coverAttr, 'large') ||
-            imgUrl(coverAttr, 'medium') ||
-            imgUrl(coverAttr) ||
-            null;
-
-          const full = { ...attrs, coverUrl: apiCover || item?.coverUrl || null };
-          setItem(full);
-          setCaseToCache(slug, full);
+          return;
         }
+
+        const coverAttr = normalizeRelation(attrs?.cover)?.formats ? normalizeRelation(attrs.cover) : (attrs?.cover?.data?.attributes || attrs?.cover || null);
+        const apiCover =
+          imgUrl(coverAttr, 'large') ||
+          imgUrl(coverAttr, 'medium') ||
+          imgUrl(coverAttr) ||
+          null;
+
+        // parent/children normalisés
+        const parent = normalizeRelation(attrs?.parent_case);
+        const children = normalizeRelationArray(attrs?.child_cases).map((c) => {
+          const cCoverAttr = c?.cover?.data?.attributes || c?.cover || null;
+          const cCoverUrl =
+            imgUrl(cCoverAttr, 'medium') || imgUrl(cCoverAttr, 'thumbnail') || imgUrl(cCoverAttr) || null;
+          return { ...c, coverUrl: cCoverUrl };
+        });
+
+        const full = {
+          ...attrs,
+          coverUrl: apiCover || item?.coverUrl || null,
+          parent_case: parent,
+          child_cases: children,
+        };
+
+        setItem(full);
+        setCaseToCache(slug, full);
       } catch (e) {
         if (!ignore) setError(e?.message || 'Erreur de chargement');
       } finally {
@@ -513,6 +559,8 @@ export default function CaseDetail() {
 
   const qaList = Array.isArray(item?.qa_blocks) ? item.qa_blocks : [];
   const quizList = Array.isArray(item?.quiz_blocks) ? item.quiz_blocks : [];
+  const childList = Array.isArray(item?.child_cases) ? item.child_cases : [];
+  const isContainer = item?.kind === 'container' || childList.length > 0;
 
   const typeKey = item?.type || provisional?.type || null;
   const crumbTypeLabel = typeLabelFromKey(typeKey);
@@ -530,9 +578,17 @@ export default function CaseDetail() {
       });
     }
 
+    // si on est sur un enfant, on met le parent dans le fil
+    if (item?.parent_case?.slug) {
+      base.push({
+        label: item.parent_case.title || item.parent_case.slug,
+        to: `/cas-cliniques/${item.parent_case.slug}`,
+      });
+    }
+
     base.push({ label: item?.title || 'Cas clinique', to: null });
     return base;
-  }, [crumbTypeLabel, typeKey, item?.title]);
+  }, [crumbTypeLabel, typeKey, item?.title, item?.parent_case?.slug, item?.parent_case?.title]);
 
   const [lightbox, setLightbox] = useState(null);
   const contentRef = useRef(null);
@@ -543,15 +599,23 @@ export default function CaseDetail() {
 
     const onClick = (e) => {
       const t = e.target;
-      if (t && t.tagName === 'IMG') {
-        e.preventDefault();
-        setLightbox({ src: t.src, alt: t.alt || '' });
-      }
+
+      if (!t || t.tagName !== 'IMG') return;
+
+      // ✅ 1) on ignore explicitement les images marquées
+      if (t.dataset?.noLightbox === '1') return;
+
+      // ✅ 2) sécurité : on ignore toute image contenue dans une card enfant
+      if (t.closest?.('.cd-child-card')) return;
+
+      e.preventDefault();
+      setLightbox({ src: t.src, alt: t.alt || '' });
     };
+
 
     el.addEventListener('click', onClick);
     return () => el.removeEventListener('click', onClick);
-  }, [item?.content, qaList?.length, quizList?.length]);
+  }, [item?.content, qaList?.length, quizList?.length, childList?.length]);
 
   useEffect(() => {
     if (!lightbox) return;
@@ -565,16 +629,11 @@ export default function CaseDetail() {
   const drawerOpen = isNarrow && mobileOpen;
 
   return (
-    <div
-      className={[
-        'cd-shell',
-        collapsed ? 'is-collapsed' : '',
-        drawerOpen ? 'is-drawer-open' : '',
-      ].join(' ')}
-    >
+    <div className={['cd-shell', collapsed ? 'is-collapsed' : '', drawerOpen ? 'is-drawer-open' : ''].join(' ')}>
       <AsideSameType
         currentSlug={slug}
         currentType={item?.type}
+        currentParentSlug={item?.parent_case?.slug || null}
         collapsed={collapsed}
         onToggle={toggleSidebar}
         prefetchRelated={location.state?.relatedPrefetch || null}
@@ -606,9 +665,7 @@ export default function CaseDetail() {
               <span className={`cd-chip cd-${item?.type || 'qa'}`}>{typeLabel}</span>
             </div>
 
-            <PageTitle description={item?.excerpt || ''}>
-              {item?.title || 'Cas clinique'}
-            </PageTitle>
+            <PageTitle description={item?.excerpt || ''}>{item?.title || 'Cas clinique'}</PageTitle>
           </article>
         </div>
 
@@ -628,6 +685,30 @@ export default function CaseDetail() {
             <div className="cd-content">
               <Markdown>{item.content}</Markdown>
             </div>
+          )}
+
+          {isContainer && childList.length > 0 && (
+            <section className="cd-children">
+              <h2 className="cd-children-title">Cas associés</h2>
+
+              <div className="cd-children-grid">
+                {childList.map((c) => (
+                  <Link
+                    key={c.slug}
+                    to={`/cas-cliniques/${c.slug}`}
+                    className="cd-child-card"
+                    onMouseEnter={() => prefetchCase(c.slug, { publicationState: PUB_STATE }).catch(() => {})}
+                    onFocus={() => prefetchCase(c.slug, { publicationState: PUB_STATE }).catch(() => {})}
+                  >
+                    {c.coverUrl && (
+                      <img className="cd-child-cover" src={c.coverUrl} alt={c.title || c.slug} loading="lazy" data-no-lightbox="1" />
+                    )}
+                    <div className="cd-child-title">{c.title || c.slug}</div>
+                    {c.excerpt && <div className="cd-child-excerpt">{c.excerpt}</div>}
+                  </Link>
+                ))}
+              </div>
+            </section>
           )}
 
           {qaList.length > 0 && (
@@ -667,7 +748,6 @@ export default function CaseDetail() {
                   Markdown={Markdown}
                 />
               ))}
-
             </section>
           )}
 
@@ -712,6 +792,7 @@ export default function CaseDetail() {
 function AsideSameType({
   currentSlug,
   currentType,
+  currentParentSlug,
   collapsed,
   onToggle,
   prefetchRelated,
@@ -726,6 +807,55 @@ function AsideSameType({
 
   const [anim, setAnim] = useState('');
   const animTimerRef = useRef(null);
+
+  const [expanded, setExpanded] = useState(() => new Set());
+
+  const expandedKey = `${LS_KEY_EXPANDED_PREFIX}${currentType || 'none'}`;
+
+  const loadExpanded = () => {
+    try {
+      const raw = localStorage.getItem(expandedKey);
+      if (!raw) return new Set();
+      const arr = JSON.parse(raw);
+      return new Set(Array.isArray(arr) ? arr : []);
+    } catch {
+      return new Set();
+    }
+  };
+
+  const saveExpanded = (setVal) => {
+    try {
+      localStorage.setItem(expandedKey, JSON.stringify(Array.from(setVal)));
+    } catch {}
+  };
+
+  useEffect(() => {
+    setExpanded(loadExpanded());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expandedKey]);
+
+  // si on arrive sur un enfant, on ouvre automatiquement son parent
+  useEffect(() => {
+    if (!currentParentSlug) return;
+    setExpanded((prev) => {
+      if (prev.has(currentParentSlug)) return prev;
+      const next = new Set(prev);
+      next.add(currentParentSlug);
+      saveExpanded(next);
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentParentSlug]);
+
+  const toggleExpanded = (parentSlug) => {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(parentSlug)) next.delete(parentSlug);
+      else next.add(parentSlug);
+      saveExpanded(next);
+      return next;
+    });
+  };
 
   const handleToggle = () => {
     if (!isNarrow) {
@@ -798,9 +928,10 @@ function AsideSameType({
             locale: 'all',
             publicationState: PUB_STATE,
             filters: { type: { $eq: currentType } },
-            fields: ['title', 'slug', 'type'],
+            fields: ['title', 'slug', 'type', 'kind', 'excerpt'],
+            populate: { parent_case: { fields: ['slug'] } },
             sort: 'title:asc',
-            pagination: { page: 1, pageSize: 100 },
+            pagination: { page: 1, pageSize: 200 },
           },
         });
 
@@ -808,10 +939,9 @@ function AsideSameType({
 
         const list = Array.isArray(res?.data) ? res.data : [];
         const normalized = list
-          .map((n) => (n?.attributes ? n.attributes : n))
+          .map(normalizeEntity)
           .filter(Boolean)
-          .filter((it) => it.slug)
-          .sort(compareBySlugNumberAsc);
+          .filter((it) => it.slug);
 
         setRelated(normalized);
 
@@ -833,7 +963,7 @@ function AsideSameType({
 
   useEffect(() => {
     if (!Array.isArray(related) || related.length === 0) return;
-    const limited = related.slice(0, 20);
+    const limited = related.slice(0, 30);
 
     for (const it of limited) {
       if (!it?.slug || it.slug === currentSlug) continue;
@@ -853,18 +983,68 @@ function AsideSameType({
   const showOverlay = !isNarrow && (collapsed || anim !== '');
   const isAnimating = !isNarrow && anim !== '';
   const overlayShowsExpand = collapsed || anim === 'closing';
-
   const showNavInsteadOfCases = isNarrow && drawerView === 'nav';
 
+  // build tree
+  const { rootSingles, containers, childrenByParent } = useMemo(() => {
+    const byParent = new Map();
+
+    const containersList = [];
+    const rootSinglesList = [];
+
+    for (const it of related) {
+      const parentSlug = it?.parent_case?.data?.attributes?.slug || it?.parent_case?.slug || null;
+
+      const isContainer = it?.kind === 'container';
+      if (isContainer) {
+        containersList.push(it);
+        continue;
+      }
+
+      if (parentSlug) {
+        if (!byParent.has(parentSlug)) byParent.set(parentSlug, []);
+        byParent.get(parentSlug).push(it);
+      } else {
+        rootSinglesList.push(it);
+      }
+    }
+
+    containersList.sort(compareBySlugNumberAsc);
+    rootSinglesList.sort(compareBySlugNumberAsc);
+    for (const [p, arr] of byParent.entries()) arr.sort(compareBySlugNumberAsc);
+
+    return {
+      rootSingles: rootSinglesList,
+      containers: containersList,
+      childrenByParent: byParent,
+    };
+  }, [related]);
+
+  const renderLink = (it, className, onClick) => {
+    const active = it.slug === currentSlug;
+    if (active) {
+      return (
+        <span className={`${className} active`} aria-current="page">
+          {it.title || it.slug}
+        </span>
+      );
+    }
+
+    return (
+      <Link
+        className={className}
+        to={`/cas-cliniques/${it.slug}`}
+        onClick={onClick}
+        onMouseEnter={() => prefetchCase(it.slug, { publicationState: PUB_STATE }).catch(() => {})}
+        onFocus={() => prefetchCase(it.slug, { publicationState: PUB_STATE }).catch(() => {})}
+      >
+        {it.title || it.slug}
+      </Link>
+    );
+  };
+
   return (
-    <aside
-      className={[
-        'cd-side',
-        collapsed ? 'is-collapsed' : '',
-        anim,
-        isAnimating ? 'is-animating' : '',
-      ].join(' ')}
-    >
+    <aside className={['cd-side', collapsed ? 'is-collapsed' : '', anim, isAnimating ? 'is-animating' : ''].join(' ')}>
       <div className="cd-side-inner">
         <div className="cd-side-scroll">
           {showNavInsteadOfCases ? (
@@ -873,11 +1053,7 @@ function AsideSameType({
 
               <ul className="cd-side-list">
                 <li>
-                  <button
-                    type="button"
-                    className="cd-side-back"
-                    onClick={() => setDrawerView('cases')}
-                  >
+                  <button type="button" className="cd-side-back" onClick={() => setDrawerView('cases')}>
                     ← Liste des cas
                   </button>
                 </li>
@@ -908,11 +1084,7 @@ function AsideSameType({
             <>
               {isNarrow && (
                 <div className="cd-side-top">
-                  <button
-                    type="button"
-                    className="cd-side-back"
-                    onClick={() => setDrawerView('nav')}
-                  >
+                  <button type="button" className="cd-side-back" onClick={() => setDrawerView('nav')}>
                     ← Revenir
                   </button>
                 </div>
@@ -921,42 +1093,56 @@ function AsideSameType({
               <div className="cd-side-header">{labelType}</div>
 
               {loadingList && <div className="cd-side-state">Chargement…</div>}
-              {errList && !loadingList && (
-                <div className="cd-side-state error">{errList}</div>
-              )}
+              {errList && !loadingList && <div className="cd-side-state error">{errList}</div>}
 
               {!errList && (
                 <ul className="cd-side-list">
-                  {related.map((it) => {
-                    const active = it.slug === currentSlug;
+                  {/* Conteneurs */}
+                  {containers.map((parent) => {
+                    const isOpen = expanded.has(parent.slug);
+                    const kids = childrenByParent.get(parent.slug) || [];
+                    const hasKids = kids.length > 0;
+
                     return (
-                      <li key={it.slug}>
-                        {active ? (
-                          <span className="cd-side-link active" aria-current="page">
-                            {it.title || it.slug}
-                          </span>
-                        ) : (
-                          <Link
-                            className="cd-side-link"
-                            to={`/cas-cliniques/${it.slug}`}
-                            onClick={() => isNarrow && closeMobile()}
-                            onMouseEnter={() =>
-                              prefetchCase(it.slug, { publicationState: PUB_STATE }).catch(
-                                () => {}
-                              )
-                            }
-                            onFocus={() =>
-                              prefetchCase(it.slug, { publicationState: PUB_STATE }).catch(
-                                () => {}
-                              )
-                            }
+                      <li key={parent.slug}>
+                        <div className="cd-side-parent-row">
+                          {renderLink(parent, 'cd-side-link', () => isNarrow && closeMobile())}
+
+                          <button
+                            type="button"
+                            className="cd-side-chevron"
+                            aria-label={isOpen ? 'Replier' : 'Déplier'}
+                            title={isOpen ? 'Replier' : 'Déplier'}
+                            disabled={!hasKids}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              if (!hasKids) return;
+                              toggleExpanded(parent.slug);
+                            }}
                           >
-                            {it.title || it.slug}
-                          </Link>
+                            {/* simple chevron texte, tu peux le remplacer par une icône */}
+                            <span aria-hidden="true">{isOpen ? '▾' : '▸'}</span>
+                          </button>
+                        </div>
+
+                        {hasKids && isOpen && (
+                          <div className="cd-side-children">
+                            {kids.map((ch) => (
+                              <div key={ch.slug} className="cd-side-child">
+                                {renderLink(ch, 'cd-side-link cd-side-child-link', () => isNarrow && closeMobile())}
+                              </div>
+                            ))}
+                          </div>
                         )}
                       </li>
                     );
                   })}
+
+                  {/* Singles sans parent */}
+                  {rootSingles.map((it) => (
+                    <li key={it.slug}>{renderLink(it, 'cd-side-link', () => isNarrow && closeMobile())}</li>
+                  ))}
                 </ul>
               )}
             </>
@@ -967,16 +1153,8 @@ function AsideSameType({
           (showOverlay ? (
             <div
               className="cd-side-toggle"
-              title={
-                overlayShowsExpand
-                  ? 'Développer la barre latérale'
-                  : 'Réduire la barre latérale'
-              }
-              aria-label={
-                overlayShowsExpand
-                  ? 'Développer la barre latérale'
-                  : 'Réduire la barre latérale'
-              }
+              title={overlayShowsExpand ? 'Développer la barre latérale' : 'Réduire la barre latérale'}
+              aria-label={overlayShowsExpand ? 'Développer la barre latérale' : 'Réduire la barre latérale'}
               role="button"
               tabIndex={0}
               onClick={isAnimating ? undefined : handleToggle}

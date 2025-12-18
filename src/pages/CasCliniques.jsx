@@ -5,7 +5,11 @@
  * - Liste Strapi paginée
  * - Tri par numéro dans le slug (ex: qa-01, qa-12, quiz-03…)
  * - Cartes compactes (cover + titre + chip), pas d’excerpt affiché
- * - Passage à CaseDetail : prefetch + relatedPrefetch (liste triée)
+ *
+ * + 2 niveaux:
+ * - quand q est vide: on demande à Strapi uniquement les cas racine (parent_case null)
+ *   => pagination cohérente (les enfants ne comptent plus)
+ * - quand q est renseigné: on laisse Strapi renvoyer aussi les enfants (recherche)
  */
 
 import { useEffect, useMemo, useState } from 'react';
@@ -36,7 +40,6 @@ function compareBySlugNumberAsc(aNode, bNode) {
   const sa = String(a?.slug ?? '');
   const sb = String(b?.slug ?? '');
 
-  // prend le 1er groupe de chiffres rencontré
   const na = sa.match(/\d+/);
   const nb = sb.match(/\d+/);
   const ai = na ? parseInt(na[0], 10) : Number.POSITIVE_INFINITY;
@@ -73,7 +76,6 @@ export default function CasCliniques() {
 
   const showTypePicker = tab === 'all' && !q;
 
-  // handlers URL
   const onTab = (key) => {
     const next = new URLSearchParams(searchParams);
     next.set('type', key);
@@ -87,20 +89,26 @@ export default function CasCliniques() {
     setSearchParams(next);
   };
 
-  // Filtres Strapi
+  // ✅ filtres Strapi (IMPORTANT : filtre racine côté API quand q est vide)
   const filters = useMemo(() => {
     const f = {};
+
     if (tab !== 'all') f.type = { $eq: tab };
+
     if (q) {
-      f.$or = [
-        { title: { $containsi: q } },
-        { excerpt: { $containsi: q } },
-      ];
+      f.$or = [{ title: { $containsi: q } }, { excerpt: { $containsi: q } }];
+    } else {
+      // ✅ on ne veut que les cas racine (les enfants ont parent_case != null)
+      // Variante robuste:
+      f.parent_case = { id: { $null: true } };
+
+      // Si jamais Strapi n'aime pas id.$null, essaie plutôt:
+      // f.parent_case = { $null: true };
     }
+
     return f;
   }, [tab, q]);
 
-  // Chargement
   useEffect(() => {
     let ignore = false;
 
@@ -119,15 +127,15 @@ export default function CasCliniques() {
       try {
         const data = await strapiFetch(CASES_ENDPOINT, {
           params: {
-            populate: { cover: { fields: ['url', 'formats'] } },
+            populate: {
+              cover: { fields: ['url', 'formats'] },
+              parent_case: { fields: ['slug'] }, // utile pour debug + cohérence
+            },
             locale: 'all',
             filters,
-            // Si tes slugs sont "zéro-pad" (qa-01, qa-02...),
-            // un sort lexicographique est déjà cohérent.
-            // On retriera quand même côté front par sécurité.
             sort: 'slug:asc',
             pagination: { page, pageSize: PAGE_SIZE },
-            fields: ['title', 'slug', 'type', 'excerpt', 'updatedAt'],
+            fields: ['title', 'slug', 'type', 'kind', 'excerpt', 'updatedAt'],
             publicationState: 'live',
           },
         });
@@ -152,14 +160,13 @@ export default function CasCliniques() {
 
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
-  // Tri front (stabilise l’ordre, même si Strapi renvoie déjà trié)
   const sortedItems = useMemo(() => {
     const arr = Array.isArray(items) ? [...items] : [];
     arr.sort(compareBySlugNumberAsc);
     return arr;
   }, [items]);
 
-  // Prépare des pré-listes par type (slug/title/type minimal), triées
+  // relatedPrefetch (basé sur ce que la page courante contient)
   const prefetchByType = useMemo(() => {
     const map = {};
     const attrsList = sortedItems.map(normalizeNode).filter(Boolean);
@@ -176,7 +183,6 @@ export default function CasCliniques() {
     return map;
   }, [sortedItems]);
 
-  // Cache léger en sessionStorage pour fallback depuis CaseDetail
   useEffect(() => {
     try {
       for (const [t, list] of Object.entries(prefetchByType)) {
@@ -189,8 +195,6 @@ export default function CasCliniques() {
 
   return (
     <>
-      
-
       <div className="page-header">
         <div className="container">
           <PageTitle description="Bibliothèque de cas cliniques pour s'entraîner, adaptés à la pratique en pathologie orale.">
@@ -229,56 +233,54 @@ export default function CasCliniques() {
                 <div className="cc-state">Aucun résultat.</div>
               )}
 
-              {!loading && !error && sortedItems.length > 0 && sortedItems.map((node, idx) => {
-                const attrs = normalizeNode(node);
-                if (!attrs) return null;
+              {!loading &&
+                !error &&
+                sortedItems.length > 0 &&
+                sortedItems.map((node, idx) => {
+                  const attrs = normalizeNode(node);
+                  if (!attrs) return null;
 
-                const { title = 'Sans titre', slug = '', type = 'qa', excerpt = '' } = attrs;
+                  const { title = 'Sans titre', slug = '', type = 'qa', excerpt = '' } = attrs;
 
-                const relatedPrefetch = prefetchByType[type] || [];
+                  const relatedPrefetch = prefetchByType[type] || [];
 
-                const coverAttr = attrs?.cover?.data?.attributes || attrs?.cover || null;
-                const coverUrl = imgUrl(coverAttr, 'medium') || imgUrl(coverAttr) || '';
+                  const coverAttr = attrs?.cover?.data?.attributes || attrs?.cover || null;
+                  const coverUrl = imgUrl(coverAttr, 'medium') || imgUrl(coverAttr) || '';
 
-                const toHref = slug ? `/cas-cliniques/${slug}` : null;
+                  const toHref = slug ? `/cas-cliniques/${slug}` : null;
 
-                const linkState = {
-                  prefetch: { slug, title, type, coverUrl, excerpt },
-                  relatedPrefetch,
-                };
+                  const linkState = {
+                    prefetch: { slug, title, type, coverUrl, excerpt },
+                    relatedPrefetch,
+                  };
 
-                const Inner = (
-                  <>
-                    <div
-                      className="cc-thumb"
-                      style={{ backgroundImage: coverUrl ? `url(${coverUrl})` : undefined }}
-                    />
-                    <div className="cc-body">
-                      <div className="cc-meta">
-                        <span className={`cc-chip cc-${type}`}>{typeLabel(type)}</span>
+                  const Inner = (
+                    <>
+                      <div
+                        className="cc-thumb"
+                        style={{ backgroundImage: coverUrl ? `url(${coverUrl})` : undefined }}
+                      />
+                      <div className="cc-body">
+                        <div className="cc-meta">
+                          <span className={`cc-chip cc-${type}`}>{typeLabel(type)}</span>
+                        </div>
+                        <h3 className="cc-title">{title}</h3>
                       </div>
-                      <h3 className="cc-title">{title}</h3>
+                    </>
+                  );
+
+                  const key = slug || `case-${idx}`;
+
+                  return toHref ? (
+                    <Link key={key} to={toHref} state={linkState} className="cc-card">
+                      {Inner}
+                    </Link>
+                  ) : (
+                    <div key={key} className="cc-card cc-card--disabled" title="Slug manquant">
+                      {Inner}
                     </div>
-                  </>
-                );
-
-                // ✅ clé stable : slug en priorité (ton vrai identifiant), sinon fallback index
-                const key = slug || `case-${idx}`;
-
-                return toHref ? (
-                  <Link key={key} to={toHref} state={linkState} className="cc-card">
-                    {Inner}
-                  </Link>
-                ) : (
-                  <div
-                    key={key}
-                    className="cc-card cc-card--disabled"
-                    title="Slug manquant"
-                  >
-                    {Inner}
-                  </div>
-                );
-              })}
+                  );
+                })}
             </section>
 
             {pages > 1 && (
@@ -286,7 +288,9 @@ export default function CasCliniques() {
                 <button disabled={page <= 1} onClick={() => onPage(page - 1)} type="button">
                   Précédent
                 </button>
-                <span>Page {page} / {pages}</span>
+                <span>
+                  Page {page} / {pages}
+                </span>
                 <button disabled={page >= pages} onClick={() => onPage(page + 1)} type="button">
                   Suivant
                 </button>
