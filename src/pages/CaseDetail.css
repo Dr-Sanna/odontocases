@@ -1,10 +1,4 @@
-/* src/pages/CaseDetail.css
-   - Nettoyé / trié
-   - Fix header sidebar (ne s’étire plus)
-   - Scroll tactile OK (liste scrollable réelle)
-   - Desktop: rail + clip-path anim conservé
-   - Mobile: off-canvas + scrim, sans clip-path/anim (fiable)
-*/
+/* src/pages/CaseDetail.css */
 
 /* =========================
    Shell
@@ -43,19 +37,17 @@
   pointer-events: none;
 }
 
-/* Layout interne: header fixe + liste scrollable + footer (toggle) */
 .cd-side-inner {
   position: relative;
   height: 100%;
   display: flex;
   flex-direction: column;
-  min-height: 0; /* IMPORTANT pour le scroll interne */
+  min-height: 0;
 }
 
-/* zone scroll (header + states + liste) */
 .cd-side-scroll {
   flex: 1 1 auto;
-  min-height: 0; /* IMPORTANT */
+  min-height: 0;
   display: flex;
   flex-direction: column;
 }
@@ -97,7 +89,6 @@
   flex: 0 0 auto;
 }
 
-/* bouton "Revenir en arrière" (drawer) */
 .cd-side-back {
   width: 100%;
   appearance: none;
@@ -117,10 +108,10 @@
 }
 
 .cd-side-header {
-  flex: 0 0 auto; /* FIX: ne s’étire pas */
+  flex: 0 0 auto;
   padding: 12px 14px;
   font-weight: 700;
-  border-bottom: 1px solid var(--ifm-toc-border-color);;
+  border-bottom: 1px solid var(--ifm-toc-border-color);
   background: var(--ifm-background-color);
 }
 
@@ -135,13 +126,13 @@
 }
 
 .cd-side-list {
-  flex: 1 1 auto;       /* FIX: prend le reste */
-  min-height: 0;        /* FIX: permet le scroll */
+  flex: 1 1 auto;
+  min-height: 0;
   margin: 0;
   padding: 8px 6px 14px 8px;
   list-style: none;
 
-  overflow-y: auto;     /* FIX: scroll vertical réel */
+  overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
@@ -167,14 +158,147 @@
   transition: background 0.12s ease, border-color 0.12s ease;
 }
 
+/* Hover normal (items non-collapsible) */
 .cd-side-link:hover {
   background-color: var(--ifm-menu-color-background-hover);
 }
 
+/* Active normal (items non-collapsible) */
 .cd-side-link.active {
   background-color: var(--ifm-menu-color-background-active);
   color: var(--ifm-menu-color-active);
   font-weight: 600;
+}
+
+/* =========================
+   Collapsible (docusaurus-like)
+   ========================= */
+.clean-btn {
+  color: inherit;
+  cursor: pointer;
+  background: 0 0;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+}
+
+/* wrapper = ligne complète */
+.cd-side-collapsible {
+  transition: background var(--ifm-transition-fast) var(--ifm-transition-timing-default);
+  border-radius: .25rem;
+  flex-wrap: wrap;
+  display: flex;
+  position: relative;
+}
+
+/* pointer sur toute la ligne */
+.cd-side-collapsible.has-children {
+  cursor: pointer;
+}
+.cd-side-collapsible.has-children * {
+  cursor: pointer;
+}
+
+/* hover sur toute la ligne (item + chevron) */
+.cd-side-collapsible:hover {
+  background: var(--ifm-menu-color-background-hover);
+}
+
+/* actif sur toute la ligne (évite double background) */
+.cd-side-collapsible.is-active {
+  background: var(--ifm-menu-color-background-active);
+}
+
+/* Dans un collapsible: le lien ne doit pas gérer background */
+.cd-side-collapsible > .cd-side-link {
+  flex: 1 1 auto;
+  min-width: 0;
+  background: transparent !important;
+  border-color: transparent !important;
+}
+
+/* texte actif dans wrapper actif */
+.cd-side-collapsible.is-active .cd-side-link {
+  color: var(--ifm-menu-color-active);
+  font-weight: 600;
+}
+
+/* évite double hover (wrapper gère le hover) */
+.cd-side-collapsible .cd-side-link:hover {
+  background: transparent;
+}
+
+/* caret button (zone cliquable) */
+.cd-side-caret {
+  color: inherit;
+  cursor: pointer;
+  background: 0 0;
+  border: none;
+  padding: 0;
+
+  width: 2rem;
+  height: 2rem;
+  border-radius: .25rem;
+
+  display: grid;
+  place-items: center;
+}
+
+/* icon docusaurus */
+.cd-side-caret:before {
+  content: "";
+  background: var(--ifm-menu-link-sublist-icon) 50% / 2rem 2rem;
+  filter: var(--ifm-menu-link-sublist-icon-filter);
+  width: 1.25rem;
+  height: 1.25rem;
+  transition: transform var(--ifm-transition-fast) linear;
+
+  /* fermé => droite */
+  transform: rotate(90deg);
+}
+
+/* ouvert => bas */
+.cd-side-caret[aria-expanded="true"]:before {
+  transform: rotate(180deg);
+}
+
+/* ✅ hover du chevron “doublé”
+   - la ligne est déjà en hover (via .cd-side-collapsible:hover)
+   - ici on renforce visuellement le chevron (surcouche) */
+.cd-side-caret:hover {
+  background: var(--ifm-menu-color-background-hover);
+  box-shadow: inset 0 0 0 9999px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="dark"] .cd-side-caret:hover {
+  box-shadow: inset 0 0 0 9999px rgba(255, 255, 255, 0.06);
+}
+
+/* disabled */
+.cd-side-collapsible.is-disabled {
+  cursor: default;
+}
+.cd-side-collapsible.is-disabled * {
+  cursor: default;
+}
+.cd-side-collapsible.is-disabled .cd-side-caret {
+  opacity: 0.35;
+}
+
+/* enfants */
+.cd-side-children {
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+  padding-left: 0.9rem;
+}
+
+[data-theme="dark"] .cd-side-children {
+  border-left-color: rgba(255,255,255,0.12);
+}
+
+.cd-side-child-link {
+  padding-left: 0.25rem;
+  opacity: 0.95;
 }
 
 /* =========================
@@ -241,12 +365,8 @@
   margin-bottom: 0.5rem;
 }
 
-.cd-page-header article > :first-child {
-  margin-top: 0;
-}
-
 /* =========================
-   Article (lecture)
+   Article
    ========================= */
 .casedetail {
   display: grid;
@@ -271,7 +391,7 @@
 }
 
 /* =========================
-   Q/A (details)
+   Q/A
    ========================= */
 .qa-section {
   display: grid;
@@ -298,12 +418,8 @@
   line-height: var(--ifm-line-height-base);
 }
 
-.qa-item > summary::-webkit-details-marker {
-  display: none;
-}
-.qa-item > summary::marker {
-  content: "";
-}
+.qa-item > summary::-webkit-details-marker { display: none; }
+.qa-item > summary::marker { content: ""; }
 
 .qa-item > summary::before {
   content: "";
@@ -318,9 +434,7 @@
   transform: rotate(0deg);
 }
 
-.qa-item[open] > summary::before {
-  transform: rotate(90deg);
-}
+.qa-item[open] > summary::before { transform: rotate(90deg); }
 
 .qa-num {
   display: inline;
@@ -329,10 +443,7 @@
   margin-right: 6px;
 }
 
-.qa-text {
-  display: inline;
-  font-weight: inherit;
-}
+.qa-text { display: inline; font-weight: inherit; }
 
 .qa-item[open] > summary {
   border-bottom: 1px solid var(--ifm-alert-border-color);
@@ -362,7 +473,6 @@
   margin-bottom: 0;
 }
 
-
 /* =========================
    Extras
    ========================= */
@@ -391,21 +501,15 @@
   opacity: 0.85;
 }
 
-.cd-state.error {
-  color: #b00020;
-}
+.cd-state.error { color: #b00020; }
 
 /* =========================
    Mobile/tablette: drawer + scrim
    ========================= */
-.cd-drawer-scrim {
-  display: none;
-}
+.cd-drawer-scrim { display: none; }
 
 @media (max-width: 980px) {
-  .cd-shell {
-    grid-template-columns: 1fr;
-  }
+  .cd-shell { grid-template-columns: 1fr; }
 
   .cd-side {
     position: fixed;
@@ -419,11 +523,8 @@
     background: var(--ifm-background-surface-color);
   }
 
-  .cd-shell.is-drawer-open .cd-side {
-    transform: translateX(0);
-  }
+  .cd-shell.is-drawer-open .cd-side { transform: translateX(0); }
 
-  /* Sur mobile: fiabiliser scroll tactile (pas de clip/anim) */
   .cd-side-scroll {
     clip-path: none !important;
     animation: none !important;
@@ -440,22 +541,15 @@
     background: rgba(0, 0, 0, 0.35);
   }
 
-  .casedetail {
-    padding-right: 16px;
-  }
+  .casedetail { padding-right: 16px; }
 
-  /* desktop-only toggle: caché sur mobile */
-  .cd-side-toggle {
-    display: none;
-  }
+  .cd-side-toggle { display: none; }
 }
 
 /* =========================
    Mode sombre (compléments)
    ========================= */
-[data-theme="dark"] .cd-content code {
-  background: #1e1e20;
-}
+[data-theme="dark"] .cd-content code { background: #1e1e20; }
 
 [data-theme="dark"] .qa-item {
   background: #122033;
@@ -494,7 +588,6 @@
 .sk-w100 { width: 100%; }
 .sk-w95  { width: 95%; }
 .sk-w90  { width: 90%; }
-.sk-w85  { width: 85%; }
 .sk-w80  { width: 80%; }
 
 @keyframes sk-shine {
@@ -503,29 +596,8 @@
 }
 
 /* =========================
-   Drawer back (si utilisé)
+   Quiz blocks
    ========================= */
-.cd-drawer-back {
-  width: 100%;
-  appearance: none;
-  border: 0;
-  background: transparent;
-  text-align: left;
-  padding: 12px 14px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-  font-weight: 700;
-  cursor: pointer;
-}
-
-[data-theme="dark"] .cd-drawer-back {
-  border-bottom-color: rgba(255, 255, 255, 0.10);
-}
-
-.cd-drawer-back:hover {
-  background: var(--ifm-hover-overlay);
-}
-
-/* ===== Quiz blocks ===== */
 .quiz-section {
   margin-top: calc(-1 * var(--ifm-paragraph-margin-bottom));
 }
@@ -550,13 +622,8 @@
   margin-bottom: 0.8rem;
 }
 
-.quiz-num {
-  flex: 0 0 auto;
-}
-
-.quiz-text {
-  flex: 1;
-}
+.quiz-num { flex: 0 0 auto; }
+.quiz-text { flex: 1; }
 
 /* Options */
 .quiz-options {
@@ -576,32 +643,28 @@
   border-color: rgba(255, 255, 255, 0.12);
 }
 
-/* Hover */
-.quiz-option:hover {
-  background: rgba(0, 0, 0, 0.03);
-}
+.quiz-option:hover { background: rgba(0, 0, 0, 0.03); }
+[data-theme="dark"] .quiz-option:hover { background: rgba(255, 255, 255, 0.05); }
 
-[data-theme="dark"] .quiz-option:hover {
-  background: rgba(255, 255, 255, 0.05);
-}
-
-/* Label + checkbox alignment */
-.quiz-label {
+.quiz-row {
   display: flex;
   align-items: flex-start;
   gap: 0.55rem;
-  cursor: pointer;
-}
-
-.quiz-check {
-  margin-top: 0.22rem; /* ajuste 0.18–0.28 si besoin */
 }
 
 .quiz-label-text {
+  flex: 1;
+  cursor: pointer;
   line-height: 1.35;
 }
 
-/* Selected */
+.quiz-check {
+  margin-top: 0.22rem;
+  cursor: pointer;
+}
+
+.quiz-check:disabled { cursor: not-allowed; }
+
 .quiz-option.is-selected {
   border-color: rgba(0, 0, 0, 0.25);
   background: rgba(0, 0, 0, 0.03);
@@ -612,22 +675,12 @@
   background: rgba(255, 255, 255, 0.05);
 }
 
-/* Feedback (par proposition) */
 .quiz-feedback {
   margin-top: 0.5rem;
-  padding-left: 1.55rem; /* aligne avec le texte après la checkbox */
+  padding-left: 1.55rem;
   opacity: 0.95;
 }
 
-.quiz-feedback > :first-child {
-  margin-top: 0;
-}
-
-.quiz-feedback > :last-child {
-  margin-bottom: 0;
-}
-
-/* Actions */
 .quiz-actions {
   margin-top: 0.9rem;
   display: flex;
@@ -660,16 +713,9 @@
   font-weight: 600;
 }
 
-/* Markers after verify */
-.quiz-option.is-correct {
-  border-color: var(--ifm-color-primary) !important;
-}
+.quiz-option.is-correct { border-color: var(--ifm-color-primary) !important; }
+.quiz-option.is-wrong   { border-color: var(--ifm-color-danger) !important; }
 
-.quiz-option.is-wrong {
-  border-color: var(--ifm-color-danger) !important;
-}
-
-/* Explanation (globale du quiz, affichée après vérification) */
 .quiz-explanation {
   margin-top: 0.8rem;
   padding: 0.75rem 0.85rem;
@@ -683,87 +729,53 @@
   background: rgba(255, 255, 255, 0.04);
 }
 
-.quiz-explanation > :first-child {
-  margin-top: 0;
-}
-
-.quiz-explanation > :last-child {
-  margin-bottom: 0;
-}
-/* Le label couvre toute la carte => clic partout */
-.quiz-label-block {
-  display: flex;
-  width: 100%;
-}
-
-/* Ligne checkbox + texte (pour aligner et élargir le hit area) */
-.quiz-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.55rem;
-}
-
-/* Le texte doit occuper la largeur et afficher le curseur “clic” */
-.quiz-row .quiz-label-text {
-  flex: 1;
-  cursor: pointer;
-  line-height: 1.35;
-}
-
-/* Garder le curseur pointer partout, y compris sur la checkbox */
-.quiz-check {
-  cursor: pointer;
-}
-
-.quiz-check:disabled {
-  cursor: not-allowed;
-}
-
-.quiz-row .quiz-label-text {
-  cursor: pointer;
-}
-
+/* =========================
+   Children cards
+   ========================= */
 .cd-children {
-  margin-top: 1.2rem;
+  margin-top: calc(-1 * var(--ifm-paragraph-margin-bottom));
 }
 
 .cd-children-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+
+  /* colonnes "fixes" de 220–280px, qui ne s'étirent pas quand il n'y a qu'une carte */
+  grid-template-columns: repeat(auto-fit, minmax(220px, 280px));
+
   gap: 0.75rem;
   margin-top: 0.75rem;
+
+  /* si moins de colonnes que de place, on ne stretch pas */
+  justify-content: start;
 }
 
+
 .cd-child-card {
+  color: var(--ifm-color-content);
   display: block;
   padding: 0.85rem;
   border-radius: 0.6rem;
-  border: 1px solid rgba(0,0,0,0.12);
+  border: 1px solid var(--ifm-color-emphasis-200);
   text-decoration: none;
-    overflow: hidden;
-}
-
-/* Image : taille fixe, jamais plus grande que la carte */
-.cd-child-cover {
-  display: block;
-  width: 100%;
-  height: 120px;        /* ajuste: 100–160px */
-  max-height: 120px;
-  object-fit: cover;    /* ou contain si tu préfères */
-  margin: 0 0 0.6rem 0; /* écrase les margins éventuels */
-  border-radius: 0.5rem;
-}
-
-[data-theme="dark"] .cd-child-card {
-  border-color: rgba(255,255,255,0.14);
+  overflow: hidden;
+  background: var(--ifm-background-surface-color);
+  box-shadow: var(--ifm-alert-shadow);
+  transition: all var(--ifm-transition-fast) ease;
 }
 
 .cd-child-card:hover {
-  background: rgba(0,0,0,0.03);
+  box-shadow: 0 3px 6px #0003;
+  border-color: var(--ifm-color-primary);
 }
 
-[data-theme="dark"] .cd-child-card:hover {
-  background: rgba(255,255,255,0.05);
+.cd-child-cover {
+  display: block;
+  width: 100%;
+  height: 120px;
+  max-height: 120px;
+  object-fit: cover;
+  margin: 0 0 0.6rem 0;
+  border-radius: 0.5rem;
 }
 
 .cd-child-title {
@@ -774,41 +786,4 @@
   margin-top: 0.35rem;
   opacity: 0.9;
   font-size: 0.95em;
-}
-
-.cd-side-parent-row {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.cd-side-chevron {
-  margin-left: auto;
-  width: 1.9rem;
-  height: 1.9rem;
-  border-radius: 0.45rem;
-  border: 1px solid rgba(0,0,0,0.12);
-  background: transparent;
-  cursor: pointer;
-}
-
-[data-theme="dark"] .cd-side-chevron {
-  border-color: rgba(255,255,255,0.14);
-}
-
-.cd-side-children {
-  margin-top: 0.25rem;
-  margin-bottom: 0.25rem;
-  padding-left: 0.9rem; /* indentation */
-  border-left: 1px solid rgba(0,0,0,0.10);
-}
-
-[data-theme="dark"] .cd-side-children {
-  border-left-color: rgba(255,255,255,0.12);
-}
-
-.cd-side-child-link {
-  display: block;
-  padding-left: 0.25rem;
-  opacity: 0.95;
 }

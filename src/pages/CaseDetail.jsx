@@ -16,10 +16,18 @@
  *
  * 2 niveaux "conteneur" :
  * - kind: 'container' => affiche child_cases (cartes)
- * - sidebar: chevron sur les conteneurs pour afficher/masquer les enfants
+ * - sidebar: caret sur les conteneurs pour afficher/masquer les enfants (style docusaurus-like)
+ *
+ * ✅ Fix demandé :
+ * - ordre de la sidebar identique aux cartes CasCliniques :
+ *   top-level = (containers + singles) triés ensemble par compareBySlugNumberAsc
+ *   enfants uniquement sous leur parent (jamais en top-level)
+ *
+ * ✅ Ajout demandé (sans changer le comportement existant) :
+ * - déploiement/enroulement animé des sous-listes (composant custom)
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useParams, Link, NavLink, useLocation } from 'react-router-dom';
 
 import PageTitle from '../components/PageTitle';
@@ -45,7 +53,6 @@ import './CaseDetail.css';
 const CASES_ENDPOINT = import.meta.env.VITE_CASES_ENDPOINT || '/cases';
 const LS_KEY_COLLAPSE = 'cd-sidebar-collapsed';
 const PUB_STATE = import.meta.env.DEV ? 'preview' : 'live';
-
 const LS_KEY_EXPANDED_PREFIX = 'cd-expanded-containers:'; // + type
 
 /** Breakpoint helper */
@@ -109,7 +116,6 @@ function normalizeEntity(node) {
 }
 function normalizeRelation(rel) {
   if (!rel) return null;
-  // v4: { data: {...} } / v5 parfois direct
   if (rel.data === null) return null;
   if (rel.data) return normalizeEntity(rel.data);
   return normalizeEntity(rel);
@@ -156,14 +162,7 @@ const ckeditorSchema = (() => {
     tfoot: [...(defaultSchema.attributes?.tfoot || []), 'className', 'style'],
     tr: [...(defaultSchema.attributes?.tr || []), 'className', 'style'],
     td: [...(defaultSchema.attributes?.td || []), 'className', 'style', 'colspan', 'rowspan'],
-    th: [
-      ...(defaultSchema.attributes?.th || []),
-      'className',
-      'style',
-      'colspan',
-      'rowspan',
-      'scope',
-    ],
+    th: [...(defaultSchema.attributes?.th || []), 'className', 'style', 'colspan', 'rowspan', 'scope'],
     colgroup: [...(defaultSchema.attributes?.colgroup || []), 'className', 'style', 'span'],
     col: [...(defaultSchema.attributes?.col || []), 'className', 'style', 'span'],
     figure: [...(defaultSchema.attributes?.figure || []), 'className', 'style'],
@@ -270,12 +269,7 @@ function remarkObsidianCallouts() {
       if (!node.data.hProperties) node.data.hProperties = {};
       const h = node.data.hProperties;
 
-      const baseClasses = Array.isArray(h.className)
-        ? h.className
-        : h.className
-        ? [h.className]
-        : [];
-
+      const baseClasses = Array.isArray(h.className) ? h.className : h.className ? [h.className] : [];
       h.className = [...baseClasses, 'cd-callout', `cd-callout-${calloutType}`];
       h['data-callout'] = calloutType;
 
@@ -283,21 +277,20 @@ function remarkObsidianCallouts() {
 
       if (fold === '-' || fold === '+') {
         const openAttr = fold === '+' ? ' open' : '';
-        const headingHtml = `<details class="cd-callout-details"${openAttr}><summary class="cd-callout-heading">${headingCore}<span class="cd-callout-chevron" aria-hidden="true"></span></summary><div class="cd-callout-content">`;
+        const headingHtml =
+          `<details class="cd-callout-details"${openAttr}>` +
+          `<summary class="cd-callout-heading">` +
+          `${headingCore}<span class="cd-callout-chevron" aria-hidden="true"></span>` +
+          `</summary><div class="cd-callout-content">`;
 
-        node.children = [
-          { type: 'html', value: headingHtml },
-          ...innerChildren,
-          { type: 'html', value: '</div></details>' },
-        ];
+        node.children = [{ type: 'html', value: headingHtml }, ...innerChildren, { type: 'html', value: '</div></details>' }];
       } else {
-        const headingHtml = `<div class="cd-callout-heading">${headingCore}</div><div class="cd-callout-content">`;
+        const headingHtml =
+          `<div class="cd-callout-heading">` +
+          `${headingCore}` +
+          `</div><div class="cd-callout-content">`;
 
-        node.children = [
-          { type: 'html', value: headingHtml },
-          ...innerChildren,
-          { type: 'html', value: '</div>' },
-        ];
+        node.children = [{ type: 'html', value: headingHtml }, ...innerChildren, { type: 'html', value: '</div>' }];
       }
     });
   };
@@ -305,16 +298,135 @@ function remarkObsidianCallouts() {
 
 function Markdown({ children }) {
   const source = normalizeEscapedBlockquotes(String(children ?? ''));
-
   return (
-    <ReactMarkdown
-      remarkPlugins={[remarkGfm, remarkObsidianCallouts]}
-      rehypePlugins={[rehypeRaw, [rehypeSanitize, ckeditorSchema]]}
-    >
+    <ReactMarkdown remarkPlugins={[remarkGfm, remarkObsidianCallouts]} rehypePlugins={[rehypeRaw, [rehypeSanitize, ckeditorSchema]]}>
       {source}
     </ReactMarkdown>
   );
 }
+
+/* =========================
+   Sous-liste animée (custom)
+   - ne change aucune classe existante (on garde cd-side-children)
+   - durée variable selon hauteur
+   - pas de flash à l’ouverture
+   ========================= */
+
+function clamp(n, min, max) {
+  return Math.max(min, Math.min(max, n));
+}
+
+function CdSideChildrenAnimated({ open, contentKey, children }) {
+  const ref = useRef(null);
+  const didInitRef = useRef(false);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    const prefersReduced =
+      typeof window !== 'undefined' &&
+      window.matchMedia &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // Toujours "block" : l’animation ne dépend que de height
+    el.style.display = 'block';
+
+    // Mesure hauteur cible (contenu déjà dans le DOM)
+    const target = el.scrollHeight;
+
+    // Durée variable selon hauteur
+    const durationMs = prefersReduced ? 0 : clamp(Math.round(140 + target * 0.35), 160, 520);
+
+    el.style.willChange = 'height';
+    el.style.transition = prefersReduced ? 'none' : `height ${durationMs}ms ease-in-out`;
+
+    const reflow = () => void el.offsetHeight;
+
+    // Nettoyage transitionend si toggle rapide
+    const onEnd = (e) => {
+      if (e.propertyName !== 'height') return;
+      el.removeEventListener('transitionend', onEnd);
+
+      if (open) {
+        // fin ouverture
+        el.style.height = 'auto';
+        el.style.overflow = 'visible';
+        el.style.pointerEvents = 'auto';
+      } else {
+        // fin fermeture
+        el.style.pointerEvents = 'none';
+      }
+
+      el.style.willChange = 'auto';
+    };
+
+    el.addEventListener('transitionend', onEnd);
+
+    if (open) {
+      // OUVERTURE: 0 -> target
+      el.style.pointerEvents = 'auto';
+      el.style.overflow = 'hidden';
+
+      el.style.height = '0px';
+      reflow();
+      el.style.height = `${target}px`;
+
+      if (prefersReduced) {
+        el.style.height = 'auto';
+        el.style.overflow = 'visible';
+        el.style.willChange = 'auto';
+        el.removeEventListener('transitionend', onEnd);
+      }
+    } else {
+      // FERMETURE: current -> 0
+      el.style.pointerEvents = 'none';
+      el.style.overflow = 'hidden';
+
+      const start = el.getBoundingClientRect().height;
+      el.style.height = `${start}px`;
+      reflow();
+      el.style.height = '0px';
+
+      if (prefersReduced) {
+        el.style.height = '0px';
+        el.style.willChange = 'auto';
+        el.removeEventListener('transitionend', onEnd);
+      }
+    }
+
+    didInitRef.current = true;
+
+    return () => {
+      el.removeEventListener('transitionend', onEnd);
+      el.style.transition = '';
+      el.style.willChange = '';
+    };
+  }, [open, contentKey]);
+
+  // ⚠️ Important: après le 1er render, on ne force plus height/overflow via React,
+  // sinon ça casse l’anim (fermeture instantanée).
+  const initialStyle = useMemo(() => {
+    if (didInitRef.current) return { display: 'block' };
+    return {
+      display: 'block',
+      height: open ? 'auto' : '0px',
+      overflow: open ? 'visible' : 'hidden',
+      pointerEvents: open ? 'auto' : 'none',
+    };
+  }, [open]);
+
+  return (
+    <div ref={ref} className="cd-side-children" style={initialStyle}>
+      {children}
+    </div>
+  );
+}
+
+
+/* =========================
+   Page
+   ========================= */
 
 export default function CaseDetail() {
   const { slug } = useParams();
@@ -454,17 +566,7 @@ export default function CaseDetail() {
           locale: 'all',
           publicationState: PUB_STATE,
           populate,
-          fields: [
-            'title',
-            'slug',
-            'type',
-            'kind',
-            'excerpt',
-            'content',
-            'updatedAt',
-            'references',
-            'copyright',
-          ],
+          fields: ['title', 'slug', 'type', 'kind', 'excerpt', 'content', 'updatedAt', 'references', 'copyright'],
           pagination: { page: 1, pageSize: 1 },
         },
       });
@@ -512,19 +614,14 @@ export default function CaseDetail() {
           return;
         }
 
-        const coverAttr = normalizeRelation(attrs?.cover)?.formats ? normalizeRelation(attrs.cover) : (attrs?.cover?.data?.attributes || attrs?.cover || null);
-        const apiCover =
-          imgUrl(coverAttr, 'large') ||
-          imgUrl(coverAttr, 'medium') ||
-          imgUrl(coverAttr) ||
-          null;
+        const coverAttr = attrs?.cover?.data?.attributes || attrs?.cover || null;
+        const apiCover = imgUrl(coverAttr, 'large') || imgUrl(coverAttr, 'medium') || imgUrl(coverAttr) || null;
 
-        // parent/children normalisés
         const parent = normalizeRelation(attrs?.parent_case);
+
         const children = normalizeRelationArray(attrs?.child_cases).map((c) => {
           const cCoverAttr = c?.cover?.data?.attributes || c?.cover || null;
-          const cCoverUrl =
-            imgUrl(cCoverAttr, 'medium') || imgUrl(cCoverAttr, 'thumbnail') || imgUrl(cCoverAttr) || null;
+          const cCoverUrl = imgUrl(cCoverAttr, 'medium') || imgUrl(cCoverAttr, 'thumbnail') || imgUrl(cCoverAttr) || null;
           return { ...c, coverUrl: cCoverUrl };
         });
 
@@ -578,7 +675,6 @@ export default function CaseDetail() {
       });
     }
 
-    // si on est sur un enfant, on met le parent dans le fil
     if (item?.parent_case?.slug) {
       base.push({
         label: item.parent_case.title || item.parent_case.slug,
@@ -599,19 +695,17 @@ export default function CaseDetail() {
 
     const onClick = (e) => {
       const t = e.target;
-
       if (!t || t.tagName !== 'IMG') return;
 
-      // ✅ 1) on ignore explicitement les images marquées
+      // ignore explicit
       if (t.dataset?.noLightbox === '1') return;
 
-      // ✅ 2) sécurité : on ignore toute image contenue dans une card enfant
+      // ignore child-cards
       if (t.closest?.('.cd-child-card')) return;
 
       e.preventDefault();
       setLightbox({ src: t.src, alt: t.alt || '' });
     };
-
 
     el.addEventListener('click', onClick);
     return () => el.removeEventListener('click', onClick);
@@ -658,15 +752,10 @@ export default function CaseDetail() {
 
       <main className="cd-main" aria-hidden={drawerOpen}>
         <div className="cd-page-header">
-          <article>
-            <Breadcrumbs items={breadcrumbItems} />
-
-            <div className="cd-type-chip">
-              <span className={`cd-chip cd-${item?.type || 'qa'}`}>{typeLabel}</span>
-            </div>
-
-            <PageTitle description={item?.excerpt || ''}>{item?.title || 'Cas clinique'}</PageTitle>
-          </article>
+          <Breadcrumbs items={breadcrumbItems} />
+          <div className="cd-type-chip">
+            <span className={`cd-chip cd-${item?.type || 'qa'}`}>{typeLabel}</span>
+          </div>
         </div>
 
         {error && <div className="cd-state error">{error}</div>}
@@ -683,6 +772,7 @@ export default function CaseDetail() {
         <article className="casedetail" ref={contentRef}>
           {item?.content && (
             <div className="cd-content">
+              <PageTitle description={item?.excerpt || ''}>{item?.title || 'Cas clinique'}</PageTitle>
               <Markdown>{item.content}</Markdown>
             </div>
           )}
@@ -739,14 +829,7 @@ export default function CaseDetail() {
               <h2 className="quiz-title">Quiz</h2>
 
               {quizList.map((qb, i) => (
-                <QuizBlock
-                  key={qb?.id ?? `${slug}-quiz-${i}`}
-                  block={qb}
-                  index={i}
-                  total={quizList.length}
-                  seedKey={`${slug}-${qb?.id ?? i}`}
-                  Markdown={Markdown}
-                />
+                <QuizBlock key={qb?.id ?? `${slug}-quiz-${i}`} block={qb} index={i} total={quizList.length} seedKey={`${slug}-${qb?.id ?? i}`} Markdown={Markdown} />
               ))}
             </section>
           )}
@@ -809,7 +892,6 @@ function AsideSameType({
   const animTimerRef = useRef(null);
 
   const [expanded, setExpanded] = useState(() => new Set());
-
   const expandedKey = `${LS_KEY_EXPANDED_PREFIX}${currentType || 'none'}`;
 
   const loadExpanded = () => {
@@ -847,11 +929,21 @@ function AsideSameType({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentParentSlug]);
 
-  const toggleExpanded = (parentSlug) => {
+  // ouvre un parent + ferme les autres
+  const forceOpenExclusive = (parentSlug) => {
+    setExpanded(() => {
+      const next = new Set([parentSlug]);
+      saveExpanded(next);
+      return next;
+    });
+  };
+
+  const toggleExclusive = (parentSlug) => {
     setExpanded((prev) => {
       const next = new Set(prev);
-      if (next.has(parentSlug)) next.delete(parentSlug);
-      else next.add(parentSlug);
+      const isOpen = next.has(parentSlug);
+      next.clear();
+      if (!isOpen) next.add(parentSlug);
       saveExpanded(next);
       return next;
     });
@@ -882,9 +974,7 @@ function AsideSameType({
     let booted = false;
 
     if (Array.isArray(prefetchRelated) && currentType) {
-      const list = prefetchRelated
-        .filter((it) => it?.type === currentType && it?.slug)
-        .sort(compareBySlugNumberAsc);
+      const list = prefetchRelated.filter((it) => it?.type === currentType && it?.slug).sort(compareBySlugNumberAsc);
 
       if (list.length) {
         setRelated(list);
@@ -938,10 +1028,7 @@ function AsideSameType({
         if (ignore) return;
 
         const list = Array.isArray(res?.data) ? res.data : [];
-        const normalized = list
-          .map(normalizeEntity)
-          .filter(Boolean)
-          .filter((it) => it.slug);
+        const normalized = list.map(normalizeEntity).filter(Boolean).filter((it) => it.slug);
 
         setRelated(normalized);
 
@@ -972,56 +1059,62 @@ function AsideSameType({
   }, [related, currentSlug]);
 
   const labelType =
-    currentType === 'qa'
-      ? 'Cas Q/R'
-      : currentType === 'quiz'
-      ? 'Quiz'
-      : currentType === 'presentation'
-      ? 'Présentations'
-      : 'Cas';
+    currentType === 'qa' ? 'Cas Q/R' : currentType === 'quiz' ? 'Quiz' : currentType === 'presentation' ? 'Présentations' : 'Cas';
 
   const showOverlay = !isNarrow && (collapsed || anim !== '');
   const isAnimating = !isNarrow && anim !== '';
   const overlayShowsExpand = collapsed || anim === 'closing';
   const showNavInsteadOfCases = isNarrow && drawerView === 'nav';
 
-  // build tree
-  const { rootSingles, containers, childrenByParent } = useMemo(() => {
+  // ✅ top-level trié comme les cartes (containers + singles mélangés)
+  const { topLevel, childrenByParent, containerSlugSet } = useMemo(() => {
     const byParent = new Map();
-
-    const containersList = [];
-    const rootSinglesList = [];
+    const containersBySlug = new Map();
+    const singles = [];
 
     for (const it of related) {
+      if (!it?.slug) continue;
+
       const parentSlug = it?.parent_case?.data?.attributes?.slug || it?.parent_case?.slug || null;
 
-      const isContainer = it?.kind === 'container';
-      if (isContainer) {
-        containersList.push(it);
+      const isCont = it?.kind === 'container';
+      if (isCont) {
+        containersBySlug.set(it.slug, it);
         continue;
       }
 
       if (parentSlug) {
         if (!byParent.has(parentSlug)) byParent.set(parentSlug, []);
         byParent.get(parentSlug).push(it);
-      } else {
-        rootSinglesList.push(it);
+        continue;
       }
+
+      singles.push(it);
     }
 
-    containersList.sort(compareBySlugNumberAsc);
-    rootSinglesList.sort(compareBySlugNumberAsc);
-    for (const [p, arr] of byParent.entries()) arr.sort(compareBySlugNumberAsc);
+    for (const [, arr] of byParent.entries()) arr.sort(compareBySlugNumberAsc);
+
+    const top = [...containersBySlug.values(), ...singles].sort(compareBySlugNumberAsc);
 
     return {
-      rootSingles: rootSinglesList,
-      containers: containersList,
+      topLevel: top,
       childrenByParent: byParent,
+      containerSlugSet: new Set(containersBySlug.keys()),
     };
   }, [related]);
 
+  // ✅ si l’item courant est un conteneur: ouvrir sa liste automatiquement (si kids)
+  useEffect(() => {
+    if (!containerSlugSet.has(currentSlug)) return;
+    const kids = childrenByParent.get(currentSlug) || [];
+    if (!kids.length) return;
+    forceOpenExclusive(currentSlug);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentSlug, containerSlugSet, childrenByParent]);
+
   const renderLink = (it, className, onClick) => {
     const active = it.slug === currentSlug;
+
     if (active) {
       return (
         <span className={`${className} active`} aria-current="page">
@@ -1097,52 +1190,77 @@ function AsideSameType({
 
               {!errList && (
                 <ul className="cd-side-list">
-                  {/* Conteneurs */}
-                  {containers.map((parent) => {
-                    const isOpen = expanded.has(parent.slug);
-                    const kids = childrenByParent.get(parent.slug) || [];
+                  {topLevel.map((it) => {
+                    const isCont = it?.kind === 'container';
+
+                    if (!isCont) {
+                      return (
+                        <li key={it.slug}>
+                          {renderLink(it, 'cd-side-link', () => {
+                            if (isNarrow) closeMobile();
+                          })}
+                        </li>
+                      );
+                    }
+
+                    const kids = childrenByParent.get(it.slug) || [];
                     const hasKids = kids.length > 0;
+                    const isOpen = hasKids && expanded.has(it.slug);
+
+                    const isActiveRow = it.slug === currentSlug || it.slug === currentParentSlug;
+
+                    const openOrToggle = () => {
+                      if (!hasKids) return;
+                      toggleExclusive(it.slug);
+                    };
+
+                    const kidsKey = hasKids ? kids.map((k) => k.slug).join('|') : '';
 
                     return (
-                      <li key={parent.slug}>
-                        <div className="cd-side-parent-row">
-                          {renderLink(parent, 'cd-side-link', () => isNarrow && closeMobile())}
+                      <li key={it.slug}>
+                        <div
+                          className={['cd-side-collapsible', hasKids ? 'has-children' : 'is-disabled', isActiveRow ? 'is-active' : ''].join(' ')}
+                          onClick={(e) => {
+                            if (!hasKids) return;
+                            if (e.target?.closest?.('.cd-side-caret')) return;
+                            openOrToggle();
+                          }}
+                        >
+                          {renderLink(it, 'cd-side-link cd-side-link--sublist', () => {
+                            if (hasKids) openOrToggle();
+                            if (isNarrow) closeMobile();
+                          })}
 
                           <button
                             type="button"
-                            className="cd-side-chevron"
-                            aria-label={isOpen ? 'Replier' : 'Déplier'}
-                            title={isOpen ? 'Replier' : 'Déplier'}
+                            className="clean-btn cd-side-caret"
+                            aria-label={isOpen ? 'Réduire' : 'Développer'}
+                            aria-expanded={isOpen ? 'true' : 'false'}
                             disabled={!hasKids}
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
                               if (!hasKids) return;
-                              toggleExpanded(parent.slug);
+                              openOrToggle();
                             }}
-                          >
-                            {/* simple chevron texte, tu peux le remplacer par une icône */}
-                            <span aria-hidden="true">{isOpen ? '▾' : '▸'}</span>
-                          </button>
+                          />
                         </div>
 
-                        {hasKids && isOpen && (
-                          <div className="cd-side-children">
+                        {/* ✅ même comportement qu’avant, mais animé */}
+                        {hasKids && (
+                          <CdSideChildrenAnimated open={isOpen} contentKey={kidsKey}>
                             {kids.map((ch) => (
                               <div key={ch.slug} className="cd-side-child">
-                                {renderLink(ch, 'cd-side-link cd-side-child-link', () => isNarrow && closeMobile())}
+                                {renderLink(ch, 'cd-side-link cd-side-child-link', () => {
+                                  if (isNarrow) closeMobile();
+                                })}
                               </div>
                             ))}
-                          </div>
+                          </CdSideChildrenAnimated>
                         )}
                       </li>
                     );
                   })}
-
-                  {/* Singles sans parent */}
-                  {rootSingles.map((it) => (
-                    <li key={it.slug}>{renderLink(it, 'cd-side-link', () => isNarrow && closeMobile())}</li>
-                  ))}
                 </ul>
               )}
             </>
@@ -1165,21 +1283,10 @@ function AsideSameType({
                 }
               }}
             >
-              {overlayShowsExpand ? (
-                <BottomExpandIcon className="expandButtonIcon_H1n0" />
-              ) : (
-                <BottomCollapseIcon className="collapseSidebarButtonIcon_DI0B" />
-              )}
+              {overlayShowsExpand ? <BottomExpandIcon className="expandButtonIcon_H1n0" /> : <BottomCollapseIcon className="collapseSidebarButtonIcon_DI0B" />}
             </div>
           ) : (
-            <button
-              type="button"
-              title="Réduire la barre latérale"
-              aria-label="Réduire la barre latérale"
-              className="cd-side-toggle"
-              onClick={handleToggle}
-              disabled={isAnimating}
-            >
+            <button type="button" title="Réduire la barre latérale" aria-label="Réduire la barre latérale" className="cd-side-toggle" onClick={handleToggle} disabled={isAnimating}>
               <BottomCollapseIcon className="collapseSidebarButtonIcon_DI0B" />
             </button>
           ))}

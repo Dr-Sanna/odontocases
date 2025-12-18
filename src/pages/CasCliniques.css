@@ -85,12 +85,12 @@
   grid-template-rows: 160px auto;
   border-radius: 16px;
   overflow: hidden;
-  border: 1px solid #eaeaf0;
+  border: 1px solid var(--ifm-color-emphasis-200);
   background: var(--ifm-background-surface-color);
   text-decoration: none;
   color: inherit;
   box-shadow: var(--ifm-alert-shadow);
-  transition: box-shadow 0.12s ease, border-color 0.12s ease;
+  transition: all var(--ifm-transition-fast) ease;
   height: 320px;
 }
 
@@ -141,15 +141,6 @@
 /* Extrait : on ne l'affiche pas */
 .cc-excerpt {
   display: none !important;
-}
-
-/* Dark mode cartes */
-[data-theme="dark"] .cc-card {
-  border: 1px solid var(--ifm-color-emphasis-200);
-}
-
-[data-theme="dark"] .cc-card:hover {
-  border-color: var(--ifm-color-primary);
 }
 
 

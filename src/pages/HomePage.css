@@ -81,6 +81,7 @@
 
 /* Cartes : style "manga shadow", plus hautes */
 .home-card {
+  color: inherit;
   display: grid;
   place-items: center;
   text-decoration: none;
@@ -89,13 +90,12 @@
   min-height: 68px;
   padding: 18px 18px;
   border-radius: 18px;
-  border: 1px solid rgba(0, 0, 0, 0.14);
+  border: 1px solid var(--ifm-color-emphasis-200);
   background: var(--ifm-background-surface-color);
-  color: #111;
   font-weight: 800;
   font-size: 16px;
   box-shadow: var(--ifm-alert-shadow);
-  transition: box-shadow 0.14s ease, border-color 0.14s ease, background 0.14s ease;
+  transition: all var(--ifm-transition-fast) ease;
 }
 
 /* Ombre nette au survol */
@@ -106,17 +106,6 @@
 
 .home-card:active {
   box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.16);
-}
-
-/* Dark mode */
-[data-theme="dark"] .home-card {
-  color: #f3f3f3;
-  border: 1px solid var(--ifm-color-emphasis-200);
-  box-shadow: none;
-}
-
-[data-theme="dark"] .home-card:hover {
-  border-color: var(--ifm-color-primary);
 }
 
 [data-theme="dark"] .home-card:active {
