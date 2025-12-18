@@ -287,19 +287,18 @@
 
 /* enfants */
 .cd-side-children {
-  margin-top: 0.25rem;
-  margin-bottom: 0.25rem;
-  padding-left: 0.9rem;
+  padding-left: var(--ifm-menu-link-padding-horizontal);
 }
+.cd-side-child-link {
+margin-top: .25rem;
+}
+
 
 [data-theme="dark"] .cd-side-children {
   border-left-color: rgba(255,255,255,0.12);
 }
 
-.cd-side-child-link {
-  padding-left: 0.25rem;
-  opacity: 0.95;
-}
+
 
 /* =========================
    Toggle sidebar (desktop rail footer)
