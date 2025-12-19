@@ -1,33 +1,5 @@
 // src/pages/CaseDetail.jsx
-/**
- * Mobile/tablette:
- * - Le bouton Navbar ouvre le drawer "cases"
- * - En haut du drawer: bouton "Revenir" -> bascule en "nav" (les 4 liens)
- *
- * Desktop:
- * - sidebar sticky + rail collapse (localStorage)
- *
- * CKEditor:
- * - HTML autorisé via rehype-raw + sanitize schema (tables, colgroup, styles width)
- * - Callouts Obsidian-style :
- *   > [!info] ...  (neutre)
- *   > [!info]- ... (replié par défaut)
- *   > [!info]+ ... (déplié par défaut)
- *
- * 2 niveaux "conteneur" :
- * - kind: 'container' => affiche child_cases (cartes)
- * - sidebar: caret sur les conteneurs pour afficher/masquer les enfants (style docusaurus-like)
- *
- * ✅ Fix demandé :
- * - ordre de la sidebar identique aux cartes CasCliniques :
- *   top-level = (containers + singles) triés ensemble par compareBySlugNumberAsc
- *   enfants uniquement sous leur parent (jamais en top-level)
- *
- * ✅ Ajout demandé (sans changer le comportement existant) :
- * - déploiement/enroulement animé des sous-listes (composant custom)
- */
-
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, Link, NavLink, useLocation } from 'react-router-dom';
 
 import PageTitle from '../components/PageTitle';
@@ -51,9 +23,10 @@ import { useCaseDetailSidebar } from '../ui/CaseDetailSidebarContext';
 import './CaseDetail.css';
 
 const CASES_ENDPOINT = import.meta.env.VITE_CASES_ENDPOINT || '/cases';
-const LS_KEY_COLLAPSE = 'cd-sidebar-collapsed';
 const PUB_STATE = import.meta.env.DEV ? 'preview' : 'live';
-const LS_KEY_EXPANDED_PREFIX = 'cd-expanded-containers:'; // + type
+
+const LS_KEY_COLLAPSE = 'cd-sidebar-collapsed';
+const LS_KEY_EXPANDED_PREFIX = 'cd-expanded-container:'; // + type
 
 /** Breakpoint helper */
 function useIsNarrow(maxWidthPx = 980) {
@@ -168,12 +141,9 @@ const ckeditorSchema = (() => {
     figure: [...(defaultSchema.attributes?.figure || []), 'className', 'style'],
     figcaption: [...(defaultSchema.attributes?.figcaption || []), 'className', 'style'],
     img: [...(defaultSchema.attributes?.img || []), 'style', 'width', 'height'],
-
     blockquote: [...(defaultSchema.attributes?.blockquote || []), 'className', 'data-callout'],
-
     div: [...(defaultSchema.attributes?.div || []), 'className'],
     span: [...(defaultSchema.attributes?.span || []), 'className'],
-
     details: [...(defaultSchema.attributes?.details || []), 'className', 'open'],
     summary: [...(defaultSchema.attributes?.summary || []), 'className'],
   };
@@ -206,19 +176,10 @@ function escapeHtml(str) {
 }
 
 /**
- * Plugin remark pour callouts style Obsidian:
- *
- * > [!info] Titre
- * > ...
- *
- * Options:
- * - neutre : [!info]
- * - replié : [!info]-
- * - déplié : [!info]+
+ * Plugin remark pour callouts style Obsidian
  */
 function remarkObsidianCallouts() {
   const KNOWN = new Set(['info', 'note', 'tip', 'warning', 'danger', 'success', 'question', 'important']);
-
   const ICON = {
     info: 'ℹ️',
     note: '📝',
@@ -243,7 +204,6 @@ function remarkObsidianCallouts() {
     if (typeof val !== 'string') return false;
     const s = val.trim().toLowerCase();
     if (s.startsWith('<table')) return true;
-    // CKEditor sort parfois un <figure class="table">...</figure>
     if (s.startsWith('<figure') && s.includes('<table')) return true;
     return false;
   };
@@ -272,11 +232,11 @@ function remarkObsidianCallouts() {
       const safeTitle = escapeHtml(title);
       const icon = ICON[calloutType] || 'ℹ️';
 
-      // On retire la ligne d'en-tête "[!...]"
+      // remove header line
       node.children.shift();
-      const innerChildren = node.children; // référence directe
+      const innerChildren = node.children;
 
-      // ✅ Aspiration : table HTML (et ensuite blockquotes simples) qui suivent le callout
+      // pull next HTML table / blockquotes
       if (parent && Array.isArray(parent.children) && typeof index === 'number') {
         let j = index + 1;
         let pulledTable = false;
@@ -291,9 +251,7 @@ function remarkObsidianCallouts() {
             continue;
           }
 
-          // si on a dû "sortir" à cause d'un tableau, on recolle les blockquotes suivants
           if (pulledTable && sib?.type === 'blockquote' && !isCalloutStart(sib)) {
-            // on ajoute le contenu du blockquote, pas le blockquote lui-même (évite un nested quote)
             if (Array.isArray(sib.children) && sib.children.length) {
               innerChildren.push(...sib.children);
             }
@@ -305,7 +263,6 @@ function remarkObsidianCallouts() {
         }
       }
 
-      // classes/attrs
       if (!node.data) node.data = {};
       if (!node.data.hProperties) node.data.hProperties = {};
       const h = node.data.hProperties;
@@ -347,134 +304,17 @@ function remarkObsidianCallouts() {
   };
 }
 
-
 function Markdown({ children }) {
   const source = normalizeEscapedBlockquotes(String(children ?? ''));
   return (
-    <ReactMarkdown remarkPlugins={[remarkGfm, remarkObsidianCallouts]} rehypePlugins={[rehypeRaw, [rehypeSanitize, ckeditorSchema]]}>
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm, remarkObsidianCallouts]}
+      rehypePlugins={[rehypeRaw, [rehypeSanitize, ckeditorSchema]]}
+    >
       {source}
     </ReactMarkdown>
   );
 }
-
-/* =========================
-   Sous-liste animée (custom)
-   - ne change aucune classe existante (on garde cd-side-children)
-   - durée variable selon hauteur
-   - pas de flash à l’ouverture
-   ========================= */
-
-function clamp(n, min, max) {
-  return Math.max(min, Math.min(max, n));
-}
-
-function CdSideChildrenAnimated({ open, contentKey, children }) {
-  const ref = useRef(null);
-  const didInitRef = useRef(false);
-
-  useLayoutEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-
-    const prefersReduced =
-      typeof window !== 'undefined' &&
-      window.matchMedia &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-    // Toujours "block" : l’animation ne dépend que de height
-    el.style.display = 'block';
-
-    // Mesure hauteur cible (contenu déjà dans le DOM)
-    const target = el.scrollHeight;
-
-    // Durée variable selon hauteur
-    const durationMs = prefersReduced ? 0 : clamp(Math.round(140 + target * 0.35), 160, 520);
-
-    el.style.willChange = 'height';
-    el.style.transition = prefersReduced ? 'none' : `height ${durationMs}ms ease-in-out`;
-
-    const reflow = () => void el.offsetHeight;
-
-    // Nettoyage transitionend si toggle rapide
-    const onEnd = (e) => {
-      if (e.propertyName !== 'height') return;
-      el.removeEventListener('transitionend', onEnd);
-
-      if (open) {
-        // fin ouverture
-        el.style.height = 'auto';
-        el.style.overflow = 'visible';
-        el.style.pointerEvents = 'auto';
-      } else {
-        // fin fermeture
-        el.style.pointerEvents = 'none';
-      }
-
-      el.style.willChange = 'auto';
-    };
-
-    el.addEventListener('transitionend', onEnd);
-
-    if (open) {
-      // OUVERTURE: 0 -> target
-      el.style.pointerEvents = 'auto';
-      el.style.overflow = 'hidden';
-
-      el.style.height = '0px';
-      reflow();
-      el.style.height = `${target}px`;
-
-      if (prefersReduced) {
-        el.style.height = 'auto';
-        el.style.overflow = 'visible';
-        el.style.willChange = 'auto';
-        el.removeEventListener('transitionend', onEnd);
-      }
-    } else {
-      // FERMETURE: current -> 0
-      el.style.pointerEvents = 'none';
-      el.style.overflow = 'hidden';
-
-      const start = el.getBoundingClientRect().height;
-      el.style.height = `${start}px`;
-      reflow();
-      el.style.height = '0px';
-
-      if (prefersReduced) {
-        el.style.height = '0px';
-        el.style.willChange = 'auto';
-        el.removeEventListener('transitionend', onEnd);
-      }
-    }
-
-    didInitRef.current = true;
-
-    return () => {
-      el.removeEventListener('transitionend', onEnd);
-      el.style.transition = '';
-      el.style.willChange = '';
-    };
-  }, [open, contentKey]);
-
-  // ⚠️ Important: après le 1er render, on ne force plus height/overflow via React,
-  // sinon ça casse l’anim (fermeture instantanée).
-  const initialStyle = useMemo(() => {
-    if (didInitRef.current) return { display: 'block' };
-    return {
-      display: 'block',
-      height: open ? 'auto' : '0px',
-      overflow: open ? 'visible' : 'hidden',
-      pointerEvents: open ? 'auto' : 'none',
-    };
-  }, [open]);
-
-  return (
-    <div ref={ref} className="cd-side-children" style={initialStyle}>
-      {children}
-    </div>
-  );
-}
-
 
 /* =========================
    Page
@@ -525,6 +365,7 @@ export default function CaseDetail() {
     [setMobileOpen]
   );
 
+  // lock body scroll on mobile drawer
   useEffect(() => {
     if (!isNarrow) return;
 
@@ -584,20 +425,14 @@ export default function CaseDetail() {
     }
 
     async function loadWithPopulate({ withQa, withQuiz, withChildren, withParent }) {
-      const populate = {
-        cover: { fields: ['url', 'formats'] },
-      };
+      const populate = { cover: { fields: ['url', 'formats'] } };
 
       if (withQa) populate.qa_blocks = { populate: '*' };
-
       if (withQuiz) {
         populate.quiz_blocks = {
-          populate: {
-            propositions: true,
-          },
+          populate: { propositions: true },
         };
       }
-
       if (withChildren) {
         populate.child_cases = {
           fields: ['title', 'slug', 'excerpt', 'type', 'kind'],
@@ -605,7 +440,6 @@ export default function CaseDetail() {
           sort: ['title:asc'],
         };
       }
-
       if (withParent) {
         populate.parent_case = {
           fields: ['title', 'slug', 'type', 'kind'],
@@ -673,7 +507,8 @@ export default function CaseDetail() {
 
         const children = normalizeRelationArray(attrs?.child_cases).map((c) => {
           const cCoverAttr = c?.cover?.data?.attributes || c?.cover || null;
-          const cCoverUrl = imgUrl(cCoverAttr, 'medium') || imgUrl(cCoverAttr, 'thumbnail') || imgUrl(cCoverAttr) || null;
+          const cCoverUrl =
+            imgUrl(cCoverAttr, 'medium') || imgUrl(cCoverAttr, 'thumbnail') || imgUrl(cCoverAttr) || null;
           return { ...c, coverUrl: cCoverUrl };
         });
 
@@ -748,11 +583,7 @@ export default function CaseDetail() {
     const onClick = (e) => {
       const t = e.target;
       if (!t || t.tagName !== 'IMG') return;
-
-      // ignore explicit
       if (t.dataset?.noLightbox === '1') return;
-
-      // ignore child-cards
       if (t.closest?.('.cd-child-card')) return;
 
       e.preventDefault();
@@ -843,7 +674,13 @@ export default function CaseDetail() {
                     onFocus={() => prefetchCase(c.slug, { publicationState: PUB_STATE }).catch(() => {})}
                   >
                     {c.coverUrl && (
-                      <img className="cd-child-cover" src={c.coverUrl} alt={c.title || c.slug} loading="lazy" data-no-lightbox="1" />
+                      <img
+                        className="cd-child-cover"
+                        src={c.coverUrl}
+                        alt={c.title || c.slug}
+                        loading="lazy"
+                        data-no-lightbox="1"
+                      />
                     )}
                     <div className="cd-child-title">{c.title || c.slug}</div>
                     {c.excerpt && <div className="cd-child-excerpt">{c.excerpt}</div>}
@@ -881,7 +718,14 @@ export default function CaseDetail() {
               <h2 className="quiz-title">Quiz</h2>
 
               {quizList.map((qb, i) => (
-                <QuizBlock key={qb?.id ?? `${slug}-quiz-${i}`} block={qb} index={i} total={quizList.length} seedKey={`${slug}-${qb?.id ?? i}`} Markdown={Markdown} />
+                <QuizBlock
+                  key={qb?.id ?? `${slug}-quiz-${i}`}
+                  block={qb}
+                  index={i}
+                  total={quizList.length}
+                  seedKey={`${slug}-${qb?.id ?? i}`}
+                  Markdown={Markdown}
+                />
               ))}
             </section>
           )}
@@ -924,6 +768,10 @@ export default function CaseDetail() {
   );
 }
 
+/* =========================
+   Sidebar (simple + stable)
+   ========================= */
+
 function AsideSameType({
   currentSlug,
   currentType,
@@ -940,93 +788,68 @@ function AsideSameType({
   const [loadingList, setLoadingList] = useState(false);
   const [errList, setErrList] = useState('');
 
-  const [anim, setAnim] = useState('');
-  const animTimerRef = useRef(null);
-
-  const [expanded, setExpanded] = useState(() => new Set());
+  // un seul container ouvert (exclusive)
   const expandedKey = `${LS_KEY_EXPANDED_PREFIX}${currentType || 'none'}`;
-
-  const loadExpanded = () => {
+  const [expandedSlug, setExpandedSlug] = useState(() => {
     try {
-      const raw = localStorage.getItem(expandedKey);
-      if (!raw) return new Set();
-      const arr = JSON.parse(raw);
-      return new Set(Array.isArray(arr) ? arr : []);
+      return localStorage.getItem(expandedKey) || '';
     } catch {
-      return new Set();
+      return '';
     }
-  };
+  });
 
-  const saveExpanded = (setVal) => {
+  useEffect(() => {
     try {
-      localStorage.setItem(expandedKey, JSON.stringify(Array.from(setVal)));
+      setExpandedSlug(localStorage.getItem(expandedKey) || '');
+    } catch {
+      setExpandedSlug('');
+    }
+  }, [expandedKey]);
+
+  const saveExpanded = (slug) => {
+    try {
+      localStorage.setItem(expandedKey, slug || '');
     } catch {}
   };
 
-  useEffect(() => {
-    setExpanded(loadExpanded());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [expandedKey]);
+  // prefetch: déféré + une seule fois par slug (évite “jiggle” re-render/paint)
+  const prefetchedRef = useRef(new Set());
+  const prefetchIntent = (slug) => {
+    if (!slug) return;
+    if (prefetchedRef.current.has(slug)) return;
+    prefetchedRef.current.add(slug);
 
-  // si on arrive sur un enfant, on ouvre automatiquement son parent
+    const run = () => prefetchCase(slug, { publicationState: PUB_STATE }).catch(() => {});
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      window.requestIdleCallback(run, { timeout: 600 });
+    } else {
+      setTimeout(run, 0);
+    }
+  };
+
+  // si on arrive sur un enfant : ouvrir son parent
   useEffect(() => {
     if (!currentParentSlug) return;
-    setExpanded((prev) => {
-      if (prev.has(currentParentSlug)) return prev;
-      const next = new Set(prev);
-      next.add(currentParentSlug);
-      saveExpanded(next);
-      return next;
+    setExpandedSlug((prev) => {
+      if (prev === currentParentSlug) return prev;
+      saveExpanded(currentParentSlug);
+      return currentParentSlug;
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentParentSlug]);
 
-  // ouvre un parent + ferme les autres
-  const forceOpenExclusive = (parentSlug) => {
-    setExpanded(() => {
-      const next = new Set([parentSlug]);
-      saveExpanded(next);
-      return next;
-    });
-  };
-
-  const toggleExclusive = (parentSlug) => {
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      const isOpen = next.has(parentSlug);
-      next.clear();
-      if (!isOpen) next.add(parentSlug);
-      saveExpanded(next);
-      return next;
-    });
-  };
-
-  const handleToggle = () => {
-    if (!isNarrow) {
-      const nextCollapsed = !collapsed;
-      setAnim(nextCollapsed ? 'closing' : 'opening');
-
-      if (animTimerRef.current) clearTimeout(animTimerRef.current);
-      animTimerRef.current = setTimeout(() => {
-        setAnim('');
-        animTimerRef.current = null;
-      }, 240);
-    }
+  const handleToggleSidebar = () => {
     onToggle();
   };
 
-  useEffect(
-    () => () => {
-      if (animTimerRef.current) clearTimeout(animTimerRef.current);
-    },
-    []
-  );
-
+  // boot prefetch list
   useEffect(() => {
     let booted = false;
 
     if (Array.isArray(prefetchRelated) && currentType) {
-      const list = prefetchRelated.filter((it) => it?.type === currentType && it?.slug).sort(compareBySlugNumberAsc);
+      const list = prefetchRelated
+        .filter((it) => it?.type === currentType && it?.slug)
+        .sort(compareBySlugNumberAsc);
 
       if (list.length) {
         setRelated(list);
@@ -1051,6 +874,7 @@ function AsideSameType({
     setLoadingList(!booted);
   }, [prefetchRelated, currentType]);
 
+  // load list
   useEffect(() => {
     let ignore = false;
 
@@ -1100,25 +924,7 @@ function AsideSameType({
     };
   }, [currentType]);
 
-  useEffect(() => {
-    if (!Array.isArray(related) || related.length === 0) return;
-    const limited = related.slice(0, 30);
-
-    for (const it of limited) {
-      if (!it?.slug || it.slug === currentSlug) continue;
-      prefetchCase(it.slug, { publicationState: PUB_STATE }).catch(() => {});
-    }
-  }, [related, currentSlug]);
-
-  const labelType =
-    currentType === 'qa' ? 'Cas Q/R' : currentType === 'quiz' ? 'Quiz' : currentType === 'presentation' ? 'Présentations' : 'Cas';
-
-  const showOverlay = !isNarrow && (collapsed || anim !== '');
-  const isAnimating = !isNarrow && anim !== '';
-  const overlayShowsExpand = collapsed || anim === 'closing';
-  const showNavInsteadOfCases = isNarrow && drawerView === 'nav';
-
-  // ✅ top-level trié comme les cartes (containers + singles mélangés)
+  // compute structure: containers + singles as top-level, children by parent
   const { topLevel, childrenByParent, containerSlugSet } = useMemo(() => {
     const byParent = new Map();
     const containersBySlug = new Map();
@@ -1145,7 +951,6 @@ function AsideSameType({
     }
 
     for (const [, arr] of byParent.entries()) arr.sort(compareBySlugNumberAsc);
-
     const top = [...containersBySlug.values(), ...singles].sort(compareBySlugNumberAsc);
 
     return {
@@ -1155,193 +960,191 @@ function AsideSameType({
     };
   }, [related]);
 
-  // ✅ si l’item courant est un conteneur: ouvrir sa liste automatiquement (si kids)
+  // si item courant est un container avec kids : l’ouvrir
   useEffect(() => {
     if (!containerSlugSet.has(currentSlug)) return;
     const kids = childrenByParent.get(currentSlug) || [];
     if (!kids.length) return;
-    forceOpenExclusive(currentSlug);
+
+    setExpandedSlug((prev) => {
+      if (prev === currentSlug) return prev;
+      saveExpanded(currentSlug);
+      return currentSlug;
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentSlug, containerSlugSet, childrenByParent]);
 
-  const renderLink = (it, className, onClick) => {
-    const active = it.slug === currentSlug;
+  const labelType =
+    currentType === 'qa'
+      ? 'Cas Q/R'
+      : currentType === 'quiz'
+        ? 'Quiz'
+        : currentType === 'presentation'
+          ? 'Présentations'
+          : 'Cas';
 
-    if (active) {
-  return (
-    <span className={`${className} active`} aria-current="page">
-      <span className="cd-side-link-text">{it.title || it.slug}</span>
-    </span>
-  );
-}
+  const showNavInsteadOfCases = isNarrow && drawerView === 'nav';
+
+  const renderCurrentOrLink = (it, className, onClick) => {
+    const isCurrent = it.slug === currentSlug;
+
+    if (isCurrent) {
+      return (
+        <span className={`${className} active cd-is-current`} aria-current="page">
+          <span className="cd-side-link-text">{it.title || it.slug}</span>
+        </span>
+      );
+    }
 
     return (
       <Link
         className={className}
         to={`/cas-cliniques/${it.slug}`}
         onClick={onClick}
-        onMouseEnter={() => prefetchCase(it.slug, { publicationState: PUB_STATE }).catch(() => {})}
-        onFocus={() => prefetchCase(it.slug, { publicationState: PUB_STATE }).catch(() => {})}
+        onMouseEnter={() => prefetchIntent(it.slug)}
+        onFocus={() => prefetchIntent(it.slug)}
       >
-    <span className="cd-side-link-text">{it.title || it.slug}</span>
+        <span className="cd-side-link-text">{it.title || it.slug}</span>
       </Link>
     );
   };
 
   return (
-    <aside className={['cd-side', collapsed ? 'is-collapsed' : '', anim, isAnimating ? 'is-animating' : ''].join(' ')}>
+    <aside className={['cd-side', collapsed ? 'is-collapsed' : ''].join(' ')}>
       <div className="cd-side-inner">
-        <div className="cd-side-scroll">
-          {showNavInsteadOfCases ? (
-            <>
-              <div className="cd-side-header">Menu</div>
+        {showNavInsteadOfCases ? (
+          <>
+            <div className="cd-side-header">Menu</div>
 
+            <ul className="cd-side-list">
+              <li>
+                <button type="button" className="cd-side-back" onClick={() => setDrawerView('cases')}>
+                  ← Liste des cas
+                </button>
+              </li>
+
+              <li>
+                <NavLink className="cd-side-link" to="/cas-cliniques" onClick={closeMobile}>
+                  Cas cliniques
+                </NavLink>
+              </li>
+              <li>
+                <NavLink className="cd-side-link" to="/randomisation" onClick={closeMobile}>
+                  Randomisation
+                </NavLink>
+              </li>
+              <li>
+                <NavLink className="cd-side-link" to="/documentation" onClick={closeMobile}>
+                  Documentation
+                </NavLink>
+              </li>
+              <li>
+                <NavLink className="cd-side-link" to="/liens-utiles" onClick={closeMobile}>
+                  Liens utiles
+                </NavLink>
+              </li>
+            </ul>
+          </>
+        ) : (
+          <>
+            {isNarrow && (
+              <div className="cd-side-top">
+                <button type="button" className="cd-side-back" onClick={() => setDrawerView('nav')}>
+                  ← Revenir
+                </button>
+              </div>
+            )}
+
+            <div className="cd-side-header">{labelType}</div>
+
+            {loadingList && <div className="cd-side-state">Chargement…</div>}
+            {errList && !loadingList && <div className="cd-side-state error">{errList}</div>}
+
+            {!errList && (
               <ul className="cd-side-list">
-                <li>
-                  <button type="button" className="cd-side-back" onClick={() => setDrawerView('cases')}>
-                    ← Liste des cas
-                  </button>
-                </li>
-
-                <li>
-                  <NavLink className="cd-side-link" to="/cas-cliniques" onClick={closeMobile}>
-                    Cas cliniques
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink className="cd-side-link" to="/randomisation" onClick={closeMobile}>
-                    Randomisation
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink className="cd-side-link" to="/documentation" onClick={closeMobile}>
-                    Documentation
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink className="cd-side-link" to="/liens-utiles" onClick={closeMobile}>
-                    Liens utiles
-                  </NavLink>
-                </li>
-              </ul>
-            </>
-          ) : (
-            <>
-              {isNarrow && (
-                <div className="cd-side-top">
-                  <button type="button" className="cd-side-back" onClick={() => setDrawerView('nav')}>
-                    ← Revenir
-                  </button>
-                </div>
-              )}
-
-              <div className="cd-side-header">{labelType}</div>
-
-              {loadingList && <div className="cd-side-state">Chargement…</div>}
-              {errList && !loadingList && <div className="cd-side-state error">{errList}</div>}
-
-              {!errList && (
-                <ul className="cd-side-list">
-                  {topLevel.map((it) => {
-                    const isCont = it?.kind === 'container';
-
-                    if (!isCont) {
-                      return (
-                        <li key={it.slug}>
-                          {renderLink(it, 'cd-side-link', () => {
-                            if (isNarrow) closeMobile();
-                          })}
-                        </li>
-                      );
-                    }
-
-                    const kids = childrenByParent.get(it.slug) || [];
-                    const hasKids = kids.length > 0;
-                    const isOpen = hasKids && expanded.has(it.slug);
-
-                    const isActiveRow = it.slug === currentSlug || it.slug === currentParentSlug;
-
-                    const openOrToggle = () => {
-                      if (!hasKids) return;
-                      toggleExclusive(it.slug);
-                    };
-
-                    const kidsKey = hasKids ? kids.map((k) => k.slug).join('|') : '';
-
+                {topLevel.map((it) => {
+                  const isCont = it?.kind === 'container';
+                  if (!isCont) {
                     return (
                       <li key={it.slug}>
-                        <div
-                          className={['cd-side-collapsible', hasKids ? 'has-children' : 'is-disabled', isActiveRow ? 'is-active' : ''].join(' ')}
-                          onClick={(e) => {
-                            if (!hasKids) return;
-                            if (e.target?.closest?.('.cd-side-caret')) return;
-                            openOrToggle();
-                          }}
-                        >
-                          {renderLink(it, 'cd-side-link cd-side-link--sublist', () => {
-                            if (hasKids) openOrToggle();
-                            if (isNarrow) closeMobile();
-                          })}
-
-                          <button
-                            type="button"
-                            className="clean-btn cd-side-caret"
-                            aria-label={isOpen ? 'Réduire' : 'Développer'}
-                            aria-expanded={isOpen ? 'true' : 'false'}
-                            disabled={!hasKids}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              if (!hasKids) return;
-                              openOrToggle();
-                            }}
-                          />
-                        </div>
-
-                        {/* ✅ même comportement qu’avant, mais animé */}
-                        {hasKids && (
-                          <CdSideChildrenAnimated open={isOpen} contentKey={kidsKey}>
-                            {kids.map((ch) => (
-                              <div key={ch.slug} className="cd-side-child">
-                                {renderLink(ch, 'cd-side-link cd-side-child-link', () => {
-                                  if (isNarrow) closeMobile();
-                                })}
-                              </div>
-                            ))}
-                          </CdSideChildrenAnimated>
-                        )}
+                        {renderCurrentOrLink(it, 'cd-side-link', () => {
+                          if (isNarrow) closeMobile();
+                        })}
                       </li>
                     );
-                  })}
-                </ul>
-              )}
-            </>
-          )}
-        </div>
+                  }
 
-        {!isNarrow &&
-          (showOverlay ? (
-            <div
-              className="cd-side-toggle"
-              title={overlayShowsExpand ? 'Développer la barre latérale' : 'Réduire la barre latérale'}
-              aria-label={overlayShowsExpand ? 'Développer la barre latérale' : 'Réduire la barre latérale'}
-              role="button"
-              tabIndex={0}
-              onClick={isAnimating ? undefined : handleToggle}
-              onKeyDown={(e) => {
-                if (!isAnimating && (e.key === 'Enter' || e.key === ' ')) {
-                  e.preventDefault();
-                  handleToggle();
-                }
-              }}
-            >
-              {overlayShowsExpand ? <BottomExpandIcon className="expandButtonIcon_H1n0" /> : <BottomCollapseIcon className="collapseSidebarButtonIcon_DI0B" />}
-            </div>
-          ) : (
-            <button type="button" title="Réduire la barre latérale" aria-label="Réduire la barre latérale" className="cd-side-toggle" onClick={handleToggle} disabled={isAnimating}>
+                  const kids = childrenByParent.get(it.slug) || [];
+                  const hasKids = kids.length > 0;
+
+                  const isOpen = hasKids && expandedSlug === it.slug;
+                  const isActiveRow = it.slug === currentSlug || it.slug === currentParentSlug;
+
+                  return (
+                    <li key={it.slug}>
+                      <div className={['cd-side-row', isActiveRow ? 'is-active' : ''].join(' ')}>
+                        {renderCurrentOrLink(it, 'cd-side-link', () => {
+                          if (isNarrow) closeMobile();
+                        })}
+
+                        <button
+                          type="button"
+                          className="cd-side-caret"
+                          aria-label={isOpen ? 'Réduire' : 'Développer'}
+                          aria-expanded={isOpen ? 'true' : 'false'}
+                          disabled={!hasKids}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (!hasKids) return;
+
+                            setExpandedSlug((prev) => {
+                              const next = prev === it.slug ? '' : it.slug;
+                              saveExpanded(next);
+                              return next;
+                            });
+                          }}
+                        />
+                      </div>
+
+                      {hasKids && (
+                        <div className={['cd-side-sublist', isOpen ? 'is-open' : ''].join(' ')}>
+                          <div className="cd-side-sublist-inner">
+                            <div className="cd-side-children">
+                              {kids.map((ch) => (
+                                <div key={ch.slug} className="cd-side-child">
+                                  {renderCurrentOrLink(ch, 'cd-side-link cd-side-child-link', () => {
+                                    if (isNarrow) closeMobile();
+                                  })}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </>
+        )}
+
+        {!isNarrow && (
+          <button
+            type="button"
+            title={collapsed ? 'Développer la barre latérale' : 'Réduire la barre latérale'}
+            aria-label={collapsed ? 'Développer la barre latérale' : 'Réduire la barre latérale'}
+            className="cd-side-toggle"
+            onClick={handleToggleSidebar}
+          >
+            {collapsed ? (
+              <BottomExpandIcon className="expandButtonIcon_H1n0" />
+            ) : (
               <BottomCollapseIcon className="collapseSidebarButtonIcon_DI0B" />
-            </button>
-          ))}
+            )}
+          </button>
+        )}
       </div>
     </aside>
   );
