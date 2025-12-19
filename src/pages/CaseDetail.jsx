@@ -5,17 +5,10 @@ import { useParams, Link, NavLink, useLocation } from 'react-router-dom';
 import PageTitle from '../components/PageTitle';
 import Breadcrumbs from '../components/Breadcrumbs';
 import QuizBlock from '../components/QuizBlock';
+import CaseMarkdown from '../components/CaseMarkdown';
 
 import { strapiFetch, imgUrl } from '../lib/strapi';
 import { getCaseFromCache, setCaseToCache, prefetchCase } from '../lib/caseCache';
-
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-
-import rehypeRaw from 'rehype-raw';
-import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
-
-import { visit } from 'unist-util-visit';
 
 import { BottomExpandIcon, BottomCollapseIcon } from '../components/Icons';
 import { useCaseDetailSidebar } from '../ui/CaseDetailSidebarContext';
@@ -99,221 +92,6 @@ function normalizeRelationArray(rel) {
   if (Array.isArray(rel.data)) return rel.data.map(normalizeEntity).filter(Boolean);
   if (Array.isArray(rel?.results)) return rel.results.map(normalizeEntity).filter(Boolean);
   return [];
-}
-
-/**
- * Schéma sanitize pour CKEditor + callouts :
- * - tables + colgroup/col + style="width:..."
- * - img width/height/style
- * - blockquote: className + data-callout
- * - div/span: className (heading callout)
- * - details/summary: pour callouts pliables
- */
-const ckeditorSchema = (() => {
-  const tagNames = new Set([...(defaultSchema.tagNames || [])]);
-  [
-    'table',
-    'thead',
-    'tbody',
-    'tfoot',
-    'tr',
-    'td',
-    'th',
-    'colgroup',
-    'col',
-    'figure',
-    'figcaption',
-    'details',
-    'summary',
-  ].forEach((t) => tagNames.add(t));
-
-  const attributes = {
-    ...(defaultSchema.attributes || {}),
-    table: [...(defaultSchema.attributes?.table || []), 'className', 'style'],
-    thead: [...(defaultSchema.attributes?.thead || []), 'className', 'style'],
-    tbody: [...(defaultSchema.attributes?.tbody || []), 'className', 'style'],
-    tfoot: [...(defaultSchema.attributes?.tfoot || []), 'className', 'style'],
-    tr: [...(defaultSchema.attributes?.tr || []), 'className', 'style'],
-    td: [...(defaultSchema.attributes?.td || []), 'className', 'style', 'colspan', 'rowspan'],
-    th: [...(defaultSchema.attributes?.th || []), 'className', 'style', 'colspan', 'rowspan', 'scope'],
-    colgroup: [...(defaultSchema.attributes?.colgroup || []), 'className', 'style', 'span'],
-    col: [...(defaultSchema.attributes?.col || []), 'className', 'style', 'span'],
-    figure: [...(defaultSchema.attributes?.figure || []), 'className', 'style'],
-    figcaption: [...(defaultSchema.attributes?.figcaption || []), 'className', 'style'],
-    img: [...(defaultSchema.attributes?.img || []), 'style', 'width', 'height'],
-    blockquote: [...(defaultSchema.attributes?.blockquote || []), 'className', 'data-callout'],
-    div: [...(defaultSchema.attributes?.div || []), 'className'],
-    span: [...(defaultSchema.attributes?.span || []), 'className'],
-    details: [...(defaultSchema.attributes?.details || []), 'className', 'open'],
-    summary: [...(defaultSchema.attributes?.summary || []), 'className'],
-  };
-
-  return {
-    ...defaultSchema,
-    tagNames: Array.from(tagNames),
-    attributes,
-  };
-})();
-
-/**
- * Corrige les blockquotes échappés par Strapi:
- * "\>" en début de ligne → "> "
- */
-function normalizeEscapedBlockquotes(src) {
-  if (typeof src !== 'string') return src;
-  return src.replace(/^[ \t]*\\>\s?/gm, '> ');
-}
-
-/** Échappement simple HTML pour le titre */
-function escapeHtml(str) {
-  if (typeof str !== 'string') return '';
-  return str.replace(/[&<>"]/g, (ch) => {
-    if (ch === '&') return '&amp;';
-    if (ch === '<') return '&lt;';
-    if (ch === '>') return '&gt;';
-    return '&quot;';
-  });
-}
-
-/**
- * Plugin remark pour callouts style Obsidian
- */
-function remarkObsidianCallouts() {
-  const KNOWN = new Set(['info', 'note', 'tip', 'warning', 'danger', 'success', 'question', 'important']);
-  const ICON = {
-    info: 'ℹ️',
-    note: '📝',
-    tip: '💡',
-    warning: '⚠️',
-    danger: '⛔',
-    success: '✅',
-    question: '❓',
-    important: '📌',
-  };
-
-  const isCalloutStart = (blockquoteNode) => {
-    if (!blockquoteNode || blockquoteNode.type !== 'blockquote') return false;
-    const firstParagraph = blockquoteNode.children?.[0];
-    const firstChild = firstParagraph?.children?.[0];
-    if (!firstParagraph || firstParagraph.type !== 'paragraph') return false;
-    if (!firstChild || firstChild.type !== 'text') return false;
-    return /^\s*\[\!(\w+)\]([+-])?\s*(.*?)\s*$/i.test(firstChild.value);
-  };
-
-  const isTableishHtml = (val) => {
-    if (typeof val !== 'string') return false;
-    const s = val.trim().toLowerCase();
-    if (s.startsWith('<table')) return true;
-    if (s.startsWith('<figure') && s.includes('<table')) return true;
-    return false;
-  };
-
-  return (tree) => {
-    visit(tree, 'blockquote', (node, index, parent) => {
-      if (!Array.isArray(node.children) || node.children.length === 0) return;
-
-      const firstParagraph = node.children[0];
-      const firstChild = firstParagraph?.children?.[0];
-      if (!firstParagraph || firstParagraph.type !== 'paragraph') return;
-      if (!firstChild || firstChild.type !== 'text') return;
-
-      const m = firstChild.value.match(/^\s*\[\!(\w+)\]([+-])?\s*(.*?)\s*$/i);
-      if (!m) return;
-
-      const rawType = String(m[1] || '').toLowerCase();
-      const fold = m[2] || ''; // '' | '-' | '+'
-      const titleTextRaw = String(m[3] || '').trim();
-
-      const calloutType = KNOWN.has(rawType) ? rawType : 'info';
-      const title =
-        titleTextRaw ||
-        (calloutType === 'info' ? 'Info' : calloutType.charAt(0).toUpperCase() + calloutType.slice(1));
-
-      const safeTitle = escapeHtml(title);
-      const icon = ICON[calloutType] || 'ℹ️';
-
-      // remove header line
-      node.children.shift();
-      const innerChildren = node.children;
-
-      // pull next HTML table / blockquotes
-      if (parent && Array.isArray(parent.children) && typeof index === 'number') {
-        let j = index + 1;
-        let pulledTable = false;
-
-        while (j < parent.children.length) {
-          const sib = parent.children[j];
-
-          if (sib?.type === 'html' && isTableishHtml(sib.value)) {
-            innerChildren.push({ type: 'html', value: sib.value });
-            parent.children.splice(j, 1);
-            pulledTable = true;
-            continue;
-          }
-
-          if (pulledTable && sib?.type === 'blockquote' && !isCalloutStart(sib)) {
-            if (Array.isArray(sib.children) && sib.children.length) {
-              innerChildren.push(...sib.children);
-            }
-            parent.children.splice(j, 1);
-            continue;
-          }
-
-          break;
-        }
-      }
-
-      if (!node.data) node.data = {};
-      if (!node.data.hProperties) node.data.hProperties = {};
-      const h = node.data.hProperties;
-
-      const baseClasses = Array.isArray(h.className) ? h.className : h.className ? [h.className] : [];
-      h.className = [...baseClasses, 'cd-callout', `cd-callout-${calloutType}`];
-      h['data-callout'] = calloutType;
-
-      const headingCore =
-        `<span class="cd-callout-icon">${icon}</span>` +
-        `<span class="cd-callout-title">${safeTitle}</span>`;
-
-      if (fold === '-' || fold === '+') {
-        const openAttr = fold === '+' ? ' open' : '';
-        const headingHtml =
-          `<details class="cd-callout-details"${openAttr}>` +
-          `<summary class="cd-callout-heading">` +
-          `${headingCore}<span class="cd-callout-chevron" aria-hidden="true"></span>` +
-          `</summary><div class="cd-callout-content">`;
-
-        node.children = [
-          { type: 'html', value: headingHtml },
-          ...innerChildren,
-          { type: 'html', value: '</div></details>' },
-        ];
-      } else {
-        const headingHtml =
-          `<div class="cd-callout-heading">` +
-          `${headingCore}` +
-          `</div><div class="cd-callout-content">`;
-
-        node.children = [
-          { type: 'html', value: headingHtml },
-          ...innerChildren,
-          { type: 'html', value: '</div>' },
-        ];
-      }
-    });
-  };
-}
-
-function Markdown({ children }) {
-  const source = normalizeEscapedBlockquotes(String(children ?? ''));
-  return (
-    <ReactMarkdown
-      remarkPlugins={[remarkGfm, remarkObsidianCallouts]}
-      rehypePlugins={[rehypeRaw, [rehypeSanitize, ckeditorSchema]]}
-    >
-      {source}
-    </ReactMarkdown>
-  );
 }
 
 /* =========================
@@ -507,8 +285,7 @@ export default function CaseDetail() {
 
         const children = normalizeRelationArray(attrs?.child_cases).map((c) => {
           const cCoverAttr = c?.cover?.data?.attributes || c?.cover || null;
-          const cCoverUrl =
-            imgUrl(cCoverAttr, 'medium') || imgUrl(cCoverAttr, 'thumbnail') || imgUrl(cCoverAttr) || null;
+          const cCoverUrl = imgUrl(cCoverAttr, 'medium') || imgUrl(cCoverAttr, 'thumbnail') || imgUrl(cCoverAttr) || null;
           return { ...c, coverUrl: cCoverUrl };
         });
 
@@ -656,7 +433,7 @@ export default function CaseDetail() {
           {item?.content && (
             <div className="cd-content">
               <PageTitle description={item?.excerpt || ''}>{item?.title || 'Cas clinique'}</PageTitle>
-              <Markdown>{item.content}</Markdown>
+              <CaseMarkdown>{item.content}</CaseMarkdown>
             </div>
           )}
 
@@ -674,13 +451,7 @@ export default function CaseDetail() {
                     onFocus={() => prefetchCase(c.slug, { publicationState: PUB_STATE }).catch(() => {})}
                   >
                     {c.coverUrl && (
-                      <img
-                        className="cd-child-cover"
-                        src={c.coverUrl}
-                        alt={c.title || c.slug}
-                        loading="lazy"
-                        data-no-lightbox="1"
-                      />
+                      <img className="cd-child-cover" src={c.coverUrl} alt={c.title || c.slug} loading="lazy" data-no-lightbox="1" />
                     )}
                     <div className="cd-child-title">{c.title || c.slug}</div>
                     {c.excerpt && <div className="cd-child-excerpt">{c.excerpt}</div>}
@@ -705,7 +476,7 @@ export default function CaseDetail() {
                     </summary>
 
                     <div className="qa-a">
-                      <Markdown>{ans}</Markdown>
+                      <CaseMarkdown>{ans}</CaseMarkdown>
                     </div>
                   </details>
                 );
@@ -724,7 +495,7 @@ export default function CaseDetail() {
                   index={i}
                   total={quizList.length}
                   seedKey={`${slug}-${qb?.id ?? i}`}
-                  Markdown={Markdown}
+                  Markdown={CaseMarkdown}
                 />
               ))}
             </section>
@@ -735,14 +506,14 @@ export default function CaseDetail() {
               {item?.references && (
                 <div className="cd-references">
                   <h3>Références</h3>
-                  <Markdown>{item.references}</Markdown>
+                  <CaseMarkdown>{item.references}</CaseMarkdown>
                 </div>
               )}
 
               {item?.copyright && (
                 <div className="cd-copyright">
                   <h3>Copyright</h3>
-                  <Markdown>{item.copyright}</Markdown>
+                  <CaseMarkdown>{item.copyright}</CaseMarkdown>
                 </div>
               )}
             </section>
@@ -812,7 +583,30 @@ function AsideSameType({
     } catch {}
   };
 
-  // prefetch: déféré + une seule fois par slug (évite “jiggle” re-render/paint)
+  const isPlainLeftClick = (e) => {
+    if (!e) return false;
+    if (e.button !== 0) return false;
+    if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return false;
+    return true;
+  };
+
+  const toggleContainer = (slug) => {
+    setExpandedSlug((prev) => {
+      const next = prev === slug ? '' : slug;
+      saveExpanded(next);
+      return next;
+    });
+  };
+
+  const openContainerExclusive = (slug) => {
+    setExpandedSlug((prev) => {
+      if (prev === slug) return prev;
+      saveExpanded(slug);
+      return slug;
+    });
+  };
+
+  // prefetch: déféré + une seule fois par slug
   const prefetchedRef = useRef(new Set());
   const prefetchIntent = (slug) => {
     if (!slug) return;
@@ -827,7 +621,7 @@ function AsideSameType({
     }
   };
 
-  // si on arrive sur un enfant : ouvrir son parent
+  // si on arrive sur un enfant : ouvrir son parent (exclusive)
   useEffect(() => {
     if (!currentParentSlug) return;
     setExpandedSlug((prev) => {
@@ -960,7 +754,7 @@ function AsideSameType({
     };
   }, [related]);
 
-  // si item courant est un container avec kids : l’ouvrir
+  // si item courant est un container avec kids : l’ouvrir (exclusive)
   useEffect(() => {
     if (!containerSlugSet.has(currentSlug)) return;
     const kids = childrenByParent.get(currentSlug) || [];
@@ -1064,6 +858,7 @@ function AsideSameType({
               <ul className="cd-side-list">
                 {topLevel.map((it) => {
                   const isCont = it?.kind === 'container';
+
                   if (!isCont) {
                     return (
                       <li key={it.slug}>
@@ -1078,12 +873,51 @@ function AsideSameType({
                   const hasKids = kids.length > 0;
 
                   const isOpen = hasKids && expandedSlug === it.slug;
+
+                  const isCurrentContainer = it.slug === currentSlug;
+                  const isParentCurrent = it.slug === currentParentSlug && currentSlug !== currentParentSlug;
+
                   const isActiveRow = it.slug === currentSlug || it.slug === currentParentSlug;
 
                   return (
                     <li key={it.slug}>
-                      <div className={['cd-side-row', isActiveRow ? 'is-active' : ''].join(' ')}>
-                        {renderCurrentOrLink(it, 'cd-side-link', () => {
+                      <div
+                        className={[
+                          'cd-side-row',
+                          hasKids ? 'has-kids' : '',
+                          isActiveRow ? 'is-active' : '',
+                          isParentCurrent ? 'is-parent-current' : '',
+                        ].join(' ')}
+                        onClick={(e) => {
+                          // toggle via clic sur la row UNIQUEMENT si on est déjà sur la page du conteneur
+                          if (!hasKids) return;
+                          if (!isCurrentContainer) return;
+                          if (!isPlainLeftClick(e)) return;
+                          toggleContainer(it.slug);
+                        }}
+                      >
+                        {renderCurrentOrLink(it, 'cd-side-link', (e) => {
+                          // cas "span current" => pas de handler
+                          if (!e) return;
+
+                          if (!hasKids) {
+                            if (isNarrow) closeMobile();
+                            return;
+                          }
+
+                          // si on est déjà sur le conteneur : clic sur le titre => toggle (pas de navigation)
+                          if (isCurrentContainer && isPlainLeftClick(e)) {
+                            e.preventDefault();
+                            toggleContainer(it.slug);
+                            return;
+                          }
+
+                          // sinon : navigation normale, mais on ouvre la liste (exclusive) avant
+                          if (!isCurrentContainer && isPlainLeftClick(e)) {
+                            if (!isOpen) openContainerExclusive(it.slug);
+                            // on laisse la navigation se faire
+                          }
+
                           if (isNarrow) closeMobile();
                         })}
 
@@ -1094,15 +928,11 @@ function AsideSameType({
                           aria-expanded={isOpen ? 'true' : 'false'}
                           disabled={!hasKids}
                           onClick={(e) => {
+                            // le chevron toggle toujours
                             e.preventDefault();
                             e.stopPropagation();
                             if (!hasKids) return;
-
-                            setExpandedSlug((prev) => {
-                              const next = prev === it.slug ? '' : it.slug;
-                              saveExpanded(next);
-                              return next;
-                            });
+                            toggleContainer(it.slug);
                           }}
                         />
                       </div>
