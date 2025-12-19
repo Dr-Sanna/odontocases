@@ -125,6 +125,11 @@
   color: #b00020;
 }
 
+/* =========================
+   Sidebar list items (2 lines clamp + chevron full height)
+   ========================= */
+
+/* liste */
 .cd-side-list {
   flex: 1 1 auto;
   min-height: 0;
@@ -145,25 +150,38 @@
   margin-top: 4px;
 }
 
+/* lien (1 ligne ou 2 lignes) */
 .cd-side-link {
   display: block;
+  min-width: 0;
+
   padding: var(--ifm-menu-link-padding-vertical) var(--ifm-menu-link-padding-horizontal);
   border-radius: .25rem;
   text-decoration: none;
   color: var(--ifm-menu-color);
   border: 1px solid transparent;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   transition: background 0.12s ease, border-color 0.12s ease;
 }
 
-/* Hover normal (items non-collapsible) */
+/* texte interne clampé (sans padding => pas de “décapitation”) */
+.cd-side-link-text {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+
+  -webkit-line-clamp: 2;  /* ✅ 2 lignes */
+  overflow: hidden;
+  white-space: normal;
+
+  /* Important : évite les artefacts de coupe sur certains moteurs */
+  line-height: 1.25;
+  padding-bottom: 0.1px; /* micro marge anti “découpe” */
+}
+
+/* hover/active pour les items NON-collapsible */
 .cd-side-link:hover {
   background-color: var(--ifm-menu-color-background-hover);
 }
 
-/* Active normal (items non-collapsible) */
 .cd-side-link.active {
   background-color: var(--ifm-menu-color-background-active);
   color: var(--ifm-menu-color-active);
@@ -171,107 +189,92 @@
 }
 
 /* =========================
-   Collapsible (docusaurus-like)
+   Collapsible row (text + chevron)
    ========================= */
-.clean-btn {
-  color: inherit;
-  cursor: pointer;
-  background: 0 0;
-  border: none;
-  padding: 0;
-  font-family: inherit;
-}
 
-/* wrapper = ligne complète */
+/* =========================
+   Collapsible row (stable + centered chevron)
+   ========================= */
+
 .cd-side-collapsible {
-  transition: background var(--ifm-transition-fast) var(--ifm-transition-timing-default);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 2.5rem; /* colonne chevron fixe */
+  align-items: stretch;
   border-radius: .25rem;
-  flex-wrap: wrap;
-  display: flex;
-  position: relative;
+
+  /* évite les “micro déplacements” lors du repaint */
+  contain: paint;
+  transition: background-color 120ms ease;
 }
 
-/* pointer sur toute la ligne */
-.cd-side-collapsible.has-children {
-  cursor: pointer;
-}
-.cd-side-collapsible.has-children * {
-  cursor: pointer;
-}
-
-/* hover sur toute la ligne (item + chevron) */
+/* hover / active gérés par le wrapper */
 .cd-side-collapsible:hover {
-  background: var(--ifm-menu-color-background-hover);
+  background-color: var(--ifm-menu-color-background-hover);
 }
 
-/* actif sur toute la ligne (évite double background) */
 .cd-side-collapsible.is-active {
-  background: var(--ifm-menu-color-background-active);
+  background-color: var(--ifm-menu-color-background-active);
 }
 
-/* Dans un collapsible: le lien ne doit pas gérer background */
+/* Dans un collapsible : le lien ne gère pas le fond */
 .cd-side-collapsible > .cd-side-link {
-  flex: 1 1 auto;
   min-width: 0;
   background: transparent !important;
   border-color: transparent !important;
 }
 
-/* texte actif dans wrapper actif */
+/* couleur active (sans changer la graisse => pas de reflow) */
 .cd-side-collapsible.is-active .cd-side-link {
   color: var(--ifm-menu-color-active);
-  font-weight: 600;
 }
 
-/* évite double hover (wrapper gère le hover) */
+/* évite double hover */
 .cd-side-collapsible .cd-side-link:hover {
   background: transparent;
 }
 
-/* caret button (zone cliquable) */
+/* Zone chevron = bouton pleine hauteur + centré parfait */
 .cd-side-caret {
-  color: inherit;
-  cursor: pointer;
-  background: 0 0;
-  border: none;
-  padding: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 2.25rem;
 
-  width: 2rem;
-  height: 2rem;
+  border: none;
+  background: transparent;
   border-radius: .25rem;
 
   display: grid;
-  place-items: center;
+  place-items: center; /* ✅ centre parfait */
+
+  cursor: pointer;
+
+  /* micro-stabilité de rendu */
+  transform: translateZ(0);
+  transition: background-color 120ms ease;
+}
+
+/* Hover chevron : simple background (pas de gros inset box-shadow) */
+.cd-side-caret:hover {
+  background-color: color-mix(in srgb, var(--ifm-menu-color-background-hover) 85%, transparent);
 }
 
 /* icon docusaurus */
-.cd-side-caret:before {
+.cd-side-caret::before {
   content: "";
+  display: block;
+
   background: var(--ifm-menu-link-sublist-icon) 50% / 2rem 2rem;
   filter: var(--ifm-menu-link-sublist-icon-filter);
+
   width: 1.25rem;
   height: 1.25rem;
-  transition: transform var(--ifm-transition-fast) linear;
 
-  /* fermé => droite */
+  transition: transform var(--ifm-transition-fast) linear;
   transform: rotate(90deg);
 }
 
-/* ouvert => bas */
-.cd-side-caret[aria-expanded="true"]:before {
+.cd-side-caret[aria-expanded="true"]::before {
   transform: rotate(180deg);
-}
-
-/* ✅ hover du chevron “doublé”
-   - la ligne est déjà en hover (via .cd-side-collapsible:hover)
-   - ici on renforce visuellement le chevron (surcouche) */
-.cd-side-caret:hover {
-  background: var(--ifm-menu-color-background-hover);
-  box-shadow: inset 0 0 0 9999px rgba(0, 0, 0, 0.05);
-}
-
-[data-theme="dark"] .cd-side-caret:hover {
-  box-shadow: inset 0 0 0 9999px rgba(255, 255, 255, 0.06);
 }
 
 /* disabled */
@@ -285,17 +288,14 @@
   opacity: 0.35;
 }
 
+
 /* enfants */
 .cd-side-children {
   padding-left: var(--ifm-menu-link-padding-horizontal);
 }
+
 .cd-side-child-link {
-margin-top: .25rem;
-}
-
-
-[data-theme="dark"] .cd-side-children {
-  border-left-color: rgba(255,255,255,0.12);
+  margin-top: .25rem;
 }
 
 

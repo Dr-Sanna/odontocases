@@ -230,21 +230,31 @@ function remarkObsidianCallouts() {
     important: '📌',
   };
 
+  const isCalloutStart = (blockquoteNode) => {
+    if (!blockquoteNode || blockquoteNode.type !== 'blockquote') return false;
+    const firstParagraph = blockquoteNode.children?.[0];
+    const firstChild = firstParagraph?.children?.[0];
+    if (!firstParagraph || firstParagraph.type !== 'paragraph') return false;
+    if (!firstChild || firstChild.type !== 'text') return false;
+    return /^\s*\[\!(\w+)\]([+-])?\s*(.*?)\s*$/i.test(firstChild.value);
+  };
+
+  const isTableishHtml = (val) => {
+    if (typeof val !== 'string') return false;
+    const s = val.trim().toLowerCase();
+    if (s.startsWith('<table')) return true;
+    // CKEditor sort parfois un <figure class="table">...</figure>
+    if (s.startsWith('<figure') && s.includes('<table')) return true;
+    return false;
+  };
+
   return (tree) => {
-    visit(tree, 'blockquote', (node) => {
+    visit(tree, 'blockquote', (node, index, parent) => {
       if (!Array.isArray(node.children) || node.children.length === 0) return;
 
       const firstParagraph = node.children[0];
-      if (
-        !firstParagraph ||
-        firstParagraph.type !== 'paragraph' ||
-        !Array.isArray(firstParagraph.children) ||
-        firstParagraph.children.length === 0
-      ) {
-        return;
-      }
-
-      const firstChild = firstParagraph.children[0];
+      const firstChild = firstParagraph?.children?.[0];
+      if (!firstParagraph || firstParagraph.type !== 'paragraph') return;
       if (!firstChild || firstChild.type !== 'text') return;
 
       const m = firstChild.value.match(/^\s*\[\!(\w+)\]([+-])?\s*(.*?)\s*$/i);
@@ -262,9 +272,40 @@ function remarkObsidianCallouts() {
       const safeTitle = escapeHtml(title);
       const icon = ICON[calloutType] || 'ℹ️';
 
+      // On retire la ligne d'en-tête "[!...]"
       node.children.shift();
-      const innerChildren = node.children;
+      const innerChildren = node.children; // référence directe
 
+      // ✅ Aspiration : table HTML (et ensuite blockquotes simples) qui suivent le callout
+      if (parent && Array.isArray(parent.children) && typeof index === 'number') {
+        let j = index + 1;
+        let pulledTable = false;
+
+        while (j < parent.children.length) {
+          const sib = parent.children[j];
+
+          if (sib?.type === 'html' && isTableishHtml(sib.value)) {
+            innerChildren.push({ type: 'html', value: sib.value });
+            parent.children.splice(j, 1);
+            pulledTable = true;
+            continue;
+          }
+
+          // si on a dû "sortir" à cause d'un tableau, on recolle les blockquotes suivants
+          if (pulledTable && sib?.type === 'blockquote' && !isCalloutStart(sib)) {
+            // on ajoute le contenu du blockquote, pas le blockquote lui-même (évite un nested quote)
+            if (Array.isArray(sib.children) && sib.children.length) {
+              innerChildren.push(...sib.children);
+            }
+            parent.children.splice(j, 1);
+            continue;
+          }
+
+          break;
+        }
+      }
+
+      // classes/attrs
       if (!node.data) node.data = {};
       if (!node.data.hProperties) node.data.hProperties = {};
       const h = node.data.hProperties;
@@ -273,7 +314,9 @@ function remarkObsidianCallouts() {
       h.className = [...baseClasses, 'cd-callout', `cd-callout-${calloutType}`];
       h['data-callout'] = calloutType;
 
-      const headingCore = `<span class="cd-callout-icon">${icon}</span><span class="cd-callout-title">${safeTitle}</span>`;
+      const headingCore =
+        `<span class="cd-callout-icon">${icon}</span>` +
+        `<span class="cd-callout-title">${safeTitle}</span>`;
 
       if (fold === '-' || fold === '+') {
         const openAttr = fold === '+' ? ' open' : '';
@@ -283,18 +326,27 @@ function remarkObsidianCallouts() {
           `${headingCore}<span class="cd-callout-chevron" aria-hidden="true"></span>` +
           `</summary><div class="cd-callout-content">`;
 
-        node.children = [{ type: 'html', value: headingHtml }, ...innerChildren, { type: 'html', value: '</div></details>' }];
+        node.children = [
+          { type: 'html', value: headingHtml },
+          ...innerChildren,
+          { type: 'html', value: '</div></details>' },
+        ];
       } else {
         const headingHtml =
           `<div class="cd-callout-heading">` +
           `${headingCore}` +
           `</div><div class="cd-callout-content">`;
 
-        node.children = [{ type: 'html', value: headingHtml }, ...innerChildren, { type: 'html', value: '</div>' }];
+        node.children = [
+          { type: 'html', value: headingHtml },
+          ...innerChildren,
+          { type: 'html', value: '</div>' },
+        ];
       }
     });
   };
 }
+
 
 function Markdown({ children }) {
   const source = normalizeEscapedBlockquotes(String(children ?? ''));
@@ -1116,12 +1168,12 @@ function AsideSameType({
     const active = it.slug === currentSlug;
 
     if (active) {
-      return (
-        <span className={`${className} active`} aria-current="page">
-          {it.title || it.slug}
-        </span>
-      );
-    }
+  return (
+    <span className={`${className} active`} aria-current="page">
+      <span className="cd-side-link-text">{it.title || it.slug}</span>
+    </span>
+  );
+}
 
     return (
       <Link
@@ -1131,7 +1183,7 @@ function AsideSameType({
         onMouseEnter={() => prefetchCase(it.slug, { publicationState: PUB_STATE }).catch(() => {})}
         onFocus={() => prefetchCase(it.slug, { publicationState: PUB_STATE }).catch(() => {})}
       >
-        {it.title || it.slug}
+    <span className="cd-side-link-text">{it.title || it.slug}</span>
       </Link>
     );
   };
