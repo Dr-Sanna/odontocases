@@ -120,12 +120,27 @@ export default function CaseDetail() {
     return null;
   });
 
+  // on garde le dernier type connu pour éviter “Présentation -> Cas -> Présentation” pendant un load
+  const [stableType, setStableType] = useState(() => {
+    return (getCaseFromCache(slug)?.type || provisional?.type || null);
+  });
+
+  useEffect(() => {
+    if (item?.type) setStableType(item.type);
+  }, [item?.type]);
+
   const [collapsedDesktop, setCollapsedDesktop] = useState(() => {
     try {
       return localStorage.getItem(LS_KEY_COLLAPSE) === '1';
     } catch {
       return false;
     }
+  });
+
+  // état “transition finie” pour activer hover/clic du bouton de réouverture uniquement quand fermé
+  const [collapseDone, setCollapseDone] = useState(() => {
+    // au reload, si déjà fermé, on est “done”
+    return collapsedDesktop && !isNarrow;
   });
 
   useEffect(() => {
@@ -173,6 +188,24 @@ export default function CaseDetail() {
 
   const collapsed = isNarrow ? !mobileOpen : collapsedDesktop;
 
+  // quand on change collapsed (desktop), on marque “pas done” jusqu’à fin de transition width
+  useEffect(() => {
+    if (isNarrow) return;
+    if (collapsedDesktop) {
+      // on commence la fermeture
+      setCollapseDone(false);
+      return;
+    }
+    // ouverture: pas besoin de “done”, mais on garde false pour éviter hover bizarre
+    setCollapseDone(false);
+  }, [collapsedDesktop, isNarrow]);
+
+  // au reload: si c’est déjà collapsedDesktop=true, on force done=true (sinon bouton inactif)
+  useEffect(() => {
+    if (isNarrow) return;
+    if (collapsedDesktop) setCollapseDone(true);
+  }, [isNarrow]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const toggleSidebar = () => {
     if (isNarrow) {
       setMobileOpen((v) => !v);
@@ -190,6 +223,7 @@ export default function CaseDetail() {
   useEffect(() => {
     let ignore = false;
 
+    // IMPORTANT: on ne met plus item à null => évite disparition “liste + page”
     const cached = getCaseFromCache(slug);
     if (cached) {
       setItem(cached);
@@ -198,7 +232,7 @@ export default function CaseDetail() {
       setItem(provisional);
       setLoading(true);
     } else {
-      setItem(null);
+      // on garde l’ancien item pendant le chargement pour stabiliser l’UI
       setLoading(true);
     }
 
@@ -285,7 +319,8 @@ export default function CaseDetail() {
 
         const children = normalizeRelationArray(attrs?.child_cases).map((c) => {
           const cCoverAttr = c?.cover?.data?.attributes || c?.cover || null;
-          const cCoverUrl = imgUrl(cCoverAttr, 'medium') || imgUrl(cCoverAttr, 'thumbnail') || imgUrl(cCoverAttr) || null;
+          const cCoverUrl =
+            imgUrl(cCoverAttr, 'medium') || imgUrl(cCoverAttr, 'thumbnail') || imgUrl(cCoverAttr) || null;
           return { ...c, coverUrl: cCoverUrl };
         });
 
@@ -312,18 +347,20 @@ export default function CaseDetail() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug]);
 
+  const effectiveType = item?.type || provisional?.type || stableType || null;
+
   const typeLabel = useMemo(() => {
-    if (item?.type === 'qa') return 'Q/R';
-    if (item?.type === 'quiz') return 'Quiz';
+    if (effectiveType === 'qa') return 'Q/R';
+    if (effectiveType === 'quiz') return 'Quiz';
     return 'Présentation';
-  }, [item?.type]);
+  }, [effectiveType]);
 
   const qaList = Array.isArray(item?.qa_blocks) ? item.qa_blocks : [];
   const quizList = Array.isArray(item?.quiz_blocks) ? item.quiz_blocks : [];
   const childList = Array.isArray(item?.child_cases) ? item.child_cases : [];
   const isContainer = item?.kind === 'container' || childList.length > 0;
 
-  const typeKey = item?.type || provisional?.type || null;
+  const typeKey = effectiveType;
   const crumbTypeLabel = typeLabelFromKey(typeKey);
 
   const breadcrumbItems = useMemo(() => {
@@ -386,9 +423,11 @@ export default function CaseDetail() {
     <div className={['cd-shell', collapsed ? 'is-collapsed' : '', drawerOpen ? 'is-drawer-open' : ''].join(' ')}>
       <AsideSameType
         currentSlug={slug}
-        currentType={item?.type}
+        currentType={effectiveType}
         currentParentSlug={item?.parent_case?.slug || null}
         collapsed={collapsed}
+        collapseDone={collapseDone}
+        setCollapseDone={setCollapseDone}
         onToggle={toggleSidebar}
         prefetchRelated={location.state?.relatedPrefetch || null}
         isNarrow={isNarrow}
@@ -414,7 +453,7 @@ export default function CaseDetail() {
         <div className="cd-page-header">
           <Breadcrumbs items={breadcrumbItems} />
           <div className="cd-type-chip">
-            <span className={`cd-chip cd-${item?.type || 'qa'}`}>{typeLabel}</span>
+            <span className={`cd-chip cd-${effectiveType || 'qa'}`}>{typeLabel}</span>
           </div>
         </div>
 
@@ -451,7 +490,13 @@ export default function CaseDetail() {
                     onFocus={() => prefetchCase(c.slug, { publicationState: PUB_STATE }).catch(() => {})}
                   >
                     {c.coverUrl && (
-                      <img className="cd-child-cover" src={c.coverUrl} alt={c.title || c.slug} loading="lazy" data-no-lightbox="1" />
+                      <img
+                        className="cd-child-cover"
+                        src={c.coverUrl}
+                        alt={c.title || c.slug}
+                        loading="lazy"
+                        data-no-lightbox="1"
+                      />
                     )}
                     <div className="cd-child-title">{c.title || c.slug}</div>
                     {c.excerpt && <div className="cd-child-excerpt">{c.excerpt}</div>}
@@ -540,7 +585,7 @@ export default function CaseDetail() {
 }
 
 /* =========================
-   Sidebar (simple + stable)
+   Sidebar
    ========================= */
 
 function AsideSameType({
@@ -548,6 +593,8 @@ function AsideSameType({
   currentType,
   currentParentSlug,
   collapsed,
+  collapseDone,
+  setCollapseDone,
   onToggle,
   prefetchRelated,
   isNarrow,
@@ -559,7 +606,6 @@ function AsideSameType({
   const [loadingList, setLoadingList] = useState(false);
   const [errList, setErrList] = useState('');
 
-  // un seul container ouvert (exclusive)
   const expandedKey = `${LS_KEY_EXPANDED_PREFIX}${currentType || 'none'}`;
   const [expandedSlug, setExpandedSlug] = useState(() => {
     try {
@@ -583,30 +629,6 @@ function AsideSameType({
     } catch {}
   };
 
-  const isPlainLeftClick = (e) => {
-    if (!e) return false;
-    if (e.button !== 0) return false;
-    if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return false;
-    return true;
-  };
-
-  const toggleContainer = (slug) => {
-    setExpandedSlug((prev) => {
-      const next = prev === slug ? '' : slug;
-      saveExpanded(next);
-      return next;
-    });
-  };
-
-  const openContainerExclusive = (slug) => {
-    setExpandedSlug((prev) => {
-      if (prev === slug) return prev;
-      saveExpanded(slug);
-      return slug;
-    });
-  };
-
-  // prefetch: déféré + une seule fois par slug
   const prefetchedRef = useRef(new Set());
   const prefetchIntent = (slug) => {
     if (!slug) return;
@@ -621,7 +643,6 @@ function AsideSameType({
     }
   };
 
-  // si on arrive sur un enfant : ouvrir son parent (exclusive)
   useEffect(() => {
     if (!currentParentSlug) return;
     setExpandedSlug((prev) => {
@@ -631,10 +652,6 @@ function AsideSameType({
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentParentSlug]);
-
-  const handleToggleSidebar = () => {
-    onToggle();
-  };
 
   // boot prefetch list
   useEffect(() => {
@@ -718,7 +735,7 @@ function AsideSameType({
     };
   }, [currentType]);
 
-  // compute structure: containers + singles as top-level, children by parent
+  // compute structure
   const { topLevel, childrenByParent, containerSlugSet } = useMemo(() => {
     const byParent = new Map();
     const containersBySlug = new Map();
@@ -754,7 +771,7 @@ function AsideSameType({
     };
   }, [related]);
 
-  // si item courant est un container avec kids : l’ouvrir (exclusive)
+  // si item courant est un container avec kids : l’ouvrir
   useEffect(() => {
     if (!containerSlugSet.has(currentSlug)) return;
     const kids = childrenByParent.get(currentSlug) || [];
@@ -803,8 +820,25 @@ function AsideSameType({
     );
   };
 
+  const onAsideTransitionEnd = (e) => {
+    // on ne valide “done” que sur la transition de width du aside (desktop)
+    if (isNarrow) return;
+    if (e.target !== e.currentTarget) return;
+    if (e.propertyName !== 'width') return;
+
+    // si on est bien dans l’état “collapsed”, alors c’est fini => hover/clic du bouton autorisés
+    if (collapsed) setCollapseDone(true);
+  };
+
   return (
-    <aside className={['cd-side', collapsed ? 'is-collapsed' : ''].join(' ')}>
+    <aside
+      className={[
+        'cd-side',
+        collapsed ? 'is-collapsed' : '',
+        collapsed && collapseDone ? 'is-collapse-done' : '',
+      ].join(' ')}
+      onTransitionEnd={onAsideTransitionEnd}
+    >
       <div className="cd-side-inner">
         {showNavInsteadOfCases ? (
           <>
@@ -858,7 +892,6 @@ function AsideSameType({
               <ul className="cd-side-list">
                 {topLevel.map((it) => {
                   const isCont = it?.kind === 'container';
-
                   if (!isCont) {
                     return (
                       <li key={it.slug}>
@@ -873,11 +906,19 @@ function AsideSameType({
                   const hasKids = kids.length > 0;
 
                   const isOpen = hasKids && expandedSlug === it.slug;
+                  const isActiveRow = it.slug === currentSlug || it.slug === currentParentSlug;
+                  const isParentCurrent = it.slug === currentParentSlug;
 
                   const isCurrentContainer = it.slug === currentSlug;
-                  const isParentCurrent = it.slug === currentParentSlug && currentSlug !== currentParentSlug;
 
-                  const isActiveRow = it.slug === currentSlug || it.slug === currentParentSlug;
+                  const toggleThisContainer = () => {
+                    if (!hasKids) return;
+                    setExpandedSlug((prev) => {
+                      const next = prev === it.slug ? '' : it.slug;
+                      saveExpanded(next);
+                      return next;
+                    });
+                  };
 
                   return (
                     <li key={it.slug}>
@@ -889,33 +930,26 @@ function AsideSameType({
                           isParentCurrent ? 'is-parent-current' : '',
                         ].join(' ')}
                         onClick={(e) => {
-                          // toggle via clic sur la row UNIQUEMENT si on est déjà sur la page du conteneur
+                          // on toggle uniquement si on est DÉJÀ sur le container courant
+                          // et si le clic ne vient pas du chevron
                           if (!hasKids) return;
-                          if (!isCurrentContainer) return;
-                          if (!isPlainLeftClick(e)) return;
-                          toggleContainer(it.slug);
+                          if (e.target?.closest?.('.cd-side-caret')) return;
+                          if (isCurrentContainer) toggleThisContainer();
                         }}
                       >
                         {renderCurrentOrLink(it, 'cd-side-link', (e) => {
-                          // cas "span current" => pas de handler
-                          if (!e) return;
-
+                          // si ce n’est pas le container courant, on navigue normalement
+                          // + on ouvre ce container (et donc ferme les autres) si besoin
                           if (!hasKids) {
                             if (isNarrow) closeMobile();
                             return;
                           }
 
-                          // si on est déjà sur le conteneur : clic sur le titre => toggle (pas de navigation)
-                          if (isCurrentContainer && isPlainLeftClick(e)) {
-                            e.preventDefault();
-                            toggleContainer(it.slug);
-                            return;
-                          }
-
-                          // sinon : navigation normale, mais on ouvre la liste (exclusive) avant
-                          if (!isCurrentContainer && isPlainLeftClick(e)) {
-                            if (!isOpen) openContainerExclusive(it.slug);
-                            // on laisse la navigation se faire
+                          if (!isCurrentContainer) {
+                            setExpandedSlug(() => {
+                              saveExpanded(it.slug);
+                              return it.slug;
+                            });
                           }
 
                           if (isNarrow) closeMobile();
@@ -928,11 +962,9 @@ function AsideSameType({
                           aria-expanded={isOpen ? 'true' : 'false'}
                           disabled={!hasKids}
                           onClick={(e) => {
-                            // le chevron toggle toujours
                             e.preventDefault();
                             e.stopPropagation();
-                            if (!hasKids) return;
-                            toggleContainer(it.slug);
+                            toggleThisContainer();
                           }}
                         />
                       </div>
@@ -966,7 +998,11 @@ function AsideSameType({
             title={collapsed ? 'Développer la barre latérale' : 'Réduire la barre latérale'}
             aria-label={collapsed ? 'Développer la barre latérale' : 'Réduire la barre latérale'}
             className="cd-side-toggle"
-            onClick={handleToggleSidebar}
+            onClick={() => {
+              // si on est en train de fermer et pas encore done, on ignore (évite états bizarres)
+              if (collapsed && !collapseDone) return;
+              onToggle();
+            }}
           >
             {collapsed ? (
               <BottomExpandIcon className="expandButtonIcon_H1n0" />
