@@ -272,11 +272,11 @@ export default function CasCliniques() {
                   const key = slug || `case-${idx}`;
 
                   return toHref ? (
-                    <Link key={key} to={toHref} state={linkState} className="cc-card">
+                    <Link key={key} to={toHref} state={linkState} className="cc-card ui-card">
                       {Inner}
                     </Link>
                   ) : (
-                    <div key={key} className="cc-card cc-card--disabled" title="Slug manquant">
+                    <div key={key} className="cc-card ui-card cc-card--disabled" title="Slug manquant">
                       {Inner}
                     </div>
                   );
@@ -308,15 +308,15 @@ function TypePicker({ onPick }) {
     <section className="cc-typepicker">
       <h3>Choisissez un type de cas</h3>
       <div className="cc-typegrid">
-        <button className="cc-typecard" onClick={() => onPick('qa')} type="button">
+        <button className="cc-typecard ui-card" onClick={() => onPick('qa')} type="button">
           <span className="cc-type">Q/R</span>
           <span className="cc-typedesc">12 items d'internat issus du CNECO</span>
         </button>
-        <button className="cc-typecard" onClick={() => onPick('quiz')} type="button">
+        <button className="cc-typecard ui-card" onClick={() => onPick('quiz')} type="button">
           <span className="cc-type">Quiz diagnostic</span>
           <span className="cc-typedesc">60 cas issus du SFCO</span>
         </button>
-        <button className="cc-typecard" onClick={() => onPick('presentation')} type="button">
+        <button className="cc-typecard ui-card" onClick={() => onPick('presentation')} type="button">
           <span className="cc-type">Présentation</span>
           <span className="cc-typedesc">Case Reports issus de la littérature</span>
         </button>

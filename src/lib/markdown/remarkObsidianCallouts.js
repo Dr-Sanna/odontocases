@@ -12,6 +12,27 @@ function escapeHtml(str) {
   });
 }
 
+/** Détecte si un tableau de nodes contient du contenu "réel" */
+function hasMeaningfulContent(nodes) {
+  if (!Array.isArray(nodes) || nodes.length === 0) return false;
+
+  return nodes.some((n) => {
+    if (!n) return false;
+
+    // texte brut non vide
+    if (n.type === 'text') return String(n.value || '').trim().length > 0;
+
+    // un paragraphe = contenu (même si court)
+    if (n.type === 'paragraph') return true;
+
+    // html non vide (ex: <img>, <table>, etc.)
+    if (n.type === 'html') return String(n.value || '').trim().length > 0;
+
+    // tout autre node (list, heading, etc.) => on considère que c'est du contenu
+    return true;
+  });
+}
+
 /**
  * Plugin remark pour callouts style Obsidian
  */
@@ -100,6 +121,8 @@ export function remarkObsidianCallouts() {
         }
       }
 
+      const contentExists = hasMeaningfulContent(innerChildren);
+
       if (!node.data) node.data = {};
       if (!node.data.hProperties) node.data.hProperties = {};
       const h = node.data.hProperties;
@@ -108,10 +131,14 @@ export function remarkObsidianCallouts() {
       h.className = [...baseClasses, 'cd-callout', `cd-callout-${calloutType}`];
       h['data-callout'] = calloutType;
 
+      // ✅ si pas de contenu, on tag le callout
+      if (!contentExists) h.className.push('cd-callout--title-only');
+
       const headingCore =
         `<span class="cd-callout-icon">${icon}</span>` +
         `<span class="cd-callout-title">${safeTitle}</span>`;
 
+      // foldable
       if (fold === '-' || fold === '+') {
         const openAttr = fold === '+' ? ' open' : '';
         const headingHtml =
@@ -125,18 +152,20 @@ export function remarkObsidianCallouts() {
           ...innerChildren,
           { type: 'html', value: '</div></details>' },
         ];
-      } else {
-        const headingHtml =
-          `<div class="cd-callout-heading">` +
-          `${headingCore}` +
-          `</div><div class="cd-callout-content">`;
-
-        node.children = [
-          { type: 'html', value: headingHtml },
-          ...innerChildren,
-          { type: 'html', value: '</div>' },
-        ];
+        return;
       }
+
+      // non-foldable
+      const headingHtml =
+        `<div class="cd-callout-heading">` +
+        `${headingCore}` +
+        `</div><div class="cd-callout-content">`;
+
+      node.children = [
+        { type: 'html', value: headingHtml },
+        ...innerChildren,
+        { type: 'html', value: '</div>' },
+      ];
     });
   };
 }

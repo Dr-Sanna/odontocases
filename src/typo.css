@@ -80,6 +80,12 @@ li > ol {
   margin-bottom: 0;
 }
 
+.cd-content td > ul:last-child,
+.cd-content td > ol:last-child {
+  margin-bottom: 0 !important;
+}
+
+
 /* =========================
    CONTENT
    ========================= */
@@ -301,7 +307,7 @@ figcaption {
   text-align: center !important;
   font-weight: 600;
   line-height: 1.15;
-  margin: 0 0 0.35rem 0 !important;
+  margin: 0.15rem 0 0.35rem 0 !important;
 }
 
 .cd-content table td figure.image > figcaption > strong + br,
@@ -438,6 +444,17 @@ figcaption {
 .cd-callout-details[open] > summary.cd-callout-heading {
   margin-bottom: 0.8rem;
 }
+
+/* Pas de marge sous le titre si le callout n'a pas de contenu */
+.cd-callout.cd-callout--title-only > .cd-callout-heading {
+  margin-bottom: 0;
+}
+
+/* Et si jamais tu gardes quand même un content vide */
+.cd-callout.cd-callout--title-only > .cd-callout-content {
+  display: none;
+}
+
 
 /* caption sous l’image, largeur = largeur du figure (donc image), texte à gauche */
 .cd-content table td figure.image > figcaption,

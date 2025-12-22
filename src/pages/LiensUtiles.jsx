@@ -39,8 +39,13 @@ const RESOURCES = [
     desc: "Encyclopédie collaborative d’imagerie médicale avec de nombreux cas illustrés.",
     tags: ['Imagerie', 'Cas cliniques'],
   },
+  {
+    name: 'OPMD Care',
+    url: 'https://opmdcare.com/?lang=fr',
+    desc: 'Ressources sur les affections à potentiel malin de la muqueuse buccale et test de connaissance.',
+    tags: ['Dermatologie buccale', 'Pathologies', 'Documentation / fiches'],
+  },
 ];
-
 
 function ExternalIcon() {
   return (
@@ -103,7 +108,7 @@ export default function LiensUtiles() {
           {filtered.map((r) => (
             <a
               key={r.url}
-              className="lu-card"
+              className="lu-card ui-card"
               href={r.url}
               target="_blank"
               rel="noopener noreferrer"

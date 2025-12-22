@@ -47,7 +47,7 @@ export default function HomePage() {
 
 function HomeCard({ title, to }) {
   return (
-    <Link to={to} className="home-card" draggable="false">
+    <Link to={to} className="home-card ui-card" draggable="false">
       <span>{title}</span>
     </Link>
   );

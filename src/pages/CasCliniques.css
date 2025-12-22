@@ -83,25 +83,8 @@
 .cc-card {
   display: grid;
   grid-template-rows: 160px auto;
-  border-radius: 16px;
   overflow: hidden;
-  border: 1px solid var(--ifm-color-emphasis-200);
-  background: var(--ifm-background-surface-color);
-  text-decoration: none;
-  color: inherit;
-  box-shadow: var(--ifm-alert-shadow);
-  transition: all var(--ifm-transition-fast) ease;
   height: 320px;
-}
-
-.cc-card:hover {
-  box-shadow: 0 3px 6px #0003;
-  border-color: var(--ifm-color-primary);
-}
-
-.cc-card--disabled {
-  pointer-events: none;
-  opacity: 0.75;
 }
 
 .cc-thumb {
@@ -211,23 +194,8 @@
 /* ✅ Boutons TypePicker : AUCUNE ombre au repos, petite ombre nette au survol */
 .cc-typecard {
   appearance: none;
-  border: 1px solid rgba(0, 0, 0, 0.14);
-  background: var(--ifm-background-surface-color);
-  border-radius: 14px;
   padding: 16px 18px;
   text-align: left;
-  cursor: pointer;
-  box-shadow: var(--ifm-alert-shadow);
-  transition: box-shadow 0.14s ease, border-color 0.14s ease, background 0.14s ease;
-}
-
-.cc-typecard:hover {
-  box-shadow: 0 3px 6px #0003;
-  border-color: var(--ifm-color-primary);
-}
-
-.cc-typecard:active {
-  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.16);
 }
 
 .cc-type {
@@ -242,16 +210,4 @@
   opacity: 0.9;
   font-size: 0.95rem;
   line-height: 1.5;
-}
-
-/* Dark mode TypePicker */
-[data-theme="dark"] .cc-typecard {
-  border: 1px solid var(--ifm-color-emphasis-200);
-  box-shadow: none; /* ✅ pas d'ombre au repos */
-}
-[data-theme="dark"] .cc-typecard:hover {
-  border-color: var(--ifm-color-primary);
-}
-[data-theme="dark"] .cc-typecard:active {
-  box-shadow: 3px 3px 0 rgba(0,  0, 0, 0.72);
 }

@@ -28,7 +28,7 @@
   /* Couleurs primaires */
   --site-primary-hue-saturation: 167 68%;
   --site-primary-hue-saturation-light: 167 56%;
-   --ifm-color-gray-100: #f5f6f7;
+    --ifm-color-gray-100: #f5f6f7;
     --ifm-color-gray-200: #ebedf0;
     --ifm-color-gray-300: #dadde1;
     --ifm-color-gray-400: #ccd0d5;
@@ -111,6 +111,17 @@
   --ifm-menu-link-padding-horizontal: .75rem;
   --ifm-menu-link-sublist-icon: url("data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16px\" height=\"16px\" viewBox=\"0 0 24 24\"><path fill=\"rgba(0,0,0,0.5)\" d=\"M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z\"></path></svg>");
   --ifm-menu-link-sublist-icon-filter: none;
+
+  /* Cartes */
+  --ifm-card-border-radius: calc(var(--ifm-global-radius) * 2);
+  --ifm-global-radius: .4rem;
+  --card-radius: var(--ifm-card-border-radius);
+  --card-border: 1px solid var(--ifm-color-emphasis-200);
+  --card-bg: var(--ifm-background-surface-color);
+  --card-shadow: var(--ifm-alert-shadow);
+  --card-shadow-hover: 0 3px 6px #0003;
+  --card-border-hover: 1px solid var(--ifm-color-primary);
+  --card-transition: all var(--ifm-transition-fast) ease;
    
 }
 
@@ -125,6 +136,7 @@
     --ifm-color-primary-lighter: #359962;
     --ifm-color-primary-lightest: #3CAD6E;
     --ifm-background-color: #ffffff;
+    --ifm-color-emphasis-100: var(--ifm-color-gray-100);
     --ifm-color-emphasis-200: var(--ifm-color-gray-200);
     --ifm-color-emphasis-300: var(--ifm-color-gray-300);
     --ifm-color-emphasis-700: var(--ifm-color-gray-700);
@@ -168,6 +180,7 @@
     --ifm-color-content: #e3e3e3;
     --ifm-hover-overlay: #ffffff0d;
     --ifm-toc-border-color: var(--ifm-color-emphasis-200);
+    --ifm-color-emphasis-100: var(--ifm-color-gray-900);
     --ifm-color-emphasis-200: var(--ifm-color-gray-800);
     --ifm-color-emphasis-300: var(--ifm-color-gray-700);
     --ifm-color-emphasis-400: var(--ifm-color-gray-600);
@@ -355,4 +368,21 @@ html.blur-images .navbar img {
   font-size: 0.9rem;
   vertical-align: middle;
   line-height: 1;
+}
+
+/* Cartes */
+.ui-card {
+  border-radius: var(--card-radius);
+  border: var(--card-border);
+  background: var(--card-bg);
+  box-shadow: var(--card-shadow);
+  transition: var(--card-transition);
+  color: inherit;
+  text-decoration: none;
+}
+
+.ui-card:hover {
+  box-shadow: var(--card-shadow-hover);
+  border: var(--card-border-hover);
+  cursor: pointer;
 }

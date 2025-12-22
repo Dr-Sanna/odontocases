@@ -249,7 +249,7 @@ export default function CaseDetail() {
         populate.child_cases = {
           fields: ['title', 'slug', 'excerpt', 'type', 'kind'],
           populate: { cover: { fields: ['url', 'formats'] } },
-          sort: ['title:asc'],
+          sort: ['slug:asc'],
         };
       }
       if (withParent) {
@@ -398,7 +398,7 @@ export default function CaseDetail() {
       const t = e.target;
       if (!t || t.tagName !== 'IMG') return;
       if (t.dataset?.noLightbox === '1') return;
-      if (t.closest?.('.cd-child-card')) return;
+      if (t.closest?.('.cd-child-card ui-card')) return;
 
       e.preventDefault();
       setLightbox({ src: t.src, alt: t.alt || '' });
@@ -485,7 +485,7 @@ export default function CaseDetail() {
                   <Link
                     key={c.slug}
                     to={`/cas-cliniques/${c.slug}`}
-                    className="cd-child-card"
+                    className="cd-child-card ui-card"
                     onMouseEnter={() => prefetchCase(c.slug, { publicationState: PUB_STATE }).catch(() => {})}
                     onFocus={() => prefetchCase(c.slug, { publicationState: PUB_STATE }).catch(() => {})}
                   >

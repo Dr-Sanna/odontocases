@@ -79,38 +79,17 @@
   max-width: 620px;
 }
 
-/* Cartes : style "manga shadow", plus hautes */
 .home-card {
-  color: inherit;
   display: grid;
   place-items: center;
-  text-decoration: none;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
   min-height: 68px;
   padding: 18px 18px;
-  border-radius: 18px;
-  border: 1px solid var(--ifm-color-emphasis-200);
-  background: var(--ifm-background-surface-color);
   font-weight: 800;
   font-size: 16px;
-  box-shadow: var(--ifm-alert-shadow);
-  transition: all var(--ifm-transition-fast) ease;
 }
 
-/* Ombre nette au survol */
-.home-card:hover {
-  box-shadow: 0 3px 6px #0003;
-  border-color: var(--ifm-color-primary);
-}
-
-.home-card:active {
-  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.16);
-}
-
-[data-theme="dark"] .home-card:active {
-  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.72);
-}
 
 /* Responsive */
 @media (max-width: 640px) {

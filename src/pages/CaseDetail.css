@@ -794,22 +794,11 @@
 }
 
 .cd-child-card {
-  color: var(--ifm-color-content);
   display: block;
   padding: 0.85rem;
-  border-radius: 0.6rem;
-  border: 1px solid var(--ifm-color-emphasis-200);
-  text-decoration: none;
   overflow: hidden;
-  background: var(--ifm-background-surface-color);
-  box-shadow: var(--ifm-alert-shadow);
-  transition: box-shadow var(--ifm-transition-fast) ease, border-color var(--ifm-transition-fast) ease;
 }
 
-.cd-child-card:hover {
-  box-shadow: 0 3px 6px #0003;
-  border-color: var(--ifm-color-primary);
-}
 
 .cd-child-cover {
   display: block;
