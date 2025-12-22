@@ -877,6 +877,7 @@
     min-width: 0;
     max-width: 100%;
     box-sizing: border-box;
+    padding: 0.5rem;
   }
 
   .cd-child-title,
@@ -884,6 +885,7 @@
     min-width: 0;
     overflow-wrap: anywhere;
     word-break: break-word;
+    margin-top: 0.5rem;
   }
 
   .cd-child-cover {
