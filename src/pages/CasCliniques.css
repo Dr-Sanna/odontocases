@@ -110,6 +110,18 @@
   background-position: center;
 }
 
+/* Mobile (<= 560px) : thumbs moins hauts */
+@media (max-width: 560px) {
+  .cc-card {
+    height: auto; /* ajuste si besoin (260–300) */
+    grid-template-rows: 120px auto;
+  }
+
+  .cc-thumb {
+    height: 120px; /* sécurité si jamais */
+  }
+}
+
 .cc-body {
   padding: 12px 14px 14px;
   display: grid;
@@ -131,6 +143,16 @@
   font-weight: 700;
   display: -webkit-box;
   -webkit-box-orient: vertical;
+}
+
+@media (max-width: 560px) {
+  .cc-title {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+
+    overflow: hidden;
+  }
 }
 
 /* Extrait : on ne l'affiche pas */

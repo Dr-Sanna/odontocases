@@ -846,6 +846,16 @@
 
 .cd-child-title { font-weight: 650; }
 
+@media (max-width: 560px) {
+  .cd-child-title {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+
+    overflow: hidden;
+  }
+}
+
 .cd-child-excerpt {
   margin-top: 0.35rem;
   opacity: 0.9;
