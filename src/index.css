@@ -332,6 +332,13 @@ body.bg-none::before {
   --ifm-alert-background-color: var(--ifm-color-danger-contrast-background);
 }
 
+@media (max-width: 560px) {
+  .cc-card .cc-chip {
+    display: none !important;
+  }
+}
+
+
   /* blur pour les moldus */
 /* Blur désactivé par défaut : rien */
 
