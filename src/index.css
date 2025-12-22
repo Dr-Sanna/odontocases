@@ -116,7 +116,7 @@
   --ifm-card-border-radius: calc(var(--ifm-global-radius) * 2);
   --ifm-global-radius: .4rem;
   --card-radius: var(--ifm-card-border-radius);
-  --card-border: 1px solid var(--ifm-color-emphasis-200);
+  --card-border: 1px solid var(--ifm-color-emphasis-300);
   --card-bg: var(--ifm-background-surface-color);
   --card-shadow: var(--ifm-alert-shadow);
   --card-shadow-hover: 0 3px 6px #0003;
