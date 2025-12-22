@@ -394,17 +394,24 @@ html.blur-images .navbar img {
   cursor: pointer;
 }
 
-/* Désactive tous les styles hover sur appareils tactiles */
 @media (hover: none), (pointer: coarse) {
-  .ui-card:hover,
-  .cc-tab:hover,
-  .cc-card:hover,
-  .home-card:hover,
-  .cc-typecard:hover {
-    background-color: unset !important;
-    box-shadow: unset !important;
-    transform: none !important;
-    border-color: unset !important;
-    filter: none !important;
+  /* Sur tactile : on neutralise les effets hover */
+  .ui-card:hover {
+    box-shadow: var(--card-shadow);
+    border: var(--card-border);
+    cursor: default;
+  }
+
+  /* Et on enlève le focus/active visuel du navigateur */
+  .ui-card:focus,
+  .ui-card:focus-visible,
+  .ui-card:active {
+    outline: none;
+    box-shadow: var(--card-shadow);
+  }
+
+  /* iOS/Android tap highlight */
+  .ui-card {
+    -webkit-tap-highlight-color: transparent;
   }
 }
