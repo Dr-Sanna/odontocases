@@ -16,8 +16,11 @@ function normalizeEscapedBlockquotes(src) {
 }
 
 /* =========================
-   RÉGLAGES (identiques à ton code)
+   RÉGLAGES
    ========================= */
+
+// breakpoint mobile (aligné avec ton app)
+const MOBILE_BP = 980;
 
 // hauteur commune par ligne (clamp) - en px, seulement pour le calcul interne
 const ROW_MIN_H = 150;
@@ -51,6 +54,11 @@ function px(v) {
   return Number.isFinite(n) ? n : 0;
 }
 
+function isMobileNow() {
+  if (typeof window === 'undefined') return false;
+  return (window.innerWidth || 0) <= MOBILE_BP;
+}
+
 function getIntrinsicSize(img) {
   if (!img) return null;
 
@@ -82,6 +90,10 @@ function resetTableSizing(rootEl) {
     cap.style.removeProperty('word-break');
     cap.style.removeProperty('overflow-wrap');
   });
+
+  // optionnel: retirer data-cd-cols si tu veux
+  const rows = rootEl.querySelectorAll('table tr[data-cd-cols]');
+  rows.forEach((r) => r.removeAttribute('data-cd-cols'));
 }
 
 function waitForImagesIn(rootEl) {
@@ -99,8 +111,7 @@ function fitRatio(r) {
 }
 
 /* =========================
-   UTILITAIRES: conversion px -> vw/vh
-   (on calcule 1 fois par relayout, pas en continu)
+   px -> vw/vh
    ========================= */
 function pxToVw(pxVal) {
   const W = window.innerWidth || 1;
@@ -134,7 +145,7 @@ function normalizeNbspIn(node) {
 }
 
 /* =========================
-   LAYOUT WIDTH (ton code)
+   LAYOUT WIDTH
    ========================= */
 function getUsableWidthFromLayout(rootEl) {
   const shell = rootEl.closest('.cd-shell') || document.querySelector('.cd-shell');
@@ -172,10 +183,7 @@ function computeTargetW(cols, rootEl) {
 }
 
 /* =========================
-   CAPTION WIDTH
-   - 1 colonne: caption = image
-   - 2–4 colonnes: caption peut dépasser un peu l'image
-   - ici on applique en vw (au lieu de px)
+   CAPTION WIDTH (vw)
    ========================= */
 function applyCaptionWidth(img, imgWpx, ratio, cols, rootEl) {
   const fig = img.closest?.('figure');
@@ -188,7 +196,6 @@ function applyCaptionWidth(img, imgWpx, ratio, cols, rootEl) {
   cap.style.setProperty('word-break', 'normal');
   cap.style.setProperty('overflow-wrap', 'break-word');
 
-  // largeur intérieure du TD (px) -> plafond
   const td = img.closest?.('td');
   let tdInnerW = 0;
 
@@ -208,11 +215,7 @@ function applyCaptionWidth(img, imgWpx, ratio, cols, rootEl) {
     return;
   }
 
-  const relaxMult =
-    ratio < 1.0 ? 2.5 :
-    ratio > 2 ? 2 :
-    2;
-
+  const relaxMult = ratio < 1.0 ? 2.5 : ratio > 2 ? 2 : 2;
   const wantedPx = Math.max(imgWpx, imgWpx * relaxMult);
   const capMaxWpx = Math.min(capCeilWpx, wantedPx);
 
@@ -221,7 +224,7 @@ function applyCaptionWidth(img, imgWpx, ratio, cols, rootEl) {
 }
 
 /* =========================
-   LAYOUT ROW (ton code, mais sortie en vw/vh)
+   LAYOUT ROW (vw/vh)
    ========================= */
 function layoutRow(row, rootEl) {
   const imgs = Array.from(row.querySelectorAll('td figure.image img, td figure.cd-figure img, td > img'));
@@ -241,6 +244,9 @@ function layoutRow(row, rootEl) {
 
   const cols = items.length;
 
+  // utile pour ton CSS (tr[data-cd-cols])
+  row.setAttribute('data-cd-cols', String(cols));
+
   const targetW = computeTargetW(cols, rootEl) - SAFETY_PX;
   if (!targetW) return;
 
@@ -255,7 +261,6 @@ function layoutRow(row, rootEl) {
 
   let H = Math.min(baseH, hFit);
 
-  // anti-débordement global de la ligne (sur l'espace réellement dispo)
   const usable = getUsableWidthFromLayout(rootEl);
   const availableRowW = Math.max(0, usable - SAFETY_PX * 2);
 
@@ -269,10 +274,7 @@ function layoutRow(row, rootEl) {
   for (const it of items) {
     const W = H * it.ratio;
 
-    // ✅ ici: on applique vw/vh au lieu de px
     setSizeVwVh(it.img, H, W);
-
-    // captions en vw
     applyCaptionWidth(it.img, W, it.ratio, cols, rootEl);
   }
 }
@@ -282,6 +284,19 @@ function layoutAllTables(rootEl) {
   tables.forEach((table) => {
     const rows = table.querySelectorAll('tr');
     rows.forEach((row) => layoutRow(row, rootEl));
+  });
+}
+
+/* =========================
+   Marquage des tables qui contiennent des images
+   (pour ton CSS mobile en grid max 2 colonnes)
+   ========================= */
+function markImageTables(rootEl) {
+  const tables = rootEl.querySelectorAll('.cd-content table, table');
+  tables.forEach((table) => {
+    const hasImg = table.querySelector('td img, td figure.image img, td figure.cd-figure img');
+    if (hasImg) table.classList.add('cd-imgtable');
+    else table.classList.remove('cd-imgtable');
   });
 }
 
@@ -320,7 +335,7 @@ function waitForStableLayout(rootEl) {
 }
 
 /* =========================
-   relayout loop (ton code)
+   relayout loop
    ========================= */
 function runRelayoutLoop(relayoutFn, durationMs = 420) {
   const start = performance.now();
@@ -346,6 +361,17 @@ export default function CaseMarkdown({ children }) {
 
     const relayout = () => {
       if (cancelled) return;
+
+      // tag tables pour CSS mobile
+      markImageTables(rootEl);
+
+      // ✅ mobile: on annule le sizing JS (vw/vh) et on laisse le CSS faire (100% + grid)
+      if (isMobileNow()) {
+        resetTableSizing(rootEl);
+        return;
+      }
+
+      // ✅ desktop: sizing proportionnel
       layoutAllTables(rootEl);
       layoutAllTables(rootEl);
     };
@@ -354,7 +380,6 @@ export default function CaseMarkdown({ children }) {
       await waitForImagesIn(rootEl);
       if (cancelled) return;
 
-      // ✅ clé: attendre le layout stable (cd-main/side) avant 1er sizing
       await waitForStableLayout(rootEl);
       if (cancelled) return;
 
@@ -365,7 +390,6 @@ export default function CaseMarkdown({ children }) {
 
     run();
 
-    // ✅ On garde les triggers “qui marchaient” (comme ton code):
     // ResizeObserver sur éléments structurants + transitions
     const ro = new ResizeObserver(() => relayout());
     ro.observe(rootEl);

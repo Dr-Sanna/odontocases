@@ -473,3 +473,125 @@ figcaption {
   width: 100% !important;
   text-align: center !important;
 }
+
+/* =========================
+   TABLEAUX D’IMAGES — MOBILE (UNIFORMISÉ)
+   - < 980px : max 3 colonnes (par ligne)
+   - < 560px : max 2 colonnes (par ligne)
+   - 1 seule cellule => 100% largeur
+   - bordures visibles SANS double ligne
+   - images hauteur uniforme + captions alignées en bas
+   ========================= */
+
+@media (max-width: 980px) {
+  /* Couleur bordure cohérente avec ton style */
+  :root {
+    --cd-grid-border: rgba(0, 0, 0, 0.12);
+  }
+  [data-theme="dark"] {
+    --cd-grid-border: rgba(255, 255, 255, 0.14);
+  }
+
+  .cd-content table.cd-imgtable {
+    width: 100% !important;
+    display: block !important;
+    overflow-x: visible !important;
+  }
+
+  .cd-content table.cd-imgtable thead,
+  .cd-content table.cd-imgtable tbody,
+  .cd-content table.cd-imgtable tfoot {
+    display: block !important;
+    width: 100% !important;
+  }
+
+  /* Chaque ligne devient une grille (sans gap) + bordure externe gauche */
+  .cd-content table.cd-imgtable tr {
+    display: grid !important;
+    width: 100% !important;
+    gap: 0 !important;
+    align-items: stretch !important;
+
+    /* 1 cellule => 100% */
+    grid-template-columns: 1fr !important;
+
+    /* bordure extérieure gauche */
+    border-left: 1px solid var(--cd-grid-border) !important;
+  }
+
+  /* bordure extérieure haute (une seule fois) */
+  .cd-content table.cd-imgtable tbody tr:first-child {
+    border-top: 1px solid var(--cd-grid-border) !important;
+  }
+
+  /* 2 cellules => 2 colonnes */
+  .cd-content table.cd-imgtable tr:has(> td:nth-child(2)) {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  /* 3+ cellules => 3 colonnes max */
+  .cd-content table.cd-imgtable tr:has(> td:nth-child(3)) {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  /* Cellules : pas de double bordure (droite + bas uniquement) */
+  .cd-content table.cd-imgtable td,
+  .cd-content table.cd-imgtable th {
+    width: 100% !important;
+    padding: 0.5rem !important;
+
+    border: 0 !important;
+    border-right: 1px solid var(--cd-grid-border) !important;
+    border-bottom: 1px solid var(--cd-grid-border) !important;
+
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+  }
+
+  /* Figure pleine hauteur */
+  .cd-content table.cd-imgtable td figure.image,
+  .cd-content table.cd-imgtable td figure.cd-figure {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+  }
+
+  /* Images : hauteur uniforme */
+  .cd-content table.cd-imgtable td figure.image > img,
+  .cd-content table.cd-imgtable td figure.cd-figure > img,
+  .cd-content table.cd-imgtable td > img {
+    width: 100% !important;
+    height: clamp(140px, 22vw, 210px) !important;
+
+    object-fit: contain !important;
+    object-position: bottom center !important;
+
+    display: block !important;
+    max-width: 100% !important;
+    max-height: none !important;
+  }
+
+  /* Caption alignée en bas */
+  .cd-content table.cd-imgtable td figure.image > figcaption,
+  .cd-content table.cd-imgtable td figure.cd-figure > figcaption {
+    margin-top: auto !important;
+  }
+}
+
+@media (max-width: 560px) {
+  /* Max 2 colonnes */
+  .cd-content table.cd-imgtable tr:has(> td:nth-child(3)) {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  /* Un peu plus haut sur très petit écran */
+  .cd-content table.cd-imgtable td figure.image > img,
+  .cd-content table.cd-imgtable td figure.cd-figure > img,
+  .cd-content table.cd-imgtable td > img {
+    height: clamp(150px, 35vw, 260px) !important;
+  }
+}
