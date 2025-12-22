@@ -133,6 +133,48 @@
 .cd-side-list li + li {
   margin-top: 0;
 }
+/* =========================
+   Scrollbar sidebar list
+   ========================= */
+
+/* Firefox */
+.cd-side-list {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.35) transparent;
+}
+
+/* Chrome / Edge / Safari */
+.cd-side-list::-webkit-scrollbar {
+  width: 8px;          /* “thin” visuellement */
+}
+
+.cd-side-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.cd-side-list::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.35);
+  border-radius: 999px;
+  border: 2px solid transparent;  /* donne un “gap” autour du thumb */
+  background-clip: content-box;
+}
+
+.cd-side-list::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+/* Dark theme */
+[data-theme="dark"] .cd-side-list {
+  scrollbar-color: rgba(255, 255, 255, 0.35) transparent;
+}
+
+[data-theme="dark"] .cd-side-list::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.35);
+}
+
+[data-theme="dark"] .cd-side-list::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.55);
+}
 
 /* =========================
    Links
@@ -388,8 +430,7 @@
 /* FIX robust: au cas où les icônes n’utilisent pas currentColor */
 .cd-side-toggle svg,
 .cd-side-toggle svg * {
-  fill: currentColor;
-  stroke: currentColor;
+  fill: rgb(122, 122, 122);
 }
 
 /* =========================
@@ -787,3 +828,6 @@
   opacity: 0.9;
   font-size: 0.95em;
 }
+
+
+

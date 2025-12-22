@@ -1,32 +1,45 @@
+/* src/pages/CaseDetailContent.css (ou ton fichier CSS global du contenu) */
+
+/* =========================
+   GLOBAL
+   ========================= */
 :root {
-    --ifm-heading-color: inherit;
-    --ifm-heading-margin-top: 0;
-    --ifm-heading-margin-bottom: var(--ifm-spacing-vertical);
-    --ifm-heading-font-family: var(--ifm-font-family-base);
-    --ifm-heading-font-weight: var(--ifm-font-weight-bold);
-    --ifm-heading-line-height: 1.25;
-    --ifm-leading-desktop: 1.25;
-    --ifm-leading: calc(var(--ifm-leading-desktop) * 1rem);
-    --ifm-paragraph-margin-bottom: var(--ifm-leading);
-    --ifm-h1-vertical-rhythm-top: 3;
-    --ifm-h2-vertical-rhythm-top: 2;
-    --ifm-h3-vertical-rhythm-top: 1.5;
-    --ifm-heading-vertical-rhythm-top: 1.25;
-    --ifm-h1-vertical-rhythm-bottom: 1.25;
-    --ifm-heading-vertical-rhythm-bottom: 1;
-    --ifm-h1-font-size: 2.5rem;
-    --ifm-h2-font-size: 2rem;
-    --ifm-h3-font-size: 1.4rem;
-    --ifm-h4-font-size: 1rem;
-    --ifm-h5-font-size: .875rem;
-    --ifm-h6-font-size: .85rem;
-   /* liste */
-    --ifm-list-margin: 1rem;
-    --ifm-list-left-padding: 2rem;
-    --ifm-list-item-margin: .25rem;
-    --ifm-list-paragraph-margin: 1rem;
+  --ifm-heading-color: inherit;
+  --ifm-heading-margin-top: 0;
+  --ifm-heading-margin-bottom: var(--ifm-spacing-vertical);
+  --ifm-heading-font-family: var(--ifm-font-family-base);
+  --ifm-heading-font-weight: var(--ifm-font-weight-bold);
+  --ifm-heading-line-height: 1.25;
+
+  --ifm-leading-desktop: 1.25;
+  --ifm-leading: calc(var(--ifm-leading-desktop) * 1rem);
+  --ifm-paragraph-margin-bottom: var(--ifm-leading);
+
+  --ifm-h1-vertical-rhythm-top: 3;
+  --ifm-h2-vertical-rhythm-top: 2;
+  --ifm-h3-vertical-rhythm-top: 1.5;
+  --ifm-heading-vertical-rhythm-top: 1.25;
+
+  --ifm-h1-vertical-rhythm-bottom: 1.25;
+  --ifm-heading-vertical-rhythm-bottom: 1;
+
+  --ifm-h1-font-size: 2.5rem;
+  --ifm-h2-font-size: 2rem;
+  --ifm-h3-font-size: 1.4rem;
+  --ifm-h4-font-size: 1rem;
+  --ifm-h5-font-size: 0.875rem;
+  --ifm-h6-font-size: 0.85rem;
+
+  /* listes */
+  --ifm-list-margin: 1rem;
+  --ifm-list-left-padding: 2rem;
+  --ifm-list-item-margin: 0.25rem;
+  --ifm-list-paragraph-margin: 1rem;
 }
 
+/* =========================
+   HEADINGS
+   ========================= */
 h1, h2, h3, h4, h5, h6 {
   color: var(--ifm-heading-color);
   font-family: var(--ifm-heading-font-family);
@@ -36,7 +49,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .cd-page-header h1 {
-margin-bottom: 1rem;
+  margin-bottom: 1rem;
 }
 
 h2 {
@@ -44,21 +57,24 @@ h2 {
   margin-bottom: calc(var(--ifm-heading-vertical-rhythm-bottom) * var(--ifm-leading));
   margin-top: calc(var(--ifm-h2-vertical-rhythm-top) * var(--ifm-leading));
 }
- h3 {
+
+h3 {
   font-size: var(--ifm-h3-font-size);
-  margin-bottom: .5rem;
+  margin-bottom: 0.5rem;
   margin-top: calc(var(--ifm-h3-vertical-rhythm-top) * var(--ifm-leading));
 }
 
-/* Listes */
-  ul, ol {
-    margin: 0 0 var(--ifm-list-margin);
-    padding-left: var(--ifm-list-left-padding);
-    margin-bottom: var(--ifm-leading);
+/* =========================
+   LISTS
+   ========================= */
+ul, ol {
+  margin: 0 0 var(--ifm-list-margin);
+  padding-left: var(--ifm-list-left-padding);
+  margin-bottom: var(--ifm-leading);
 }
 
-li+li {
-    margin-top: var(--ifm-list-item-margin);
+li + li {
+  margin-top: var(--ifm-list-item-margin);
 }
 
 li > ul,
@@ -67,8 +83,11 @@ li > ol {
   margin-bottom: 0;
 }
 
+/* =========================
+   CONTENT
+   ========================= */
 .cd-content p {
-    margin: 0 0 var(--ifm-paragraph-margin-bottom);
+  margin: 0 0 var(--ifm-paragraph-margin-bottom);
 }
 
 .cd-content code {
@@ -87,19 +106,22 @@ li > ol {
 }
 
 /* Links content et copyright */
-.cd-content a, .cd-references a,
+.cd-content a,
+.cd-references a,
 .cd-copyright a {
   color: var(--ifm-color-primary);
   text-decoration: none;
 }
 
-.cd-content a:hover, .cd-references a:hover,
+.cd-content a:hover,
+.cd-references a:hover,
 .cd-copyright a:hover {
   text-decoration: underline;
 }
 
-
-/* Images du contenu (zoomable) */
+/* =========================
+   IMAGES (hors tableaux)
+   ========================= */
 .cd-content img {
   display: block;
   margin: 12px auto;
@@ -113,19 +135,35 @@ li > ol {
 }
 
 /* =========================
-   Tables CKEditor (HTML) + tables Markdown
+   CAPTIONS (global)
+   ========================= */
+figcaption {
+  margin-top: 0.35rem;
+  font-size: 0.9em;
+  opacity: 0.85;
+}
+
+.cd-figcaption {
+  font-size: 0.9em;
+  opacity: 0.85;
+  text-align: center;
+  font-weight: 600;
+}
+
+/* =========================
+   TABLES CKEditor + Markdown
    ========================= */
 .cd-content figure.table {
   margin: 0.9em 0;
 }
 
 .cd-content table {
+  border-collapse: collapse;
+  margin: 0 0 var(--ifm-paragraph-margin-bottom);
 
- border-collapse: collapse;
- margin: 0 0 var(--ifm-paragraph-margin-bottom);
- display: block; /* scroll horizontal */
- overflow-x: auto;
- -webkit-overflow-scrolling: touch;
+  display: block;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* CKEditor resized : aide à respecter les % du colgroup */
@@ -137,7 +175,6 @@ li > ol {
 .cd-content table tbody,
 .cd-content table tfoot {
   display: table;
-
 }
 
 .cd-content th,
@@ -162,41 +199,110 @@ li > ol {
 }
 
 /* =========================
-   Harmonisation images dans tableaux (CKEditor)
+   FIGURES / captions générées par Markdown (hors tableaux)
    ========================= */
-.cd-content td img,
-.cd-content td figure.image,
-.cd-content td figure.table {
-  margin: 0;
+.cd-figure {
+  margin: 1rem 0;
 }
 
-.cd-content td figure.image {
-  width: 100% !important;
-  max-width: 100% !important;
-  overflow: hidden;
-}
-
-.cd-content td img {
+.cd-figure img {
   display: block;
-  width: 100%;
   max-width: 100%;
   height: auto;
-  max-height: clamp(72px, 25vw, 300px);
-  object-fit: contain;
-  border-radius: 0;
 }
 
-.cd-content td:has(img),
-.cd-content td:has(figure.image) {
+/* =========================
+   TABLEAUX D'IMAGES (pilotés par JS)
+   Objectif:
+   - pas de crop
+   - mêmes hauteurs d’images par ligne
+   - captions ne doivent PAS agrandir les cellules
+   ========================= */
+
+/* centre le contenu de la cellule si elle contient une figure image */
+.cd-content table td:has(figure.image),
+.cd-content table td:has(figure.cd-figure) {
+  text-align: center;
+}
+
+/* figure = shrink-to-fit, donc le caption suit la largeur image */
+.cd-content table td figure.image,
+.cd-content table td figure.cd-figure {
+  margin: 0 !important;
+
+  display: inline-flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+
+  width: fit-content !important;
+  max-width: 100% !important;
+}
+
+/* images dans tables: on laisse le JS piloter height/width */
+.cd-content table td figure.image img,
+.cd-content table td figure.cd-figure img,
+.cd-content table td > img {
+  display: block !important;
+  margin: 0 auto !important;
+
+  height: auto !important;
+  width: auto !important;
+
+  max-width: none !important;
+  max-height: none !important;
+
+  object-fit: contain !important;
+  object-position: center !important;
+
+  border-radius: 0 !important;
+  cursor: pointer;
+}
+
+/* captions dans tables: WRAP agressif => ne pousse jamais la largeur */
+.cd-content table td figure.image > figcaption,
+.cd-content table td figure.cd-figure > figcaption {
+  width: 100% !important;
+  max-width: 100% !important;
+
+  text-align: left !important;
+
+  overflow-wrap: anywhere !important;
+  word-break: break-word !important;
+  hyphens: auto;
+  white-space: normal !important;
+
+  margin-top: 0.35rem !important;
+}
+
+/* titre centré */
+.cd-content table td figure.image > figcaption > strong,
+.cd-content table td figure.cd-figure > figcaption > strong {
+  display: block !important;
+  width: 100% !important;
+  text-align: center !important;
+  font-weight: 600;
+  line-height: 1.15;
+  margin: 0 0 0.25rem 0 !important;
+}
+
+/* évite un <br> “variable” juste après le strong */
+.cd-content table td figure.image > figcaption > strong + br,
+.cd-content table td figure.cd-figure > figcaption > strong + br {
+  display: none !important;
+}
+
+/* padding serré pour cellules images */
+.cd-content table td:has(figure.image),
+.cd-content table td:has(figure.cd-figure),
+.cd-content table td:has(> img) {
   padding-top: 0.35rem;
   padding-bottom: 0.35rem;
-  vertical-align: middle;
+  vertical-align: top;
 }
 
-/* ===== Callouts Obsidian-like dans CaseDetail ===== */
-
-/* ===== Callouts Obsidian-like dans CaseDetail ===== */
-
+/* =========================
+   CALLOUTS Obsidian-like
+   ========================= */
 .cd-callout {
   margin: 1rem 0;
   border-radius: 0.6rem;
@@ -205,33 +311,30 @@ li > ol {
   color: var(--ifm-alert-foreground-color);
 }
 
-/* Variante info */
 .cd-callout-info {
   --ifm-alert-foreground-color: var(--ifm-color-info-contrast-foreground);
   border-left: 4px solid var(--ifm-color-info-dark);
   background: var(--ifm-color-info-contrast-background);
 }
 
-/* Variante warning */
 .cd-callout-warning {
- --ifm-alert-foreground-color: var(--ifm-color-warning-contrast-foreground);
+  --ifm-alert-foreground-color: var(--ifm-color-warning-contrast-foreground);
   border-left: 4px solid var(--ifm-color-warning-dark);
   background: var(--ifm-color-warning-contrast-background);
 }
 
 .cd-callout-success {
- --ifm-alert-foreground-color: var(--ifm-color-success-contrast-foreground);
+  --ifm-alert-foreground-color: var(--ifm-color-success-contrast-foreground);
   border-left: 4px solid var(--ifm-color-success-dark);
   background: var(--ifm-color-success-contrast-background);
 }
 
 .cd-callout-danger {
- --ifm-alert-foreground-color: var(--ifm-color-danger-contrast-foreground);
+  --ifm-alert-foreground-color: var(--ifm-color-danger-contrast-foreground);
   border-left: 4px solid var(--ifm-color-danger-dark);
   background: var(--ifm-color-danger-contrast-background);
 }
 
-/* Header (titre + icône) */
 .cd-callout-heading {
   display: flex;
   align-items: center;
@@ -244,39 +347,33 @@ li > ol {
   display: block;
 }
 
-/* Contenu du callout : évite un gros margin-top sur le premier paragraphe */
 .cd-callout-content > :first-child {
   margin-top: 0;
 }
 
-.cd-callout-content>:last-child {
-    margin-bottom: 0;
+.cd-callout-content > :last-child {
+  margin-bottom: 0;
 }
 
-/* ===== Callouts pliables (Obsidian [!type]- / [!type]+) ===== */
-
 .cd-callout-details {
-  /* évite des marges natives de details selon navigateurs */
   margin: 0;
   padding: 0;
 }
 
-/* summary doit garder ton layout flex de .cd-callout-heading */
 .cd-callout-details > summary.cd-callout-heading {
   cursor: pointer;
   user-select: none;
-  margin-bottom: 0; /* le margin-bottom est géré par le contenu quand open */
+  margin-bottom: 0;
 }
 
-/* supprime le marker natif */
 .cd-callout-details > summary {
   list-style: none;
 }
+
 .cd-callout-details > summary::-webkit-details-marker {
   display: none;
 }
 
-/* chevron */
 .cd-callout-chevron {
   margin-left: auto;
   width: 0.6rem;
@@ -291,22 +388,25 @@ li > ol {
   inset: 0;
   border-right: 2px solid currentColor;
   border-bottom: 2px solid currentColor;
-  transform: rotate(-45deg);            /* ✅ fermé = droite */
+  transform: rotate(-45deg);
   transition: transform 160ms ease;
 }
 
-/* ✅ déplié = haut */
 .cd-callout-details[open] .cd-callout-chevron::before {
   transform: rotate(-135deg);
 }
 
-
-/* spacing: quand fermé, on évite un “trou” */
 .cd-callout-details:not([open]) .cd-callout-content {
   display: none;
 }
 
-/* quand ouvert, on remet un espace sous le header */
 .cd-callout-details[open] > summary.cd-callout-heading {
-  margin-bottom: 0.8rem; /* comme ta version non pliable */
+  margin-bottom: 0.8rem;
 }
+.cd-content table td figure.image > figcaption,
+.cd-content table td figure.cd-figure > figcaption {
+  hyphens: none !important;
+  word-break: normal !important;
+  overflow-wrap: break-word !important; /* coupe sans ajouter de tirets */
+}
+
