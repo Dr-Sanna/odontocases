@@ -16,11 +16,10 @@ function normalizeEscapedBlockquotes(src) {
 }
 
 /* =========================
-   RÉGLAGES
+   RÉGLAGES (identiques à ton code)
    ========================= */
-const MOBILE_BREAKPOINT = 980;
 
-// hauteur commune par ligne (clamp)
+// hauteur commune par ligne (clamp) - en px, seulement pour le calcul interne
 const ROW_MIN_H = 150;
 const ROW_MAX_H = 260;
 
@@ -30,17 +29,18 @@ const SAFETY_PX = 2;
 // cap ratio pour éviter pano extrême qui réduit trop la hauteur commune
 const RATIO_FIT_CAP = 2.2;
 
-// min/soft-max par nb colonnes (base)
+// min/soft-max par nb colonnes (base) - en px, seulement pour le calcul interne
 const COL_MIN_W = { 1: 320, 2: 280, 3: 260, 4: 240 };
 const COL_SOFT_MAX_W = { 1: 900, 2: 650, 3: 600, 4: 480 };
 
 // espace entre colonnes (approx)
 const COL_GUTTER = 14;
 
-function isMobileNow() {
-  if (typeof window === 'undefined' || !window.matchMedia) return false;
-  return window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT}px)`).matches;
-}
+/* =========================
+   STABILISATION LAYOUT (pour cohérence refresh)
+   ========================= */
+const STABLE_FRAMES_REQUIRED = 8;
+const STABLE_TIMEOUT_MS = 1200;
 
 function clamp(v, min, max) {
   return Math.max(min, Math.min(max, v));
@@ -93,10 +93,31 @@ function waitForImagesIn(rootEl) {
   return Promise.allSettled(promises);
 }
 
-function applyFixed(img, h, w) {
+function fitRatio(r) {
+  if (!Number.isFinite(r) || r <= 0) return 1;
+  return Math.min(r, RATIO_FIT_CAP);
+}
+
+/* =========================
+   UTILITAIRES: conversion px -> vw/vh
+   (on calcule 1 fois par relayout, pas en continu)
+   ========================= */
+function pxToVw(pxVal) {
+  const W = window.innerWidth || 1;
+  return (pxVal / W) * 100;
+}
+function pxToVh(pxVal) {
+  const H = window.innerHeight || 1;
+  return (pxVal / H) * 100;
+}
+function setSizeVwVh(img, hPx, wPx) {
   clearSizing(img);
-  img.style.setProperty('height', `${Math.round(h)}px`, 'important');
-  img.style.setProperty('width', `${Math.round(w)}px`, 'important');
+
+  const hVh = pxToVh(hPx);
+  const wVw = pxToVw(wPx);
+
+  img.style.setProperty('height', `${hVh}vh`, 'important');
+  img.style.setProperty('width', `${wVw}vw`, 'important');
   img.style.setProperty('max-height', 'none', 'important');
   img.style.setProperty('max-width', 'none', 'important');
 }
@@ -112,14 +133,15 @@ function normalizeNbspIn(node) {
   }
 }
 
+/* =========================
+   LAYOUT WIDTH (ton code)
+   ========================= */
 function getUsableWidthFromLayout(rootEl) {
   const shell = rootEl.closest('.cd-shell') || document.querySelector('.cd-shell');
   const baseW = shell?.getBoundingClientRect?.().width || document.documentElement.clientWidth || window.innerWidth || 0;
 
-  const narrow = isMobileNow();
-
   const side = document.querySelector('.cd-side');
-  const sideW = !narrow && side ? side.getBoundingClientRect().width : 0;
+  const sideW = side ? side.getBoundingClientRect().width : 0;
 
   const sideCS = side ? getComputedStyle(side) : null;
   const sideBorderR = sideCS ? px(sideCS.borderRightWidth) : 0;
@@ -133,7 +155,6 @@ function getUsableWidthFromLayout(rootEl) {
   const artPadR = artCS ? px(artCS.paddingRight) : 0;
 
   const SAFETY = 6;
-
   const usable = baseW - sideW - sideBorderR - mainPad - artPadR - SAFETY;
   return Math.max(0, usable);
 }
@@ -150,31 +171,24 @@ function computeTargetW(cols, rootEl) {
   return clamp(raw, minW, softMax);
 }
 
-function fitRatio(r) {
-  if (!Number.isFinite(r) || r <= 0) return 1;
-  return Math.min(r, RATIO_FIT_CAP);
-}
-
 /* =========================
    CAPTION WIDTH
    - 1 colonne: caption = image
    - 2–4 colonnes: caption peut dépasser un peu l'image
-   - plafond = largeur intérieure réelle du TD
-   - pas de hyphenation
+   - ici on applique en vw (au lieu de px)
    ========================= */
-function applyCaptionWidth(img, imgW, ratio, cols, rootEl) {
+function applyCaptionWidth(img, imgWpx, ratio, cols, rootEl) {
   const fig = img.closest?.('figure');
   const cap = fig?.querySelector?.('figcaption');
   if (!cap) return;
 
   normalizeNbspIn(cap);
 
-  // pas d'hyphenation
   cap.style.setProperty('hyphens', 'none');
   cap.style.setProperty('word-break', 'normal');
-  cap.style.setProperty('overflow-wrap', 'break-word'); // coupe sans tirets
+  cap.style.setProperty('overflow-wrap', 'break-word');
 
-  // largeur intérieure réelle du TD (si dispo)
+  // largeur intérieure du TD (px) -> plafond
   const td = img.closest?.('td');
   let tdInnerW = 0;
 
@@ -185,32 +199,29 @@ function applyCaptionWidth(img, imgW, ratio, cols, rootEl) {
     tdInnerW = Math.max(0, td.getBoundingClientRect().width - padL - padR);
   }
 
-  // fallback (rare)
   const fallbackW = computeTargetW(cols, rootEl) - SAFETY_PX;
-  const capCeilW = tdInnerW > 0 ? tdInnerW : fallbackW;
+  const capCeilWpx = tdInnerW > 0 ? tdInnerW : fallbackW;
 
   if (cols <= 1) {
     cap.style.removeProperty('width');
-    cap.style.setProperty('max-width', `${Math.round(imgW)}px`, 'important');
+    cap.style.setProperty('max-width', `${pxToVw(imgWpx)}vw`, 'important');
     return;
   }
 
-  // 2–4 colonnes: dépassement autorisé
-  // (plus si portrait, peu si pano)
   const relaxMult =
     ratio < 1.0 ? 2.5 :
     ratio > 2 ? 2 :
     2;
 
-  const wanted = Math.max(imgW, imgW * relaxMult);
-  const capMaxW = Math.min(capCeilW, wanted);
+  const wantedPx = Math.max(imgWpx, imgWpx * relaxMult);
+  const capMaxWpx = Math.min(capCeilWpx, wantedPx);
 
   cap.style.removeProperty('width');
-  cap.style.setProperty('max-width', `${Math.round(capMaxW)}px`, 'important');
+  cap.style.setProperty('max-width', `${pxToVw(capMaxWpx)}vw`, 'important');
 }
 
 /* =========================
-   LAYOUT ROW (ANTI-DÉBORDEMENT)
+   LAYOUT ROW (ton code, mais sortie en vw/vh)
    ========================= */
 function layoutRow(row, rootEl) {
   const imgs = Array.from(row.querySelectorAll('td figure.image img, td figure.cd-figure img, td > img'));
@@ -257,7 +268,11 @@ function layoutRow(row, rootEl) {
 
   for (const it of items) {
     const W = H * it.ratio;
-    applyFixed(it.img, H, W);
+
+    // ✅ ici: on applique vw/vh au lieu de px
+    setSizeVwVh(it.img, H, W);
+
+    // captions en vw
     applyCaptionWidth(it.img, W, it.ratio, cols, rootEl);
   }
 }
@@ -270,6 +285,43 @@ function layoutAllTables(rootEl) {
   });
 }
 
+/* =========================
+   STABILISATION: attendre cd-main stable
+   ========================= */
+function getMainWidthSig(rootEl) {
+  const main = rootEl.closest('.cd-main') || document.querySelector('.cd-main');
+  const shell = rootEl.closest('.cd-shell') || document.querySelector('.cd-shell');
+  const wMain = main?.getBoundingClientRect?.().width || 0;
+  const wShell = shell?.getBoundingClientRect?.().width || 0;
+  return `${Math.round(wMain)}|${Math.round(wShell)}|${window.innerWidth}|${window.innerHeight}`;
+}
+
+function waitForStableLayout(rootEl) {
+  const start = performance.now();
+  let stable = 0;
+  let last = '';
+
+  return new Promise((resolve) => {
+    const tick = () => {
+      const sig = getMainWidthSig(rootEl);
+      if (sig === last && sig !== '0|0|0|0') stable += 1;
+      else stable = 0;
+
+      last = sig;
+
+      if (stable >= STABLE_FRAMES_REQUIRED) return resolve();
+      if (performance.now() - start > STABLE_TIMEOUT_MS) return resolve();
+
+      requestAnimationFrame(tick);
+    };
+
+    requestAnimationFrame(tick);
+  });
+}
+
+/* =========================
+   relayout loop (ton code)
+   ========================= */
 function runRelayoutLoop(relayoutFn, durationMs = 420) {
   const start = performance.now();
   let rafId = 0;
@@ -294,12 +346,6 @@ export default function CaseMarkdown({ children }) {
 
     const relayout = () => {
       if (cancelled) return;
-
-      if (isMobileNow()) {
-        resetTableSizing(rootEl);
-        return;
-      }
-
       layoutAllTables(rootEl);
       layoutAllTables(rootEl);
     };
@@ -307,6 +353,11 @@ export default function CaseMarkdown({ children }) {
     const run = async () => {
       await waitForImagesIn(rootEl);
       if (cancelled) return;
+
+      // ✅ clé: attendre le layout stable (cd-main/side) avant 1er sizing
+      await waitForStableLayout(rootEl);
+      if (cancelled) return;
+
       requestAnimationFrame(() => {
         if (!cancelled) relayout();
       });
@@ -314,6 +365,8 @@ export default function CaseMarkdown({ children }) {
 
     run();
 
+    // ✅ On garde les triggers “qui marchaient” (comme ton code):
+    // ResizeObserver sur éléments structurants + transitions
     const ro = new ResizeObserver(() => relayout());
     ro.observe(rootEl);
 
@@ -359,11 +412,6 @@ export default function CaseMarkdown({ children }) {
       side.addEventListener('transitionend', onTransitionEnd);
     }
 
-    const mq = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT}px)`);
-    const onMqChange = () => relayout();
-    if (mq.addEventListener) mq.addEventListener('change', onMqChange);
-    else mq.addListener(onMqChange);
-
     let t = null;
     const onResize = () => {
       clearTimeout(t);
@@ -386,9 +434,6 @@ export default function CaseMarkdown({ children }) {
         side.removeEventListener('transitionrun', onTransitionRun);
         side.removeEventListener('transitionend', onTransitionEnd);
       }
-
-      if (mq.removeEventListener) mq.removeEventListener('change', onMqChange);
-      else mq.removeListener(onMqChange);
 
       if (stopLoop) stopLoop();
     };

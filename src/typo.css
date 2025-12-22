@@ -1,5 +1,3 @@
-/* src/pages/CaseDetailContent.css (ou ton fichier CSS global du contenu) */
-
 /* =========================
    GLOBAL
    ========================= */
@@ -30,7 +28,6 @@
   --ifm-h5-font-size: 0.875rem;
   --ifm-h6-font-size: 0.85rem;
 
-  /* listes */
   --ifm-list-margin: 1rem;
   --ifm-list-left-padding: 2rem;
   --ifm-list-item-margin: 0.25rem;
@@ -122,7 +119,7 @@ li > ol {
 /* =========================
    IMAGES (hors tableaux)
    ========================= */
-.cd-content img {
+.cd-content p img:not(table img) {
   display: block;
   margin: 12px auto;
   cursor: zoom-in;
@@ -166,7 +163,6 @@ figcaption {
   -webkit-overflow-scrolling: touch;
 }
 
-/* CKEditor resized : aide à respecter les % du colgroup */
 .cd-content table.ck-table-resized {
   table-layout: fixed;
 }
@@ -199,7 +195,7 @@ figcaption {
 }
 
 /* =========================
-   FIGURES / captions générées par Markdown (hors tableaux)
+   FIGURES / captions (hors tableaux)
    ========================= */
 .cd-figure {
   margin: 1rem 0;
@@ -212,20 +208,17 @@ figcaption {
 }
 
 /* =========================
-   TABLEAUX D'IMAGES (pilotés par JS)
-   Objectif:
-   - pas de crop
-   - mêmes hauteurs d’images par ligne
-   - captions ne doivent PAS agrandir les cellules
+   TABLEAUX D’IMAGES (vh/vw)
    ========================= */
 
-/* centre le contenu de la cellule si elle contient une figure image */
-.cd-content table td:has(figure.image),
-.cd-content table td:has(figure.cd-figure) {
+/* centre le contenu des cellules avec image */
+.cd-content table td:has(img) {
   text-align: center;
+  padding-top: 0.35rem;
+  padding-bottom: 0.35rem;
 }
 
-/* figure = shrink-to-fit, donc le caption suit la largeur image */
+/* figure shrink-to-fit par défaut (important pour 1 colonne) */
 .cd-content table td figure.image,
 .cd-content table td figure.cd-figure {
   margin: 0 !important;
@@ -233,23 +226,32 @@ figcaption {
   display: inline-flex !important;
   flex-direction: column !important;
   align-items: center !important;
+  gap: 0.45rem;
 
   width: fit-content !important;
   max-width: 100% !important;
 }
 
-/* images dans tables: on laisse le JS piloter height/width */
-.cd-content table td figure.image img,
-.cd-content table td figure.cd-figure img,
-.cd-content table td > img {
+/* wrapper image injecté par JS : hauteur vh + cap vw */
+.cd-imgslot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  max-width: 100%;
+  overflow: hidden;
+}
+
+/* image dans le slot */
+.cd-content table td .cd-imgslot > img {
   display: block !important;
   margin: 0 auto !important;
 
-  height: auto !important;
+  height: 100% !important;
   width: auto !important;
 
-  max-width: none !important;
-  max-height: none !important;
+  max-height: 100% !important;
+  max-width: 100% !important;
 
   object-fit: contain !important;
   object-position: center !important;
@@ -258,20 +260,37 @@ figcaption {
   cursor: pointer;
 }
 
-/* captions dans tables: WRAP agressif => ne pousse jamais la largeur */
-.cd-content table td figure.image > figcaption,
-.cd-content table td figure.cd-figure > figcaption {
-  width: 100% !important;
+/* =========================
+   AJOUT IMPORTANT (compat)
+   si images directes dans td sans figure
+   ========================= */
+.cd-content table td > img {
+  display: block !important;
+  margin: 0 auto !important;
+
+  height: 100% !important;
+  width: auto !important;
+
+  max-height: 100% !important;
   max-width: 100% !important;
 
-  text-align: left !important;
+  object-fit: contain !important;
+  object-position: center !important;
 
-  overflow-wrap: anywhere !important;
-  word-break: break-word !important;
-  hyphens: auto;
+  border-radius: 0 !important;
+  cursor: pointer;
+}
+
+/* captions tables: base wrap propre */
+.cd-content table td figure.image > figcaption,
+.cd-content table td figure.cd-figure > figcaption {
+  hyphens: none !important;
+  word-break: normal !important;
+  overflow-wrap: break-word !important;
   white-space: normal !important;
 
-  margin-top: 0.35rem !important;
+  text-align: left;
+  margin-top: 0 !important;
 }
 
 /* titre centré */
@@ -282,22 +301,38 @@ figcaption {
   text-align: center !important;
   font-weight: 600;
   line-height: 1.15;
-  margin: 0 0 0.25rem 0 !important;
+  margin: 0 0 0.35rem 0 !important;
 }
 
-/* évite un <br> “variable” juste après le strong */
 .cd-content table td figure.image > figcaption > strong + br,
 .cd-content table td figure.cd-figure > figcaption > strong + br {
   display: none !important;
 }
 
-/* padding serré pour cellules images */
-.cd-content table td:has(figure.image),
-.cd-content table td:has(figure.cd-figure),
-.cd-content table td:has(> img) {
-  padding-top: 0.35rem;
-  padding-bottom: 0.35rem;
-  vertical-align: top;
+/* 2–4 colonnes: figure prend toute la largeur du TD => caption "libre" */
+.cd-content table tr[data-cd-cols]:not([data-cd-cols="1"]) td figure.image,
+.cd-content table tr[data-cd-cols]:not([data-cd-cols="1"]) td figure.cd-figure {
+  display: flex !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.cd-content table tr[data-cd-cols]:not([data-cd-cols="1"]) td figure.image > figcaption,
+.cd-content table tr[data-cd-cols]:not([data-cd-cols="1"]) td figure.cd-figure > figcaption {
+  width: 100% !important;
+  max-width: none !important;
+}
+
+/* 1 colonne: le JS force max-width du figcaption = largeur image réelle */
+.cd-content table tr[data-cd-cols="1"] td figure.image > figcaption,
+.cd-content table tr[data-cd-cols="1"] td figure.cd-figure > figcaption {
+  width: 100% !important;
+}
+
+.cd-content table figure.image img:hover,
+.cd-content table figure.cd-figure img:hover,
+.cd-content table td > img:hover {
+  cursor: zoom-in;
 }
 
 /* =========================
@@ -403,10 +438,21 @@ figcaption {
 .cd-callout-details[open] > summary.cd-callout-heading {
   margin-bottom: 0.8rem;
 }
+
+/* caption sous l’image, largeur = largeur du figure (donc image), texte à gauche */
 .cd-content table td figure.image > figcaption,
 .cd-content table td figure.cd-figure > figcaption {
-  hyphens: none !important;
-  word-break: normal !important;
-  overflow-wrap: break-word !important; /* coupe sans ajouter de tirets */
+  align-self: stretch !important;   /* clé: étire la légende à la largeur du figure (= image) */
+  text-align: left !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  text-indent: 0 !important;
 }
 
+/* seul le strong est centré */
+.cd-content table td figure.image > figcaption > strong,
+.cd-content table td figure.cd-figure > figcaption > strong {
+  display: block !important;
+  width: 100% !important;
+  text-align: center !important;
+}
