@@ -393,3 +393,18 @@ html.blur-images .navbar img {
   border: var(--card-border-hover);
   cursor: pointer;
 }
+
+/* Désactive tous les styles hover sur appareils tactiles */
+@media (hover: none), (pointer: coarse) {
+  .ui-card:hover,
+  .cc-tab:hover,
+  .cc-card:hover,
+  .home-card:hover,
+  .cc-typecard:hover {
+    background-color: unset !important;
+    box-shadow: unset !important;
+    transform: none !important;
+    border-color: unset !important;
+    filter: none !important;
+  }
+}
