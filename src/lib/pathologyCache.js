@@ -1,29 +1,17 @@
-// src/lib/caseCache.js
-// --------------------
-// Mini cache (mémoire + sessionStorage) pour les "cases" Strapi
-// + helper de préchargement utilisé par CaseDetail/Aside.
-//
-// Exporte :
-//   - getCaseFromCache(slug)
-//   - setCaseToCache(slug, data)
-//   - prefetchCase(slug, { publicationState } )
-//
-// Préchargement "détail" : content + qa_blocks + quiz_blocks + cover
-// (sans parent_case / child_cases / kind)
-
+// src/lib/pathologyCache.js
 import { strapiFetch, imgUrl } from './strapi';
 
-const STORE = new Map(); // cache mémoire
-const INFLIGHT = new Map(); // promesses en cours
+const STORE = new Map();
+const INFLIGHT = new Map();
 
-const CASES_ENDPOINT = import.meta.env.VITE_CASES_ENDPOINT || '/cases';
+const PATHO_ENDPOINT = import.meta.env.VITE_PATHO_ENDPOINT || '/pathologies';
 const DEFAULT_PUB_STATE = import.meta.env.DEV ? 'preview' : 'live';
 
 function storageKey(slug) {
-  return `case-cache:${slug}`;
+  return `pathology-cache:${slug}`;
 }
 
-export function getCaseFromCache(slug) {
+export function getPathologyFromCache(slug) {
   if (!slug) return null;
   if (STORE.has(slug)) return STORE.get(slug);
 
@@ -38,10 +26,9 @@ export function getCaseFromCache(slug) {
   return null;
 }
 
-export function setCaseToCache(slug, data) {
+export function setPathologyToCache(slug, data) {
   if (!slug || !data) return;
   STORE.set(slug, data);
-
   try {
     sessionStorage.setItem(storageKey(slug), JSON.stringify(data));
   } catch {}
@@ -49,25 +36,18 @@ export function setCaseToCache(slug, data) {
 
 function isCacheSufficient(cached) {
   if (!cached) return false;
-
-  // suffisant = on a déjà le contenu ou au moins un des blocs
   return Boolean(
     cached.content ||
       Array.isArray(cached.qa_blocks) ||
-      Array.isArray(cached.quiz_blocks)
+      Array.isArray(cached.quiz_blocks) ||
+      Array.isArray(cached.cases)
   );
 }
 
-/**
- * Précharge un cas "détail".
- * @param {string} slug
- * @param {{publicationState?: 'live'|'preview'}} opts
- * @returns {Promise<object|null>}
- */
-export async function prefetchCase(slug, opts = {}) {
+export async function prefetchPathology(slug, opts = {}) {
   if (!slug) return null;
 
-  const cached = getCaseFromCache(slug);
+  const cached = getPathologyFromCache(slug);
   if (isCacheSufficient(cached)) return cached;
 
   if (INFLIGHT.has(slug)) {
@@ -78,8 +58,8 @@ export async function prefetchCase(slug, opts = {}) {
 
   const publicationState = opts.publicationState || DEFAULT_PUB_STATE;
 
-  const loadOnce = ({ withQa, withQuiz }) =>
-    strapiFetch(CASES_ENDPOINT, {
+  const loadOnce = ({ withQa, withQuiz, withCases }) =>
+    strapiFetch(PATHO_ENDPOINT, {
       params: {
         filters: { slug: { $eq: slug } },
         locale: 'all',
@@ -89,17 +69,18 @@ export async function prefetchCase(slug, opts = {}) {
 
           ...(withQa ? { qa_blocks: { populate: '*' } } : {}),
           ...(withQuiz ? { quiz_blocks: { populate: { propositions: true } } } : {}),
+
+          ...(withCases
+            ? {
+                cases: {
+                  fields: ['title', 'slug', 'excerpt', 'type'],
+                  populate: { cover: { fields: ['url', 'formats'] } },
+                  sort: ['slug:asc'],
+                },
+              }
+            : {}),
         },
-        fields: [
-          'title',
-          'slug',
-          'type',
-          'excerpt',
-          'content',
-          'updatedAt',
-          'references',
-          'copyright',
-        ],
+        fields: ['title', 'slug', 'excerpt', 'content', 'updatedAt', 'references', 'copyright'],
         pagination: { page: 1, pageSize: 1 },
       },
     });
@@ -109,16 +90,18 @@ export async function prefetchCase(slug, opts = {}) {
       let res;
 
       try {
-        res = await loadOnce({ withQa: true, withQuiz: true });
+        res = await loadOnce({ withQa: true, withQuiz: true, withCases: true });
       } catch (err) {
         const msg = err?.message || '';
         const qaInvalid = /Invalid key qa_blocks/i.test(msg);
         const quizInvalid = /Invalid key quiz_blocks/i.test(msg);
+        const casesInvalid = /Invalid key cases/i.test(msg);
 
-        if (qaInvalid || quizInvalid) {
+        if (qaInvalid || quizInvalid || casesInvalid) {
           res = await loadOnce({
             withQa: !qaInvalid,
             withQuiz: !quizInvalid,
+            withCases: !casesInvalid,
           });
         } else {
           throw err;
@@ -134,7 +117,7 @@ export async function prefetchCase(slug, opts = {}) {
         imgUrl(coverAttr, 'large') || imgUrl(coverAttr, 'medium') || imgUrl(coverAttr) || null;
 
       const full = { ...attrs, coverUrl };
-      setCaseToCache(slug, full);
+      setPathologyToCache(slug, full);
       return full;
     } finally {
       INFLIGHT.delete(slug);

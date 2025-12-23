@@ -9,8 +9,8 @@ export default function HomePage() {
   function onSubmit(e) {
     e.preventDefault();
     const q = query.trim();
-    if (q) navigate(`/cas-cliniques?q=${encodeURIComponent(q)}`);
-    else navigate('/cas-cliniques');
+      if (q) navigate(`/cas-cliniques?type=all&page=1&q=${encodeURIComponent(q)}`);
+      else navigate('/cas-cliniques');
   }
 
   return (

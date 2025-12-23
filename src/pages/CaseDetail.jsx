@@ -9,6 +9,7 @@ import CaseMarkdown from '../components/CaseMarkdown';
 
 import { strapiFetch, imgUrl } from '../lib/strapi';
 import { getCaseFromCache, setCaseToCache, prefetchCase } from '../lib/caseCache';
+import { getPathologyFromCache, setPathologyToCache, prefetchPathology } from '../lib/pathologyCache';
 
 import { BottomExpandIcon, BottomCollapseIcon } from '../components/Icons';
 import { useCaseDetailSidebar } from '../ui/CaseDetailSidebarContext';
@@ -16,10 +17,11 @@ import { useCaseDetailSidebar } from '../ui/CaseDetailSidebarContext';
 import './CaseDetail.css';
 
 const CASES_ENDPOINT = import.meta.env.VITE_CASES_ENDPOINT || '/cases';
+const PATHO_ENDPOINT = import.meta.env.VITE_PATHO_ENDPOINT || '/pathologies';
 const PUB_STATE = import.meta.env.DEV ? 'preview' : 'live';
 
 const LS_KEY_COLLAPSE = 'cd-sidebar-collapsed';
-const LS_KEY_EXPANDED_PREFIX = 'cd-expanded-container:'; // + type
+const LS_KEY_EXPANDED_PATHOLOGY = 'cd-expanded-pathology';
 
 /** Breakpoint helper */
 function useIsNarrow(maxWidthPx = 980) {
@@ -80,12 +82,6 @@ function normalizeEntity(node) {
   if (node.attributes) return { id: node.id, ...node.attributes };
   return node;
 }
-function normalizeRelation(rel) {
-  if (!rel) return null;
-  if (rel.data === null) return null;
-  if (rel.data) return normalizeEntity(rel.data);
-  return normalizeEntity(rel);
-}
 function normalizeRelationArray(rel) {
   if (!rel) return [];
   if (Array.isArray(rel)) return rel.map(normalizeEntity).filter(Boolean);
@@ -94,40 +90,74 @@ function normalizeRelationArray(rel) {
   return [];
 }
 
+function safeGetSessionJson(key) {
+  try {
+    const raw = sessionStorage.getItem(key);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
 /* =========================
    Page
    ========================= */
 
 export default function CaseDetail() {
-  const { slug } = useParams();
+  const params = useParams();
   const location = useLocation();
+
+  // Routes attendues :
+  // - /cas-cliniques/:slug
+  // - /cas-cliniques/presentation/:pathologySlug
+  // - /cas-cliniques/presentation/:pathologySlug/:caseSlug
+  const pathologySlug = params.pathologySlug || null;
+  const caseSlug = params.caseSlug || params.slug || null;
+
+  const isPresentationNamespace = Boolean(pathologySlug);
+  const isPathologyPage = isPresentationNamespace && !params.caseSlug;
+  const isCaseInPathology = isPresentationNamespace && Boolean(params.caseSlug);
+  const isPlainCase = !isPresentationNamespace;
 
   const isNarrow = useIsNarrow(980);
   const { mobileOpen, setMobileOpen } = useCaseDetailSidebar();
-
   const [drawerView, setDrawerView] = useState('cases');
 
-  const pre = location.state?.prefetch;
-  const provisional = pre && pre.slug === slug ? pre : null;
+  // breadcrumb seed (instant)
+  const navCrumb = location.state?.breadcrumb || null;
+
+  const pre = location.state?.prefetch || null;
+  const provisionalKeySlug = isPathologyPage ? pathologySlug : caseSlug;
+  const provisional = pre && pre.slug === provisionalKeySlug ? pre : null;
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  // item = case OU pathology selon la route
   const [item, setItem] = useState(() => {
-    const cached = getCaseFromCache(slug);
-    if (cached) return cached;
-    if (provisional) return provisional;
-    return null;
+    const key = provisionalKeySlug;
+    if (!key) return null;
+
+    if (isPathologyPage) return getPathologyFromCache(key) || provisional || null;
+    return getCaseFromCache(key) || provisional || null;
   });
 
-  // on garde le dernier type connu pour éviter “Présentation -> Cas -> Présentation” pendant un load
+  // parent pathology (utile sur /presentation/:patho/:case)
+  const [parentPathology, setParentPathology] = useState(() => {
+    if (!isCaseInPathology || !pathologySlug) return null;
+    return getPathologyFromCache(pathologySlug) || null;
+  });
+
+  // stableType seulement pour les cas classiques
   const [stableType, setStableType] = useState(() => {
-    return (getCaseFromCache(slug)?.type || provisional?.type || null);
+    if (!isPlainCase) return null;
+    return getCaseFromCache(caseSlug)?.type || provisional?.type || null;
   });
 
   useEffect(() => {
-    if (item?.type) setStableType(item.type);
-  }, [item?.type]);
+    if (isPlainCase && item?.type) setStableType(item.type);
+  }, [item?.type, isPlainCase]);
 
   const [collapsedDesktop, setCollapsedDesktop] = useState(() => {
     try {
@@ -137,15 +167,11 @@ export default function CaseDetail() {
     }
   });
 
-  // état “transition finie” pour activer hover/clic du bouton de réouverture uniquement quand fermé
-  const [collapseDone, setCollapseDone] = useState(() => {
-    // au reload, si déjà fermé, on est “done”
-    return collapsedDesktop && !isNarrow;
-  });
+  const [collapseDone, setCollapseDone] = useState(() => collapsedDesktop && !isNarrow);
 
   useEffect(() => {
     if (isNarrow) setMobileOpen(false);
-  }, [slug, isNarrow, setMobileOpen]);
+  }, [caseSlug, pathologySlug, isNarrow, setMobileOpen]);
 
   useEffect(() => {
     if (isNarrow && mobileOpen) setDrawerView('cases');
@@ -188,19 +214,11 @@ export default function CaseDetail() {
 
   const collapsed = isNarrow ? !mobileOpen : collapsedDesktop;
 
-  // quand on change collapsed (desktop), on marque “pas done” jusqu’à fin de transition width
   useEffect(() => {
     if (isNarrow) return;
-    if (collapsedDesktop) {
-      // on commence la fermeture
-      setCollapseDone(false);
-      return;
-    }
-    // ouverture: pas besoin de “done”, mais on garde false pour éviter hover bizarre
     setCollapseDone(false);
   }, [collapsedDesktop, isNarrow]);
 
-  // au reload: si c’est déjà collapsedDesktop=true, on force done=true (sinon bouton inactif)
   useEffect(() => {
     if (isNarrow) return;
     if (collapsedDesktop) setCollapseDone(true);
@@ -220,11 +238,127 @@ export default function CaseDetail() {
     });
   };
 
+  // ---------- loaders ----------
+  async function loadCaseBySlug(slugToLoad) {
+    const loadOnce = ({ withQa, withQuiz }) =>
+      strapiFetch(CASES_ENDPOINT, {
+        params: {
+          filters: { slug: { $eq: slugToLoad } },
+          locale: 'all',
+          publicationState: PUB_STATE,
+          populate: {
+            cover: { fields: ['url', 'formats'] },
+            ...(withQa ? { qa_blocks: { populate: '*' } } : {}),
+            ...(withQuiz ? { quiz_blocks: { populate: { propositions: true } } } : {}),
+          },
+          fields: ['title', 'slug', 'type', 'excerpt', 'content', 'updatedAt', 'references', 'copyright'],
+          pagination: { page: 1, pageSize: 1 },
+        },
+      });
+
+    let res;
+    try {
+      res = await loadOnce({ withQa: true, withQuiz: true });
+    } catch (err) {
+      const msg = err?.message || '';
+      const qaInvalid = /Invalid key qa_blocks/i.test(msg);
+      const quizInvalid = /Invalid key quiz_blocks/i.test(msg);
+
+      if (qaInvalid || quizInvalid) {
+        res = await loadOnce({ withQa: !qaInvalid, withQuiz: !quizInvalid });
+      } else {
+        throw err;
+      }
+    }
+
+    const node = Array.isArray(res?.data) ? res.data[0] : null;
+    const attrs = normalizeEntity(node);
+    if (!attrs) return null;
+
+    const coverAttr = attrs?.cover?.data?.attributes || attrs?.cover || null;
+    const coverUrl =
+      imgUrl(coverAttr, 'large') || imgUrl(coverAttr, 'medium') || imgUrl(coverAttr) || null;
+
+    return { ...attrs, coverUrl: coverUrl || null };
+  }
+
+  async function loadPathologyBySlug(slugToLoad, { withCases } = { withCases: true }) {
+    const loadOnce = ({ withQa, withQuiz, withCases: withCasesInner }) =>
+      strapiFetch(PATHO_ENDPOINT, {
+        params: {
+          filters: { slug: { $eq: slugToLoad } },
+          locale: 'all',
+          publicationState: PUB_STATE,
+          populate: {
+            cover: { fields: ['url', 'formats'] },
+            ...(withQa ? { qa_blocks: { populate: '*' } } : {}),
+            ...(withQuiz ? { quiz_blocks: { populate: { propositions: true } } } : {}),
+            ...(withCasesInner
+              ? {
+                  cases: {
+                    fields: ['title', 'slug', 'excerpt', 'type'],
+                    populate: { cover: { fields: ['url', 'formats'] } },
+                    sort: ['slug:asc'],
+                  },
+                }
+              : {}),
+          },
+          fields: ['title', 'slug', 'excerpt', 'content', 'updatedAt', 'references', 'copyright'],
+          pagination: { page: 1, pageSize: 1 },
+        },
+      });
+
+    let res;
+    try {
+      res = await loadOnce({ withQa: true, withQuiz: true, withCases: withCases });
+    } catch (err) {
+      const msg = err?.message || '';
+      const qaInvalid = /Invalid key qa_blocks/i.test(msg);
+      const quizInvalid = /Invalid key quiz_blocks/i.test(msg);
+      const casesInvalid = /Invalid key cases/i.test(msg);
+
+      if (qaInvalid || quizInvalid || casesInvalid) {
+        res = await loadOnce({
+          withQa: !qaInvalid,
+          withQuiz: !quizInvalid,
+          withCases: withCases && !casesInvalid,
+        });
+      } else {
+        throw err;
+      }
+    }
+
+    const node = Array.isArray(res?.data) ? res.data[0] : null;
+    const attrs = normalizeEntity(node);
+    if (!attrs) return null;
+
+    const coverAttr = attrs?.cover?.data?.attributes || attrs?.cover || null;
+    const coverUrl =
+      imgUrl(coverAttr, 'large') || imgUrl(coverAttr, 'medium') || imgUrl(coverAttr) || null;
+
+    const rel = normalizeRelationArray(attrs?.cases).map((c) => {
+      const cCoverAttr = c?.cover?.data?.attributes || c?.cover || null;
+      const cCoverUrl =
+        imgUrl(cCoverAttr, 'medium') || imgUrl(cCoverAttr, 'thumbnail') || imgUrl(cCoverAttr) || null;
+      return { ...c, coverUrl: cCoverUrl };
+    });
+
+    return { ...attrs, coverUrl: coverUrl || null, cases: rel };
+  }
+
+  // ---------- main load ----------
   useEffect(() => {
     let ignore = false;
 
-    // IMPORTANT: on ne met plus item à null => évite disparition “liste + page”
-    const cached = getCaseFromCache(slug);
+    const keySlug = provisionalKeySlug;
+    if (!keySlug) {
+      setError('Slug manquant.');
+      setLoading(false);
+      return () => {};
+    }
+
+    const cached = isPathologyPage ? getPathologyFromCache(keySlug) : getCaseFromCache(keySlug);
+
     if (cached) {
       setItem(cached);
       setLoading(false);
@@ -232,107 +366,63 @@ export default function CaseDetail() {
       setItem(provisional);
       setLoading(true);
     } else {
-      // on garde l’ancien item pendant le chargement pour stabiliser l’UI
       setLoading(true);
-    }
-
-    async function loadWithPopulate({ withQa, withQuiz, withChildren, withParent }) {
-      const populate = { cover: { fields: ['url', 'formats'] } };
-
-      if (withQa) populate.qa_blocks = { populate: '*' };
-      if (withQuiz) {
-        populate.quiz_blocks = {
-          populate: { propositions: true },
-        };
-      }
-      if (withChildren) {
-        populate.child_cases = {
-          fields: ['title', 'slug', 'excerpt', 'type', 'kind'],
-          populate: { cover: { fields: ['url', 'formats'] } },
-          sort: ['slug:asc'],
-        };
-      }
-      if (withParent) {
-        populate.parent_case = {
-          fields: ['title', 'slug', 'type', 'kind'],
-        };
-      }
-
-      return strapiFetch(CASES_ENDPOINT, {
-        params: {
-          filters: { slug: { $eq: slug } },
-          locale: 'all',
-          publicationState: PUB_STATE,
-          populate,
-          fields: ['title', 'slug', 'type', 'kind', 'excerpt', 'content', 'updatedAt', 'references', 'copyright'],
-          pagination: { page: 1, pageSize: 1 },
-        },
-      });
     }
 
     async function load() {
       setError('');
       try {
-        let res;
+        if (isPathologyPage) {
+          const fullPatho = await loadPathologyBySlug(pathologySlug, { withCases: true });
+          if (ignore) return;
 
-        try {
-          res = await loadWithPopulate({
-            withQa: true,
-            withQuiz: true,
-            withChildren: true,
-            withParent: true,
-          });
-        } catch (err) {
-          const msg = err?.message || '';
-
-          const qaInvalid = /Invalid key qa_blocks/i.test(msg);
-          const quizInvalid = /Invalid key quiz_blocks/i.test(msg);
-          const childInvalid = /Invalid key child_cases/i.test(msg);
-          const parentInvalid = /Invalid key parent_case/i.test(msg);
-
-          if (qaInvalid || quizInvalid || childInvalid || parentInvalid) {
-            res = await loadWithPopulate({
-              withQa: !qaInvalid,
-              withQuiz: !quizInvalid,
-              withChildren: !childInvalid,
-              withParent: !parentInvalid,
-            });
-          } else {
-            throw err;
+          if (!fullPatho) {
+            setError('Pathologie introuvable ou non publiée.');
+            return;
           }
+
+          setItem(fullPatho);
+          setPathologyToCache(pathologySlug, fullPatho);
+          return;
         }
 
-        const node = Array.isArray(res?.data) ? res.data[0] : null;
-        const attrs = normalizeEntity(node);
+        if (isCaseInPathology) {
+          const parentPromise = pathologySlug
+            ? prefetchPathology(pathologySlug, { publicationState: PUB_STATE }).catch(() => null)
+            : Promise.resolve(null);
 
+          const fullCase = await loadCaseBySlug(caseSlug);
+          const parent = await parentPromise;
+
+          if (ignore) return;
+
+          if (!fullCase) {
+            setError('Cas introuvable ou non publié.');
+            return;
+          }
+
+          setItem(fullCase);
+          setCaseToCache(caseSlug, fullCase);
+
+          if (parent) setParentPathology(parent);
+          else if (pathologySlug) {
+            const p = getPathologyFromCache(pathologySlug);
+            if (p) setParentPathology(p);
+          }
+
+          return;
+        }
+
+        const full = await loadCaseBySlug(caseSlug);
         if (ignore) return;
 
-        if (!attrs) {
+        if (!full) {
           setError('Cas introuvable ou non publié.');
           return;
         }
 
-        const coverAttr = attrs?.cover?.data?.attributes || attrs?.cover || null;
-        const apiCover = imgUrl(coverAttr, 'large') || imgUrl(coverAttr, 'medium') || imgUrl(coverAttr) || null;
-
-        const parent = normalizeRelation(attrs?.parent_case);
-
-        const children = normalizeRelationArray(attrs?.child_cases).map((c) => {
-          const cCoverAttr = c?.cover?.data?.attributes || c?.cover || null;
-          const cCoverUrl =
-            imgUrl(cCoverAttr, 'medium') || imgUrl(cCoverAttr, 'thumbnail') || imgUrl(cCoverAttr) || null;
-          return { ...c, coverUrl: cCoverUrl };
-        });
-
-        const full = {
-          ...attrs,
-          coverUrl: apiCover || item?.coverUrl || null,
-          parent_case: parent,
-          child_cases: children,
-        };
-
         setItem(full);
-        setCaseToCache(slug, full);
+        setCaseToCache(caseSlug, full);
       } catch (e) {
         if (!ignore) setError(e?.message || 'Erreur de chargement');
       } finally {
@@ -345,9 +435,13 @@ export default function CaseDetail() {
       ignore = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slug]);
+  }, [pathologySlug, caseSlug, isPathologyPage, isCaseInPathology]);
 
-  const effectiveType = item?.type || provisional?.type || stableType || null;
+  // ---------- type + labels ----------
+  const effectiveType = useMemo(() => {
+    if (isPresentationNamespace) return 'presentation';
+    return item?.type || provisional?.type || stableType || null;
+  }, [isPresentationNamespace, item?.type, provisional?.type, stableType]);
 
   const typeLabel = useMemo(() => {
     if (effectiveType === 'qa') return 'Q/R';
@@ -355,13 +449,100 @@ export default function CaseDetail() {
     return 'Présentation';
   }, [effectiveType]);
 
+  // ---------- content blocks ----------
   const qaList = Array.isArray(item?.qa_blocks) ? item.qa_blocks : [];
   const quizList = Array.isArray(item?.quiz_blocks) ? item.quiz_blocks : [];
-  const childList = Array.isArray(item?.child_cases) ? item.child_cases : [];
-  const isContainer = item?.kind === 'container' || childList.length > 0;
 
-  const typeKey = effectiveType;
-  const crumbTypeLabel = typeLabelFromKey(typeKey);
+  // Pathology: cas associés + anti-spoil
+  const relatedCases = useMemo(() => {
+    if (!isPathologyPage) return [];
+    return Array.isArray(item?.cases) ? item.cases : [];
+  }, [isPathologyPage, item?.cases]);
+
+  const [showSpoilers, setShowSpoilers] = useState(false);
+  useEffect(() => {
+    if (isPathologyPage) setShowSpoilers(false);
+  }, [pathologySlug, isPathologyPage]);
+
+  const visibleRelatedCases = useMemo(() => {
+    if (!isPathologyPage) return [];
+    const arr = Array.isArray(relatedCases) ? relatedCases : [];
+    const pres = arr.filter((c) => c?.type === 'presentation');
+    const others = arr.filter((c) => c?.type !== 'presentation');
+    const merged = showSpoilers ? [...pres, ...others] : pres;
+    merged.sort(compareBySlugNumberAsc);
+    return merged;
+  }, [isPathologyPage, relatedCases, showSpoilers]);
+
+  const spoilerCounts = useMemo(() => {
+    if (!isPathologyPage) return { pres: 0, other: 0 };
+    const arr = Array.isArray(relatedCases) ? relatedCases : [];
+    const pres = arr.filter((c) => c?.type === 'presentation').length;
+    const other = arr.filter((c) => c?.type !== 'presentation').length;
+    return { pres, other };
+  }, [isPathologyPage, relatedCases]);
+
+  // ---------- breadcrumb immediate ----------
+  const cdIndex = useMemo(() => safeGetSessionJson('cd-patho-index'), []);
+  const indexPatho = cdIndex?.pathoIndex || {};
+  const indexCase = cdIndex?.caseIndex || {};
+
+  const instantCurrentTitle = useMemo(() => {
+    if (isPathologyPage) {
+      if (navCrumb?.pathology?.title) return navCrumb.pathology.title;
+      if (indexPatho?.[pathologySlug]?.title) return indexPatho[pathologySlug].title;
+      if (item?.slug === pathologySlug && item?.title) return item.title;
+      if (provisional?.title) return provisional.title;
+      return pathologySlug || 'Pathologie';
+    }
+
+    if (isCaseInPathology) {
+      if (navCrumb?.case?.title) return navCrumb.case.title;
+      if (indexCase?.[caseSlug]?.title) return indexCase[caseSlug].title;
+    }
+
+    if (isPlainCase) {
+      if (navCrumb?.case?.title) return navCrumb.case.title;
+    }
+
+    if (item?.slug === caseSlug && item?.title) return item.title;
+    if (provisional?.title) return provisional.title;
+    return caseSlug || 'Cas clinique';
+  }, [
+    isPathologyPage,
+    isCaseInPathology,
+    isPlainCase,
+    navCrumb,
+    indexPatho,
+    indexCase,
+    pathologySlug,
+    caseSlug,
+    item?.slug,
+    item?.title,
+    provisional?.title,
+  ]);
+
+  const instantPathologyTitle = useMemo(() => {
+    if (!isPresentationNamespace) return null;
+
+    if (navCrumb?.pathology?.title) return navCrumb.pathology.title;
+    if (indexPatho?.[pathologySlug]?.title) return indexPatho[pathologySlug].title;
+
+    if (parentPathology?.slug === pathologySlug && parentPathology?.title) return parentPathology.title;
+    if (isPathologyPage && item?.slug === pathologySlug && item?.title) return item.title;
+
+    return pathologySlug || 'Pathologie';
+  }, [
+    isPresentationNamespace,
+    navCrumb,
+    indexPatho,
+    pathologySlug,
+    parentPathology?.slug,
+    parentPathology?.title,
+    isPathologyPage,
+    item?.slug,
+    item?.title,
+  ]);
 
   const breadcrumbItems = useMemo(() => {
     const base = [
@@ -369,24 +550,35 @@ export default function CaseDetail() {
       { label: 'Cas cliniques', to: '/cas-cliniques' },
     ];
 
-    if (crumbTypeLabel && typeKey) {
+    if (isPresentationNamespace) {
+      base.push({ label: 'Présentation', to: `/cas-cliniques?type=presentation&page=1` });
+
+      const pathoLabel = instantPathologyTitle || pathologySlug || 'Pathologie';
+      const pathoTo = pathologySlug ? `/cas-cliniques/presentation/${pathologySlug}` : null;
+
+      if (isPathologyPage) {
+        base.push({ label: pathoLabel, to: null });
+        return base;
+      }
+
+      base.push({ label: pathoLabel, to: pathoTo });
+      base.push({ label: instantCurrentTitle, to: null });
+      return base;
+    }
+
+    const crumbTypeLabel = typeLabelFromKey(effectiveType);
+    if (crumbTypeLabel && effectiveType) {
       base.push({
         label: crumbTypeLabel,
-        to: `/cas-cliniques?type=${encodeURIComponent(typeKey)}&page=1`,
+        to: `/cas-cliniques?type=${encodeURIComponent(effectiveType)}&page=1`,
       });
     }
 
-    if (item?.parent_case?.slug) {
-      base.push({
-        label: item.parent_case.title || item.parent_case.slug,
-        to: `/cas-cliniques/${item.parent_case.slug}`,
-      });
-    }
-
-    base.push({ label: item?.title || 'Cas clinique', to: null });
+    base.push({ label: instantCurrentTitle, to: null });
     return base;
-  }, [crumbTypeLabel, typeKey, item?.title, item?.parent_case?.slug, item?.parent_case?.title]);
+  }, [isPresentationNamespace, isPathologyPage, pathologySlug, effectiveType, instantPathologyTitle, instantCurrentTitle]);
 
+  // Lightbox
   const [lightbox, setLightbox] = useState(null);
   const contentRef = useRef(null);
 
@@ -398,7 +590,7 @@ export default function CaseDetail() {
       const t = e.target;
       if (!t || t.tagName !== 'IMG') return;
       if (t.dataset?.noLightbox === '1') return;
-      if (t.closest?.('.cd-child-card ui-card')) return;
+      if (t.closest?.('.cd-child-card')) return;
 
       e.preventDefault();
       setLightbox({ src: t.src, alt: t.alt || '' });
@@ -406,7 +598,7 @@ export default function CaseDetail() {
 
     el.addEventListener('click', onClick);
     return () => el.removeEventListener('click', onClick);
-  }, [item?.content, qaList?.length, quizList?.length, childList?.length]);
+  }, [item?.content, qaList?.length, quizList?.length, relatedCases?.length]);
 
   useEffect(() => {
     if (!lightbox) return;
@@ -421,10 +613,11 @@ export default function CaseDetail() {
 
   return (
     <div className={['cd-shell', collapsed ? 'is-collapsed' : '', drawerOpen ? 'is-drawer-open' : ''].join(' ')}>
-      <AsideSameType
-        currentSlug={slug}
-        currentType={effectiveType}
-        currentParentSlug={item?.parent_case?.slug || null}
+      <Aside
+        mode={isPresentationNamespace ? 'presentation' : 'cases'}
+        currentType={isPresentationNamespace ? null : effectiveType}
+        currentCaseSlug={isPresentationNamespace ? (isCaseInPathology ? caseSlug : null) : caseSlug}
+        currentPathologySlug={isPresentationNamespace ? pathologySlug : null}
         collapsed={collapsed}
         collapseDone={collapseDone}
         setCollapseDone={setCollapseDone}
@@ -469,22 +662,56 @@ export default function CaseDetail() {
         )}
 
         <article className="casedetail" ref={contentRef}>
-          {item?.content && (
-            <div className="cd-content">
-              <PageTitle description={item?.excerpt || ''}>{item?.title || 'Cas clinique'}</PageTitle>
-              <CaseMarkdown>{item.content}</CaseMarkdown>
-            </div>
-          )}
+          {/* ✅ titre toujours affiché même si content vide */}
+          <div className="cd-content">
+            <PageTitle description={item?.excerpt || ''}>{instantCurrentTitle}</PageTitle>
+            {item?.content ? <CaseMarkdown>{item.content}</CaseMarkdown> : null}
+          </div>
 
-          {isContainer && childList.length > 0 && (
+          {/* PATHOLOGY: cas associés */}
+          {isPathologyPage && visibleRelatedCases.length > 0 && (
             <section className="cd-children">
-              <h2 className="cd-children-title">Cas associés</h2>
+              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 }}>
+                <h2 className="cd-children-title">Cas associés</h2>
+
+                {spoilerCounts.other > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowSpoilers((v) => !v)}
+                    aria-pressed={showSpoilers ? 'true' : 'false'}
+                    title="Afficher les quiz/Q-R liés (peut spoiler)"
+                    style={{
+                      border: '1px solid rgba(255,255,255,0.12)',
+                      borderRadius: 10,
+                      padding: '8px 10px',
+                      background: 'transparent',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {showSpoilers ? 'Masquer les quiz' : 'Afficher les quiz'}
+                  </button>
+                )}
+              </div>
+
+              {!showSpoilers && spoilerCounts.other > 0 && (
+                <div className="cd-state" style={{ marginTop: 8 }}>
+                  {spoilerCounts.pres} présentation(s) visible(s). {spoilerCounts.other} quiz/Q-R masqué(s) (spoiler).
+                </div>
+              )}
 
               <div className="cd-children-grid">
-                {childList.map((c) => (
+                {visibleRelatedCases.map((c) => (
                   <Link
                     key={c.slug}
-                    to={`/cas-cliniques/${c.slug}`}
+                    to={`/cas-cliniques/presentation/${pathologySlug}/${c.slug}`}
+                    state={{
+                      breadcrumb: {
+                        mode: 'presentation',
+                        pathology: { slug: pathologySlug, title: instantPathologyTitle || pathologySlug },
+                        case: { slug: c.slug, title: c.title || c.slug },
+                      },
+                      prefetch: { slug: c.slug, title: c.title || c.slug, type: c.type || 'presentation' },
+                    }}
                     className="cd-child-card ui-card"
                     onMouseEnter={() => prefetchCase(c.slug, { publicationState: PUB_STATE }).catch(() => {})}
                     onFocus={() => prefetchCase(c.slug, { publicationState: PUB_STATE }).catch(() => {})}
@@ -506,18 +733,19 @@ export default function CaseDetail() {
             </section>
           )}
 
+          {/* QA */}
           {qaList.length > 0 && (
             <section className="qa-section">
-              <h2 className="qa-title">Questions</h2>
+              <h2 className="qa-title">{isPathologyPage ? 'Questions (pathologie)' : 'Questions'}</h2>
 
               {qaList.map((qa, i) => {
-                const q = qa?.question || `Question ${i + 1}`;
+                const qTxt = qa?.question || `Question ${i + 1}`;
                 const ans = qa?.answer || '';
                 return (
-                  <details key={qa?.id ?? `${slug}-qa-${i}`} className="qa-item">
+                  <details key={qa?.id ?? `${provisionalKeySlug ?? 'x'}-qa-${i}`} className="qa-item">
                     <summary className="qa-q">
                       <span className="qa-num">{i + 1}.</span>
-                      <span className="qa-text">{q}</span>
+                      <span className="qa-text">{qTxt}</span>
                     </summary>
 
                     <div className="qa-a">
@@ -529,17 +757,18 @@ export default function CaseDetail() {
             </section>
           )}
 
+          {/* QUIZ */}
           {quizList.length > 0 && (
             <section className="quiz-section">
-              <h2 className="quiz-title">Quiz</h2>
+              <h2 className="quiz-title">{isPathologyPage ? 'Quiz (pathologie)' : 'Quiz'}</h2>
 
               {quizList.map((qb, i) => (
                 <QuizBlock
-                  key={qb?.id ?? `${slug}-quiz-${i}`}
+                  key={qb?.id ?? `${provisionalKeySlug ?? 'x'}-quiz-${i}`}
                   block={qb}
                   index={i}
                   total={quizList.length}
-                  seedKey={`${slug}-${qb?.id ?? i}`}
+                  seedKey={`${provisionalKeySlug ?? 'x'}-${qb?.id ?? i}`}
                   Markdown={CaseMarkdown}
                 />
               ))}
@@ -585,13 +814,14 @@ export default function CaseDetail() {
 }
 
 /* =========================
-   Sidebar
+   Sidebar (Aside)
    ========================= */
 
-function AsideSameType({
-  currentSlug,
-  currentType,
-  currentParentSlug,
+function Aside({
+  mode, // 'cases' | 'presentation'
+  currentType, // cases only
+  currentCaseSlug,
+  currentPathologySlug,
   collapsed,
   collapseDone,
   setCollapseDone,
@@ -602,40 +832,65 @@ function AsideSameType({
   setDrawerView,
   closeMobile,
 }) {
-  const [related, setRelated] = useState([]);
   const [loadingList, setLoadingList] = useState(false);
   const [errList, setErrList] = useState('');
 
-  const expandedKey = `${LS_KEY_EXPANDED_PREFIX}${currentType || 'none'}`;
-  const [expandedSlug, setExpandedSlug] = useState(() => {
+  const [caseList, setCaseList] = useState([]);
+  const [pathoList, setPathoList] = useState([]);
+
+  // refs pour savoir si une liste existe déjà, sans dépendances qui rerunnent tout
+  const caseListRef = useRef([]);
+  const pathoListRef = useRef([]);
+  useEffect(() => {
+    caseListRef.current = caseList;
+  }, [caseList]);
+  useEffect(() => {
+    pathoListRef.current = pathoList;
+  }, [pathoList]);
+
+  const hasList = mode === 'cases'
+    ? (Array.isArray(caseList) && caseList.length > 0)
+    : (Array.isArray(pathoList) && pathoList.length > 0);
+
+  const [expandedPathoSlug, setExpandedPathoSlug] = useState(() => {
     try {
-      return localStorage.getItem(expandedKey) || '';
+      return localStorage.getItem(LS_KEY_EXPANDED_PATHOLOGY) || '';
     } catch {
       return '';
     }
   });
 
   useEffect(() => {
-    try {
-      setExpandedSlug(localStorage.getItem(expandedKey) || '');
-    } catch {
-      setExpandedSlug('');
-    }
-  }, [expandedKey]);
+    if (mode !== 'presentation') return;
+    if (!currentPathologySlug) return;
 
-  const saveExpanded = (slug) => {
+    setExpandedPathoSlug((prev) => {
+      if (prev === currentPathologySlug) return prev;
+      try {
+        localStorage.setItem(LS_KEY_EXPANDED_PATHOLOGY, currentPathologySlug);
+      } catch {}
+      return currentPathologySlug;
+    });
+  }, [mode, currentPathologySlug]);
+
+  const saveExpandedPatho = (slug) => {
     try {
-      localStorage.setItem(expandedKey, slug || '');
+      localStorage.setItem(LS_KEY_EXPANDED_PATHOLOGY, slug || '');
     } catch {}
   };
 
   const prefetchedRef = useRef(new Set());
-  const prefetchIntent = (slug) => {
+  const prefetchIntent = (kind, slug) => {
     if (!slug) return;
-    if (prefetchedRef.current.has(slug)) return;
-    prefetchedRef.current.add(slug);
+    const key = `${kind}:${slug}`;
+    if (prefetchedRef.current.has(key)) return;
+    prefetchedRef.current.add(key);
 
-    const run = () => prefetchCase(slug, { publicationState: PUB_STATE }).catch(() => {});
+    const run =
+      kind === 'pathology'
+        ? () => prefetchPathology(slug, { publicationState: PUB_STATE }).catch(() => {})
+        : () => prefetchCase(slug, { publicationState: PUB_STATE }).catch(() => {});
+
     if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
       window.requestIdleCallback(run, { timeout: 600 });
     } else {
@@ -643,18 +898,10 @@ function AsideSameType({
     }
   };
 
+  // boot cases list from prefetch/session (cases mode)
   useEffect(() => {
-    if (!currentParentSlug) return;
-    setExpandedSlug((prev) => {
-      if (prev === currentParentSlug) return prev;
-      saveExpanded(currentParentSlug);
-      return currentParentSlug;
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentParentSlug]);
+    if (mode !== 'cases') return;
 
-  // boot prefetch list
-  useEffect(() => {
     let booted = false;
 
     if (Array.isArray(prefetchRelated) && currentType) {
@@ -663,7 +910,7 @@ function AsideSameType({
         .sort(compareBySlugNumberAsc);
 
       if (list.length) {
-        setRelated(list);
+        setCaseList(list);
         booted = true;
       }
     }
@@ -675,23 +922,47 @@ function AsideSameType({
           const arr = JSON.parse(raw);
           if (Array.isArray(arr) && arr.length) {
             const list = arr.filter((it) => it?.slug).sort(compareBySlugNumberAsc);
-            setRelated(list);
+            setCaseList(list);
             booted = true;
           }
         }
       } catch {}
     }
 
-    setLoadingList(!booted);
-  }, [prefetchRelated, currentType]);
+    // ✅ important: si on a déjà une liste, on ne montre pas de "Chargement…"
+    if (!booted) setLoadingList(true);
+    else setLoadingList(false);
+    setErrList('');
+  }, [mode, prefetchRelated, currentType]);
 
-  // load list
+  // boot pathologies list from session (presentation mode)
+  useEffect(() => {
+    if (mode !== 'presentation') return;
+
+    let booted = false;
+    try {
+      const boot = sessionStorage.getItem('cd-prefetch-pathologies');
+      if (boot) {
+        const parsed = JSON.parse(boot);
+        if (Array.isArray(parsed) && parsed.length) {
+          setPathoList(parsed);
+          booted = true;
+        }
+      }
+    } catch {}
+
+    if (!booted) setLoadingList(true);
+    else setLoadingList(false);
+    setErrList('');
+  }, [mode]);
+
+  // load sidebar lists (refresh / fetch)
   useEffect(() => {
     let ignore = false;
 
-    async function load() {
+    async function loadCases() {
       if (!currentType) {
-        setRelated([]);
+        setCaseList([]);
         setLoadingList(false);
         setErrList('');
         return;
@@ -705,22 +976,89 @@ function AsideSameType({
             locale: 'all',
             publicationState: PUB_STATE,
             filters: { type: { $eq: currentType } },
-            fields: ['title', 'slug', 'type', 'kind', 'excerpt'],
-            populate: { parent_case: { fields: ['slug'] } },
-            sort: 'title:asc',
-            pagination: { page: 1, pageSize: 200 },
+            fields: ['title', 'slug', 'type', 'excerpt'],
+            sort: 'slug:asc',
+            pagination: { page: 1, pageSize: 500 },
           },
         });
 
         if (ignore) return;
 
-        const list = Array.isArray(res?.data) ? res.data : [];
-        const normalized = list.map(normalizeEntity).filter(Boolean).filter((it) => it.slug);
+        const rows = Array.isArray(res?.data) ? res.data : [];
+        const normalized = rows.map(normalizeEntity).filter(Boolean).filter((it) => it.slug);
 
-        setRelated(normalized);
+        normalized.sort(compareBySlugNumberAsc);
+        setCaseList(normalized);
 
         try {
           sessionStorage.setItem(`cd-prefetch-${currentType}`, JSON.stringify(normalized));
+        } catch {}
+      } catch (e) {
+        if (!ignore) setErrList(e?.message || 'Erreur de chargement');
+      } finally {
+        // ✅ on n’affiche "Chargement…" que si la liste est vide
+        if (!ignore) setLoadingList(false);
+      }
+    }
+
+    async function loadPathologies() {
+      setErrList('');
+
+      try {
+        const res = await strapiFetch(PATHO_ENDPOINT, {
+          params: {
+            locale: 'all',
+            publicationState: PUB_STATE,
+            fields: ['title', 'slug', 'excerpt'],
+            populate: {
+              cases: { fields: ['title', 'slug', 'type'], sort: ['slug:asc'] },
+            },
+            sort: 'title:asc',
+            pagination: { page: 1, pageSize: 400 },
+          },
+        });
+
+        if (ignore) return;
+
+        const rows = Array.isArray(res?.data) ? res.data : [];
+        const normalized = rows.map(normalizeEntity).filter(Boolean).filter((it) => it.slug);
+
+        const cooked = normalized.map((p) => {
+          const kids = normalizeRelationArray(p?.cases).filter((c) => c?.slug);
+          const presKids = kids.filter((c) => c?.type === 'presentation').sort(compareBySlugNumberAsc);
+          return { ...p, _children: presKids };
+        });
+
+        cooked.sort((a, b) => {
+          const ta = String(a?.title || a?.slug || '');
+          const tb = String(b?.title || b?.slug || '');
+          return ta.localeCompare(tb, 'fr', { sensitivity: 'base' });
+        });
+
+        setPathoList(cooked);
+
+        // index breadcrumb
+        try {
+          const pathoIndex = {};
+          const caseIndex = {};
+          for (const p of cooked) {
+            if (!p?.slug) continue;
+            pathoIndex[p.slug] = { title: p.title || p.slug };
+            const kids = Array.isArray(p._children) ? p._children : [];
+            for (const c of kids) {
+              if (!c?.slug) continue;
+              caseIndex[c.slug] = {
+                title: c.title || c.slug,
+                pathologySlug: p.slug,
+                pathologyTitle: p.title || p.slug,
+              };
+            }
+          }
+          sessionStorage.setItem('cd-patho-index', JSON.stringify({ pathoIndex, caseIndex }));
+        } catch {}
+
+        try {
+          sessionStorage.setItem('cd-prefetch-pathologies', JSON.stringify(cooked));
         } catch {}
       } catch (e) {
         if (!ignore) setErrList(e?.message || 'Erreur de chargement');
@@ -729,104 +1067,37 @@ function AsideSameType({
       }
     }
 
-    load();
+    // ✅ IMPORTANT: ne pas repasser en "Chargement…" si une liste existe déjà
+    const hasListNow =
+      mode === 'cases'
+        ? (Array.isArray(caseListRef.current) && caseListRef.current.length > 0)
+        : (Array.isArray(pathoListRef.current) && pathoListRef.current.length > 0);
+
+    if (!hasListNow) setLoadingList(true);
+
+    if (mode === 'presentation') loadPathologies();
+    else loadCases();
+
     return () => {
       ignore = true;
     };
-  }, [currentType]);
+  }, [mode, currentType]);
 
-  // compute structure
-  const { topLevel, childrenByParent, containerSlugSet } = useMemo(() => {
-    const byParent = new Map();
-    const containersBySlug = new Map();
-    const singles = [];
-
-    for (const it of related) {
-      if (!it?.slug) continue;
-
-      const parentSlug = it?.parent_case?.data?.attributes?.slug || it?.parent_case?.slug || null;
-
-      const isCont = it?.kind === 'container';
-      if (isCont) {
-        containersBySlug.set(it.slug, it);
-        continue;
-      }
-
-      if (parentSlug) {
-        if (!byParent.has(parentSlug)) byParent.set(parentSlug, []);
-        byParent.get(parentSlug).push(it);
-        continue;
-      }
-
-      singles.push(it);
-    }
-
-    for (const [, arr] of byParent.entries()) arr.sort(compareBySlugNumberAsc);
-    const top = [...containersBySlug.values(), ...singles].sort(compareBySlugNumberAsc);
-
-    return {
-      topLevel: top,
-      childrenByParent: byParent,
-      containerSlugSet: new Set(containersBySlug.keys()),
-    };
-  }, [related]);
-
-  // si item courant est un container avec kids : l’ouvrir
-  useEffect(() => {
-    if (!containerSlugSet.has(currentSlug)) return;
-    const kids = childrenByParent.get(currentSlug) || [];
-    if (!kids.length) return;
-
-    setExpandedSlug((prev) => {
-      if (prev === currentSlug) return prev;
-      saveExpanded(currentSlug);
-      return currentSlug;
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentSlug, containerSlugSet, childrenByParent]);
-
-  const labelType =
-    currentType === 'qa'
-      ? 'Cas Q/R'
-      : currentType === 'quiz'
-        ? 'Quiz'
-        : currentType === 'presentation'
-          ? 'Présentations'
+  const label =
+    mode === 'presentation'
+      ? 'Présentations'
+      : currentType === 'qa'
+        ? 'Cas Q/R'
+        : currentType === 'quiz'
+          ? 'Quiz'
           : 'Cas';
 
   const showNavInsteadOfCases = isNarrow && drawerView === 'nav';
 
-  const renderCurrentOrLink = (it, className, onClick) => {
-    const isCurrent = it.slug === currentSlug;
-
-    if (isCurrent) {
-      return (
-        <span className={`${className} active cd-is-current`} aria-current="page">
-          <span className="cd-side-link-text">{it.title || it.slug}</span>
-        </span>
-      );
-    }
-
-    return (
-      <Link
-        className={className}
-        to={`/cas-cliniques/${it.slug}`}
-        onClick={onClick}
-        onMouseEnter={() => prefetchIntent(it.slug)}
-        onFocus={() => prefetchIntent(it.slug)}
-      >
-        <span className="cd-side-link-text">{it.title || it.slug}</span>
-      </Link>
-    );
-  };
-
   const onAsideTransitionEnd = (e) => {
-    // on ne valide “done” que sur la transition de width du aside (desktop)
     if (isNarrow) return;
     if (e.target !== e.currentTarget) return;
     if (e.propertyName !== 'width') return;
-
-    // si on est bien dans l’état “collapsed”, alors c’est fini => hover/clic du bouton autorisés
     if (collapsed) setCollapseDone(true);
   };
 
@@ -847,7 +1118,7 @@ function AsideSameType({
             <ul className="cd-side-list">
               <li>
                 <button type="button" className="cd-side-back" onClick={() => setDrawerView('cases')}>
-                  ← Liste des cas
+                  ← Liste
                 </button>
               </li>
 
@@ -883,77 +1154,101 @@ function AsideSameType({
               </div>
             )}
 
-            <div className="cd-side-header">{labelType}</div>
+            <div className="cd-side-header">{label}</div>
 
-            {loadingList && <div className="cd-side-state">Chargement…</div>}
+            {/* ✅ FIX: ne pas afficher "Chargement…" si la liste est déjà là */}
+            {loadingList && !hasList && <div className="cd-side-state">Chargement…</div>}
             {errList && !loadingList && <div className="cd-side-state error">{errList}</div>}
 
-            {!errList && (
+            {!errList && mode === 'cases' && (
               <ul className="cd-side-list">
-                {topLevel.map((it) => {
-                  const isCont = it?.kind === 'container';
-                  if (!isCont) {
-                    return (
-                      <li key={it.slug}>
-                        {renderCurrentOrLink(it, 'cd-side-link', () => {
-                          if (isNarrow) closeMobile();
-                        })}
-                      </li>
-                    );
-                  }
+                {caseList.map((it) => {
+                  const isCurrent = it.slug === currentCaseSlug;
 
-                  const kids = childrenByParent.get(it.slug) || [];
+                  return (
+                    <li key={it.slug}>
+                      {isCurrent ? (
+                        <span className="cd-side-link active cd-is-current" aria-current="page">
+                          <span className="cd-side-link-text">{it.title || it.slug}</span>
+                        </span>
+                      ) : (
+                        <Link
+                          className="cd-side-link"
+                          to={`/cas-cliniques/${it.slug}`}
+                          onClick={() => {
+                            if (isNarrow) closeMobile();
+                          }}
+                          onMouseEnter={() => prefetchIntent('case', it.slug)}
+                          onFocus={() => prefetchIntent('case', it.slug)}
+                        >
+                          <span className="cd-side-link-text">{it.title || it.slug}</span>
+                        </Link>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+
+            {!errList && mode === 'presentation' && (
+              <ul className="cd-side-list">
+                {pathoList.map((p) => {
+                  const isCurrentPatho = p.slug === currentPathologySlug && !currentCaseSlug;
+
+                  const kids = Array.isArray(p._children) ? p._children : [];
                   const hasKids = kids.length > 0;
+                  const isOpen = hasKids && expandedPathoSlug === p.slug;
 
-                  const isOpen = hasKids && expandedSlug === it.slug;
-                  const isActiveRow = it.slug === currentSlug || it.slug === currentParentSlug;
-                  const isParentCurrent = it.slug === currentParentSlug;
-
-                  const isCurrentContainer = it.slug === currentSlug;
-
-                  const toggleThisContainer = () => {
+                  const toggle = () => {
                     if (!hasKids) return;
-                    setExpandedSlug((prev) => {
-                      const next = prev === it.slug ? '' : it.slug;
-                      saveExpanded(next);
+                    setExpandedPathoSlug((prev) => {
+                      const next = prev === p.slug ? '' : p.slug;
+                      saveExpandedPatho(next);
                       return next;
                     });
                   };
 
                   return (
-                    <li key={it.slug}>
+                    <li key={p.slug}>
                       <div
-                        className={[
-                          'cd-side-row',
-                          hasKids ? 'has-kids' : '',
-                          isActiveRow ? 'is-active' : '',
-                          isParentCurrent ? 'is-parent-current' : '',
-                        ].join(' ')}
+                        className={['cd-side-row', hasKids ? 'has-kids' : '', p.slug === currentPathologySlug ? 'is-active' : ''].join(' ')}
                         onClick={(e) => {
-                          // on toggle uniquement si on est DÉJÀ sur le container courant
-                          // et si le clic ne vient pas du chevron
                           if (!hasKids) return;
                           if (e.target?.closest?.('.cd-side-caret')) return;
-                          if (isCurrentContainer) toggleThisContainer();
+                          if (p.slug === currentPathologySlug) toggle();
                         }}
                       >
-                        {renderCurrentOrLink(it, 'cd-side-link', (e) => {
-                          // si ce n’est pas le container courant, on navigue normalement
-                          // + on ouvre ce container (et donc ferme les autres) si besoin
-                          if (!hasKids) {
-                            if (isNarrow) closeMobile();
-                            return;
-                          }
-
-                          if (!isCurrentContainer) {
-                            setExpandedSlug(() => {
-                              saveExpanded(it.slug);
-                              return it.slug;
-                            });
-                          }
-
-                          if (isNarrow) closeMobile();
-                        })}
+                        {isCurrentPatho ? (
+                          <span className="cd-side-link active cd-is-current" aria-current="page">
+                            <span className="cd-side-link-text">{p.title || p.slug}</span>
+                          </span>
+                        ) : (
+                          <Link
+                            className="cd-side-link"
+                            to={`/cas-cliniques/presentation/${p.slug}`}
+                            state={{
+                              breadcrumb: {
+                                mode: 'presentation',
+                                pathology: { slug: p.slug, title: p.title || p.slug },
+                                case: null,
+                              },
+                              prefetch: { slug: p.slug, title: p.title || p.slug, type: 'presentation' },
+                            }}
+                            onClick={() => {
+                              if (hasKids) {
+                                setExpandedPathoSlug(() => {
+                                  saveExpandedPatho(p.slug);
+                                  return p.slug;
+                                });
+                              }
+                              if (isNarrow) closeMobile();
+                            }}
+                            onMouseEnter={() => prefetchIntent('pathology', p.slug)}
+                            onFocus={() => prefetchIntent('pathology', p.slug)}
+                          >
+                            <span className="cd-side-link-text">{p.title || p.slug}</span>
+                          </Link>
+                        )}
 
                         <button
                           type="button"
@@ -964,7 +1259,7 @@ function AsideSameType({
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            toggleThisContainer();
+                            toggle();
                           }}
                         />
                       </div>
@@ -973,13 +1268,43 @@ function AsideSameType({
                         <div className={['cd-side-sublist', isOpen ? 'is-open' : ''].join(' ')}>
                           <div className="cd-side-sublist-inner">
                             <div className="cd-side-children">
-                              {kids.map((ch) => (
-                                <div key={ch.slug} className="cd-side-child">
-                                  {renderCurrentOrLink(ch, 'cd-side-link cd-side-child-link', () => {
-                                    if (isNarrow) closeMobile();
-                                  })}
-                                </div>
-                              ))}
+                              {kids.map((ch) => {
+                                const isCurrentChild = p.slug === currentPathologySlug && ch.slug === currentCaseSlug;
+
+                                return (
+                                  <div key={ch.slug} className="cd-side-child">
+                                    {isCurrentChild ? (
+                                      <span className="cd-side-link cd-side-child-link active cd-is-current" aria-current="page">
+                                        <span className="cd-side-link-text">{ch.title || ch.slug}</span>
+                                      </span>
+                                    ) : (
+                                      <Link
+                                        className="cd-side-link cd-side-child-link"
+                                        to={`/cas-cliniques/presentation/${p.slug}/${ch.slug}`}
+                                        state={{
+                                          breadcrumb: {
+                                            mode: 'presentation',
+                                            pathology: { slug: p.slug, title: p.title || p.slug },
+                                            case: { slug: ch.slug, title: ch.title || ch.slug },
+                                          },
+                                          prefetch: {
+                                            slug: ch.slug,
+                                            title: ch.title || ch.slug,
+                                            type: ch.type || 'presentation',
+                                          },
+                                        }}
+                                        onClick={() => {
+                                          if (isNarrow) closeMobile();
+                                        }}
+                                        onMouseEnter={() => prefetchIntent('case', ch.slug)}
+                                        onFocus={() => prefetchIntent('case', ch.slug)}
+                                      >
+                                        <span className="cd-side-link-text">{ch.title || ch.slug}</span>
+                                      </Link>
+                                    )}
+                                  </div>
+                                );
+                              })}
                             </div>
                           </div>
                         </div>
@@ -999,7 +1324,6 @@ function AsideSameType({
             aria-label={collapsed ? 'Développer la barre latérale' : 'Réduire la barre latérale'}
             className="cd-side-toggle"
             onClick={() => {
-              // si on est en train de fermer et pas encore done, on ignore (évite états bizarres)
               if (collapsed && !collapseDone) return;
               onToggle();
             }}

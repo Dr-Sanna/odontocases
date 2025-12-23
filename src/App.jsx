@@ -14,7 +14,7 @@ import { MobileDrawerProvider } from './ui/MobileDrawerContext';
 import { CaseDetailSidebarProvider } from './ui/CaseDetailSidebarContext';
 
 // maintenance en prod :✅ 0 = maintenance OFF, 1 = maintenance ON
-const MAINTENANCE_PROD = 1;
+const MAINTENANCE_PROD = 0;
 
 function MaintenancePage() {
   return (
@@ -33,7 +33,7 @@ function MaintenancePage() {
 
         <h1 style={{ margin: 0 }}>Maintenance en cours</h1>
         <p style={{ marginTop: 12 }}>
-          L’application est temporairement indisponible. Reviens un peu plus tard.
+          L’application est temporairement indisponible &#58;&#40;
         </p>
       </div>
     </div>
@@ -75,11 +75,15 @@ export default function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/cas-cliniques" element={<CasCliniques />} />
-          <Route path="/cas-cliniques/:slug" element={<CaseDetail />} />
+<Route path="/cas-cliniques/presentation/:pathologySlug" element={<CaseDetail />} />
+<Route path="/cas-cliniques/presentation/:pathologySlug/:caseSlug" element={<CaseDetail />} />
+<Route path="/cas-cliniques/:slug" element={<CaseDetail />} />
+
           <Route path="/randomisation" element={<Randomisation />} />
           <Route path="/documentation" element={<Documentation />} />
           <Route path="/liens-utiles" element={<LiensUtiles />} />
         </Routes>
+
       </CaseDetailSidebarProvider>
     </MobileDrawerProvider>
   );

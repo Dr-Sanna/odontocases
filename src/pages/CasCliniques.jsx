@@ -4,12 +4,22 @@
  * - Écran "TypePicker" quand type=all et pas de recherche (q vide)
  * - Liste Strapi paginée
  * - Tri par numéro dans le slug (ex: qa-01, qa-12, quiz-03…)
- * - Cartes compactes (cover + titre + chip), pas d’excerpt affiché
+ * - Cartes compactes (cover + titre + chip)
  *
- * + 2 niveaux:
- * - quand q est vide: on demande à Strapi uniquement les cas racine (parent_case null)
- *   => pagination cohérente (les enfants ne comptent plus)
- * - quand q est renseigné: on laisse Strapi renvoyer aussi les enfants (recherche)
+ * Comportement :
+ * - onglets "Q/R" et "Quiz" (et "Tous") => charge /cases
+ * - onglet "Présentation" => charge /pathologies (cartes pathologies)
+ *   et link vers /cas-cliniques/presentation/:slug
+ * - recherche avec type=all&q=... => charge /cases + /pathologies (mix)
+ *   + corrige l’URL des cases "presentation-xx" vers /cas-cliniques/presentation/:pathologySlug/:caseSlug
+ *
+ * Recherche "plus permissive" sans devenir aberrante :
+ * - variantes: original / sans accents / “singulier” simple + slug
+ * - + fallback côté React (accent-insensitive) SEULEMENT si Strapi ne renvoie rien
+ *
+ * Perf :
+ * - le fallback ne se déclenche que si list.length===0 et q non vide
+ * - il fetch max 300 items (ajuste si besoin)
  */
 
 import { useEffect, useMemo, useState } from 'react';
@@ -26,10 +36,22 @@ const TYPE_TABS = [
 ];
 
 const PAGE_SIZE = 12;
+const MIXED_PAGE_SIZE = 80;
+const FALLBACK_PAGE_SIZE = 300;
+
 const CASES_ENDPOINT = import.meta.env.VITE_CASES_ENDPOINT || '/cases';
+const PATHO_ENDPOINT = import.meta.env.VITE_PATHO_ENDPOINT || '/pathologies';
 
 function normalizeNode(node) {
   return node?.attributes ? node.attributes : node;
+}
+
+function normalizeRelationArray(rel) {
+  if (!rel) return [];
+  if (Array.isArray(rel)) return rel.map(normalizeNode).filter(Boolean);
+  if (Array.isArray(rel.data)) return rel.data.map(normalizeNode).filter(Boolean);
+  if (Array.isArray(rel?.results)) return rel.results.map(normalizeNode).filter(Boolean);
+  return [];
 }
 
 /** Tri par numéro trouvé dans le slug (asc). Ex: qa-01, qa-12, quiz-03. */
@@ -60,6 +82,58 @@ function typeLabel(type) {
   return 'Présentation';
 }
 
+// -------- Recherche permissive (simple, non “aberrante”) --------
+
+function normalizeSearch(s) {
+  const base = String(s || '').trim().toLowerCase();
+  const noAccents = base.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  return { base, noAccents };
+}
+
+function singularizeFr(word) {
+  let w = String(word || '');
+  if (w.length <= 3) return w;
+  if (w.endsWith('es') && w.length > 4) return w.slice(0, -2);
+  if (w.endsWith('s') && w.length > 3) return w.slice(0, -1);
+  if (w.endsWith('x') && w.length > 3) return w.slice(0, -1);
+  return w;
+}
+
+function buildVariants(q) {
+  const { base, noAccents } = normalizeSearch(q);
+  const baseSing = singularizeFr(base);
+  const noAccSing = singularizeFr(noAccents);
+  return Array.from(new Set([base, noAccents, baseSing, noAccSing].filter(Boolean)));
+}
+
+function buildOrFilterFromVariants(variants) {
+  return variants.flatMap((v) => [
+    { title: { $containsi: v } },
+    { excerpt: { $containsi: v } },
+    { slug: { $containsi: v } },
+  ]);
+}
+
+// fallback front (accent-insensitive) uniquement si Strapi n’a rien renvoyé
+function normForSearch(s) {
+  return String(s || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+function itemMatchesQuery(item, q) {
+  const nq = normForSearch(q);
+  if (!nq) return true;
+
+  const title = normForSearch(item?.title);
+  const excerpt = normForSearch(item?.excerpt);
+  const slug = normForSearch(item?.slug);
+
+  return title.includes(nq) || excerpt.includes(nq) || slug.includes(nq);
+}
+
 export default function CasCliniques() {
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -69,12 +143,19 @@ export default function CasCliniques() {
   const [items, setItems] = useState([]);
   const [total, setTotal] = useState(0);
 
+  // mapping: caseSlug -> { slug: pathologySlug, title: pathologyTitle }
+  const [caseToPatho, setCaseToPatho] = useState({});
+
   // URL params
   const q = searchParams.get('q') || '';
   const tab = searchParams.get('type') || 'all';
   const page = Number(searchParams.get('page') || 1);
 
   const showTypePicker = tab === 'all' && !q;
+  const isPresentationTab = tab === 'presentation';
+  const isMixedSearch = tab === 'all' && !!q;
+
+  const variants = useMemo(() => (q ? buildVariants(q) : []), [q]);
 
   const onTab = (key) => {
     const next = new URLSearchParams(searchParams);
@@ -89,25 +170,27 @@ export default function CasCliniques() {
     setSearchParams(next);
   };
 
-  // ✅ filtres Strapi (IMPORTANT : filtre racine côté API quand q est vide)
-  const filters = useMemo(() => {
+  const caseTypeFilterOnly = useMemo(() => {
     const f = {};
-
-    if (tab !== 'all') f.type = { $eq: tab };
-
-    if (q) {
-      f.$or = [{ title: { $containsi: q } }, { excerpt: { $containsi: q } }];
-    } else {
-      // ✅ on ne veut que les cas racine (les enfants ont parent_case != null)
-      // Variante robuste:
-      f.parent_case = { id: { $null: true } };
-
-      // Si jamais Strapi n'aime pas id.$null, essaie plutôt:
-      // f.parent_case = { $null: true };
+    if (tab !== 'all' && tab !== 'presentation') {
+      f.type = { $eq: tab };
     }
-
     return f;
-  }, [tab, q]);
+  }, [tab]);
+
+  // Filtres CASES (qa/quiz/all)
+  const caseFilters = useMemo(() => {
+    const f = { ...caseTypeFilterOnly };
+    if (q) f.$or = buildOrFilterFromVariants(variants);
+    return f;
+  }, [caseTypeFilterOnly, q, variants]);
+
+  // Filtres PATHOLOGIES (presentation)
+  const pathoFilters = useMemo(() => {
+    const f = {};
+    if (q) f.$or = buildOrFilterFromVariants(variants);
+    return f;
+  }, [q, variants]);
 
   useEffect(() => {
     let ignore = false;
@@ -125,26 +208,160 @@ export default function CasCliniques() {
       setError('');
 
       try {
-        const data = await strapiFetch(CASES_ENDPOINT, {
-          params: {
-            populate: {
-              cover: { fields: ['url', 'formats'] },
-              parent_case: { fields: ['slug'] }, // utile pour debug + cohérence
-            },
-            locale: 'all',
-            filters,
-            sort: 'slug:asc',
-            pagination: { page, pageSize: PAGE_SIZE },
-            fields: ['title', 'slug', 'type', 'kind', 'excerpt', 'updatedAt'],
-            publicationState: 'live',
-          },
-        });
+        // MIXED: all + q => on charge pathologies + cases
+        if (isMixedSearch) {
+          const [pathoData, caseData] = await Promise.all([
+            strapiFetch(PATHO_ENDPOINT, {
+              params: {
+                populate: {
+                  cover: { fields: ['url', 'formats'] },
+                  cases: { fields: ['title', 'slug', 'type', 'excerpt'] },
+                },
+                locale: 'all',
+                filters: {
+                  $or: [
+                    ...buildOrFilterFromVariants(variants),
+                    ...variants.flatMap((v) => [
+                      { cases: { title: { $containsi: v } } },
+                      { cases: { excerpt: { $containsi: v } } },
+                      { cases: { slug: { $containsi: v } } },
+                    ]),
+                  ],
+                },
+                sort: 'slug:asc',
+                pagination: { page: 1, pageSize: MIXED_PAGE_SIZE },
+                fields: ['title', 'slug', 'excerpt', 'updatedAt'],
+                publicationState: 'live',
+              },
+            }),
+            strapiFetch(CASES_ENDPOINT, {
+              params: {
+                populate: { cover: { fields: ['url', 'formats'] } },
+                locale: 'all',
+                filters: caseFilters,
+                sort: 'slug:asc',
+                pagination: { page: 1, pageSize: MIXED_PAGE_SIZE },
+                fields: ['title', 'slug', 'type', 'excerpt', 'updatedAt'],
+                publicationState: 'live',
+              },
+            }),
+          ]);
 
+          if (ignore) return;
+
+          const pathoListRaw = Array.isArray(pathoData?.data) ? pathoData.data : [];
+          const map = {};
+
+          for (const pNode of pathoListRaw) {
+            const p = normalizeNode(pNode);
+            if (!p?.slug) continue;
+
+            const kids = normalizeRelationArray(p?.cases);
+            for (const c of kids) {
+              const cc = normalizeNode(c);
+              if (!cc?.slug) continue;
+              if (!map[cc.slug]) map[cc.slug] = { slug: p.slug, title: p.title || p.slug };
+            }
+          }
+
+          setCaseToPatho(map);
+
+          const pathoList = pathoListRaw
+            .map((n) => ({ ...normalizeNode(n), __entity: 'pathology' }))
+            .filter((it) => it?.slug);
+
+          const caseListRaw = Array.isArray(caseData?.data) ? caseData.data : [];
+          const caseList = caseListRaw
+            .map((n) => ({ ...normalizeNode(n), __entity: 'case' }))
+            .filter((it) => it?.slug);
+
+          // fallback cases ONLY si rien trouvé côté Strapi
+          let finalCaseList = caseList;
+          if (q && finalCaseList.length === 0) {
+            const fallback = await strapiFetch(CASES_ENDPOINT, {
+              params: {
+                populate: { cover: { fields: ['url', 'formats'] } },
+                locale: 'all',
+                filters: caseTypeFilterOnly,
+                sort: 'slug:asc',
+                pagination: { page: 1, pageSize: FALLBACK_PAGE_SIZE },
+                fields: ['title', 'slug', 'type', 'excerpt', 'updatedAt'],
+                publicationState: 'live',
+              },
+            });
+
+            const all = Array.isArray(fallback?.data) ? fallback.data : [];
+            finalCaseList = all
+              .map((n) => ({ ...normalizeNode(n), __entity: 'case' }))
+              .filter((it) => it?.slug)
+              .filter((it) => itemMatchesQuery(it, q));
+          }
+
+          const seen = new Set();
+          const merged = [];
+          for (const it of [...pathoList, ...finalCaseList]) {
+            const key = `${it.__entity}:${it.slug}`;
+            if (seen.has(key)) continue;
+            seen.add(key);
+            merged.push(it);
+          }
+
+          setItems(merged);
+          setTotal(merged.length);
+          return;
+        }
+
+        // MODE NORMAL
+        const endpoint = isPresentationTab ? PATHO_ENDPOINT : CASES_ENDPOINT;
+
+        const baseParams = isPresentationTab
+          ? {
+              populate: { cover: { fields: ['url', 'formats'] } },
+              locale: 'all',
+              filters: pathoFilters,
+              sort: 'slug:asc',
+              pagination: { page, pageSize: PAGE_SIZE },
+              fields: ['title', 'slug', 'excerpt', 'updatedAt'],
+              publicationState: 'live',
+            }
+          : {
+              populate: { cover: { fields: ['url', 'formats'] } },
+              locale: 'all',
+              filters: caseFilters,
+              sort: 'slug:asc',
+              pagination: { page, pageSize: PAGE_SIZE },
+              fields: ['title', 'slug', 'type', 'excerpt', 'updatedAt'],
+              publicationState: 'live',
+            };
+
+        const data = await strapiFetch(endpoint, { params: baseParams });
         if (ignore) return;
 
-        const list = Array.isArray(data?.data) ? data.data : [];
-        setItems(list);
-        setTotal(data?.meta?.pagination?.total ?? list.length ?? 0);
+        let list = Array.isArray(data?.data) ? data.data : [];
+        let normalized = list.map(normalizeNode).filter((it) => it?.slug);
+
+        // fallback : seulement si Strapi n’a rien trouvé
+        if (q && normalized.length === 0) {
+          const fallback = await strapiFetch(endpoint, {
+            params: {
+              ...baseParams,
+              filters: isPresentationTab ? {} : caseTypeFilterOnly,
+              pagination: { page: 1, pageSize: FALLBACK_PAGE_SIZE },
+            },
+          });
+
+          const all = Array.isArray(fallback?.data) ? fallback.data : [];
+          normalized = all
+            .map(normalizeNode)
+            .filter((it) => it?.slug)
+            .filter((it) => itemMatchesQuery(it, q));
+        }
+
+        // on garde le format "node" pour le rendu (mais on a déjà normalisé)
+        // => on stocke des objets normalisés
+        setItems(normalized);
+        setTotal(data?.meta?.pagination?.total ?? normalized.length ?? 0);
+        setCaseToPatho({});
       } catch (e) {
         if (!ignore) setError(e?.message || 'Erreur de chargement');
       } finally {
@@ -156,7 +373,17 @@ export default function CasCliniques() {
     return () => {
       ignore = true;
     };
-  }, [filters, page, showTypePicker]);
+  }, [
+    showTypePicker,
+    page,
+    isPresentationTab,
+    isMixedSearch,
+    q,
+    variants,
+    caseFilters,
+    pathoFilters,
+    caseTypeFilterOnly,
+  ]);
 
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
@@ -166,22 +393,18 @@ export default function CasCliniques() {
     return arr;
   }, [items]);
 
-  // relatedPrefetch (basé sur ce que la page courante contient)
+  // relatedPrefetch seulement pour les cases, hors presentation & mixed
   const prefetchByType = useMemo(() => {
+    if (isPresentationTab || isMixedSearch) return {};
     const map = {};
-    const attrsList = sortedItems.map(normalizeNode).filter(Boolean);
-
-    for (const it of attrsList) {
+    for (const it of sortedItems) {
       if (!it?.slug || !it?.type) continue;
       if (!map[it.type]) map[it.type] = [];
       map[it.type].push({ slug: it.slug, title: it.title, type: it.type });
     }
-
-    for (const t of Object.keys(map)) {
-      map[t].sort(compareBySlugNumberAsc);
-    }
+    for (const t of Object.keys(map)) map[t].sort(compareBySlugNumberAsc);
     return map;
-  }, [sortedItems]);
+  }, [sortedItems, isPresentationTab, isMixedSearch]);
 
   useEffect(() => {
     try {
@@ -236,23 +459,49 @@ export default function CasCliniques() {
               {!loading &&
                 !error &&
                 sortedItems.length > 0 &&
-                sortedItems.map((node, idx) => {
-                  const attrs = normalizeNode(node);
+                sortedItems.map((attrs, idx) => {
                   if (!attrs) return null;
 
-                  const { title = 'Sans titre', slug = '', type = 'qa', excerpt = '' } = attrs;
+                  const entity = attrs.__entity || (isPresentationTab ? 'pathology' : 'case');
+                  const { title = 'Sans titre', slug = '', excerpt = '' } = attrs;
 
-                  const relatedPrefetch = prefetchByType[type] || [];
+                  const type = entity === 'pathology' ? 'presentation' : (attrs.type || 'qa');
+
+                  const relatedPrefetch =
+                    entity === 'case' && !isPresentationTab && !isMixedSearch ? prefetchByType[type] || [] : [];
 
                   const coverAttr = attrs?.cover?.data?.attributes || attrs?.cover || null;
                   const coverUrl = imgUrl(coverAttr, 'medium') || imgUrl(coverAttr) || '';
 
-                  const toHref = slug ? `/cas-cliniques/${slug}` : null;
+                  let toHref = null;
+                  if (slug) {
+                    if (entity === 'pathology') {
+                      toHref = `/cas-cliniques/presentation/${slug}`;
+                    } else {
+                      if (type === 'presentation' && caseToPatho[slug]?.slug) {
+                        toHref = `/cas-cliniques/presentation/${caseToPatho[slug].slug}/${slug}`;
+                      } else {
+                        toHref = `/cas-cliniques/${slug}`;
+                      }
+                    }
+                  }
 
-                  const linkState = {
-                    prefetch: { slug, title, type, coverUrl, excerpt },
-                    relatedPrefetch,
-                  };
+                  const linkState =
+                    entity === 'pathology'
+                      ? {
+                          prefetch: { slug, title, coverUrl, excerpt, entity: 'pathology' },
+                          breadcrumb: { mode: 'presentation', pathology: { slug, title }, case: null },
+                        }
+                      : type === 'presentation' && caseToPatho[slug]?.slug
+                        ? {
+                            prefetch: { slug, title, type, coverUrl, excerpt, entity: 'case' },
+                            breadcrumb: {
+                              mode: 'presentation',
+                              pathology: caseToPatho[slug],
+                              case: { slug, title },
+                            },
+                          }
+                        : { prefetch: { slug, title, type, coverUrl, excerpt, entity: 'case' }, relatedPrefetch };
 
                   const Inner = (
                     <>
@@ -269,7 +518,7 @@ export default function CasCliniques() {
                     </>
                   );
 
-                  const key = slug || `case-${idx}`;
+                  const key = `${entity}:${slug || idx}`;
 
                   return toHref ? (
                     <Link key={key} to={toHref} state={linkState} className="cc-card ui-card">
@@ -283,7 +532,7 @@ export default function CasCliniques() {
                 })}
             </section>
 
-            {pages > 1 && (
+            {!isMixedSearch && pages > 1 && (
               <nav className="cc-pagination">
                 <button disabled={page <= 1} onClick={() => onPage(page - 1)} type="button">
                   Précédent
@@ -318,7 +567,7 @@ function TypePicker({ onPick }) {
         </button>
         <button className="cc-typecard ui-card" onClick={() => onPick('presentation')} type="button">
           <span className="cc-type">Présentation</span>
-          <span className="cc-typedesc">Case Reports issus de la littérature</span>
+          <span className="cc-typedesc">Atlas de pathologies + cas issus de la littérature</span>
         </button>
       </div>
     </section>
