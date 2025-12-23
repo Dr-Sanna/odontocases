@@ -13,6 +13,22 @@ import CaseDetail from './pages/CaseDetail';
 import { MobileDrawerProvider } from './ui/MobileDrawerContext';
 import { CaseDetailSidebarProvider } from './ui/CaseDetailSidebarContext';
 
+// ✅ 0 = OFF, 1 = ON (prod uniquement)
+const MAINTENANCE_PROD = 1;
+
+function MaintenancePage() {
+  return (
+    <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', padding: 24 }}>
+      <div style={{ maxWidth: 720 }}>
+        <h1 style={{ margin: 0 }}>Maintenance en cours</h1>
+        <p style={{ marginTop: 12 }}>
+          L’application est temporairement indisponible. Reviens un peu plus tard.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function BackgroundRouteSync() {
   const { pathname } = useLocation();
 
@@ -31,6 +47,11 @@ function BackgroundRouteSync() {
 }
 
 export default function App() {
+  // ✅ bloque tout en prod si MAINTENANCE_PROD=1
+  if (import.meta.env.PROD && MAINTENANCE_PROD === 1) {
+    return <MaintenancePage />;
+  }
+
   return (
     <MobileDrawerProvider>
       <CaseDetailSidebarProvider>
