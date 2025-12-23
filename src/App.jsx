@@ -13,13 +13,24 @@ import CaseDetail from './pages/CaseDetail';
 import { MobileDrawerProvider } from './ui/MobileDrawerContext';
 import { CaseDetailSidebarProvider } from './ui/CaseDetailSidebarContext';
 
-// ✅ 0 = OFF, 1 = ON (prod uniquement)
+// maintenance en prod :✅ 0 = maintenance OFF, 1 = maintenance ON
 const MAINTENANCE_PROD = 1;
 
 function MaintenancePage() {
   return (
     <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', padding: 24 }}>
-      <div style={{ maxWidth: 720 }}>
+      <div style={{ maxWidth: 720, textAlign: 'center' }}>
+        <img
+          src="/logo.svg"
+          alt="Logo"
+          style={{
+            width: 260,
+            maxWidth: '70vw',
+            height: 'auto',
+            marginBottom: 18,
+          }}
+        />
+
         <h1 style={{ margin: 0 }}>Maintenance en cours</h1>
         <p style={{ marginTop: 12 }}>
           L’application est temporairement indisponible. Reviens un peu plus tard.
@@ -28,6 +39,7 @@ function MaintenancePage() {
     </div>
   );
 }
+
 
 function BackgroundRouteSync() {
   const { pathname } = useLocation();
