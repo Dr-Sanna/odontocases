@@ -14,6 +14,7 @@ import { getPathologyFromCache, setPathologyToCache, prefetchPathology } from '.
 import { BottomExpandIcon, BottomCollapseIcon } from '../components/Icons';
 import { useCaseDetailSidebar } from '../ui/CaseDetailSidebarContext';
 
+
 import './CaseDetail.css';
 
 const CASES_ENDPOINT = import.meta.env.VITE_CASES_ENDPOINT || '/cases';

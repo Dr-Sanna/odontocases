@@ -1,0 +1,172 @@
+/* src/components/ClassificationDiagram.css */
+
+/* police Docusaurus, même si injecté dans du markdown */
+.cdg,
+.cdg * {
+  font-family: var(--ifm-font-family-base);
+  letter-spacing: normal;
+}
+button.cdg-chip {
+  font-family: var(--ifm-font-family-base);
+}
+
+/* conteneur sobre */
+.cdg {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--ifm-background-surface-color);
+  border: 1px solid rgba(2, 6, 23, 0.08);
+}
+
+/* offset navbar fixe (Docusaurus) */
+.cd-content h1,
+.cd-content h2,
+.cd-content h3,
+.cd-content h4,
+.cd-content h5,
+.cd-content h6 {
+  scroll-margin-top: calc(var(--ifm-navbar-height, 0px) + 14px);
+}
+
+/* layout colonnes */
+.cdg-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.cdg-col {
+  min-width: 0;
+}
+@media (max-width: 980px) {
+  .cdg-cols {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* centre H1/H2/H3 */
+.cdg-root,
+.cdg-h2,
+.cdg-h3 {
+  display: flex;
+  justify-content: center;
+}
+.cdg-root {
+  margin: 2px 0 10px 0;
+}
+.cdg-h2 {
+  margin-bottom: 10px;
+}
+.cdg-h3 {
+  margin-bottom: 8px;
+}
+
+/* spacing groupe */
+.cdg-group {
+  margin-bottom: 12px;
+}
+
+/* ===== CHIP (même logique que .cd-chip) ===== */
+.cdg-chip {
+  font-size: 0.85rem;
+  line-height: 1.2;
+  padding: 0.25rem 0.6rem;
+  border-radius: 8px;
+
+  color: var(--ifm-alert-foreground-color);
+  background: var(--ifm-alert-background-color);
+
+  border: 1px solid rgba(2, 6, 23, 0.08);
+  text-decoration: none;
+
+  cursor: pointer;
+  appearance: none;
+  outline: none;
+
+  /* wrap sans hyphen */
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: anywhere;
+  hyphens: none;
+
+  transition: filter 120ms ease, border-color 120ms ease;
+}
+
+.cdg-chip:hover {
+  filter: brightness(0.985);
+  border-color: rgba(2, 6, 23, 0.14);
+}
+
+.cdg-chip:focus-visible {
+  outline: 2px solid rgba(59, 130, 246, 0.28);
+  outline-offset: 2px;
+}
+
+.cdg-chip-disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+/* ===== Tons (via variables Docusaurus) ===== */
+.cdg-chip-h1 {
+  --ifm-alert-foreground-color: var(--ifm-color-success-contrast-foreground);
+  --ifm-alert-background-color: var(--ifm-color-success-contrast-background);
+  font-weight: 700;
+}
+
+.cdg-chip-h2 {
+  --ifm-alert-foreground-color: var(--ifm-color-danger-contrast-foreground);
+  --ifm-alert-background-color: var(--ifm-color-danger-contrast-background);
+  font-weight: 700;
+}
+
+.cdg-chip-h3 {
+  --ifm-alert-foreground-color: var(--ifm-color-warning-contrast-foreground);
+  --ifm-alert-background-color: var(--ifm-color-warning-contrast-background);
+  font-weight: 600;
+}
+
+.cdg-chip-h4 {
+  --ifm-alert-foreground-color: var(--ifm-color-note-contrast-foreground);
+  --ifm-alert-background-color: var(--ifm-color-note-contrast-background);
+  font-weight: 400;
+  text-align: left;
+}
+
+/* liste H4 + spine discrète */
+.cdg-list {
+  margin-top: 6px;
+  padding-left: 16px;
+  position: relative;
+
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cdg-list::before {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 2px;
+  bottom: 2px;
+  width: 2px;
+  background: rgba(2, 6, 23, 0.10);
+  border-radius: 2px;
+}
+
+/* branche horizontale + alignement à gauche */
+.cdg-list > .cdg-chip-h4 {
+  position: relative;
+  justify-content: flex-start;
+}
+.cdg-list > .cdg-chip-h4::before {
+  content: "";
+  position: absolute;
+  left: -10px;
+  top: 50%;
+  width: 10px;
+  height: 2px;
+  background: rgba(2, 6, 23, 0.10);
+  transform: translateY(-50%);
+  border-radius: 2px;
+}

@@ -5,10 +5,13 @@ import remarkGfm from 'remark-gfm';
 
 import rehypeRaw from 'rehype-raw';
 import rehypeSanitize from 'rehype-sanitize';
+import rehypeSlug from 'rehype-slug';
 
 import { ckeditorSchema } from '../lib/markdown/ckeditorSchema';
 import { remarkObsidianCallouts } from '../lib/markdown/remarkObsidianCallouts';
 import { remarkFigureCaptions } from '../lib/markdown/remarkFigureCaptions';
+
+import ClassificationDiagram from './ClassificationDiagram';
 
 function normalizeEscapedBlockquotes(src) {
   if (typeof src !== 'string') return src;
@@ -91,7 +94,6 @@ function resetTableSizing(rootEl) {
     cap.style.removeProperty('overflow-wrap');
   });
 
-  // optionnel: retirer data-cd-cols si tu veux
   const rows = rootEl.querySelectorAll('table tr[data-cd-cols]');
   rows.forEach((r) => r.removeAttribute('data-cd-cols'));
 }
@@ -244,7 +246,6 @@ function layoutRow(row, rootEl) {
 
   const cols = items.length;
 
-  // utile pour ton CSS (tr[data-cd-cols])
   row.setAttribute('data-cd-cols', String(cols));
 
   const targetW = computeTargetW(cols, rootEl) - SAFETY_PX;
@@ -289,7 +290,6 @@ function layoutAllTables(rootEl) {
 
 /* =========================
    Marquage des tables qui contiennent des images
-   (pour ton CSS mobile en grid max 2 colonnes)
    ========================= */
 function markImageTables(rootEl) {
   const tables = rootEl.querySelectorAll('.cd-content table, table');
@@ -350,6 +350,21 @@ function runRelayoutLoop(relayoutFn, durationMs = 420) {
   return () => cancelAnimationFrame(rafId);
 }
 
+/* =========================
+   Diagram injection helper
+   ========================= */
+function parseClassificationDiagramBlock(rawText) {
+  const raw = String(rawText ?? '').trim();
+  if (!raw.startsWith('@classificationDiagram')) return null;
+
+  const jsonText = raw.replace(/^@classificationDiagram\s*/m, '').trim();
+  if (!jsonText) return null;
+
+  const spec = JSON.parse(jsonText);
+  if (!spec || typeof spec !== 'object') return null;
+  return spec;
+}
+
 export default function CaseMarkdown({ children }) {
   const containerRef = useRef(null);
   const source = useMemo(() => normalizeEscapedBlockquotes(String(children ?? '')), [children]);
@@ -362,16 +377,13 @@ export default function CaseMarkdown({ children }) {
     const relayout = () => {
       if (cancelled) return;
 
-      // tag tables pour CSS mobile
       markImageTables(rootEl);
 
-      // ✅ mobile: on annule le sizing JS (vw/vh) et on laisse le CSS faire (100% + grid)
       if (isMobileNow()) {
         resetTableSizing(rootEl);
         return;
       }
 
-      // ✅ desktop: sizing proportionnel
       layoutAllTables(rootEl);
       layoutAllTables(rootEl);
     };
@@ -390,7 +402,6 @@ export default function CaseMarkdown({ children }) {
 
     run();
 
-    // ResizeObserver sur éléments structurants + transitions
     const ro = new ResizeObserver(() => relayout());
     ro.observe(rootEl);
 
@@ -467,7 +478,48 @@ export default function CaseMarkdown({ children }) {
     <div ref={containerRef}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkFigureCaptions, remarkObsidianCallouts]}
-        rehypePlugins={[rehypeRaw, [rehypeSanitize, ckeditorSchema]]}
+        rehypePlugins={[
+          rehypeRaw,
+          [rehypeSanitize, ckeditorSchema],
+          rehypeSlug, // ids automatiques sur titres
+        ]}
+        components={{
+          code({ inline, className, children: codeChildren, ...props }) {
+            const lang = String(className || '').replace('language-', '').trim();
+            const raw = String(codeChildren ?? '').replace(/\n$/, '');
+
+            // injection via bloc plaintext + @classificationDiagram + JSON
+            if (!inline && lang === 'plaintext') {
+              try {
+                const spec = parseClassificationDiagramBlock(raw);
+                if (spec) return <ClassificationDiagram {...spec} />;
+              } catch (e) {
+                return (
+                  <pre style={{ whiteSpace: 'pre-wrap', opacity: 0.9 }}>
+                    Erreur diagramme JSON: {String(e?.message || e)}
+                  </pre>
+                );
+              }
+            }
+
+            // rendu normal
+            if (inline) {
+              return (
+                <code className={className} {...props}>
+                  {codeChildren}
+                </code>
+              );
+            }
+
+            return (
+              <pre>
+                <code className={className} {...props}>
+                  {codeChildren}
+                </code>
+              </pre>
+            );
+          },
+        }}
       >
         {source}
       </ReactMarkdown>
