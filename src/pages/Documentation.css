@@ -1,0 +1,225 @@
+/* src/pages/Documentation.css */
+
+/* Wrapper pour permettre un loader en overlay sans démonter la grille */
+.doc-gridwrap {
+  position: relative;
+}
+
+/* Loader overlay (ne casse pas le layout, évite le “clignotement”) */
+.doc-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 0.75rem;
+  pointer-events: none;
+  opacity: 0.9;
+  z-index: 2;
+}
+
+/* petit badge loader */
+.doc-loading > .doc-loading-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.7rem;
+  border-radius: 999rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(10px);
+  font-size: 0.9rem;
+  opacity: 0.95;
+}
+
+/* Grille de cartes */
+.doc-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 0.875rem;
+}
+
+/* Carte */
+.doc-card {
+  grid-column: span 4;
+  display: flex;
+  flex-direction: column;
+  text-decoration: none;
+  color: inherit;
+  overflow: hidden;
+
+  border-radius: 1.05rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.25);
+  transition: transform 120ms ease, background 120ms ease, border-color 120ms ease;
+}
+
+/* optionnel : léger feedback sans “hover effects” agressifs */
+.doc-card:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.22);
+  outline-offset: 2px;
+}
+
+/* Responsive */
+@media (max-width: 61.25rem) {
+  /* 980px */
+  .doc-card {
+    grid-column: span 6;
+  }
+}
+
+@media (max-width: 40rem) {
+  /* 640px */
+  .doc-card {
+    grid-column: span 12;
+  }
+}
+
+/* Image cover */
+.doc-thumb {
+  height: 7.5rem; /* 120px */
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+/* fallback si pas d'image */
+.doc-thumb.is-empty {
+  display: grid;
+  place-items: center;
+}
+
+.doc-thumb.is-empty::after {
+  content: "";
+  width: 45%;
+  height: 45%;
+  border-radius: 0.9rem;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+/* Contenu carte */
+.doc-body {
+  padding: 0.75rem;
+  display: grid;
+  gap: 0.45rem;
+}
+
+/* Ligne meta (chip + éventuellement autre info) */
+.doc-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.15rem;
+}
+
+/* Chip */
+.doc-chip {
+  /* ✅ 1 seule couleur pour toutes les puces */
+  --ifm-alert-foreground-color: var(--ifm-color-note-contrast-foreground);
+  --ifm-alert-background-color: var(--ifm-color-note-contrast-background);
+
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+
+  padding: 0.2rem 0.55rem;
+  border-radius: 0.45rem;
+
+  font-size: 0.78rem;
+  line-height: 1;
+  font-weight: 400;
+  text-align: left;
+
+  color: var(--ifm-alert-foreground-color);
+  background: var(--ifm-alert-background-color);
+
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+/* ✅ une seule couleur de puce (hérite du foreground) */
+.doc-chip::before {
+  content: "";
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 999rem;
+  background: var(--ifm-alert-foreground-color);
+  opacity: 0.75;
+  flex: 0 0 auto;
+}
+
+/* ✅ libellés (le span doit être vide en JSX) */
+.doc-chip.doc-subject::after { content: "Matière"; }
+.doc-chip.doc-chapter::after { content: "Chapitre"; }
+.doc-chip.doc-item::after { content: "Item"; }
+.doc-chip.doc-section::after { content: "Section"; }
+
+/* focus visible */
+.doc-card:focus-visible .doc-chip {
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+
+/* Titre carte */
+.doc-title {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.25;
+}
+
+/* Extrait */
+.doc-excerpt {
+  margin: 0.2rem 0 0;
+  opacity: 0.85;
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+/* États (vide / erreur) */
+.doc-state {
+  grid-column: 1 / -1;
+  padding: 1.125rem;
+  border-radius: 0.9rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  opacity: 0.95;
+}
+
+.doc-state.error {
+  opacity: 1;
+  background: rgba(255, 80, 80, 0.12);
+  border-color: rgba(255, 80, 80, 0.18);
+}
+
+/* Réserve la hauteur de la description quand on n’est pas sur /documentation */
+.doc-header-spacer {
+  height: 1.5rem; /* en rem comme demandé */
+}
+
+/* Skeleton titre (si le cache titre n'est pas encore hydraté) */
+.doc-title-skel {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.doc-sk-line {
+  border-radius: 0.7rem;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.doc-sk-h24 {
+  height: 1.5rem; /* ~24px */
+}
+.doc-sk-h16 {
+  height: 1rem; /* ~16px */
+}
+.doc-sk-w55 {
+  width: 55%;
+}
+.doc-sk-w90 {
+  width: 90%;
+}

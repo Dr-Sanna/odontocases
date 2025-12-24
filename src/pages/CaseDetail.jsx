@@ -14,15 +14,16 @@ import { getPathologyFromCache, setPathologyToCache, prefetchPathology } from '.
 import { BottomExpandIcon, BottomCollapseIcon } from '../components/Icons';
 import { useCaseDetailSidebar } from '../ui/CaseDetailSidebarContext';
 
-
 import './CaseDetail.css';
 
 const CASES_ENDPOINT = import.meta.env.VITE_CASES_ENDPOINT || '/cases';
 const PATHO_ENDPOINT = import.meta.env.VITE_PATHO_ENDPOINT || '/pathologies';
+const DOCS_ENDPOINT = import.meta.env.VITE_DOCS_ENDPOINT || '/doc-nodes';
 const PUB_STATE = import.meta.env.DEV ? 'preview' : 'live';
 
 const LS_KEY_COLLAPSE = 'cd-sidebar-collapsed';
 const LS_KEY_EXPANDED_PATHOLOGY = 'cd-expanded-pathology';
+const LS_KEY_EXPANDED_DOC_ITEM = 'cd-expanded-doc-item';
 
 /** Breakpoint helper */
 function useIsNarrow(maxWidthPx = 980) {
@@ -74,6 +75,7 @@ function typeLabelFromKey(typeKey) {
   if (typeKey === 'qa') return 'Q/R';
   if (typeKey === 'quiz') return 'Quiz';
   if (typeKey === 'presentation') return 'Présentation';
+  if (typeKey === 'doc') return 'Documentation';
   return null;
 }
 
@@ -101,6 +103,88 @@ function safeGetSessionJson(key) {
   }
 }
 
+/* ===== DOC session helpers ===== */
+function getDocNodeFromSession(slug) {
+  if (!slug) return null;
+  try {
+    const raw = sessionStorage.getItem(`docnode:${slug}`);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+function setDocNodeToSession(slug, data) {
+  if (!slug || !data) return;
+  try {
+    sessionStorage.setItem(`docnode:${slug}`, JSON.stringify(data));
+  } catch {}
+}
+
+function getDocItemsFromSession(chapterSlug) {
+  if (!chapterSlug) return null;
+  try {
+    const raw = sessionStorage.getItem(`doc-items:${chapterSlug}`);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+function setDocItemsToSession(chapterSlug, list) {
+  if (!chapterSlug || !Array.isArray(list)) return;
+  try {
+    sessionStorage.setItem(`doc-items:${chapterSlug}`, JSON.stringify(list));
+  } catch {}
+}
+
+function getDocSectionsForItemFromSession(itemSlug) {
+  if (!itemSlug) return null;
+  try {
+    const raw = sessionStorage.getItem(`doc-sections:${itemSlug}`);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+function setDocSectionsForItemToSession(itemSlug, list) {
+  if (!itemSlug || !Array.isArray(list)) return;
+  try {
+    sessionStorage.setItem(`doc-sections:${itemSlug}`, JSON.stringify(list));
+  } catch {}
+}
+
+function getDocSectionsByChapterFromSession(chapterSlug) {
+  if (!chapterSlug) return null;
+  try {
+    const raw = sessionStorage.getItem(`doc-sectionsByChapter:${chapterSlug}`);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+function setDocSectionsByChapterToSession(chapterSlug, map) {
+  if (!chapterSlug || !map) return;
+  try {
+    sessionStorage.setItem(`doc-sectionsByChapter:${chapterSlug}`, JSON.stringify(map));
+  } catch {}
+}
+
+function getParentSlugSafe(node) {
+  const p = node?.parent;
+  if (!p) return null;
+  if (typeof p === 'string') return p;
+  if (p?.slug) return p.slug;
+  if (p?.data?.attributes?.slug) return p.data.attributes.slug;
+  if (p?.data?.slug) return p.data.slug;
+  return null;
+}
+
 /* =========================
    Page
    ========================= */
@@ -109,39 +193,67 @@ export default function CaseDetail() {
   const params = useParams();
   const location = useLocation();
 
-  // Routes attendues :
-  // - /cas-cliniques/:slug
-  // - /cas-cliniques/presentation/:pathologySlug
-  // - /cas-cliniques/presentation/:pathologySlug/:caseSlug
-  const pathologySlug = params.pathologySlug || null;
-  const caseSlug = params.caseSlug || params.slug || null;
+  // DOC routes:
+  // /documentation/:subjectSlug/:chapterSlug/:itemSlug
+  // /documentation/:subjectSlug/:chapterSlug/:itemSlug/:sectionSlug
+  const subjectSlug = params.subjectSlug || null;
+  const chapterSlug = params.chapterSlug || null;
+  const docItemSlug = params.itemSlug || null;
+  const docSectionSlug = params.sectionSlug || null;
+
+  const isDocNamespace =
+    location.pathname.startsWith('/documentation') && Boolean(subjectSlug && chapterSlug && docItemSlug);
+
+  const isDocItemPage = isDocNamespace && !docSectionSlug;
+  const isDocSectionPage = isDocNamespace && !!docSectionSlug;
+
+  const docDisplaySlug = isDocNamespace ? (docSectionSlug || docItemSlug) : null;
+
+  // CASE routes:
+  const pathologySlug = !isDocNamespace ? (params.pathologySlug || null) : null;
+  const caseSlug = !isDocNamespace ? (params.caseSlug || params.slug || null) : null;
 
   const isPresentationNamespace = Boolean(pathologySlug);
   const isPathologyPage = isPresentationNamespace && !params.caseSlug;
   const isCaseInPathology = isPresentationNamespace && Boolean(params.caseSlug);
-  const isPlainCase = !isPresentationNamespace;
+  const isPlainCase = !isPresentationNamespace && !isDocNamespace;
 
   const isNarrow = useIsNarrow(980);
   const { mobileOpen, setMobileOpen } = useCaseDetailSidebar();
   const [drawerView, setDrawerView] = useState('cases');
 
-  // breadcrumb seed (instant)
+  // breadcrumb seed (cases)
   const navCrumb = location.state?.breadcrumb || null;
 
   const pre = location.state?.prefetch || null;
-  const provisionalKeySlug = isPathologyPage ? pathologySlug : caseSlug;
-  const provisional = pre && pre.slug === provisionalKeySlug ? pre : null;
+
+  const provisionalKeySlug = useMemo(() => {
+    if (isDocNamespace) return docDisplaySlug;
+    return isPathologyPage ? pathologySlug : caseSlug;
+  }, [isDocNamespace, docDisplaySlug, isPathologyPage, pathologySlug, caseSlug]);
+
+  const provisional = useMemo(() => {
+    if (!pre || !provisionalKeySlug) return null;
+    return pre.slug === provisionalKeySlug ? pre : null;
+  }, [pre, provisionalKeySlug]);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // item = case OU pathology selon la route
+  // item = current entity displayed (case/pathology/docnode)
   const [item, setItem] = useState(() => {
     const key = provisionalKeySlug;
     if (!key) return null;
 
+    if (isDocNamespace) return getDocNodeFromSession(key) || provisional || null;
     if (isPathologyPage) return getPathologyFromCache(key) || provisional || null;
     return getCaseFromCache(key) || provisional || null;
+  });
+
+  // DOC: sections du current ITEM (affichage cards + sidebar item courant)
+  const [docCurrentItemSections, setDocCurrentItemSections] = useState(() => {
+    if (!isDocNamespace || !docItemSlug) return [];
+    return getDocSectionsForItemFromSession(docItemSlug) || [];
   });
 
   // parent pathology (utile sur /presentation/:patho/:case)
@@ -172,7 +284,7 @@ export default function CaseDetail() {
 
   useEffect(() => {
     if (isNarrow) setMobileOpen(false);
-  }, [caseSlug, pathologySlug, isNarrow, setMobileOpen]);
+  }, [caseSlug, pathologySlug, docItemSlug, docSectionSlug, isNarrow, setMobileOpen]);
 
   useEffect(() => {
     if (isNarrow && mobileOpen) setDrawerView('cases');
@@ -347,6 +459,63 @@ export default function CaseDetail() {
     return { ...attrs, coverUrl: coverUrl || null, cases: rel };
   }
 
+  async function loadDocNodeBySlug(slugToLoad) {
+    const res = await strapiFetch(DOCS_ENDPOINT, {
+      params: {
+        filters: { slug: { $eq: slugToLoad } },
+        locale: 'all',
+        publicationState: PUB_STATE,
+        populate: {
+          cover: { fields: ['url', 'formats'] },
+          parent: { populate: { parent: { populate: { parent: true } } } },
+        },
+        fields: ['title', 'slug', 'level', 'excerpt', 'content', 'updatedAt', 'references', 'copyright'],
+        pagination: { page: 1, pageSize: 1 },
+      },
+    });
+
+    const node = Array.isArray(res?.data) ? res.data[0] : null;
+    const attrs = normalizeEntity(node);
+    if (!attrs) return null;
+
+    const coverAttr = attrs?.cover?.data?.attributes || attrs?.cover || null;
+    const coverUrl =
+      imgUrl(coverAttr, 'large') || imgUrl(coverAttr, 'medium') || imgUrl(coverAttr) || null;
+
+    return { ...attrs, coverUrl: coverUrl || null };
+  }
+
+  async function loadDocSectionsForItem(itemSlugToLoad) {
+    if (!itemSlugToLoad) return [];
+
+    const cached = getDocSectionsForItemFromSession(itemSlugToLoad);
+    if (cached) return cached;
+
+    const res = await strapiFetch(DOCS_ENDPOINT, {
+      params: {
+        locale: 'all',
+        publicationState: PUB_STATE,
+        filters: { level: { $eq: 'section' }, parent: { slug: { $eq: itemSlugToLoad } } },
+        fields: ['title', 'slug', 'level', 'excerpt', 'updatedAt'],
+        populate: { cover: { fields: ['url', 'formats'] } },
+        sort: 'title:asc',
+        pagination: { page: 1, pageSize: 500 },
+      },
+    });
+
+    const rows = Array.isArray(res?.data) ? res.data : [];
+    const normalized = rows.map(normalizeEntity).filter(Boolean).filter((it) => it.slug);
+
+    const cooked = normalized.map((s) => {
+      const coverAttr = s?.cover?.data?.attributes || s?.cover || null;
+      const coverUrl = imgUrl(coverAttr, 'medium') || imgUrl(coverAttr, 'thumbnail') || imgUrl(coverAttr) || null;
+      return { ...s, coverUrl: coverUrl || null };
+    });
+
+    setDocSectionsForItemToSession(itemSlugToLoad, cooked);
+    return cooked;
+  }
+
   // ---------- main load ----------
   useEffect(() => {
     let ignore = false;
@@ -358,7 +527,11 @@ export default function CaseDetail() {
       return () => {};
     }
 
-    const cached = isPathologyPage ? getPathologyFromCache(keySlug) : getCaseFromCache(keySlug);
+    const cached = isDocNamespace
+      ? getDocNodeFromSession(keySlug)
+      : isPathologyPage
+        ? getPathologyFromCache(keySlug)
+        : getCaseFromCache(keySlug);
 
     if (cached) {
       setItem(cached);
@@ -373,6 +546,31 @@ export default function CaseDetail() {
     async function load() {
       setError('');
       try {
+        // DOC
+        if (isDocNamespace) {
+          const fullDoc = await loadDocNodeBySlug(keySlug);
+          if (ignore) return;
+
+          if (!fullDoc) {
+            setError('Document introuvable ou non publié.');
+            return;
+          }
+
+          setItem(fullDoc);
+          setDocNodeToSession(keySlug, fullDoc);
+
+          // sections (cards + sidebar current item) uniquement sur la page ITEM
+          // et seulement si l’URL a bien un itemSlug (toujours vrai ici), mais on laisse safe.
+          if (isDocItemPage && docItemSlug) {
+            const secs = await loadDocSectionsForItem(docItemSlug);
+            if (ignore) return;
+            setDocCurrentItemSections(secs);
+          }
+
+          return;
+        }
+
+        // PATHOLOGY
         if (isPathologyPage) {
           const fullPatho = await loadPathologyBySlug(pathologySlug, { withCases: true });
           if (ignore) return;
@@ -387,6 +585,7 @@ export default function CaseDetail() {
           return;
         }
 
+        // CASE IN PATHOLOGY
         if (isCaseInPathology) {
           const parentPromise = pathologySlug
             ? prefetchPathology(pathologySlug, { publicationState: PUB_STATE }).catch(() => null)
@@ -414,6 +613,7 @@ export default function CaseDetail() {
           return;
         }
 
+        // PLAIN CASE
         const full = await loadCaseBySlug(caseSlug);
         if (ignore) return;
 
@@ -436,23 +636,38 @@ export default function CaseDetail() {
       ignore = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathologySlug, caseSlug, isPathologyPage, isCaseInPathology]);
+  }, [
+    // doc
+    isDocNamespace,
+    isDocItemPage,
+    provisionalKeySlug,
+    docItemSlug,
+    docSectionSlug,
+
+    // cases
+    pathologySlug,
+    caseSlug,
+    isPathologyPage,
+    isCaseInPathology,
+  ]);
 
   // ---------- type + labels ----------
   const effectiveType = useMemo(() => {
+    if (isDocNamespace) return 'doc';
     if (isPresentationNamespace) return 'presentation';
     return item?.type || provisional?.type || stableType || null;
-  }, [isPresentationNamespace, item?.type, provisional?.type, stableType]);
+  }, [isDocNamespace, isPresentationNamespace, item?.type, provisional?.type, stableType]);
 
   const typeLabel = useMemo(() => {
     if (effectiveType === 'qa') return 'Q/R';
     if (effectiveType === 'quiz') return 'Quiz';
+    if (effectiveType === 'doc') return 'Documentation';
     return 'Présentation';
   }, [effectiveType]);
 
   // ---------- content blocks ----------
-  const qaList = Array.isArray(item?.qa_blocks) ? item.qa_blocks : [];
-  const quizList = Array.isArray(item?.quiz_blocks) ? item.quiz_blocks : [];
+  const qaList = !isDocNamespace && Array.isArray(item?.qa_blocks) ? item.qa_blocks : [];
+  const quizList = !isDocNamespace && Array.isArray(item?.quiz_blocks) ? item.quiz_blocks : [];
 
   // Pathology: cas associés + anti-spoil
   const relatedCases = useMemo(() => {
@@ -483,12 +698,17 @@ export default function CaseDetail() {
     return { pres, other };
   }, [isPathologyPage, relatedCases]);
 
-  // ---------- breadcrumb immediate ----------
+  // ---------- breadcrumb ----------
   const cdIndex = useMemo(() => safeGetSessionJson('cd-patho-index'), []);
   const indexPatho = cdIndex?.pathoIndex || {};
   const indexCase = cdIndex?.caseIndex || {};
 
   const instantCurrentTitle = useMemo(() => {
+    if (isDocNamespace) {
+      if (item?.title) return item.title;
+      return docDisplaySlug || 'Documentation';
+    }
+
     if (isPathologyPage) {
       if (navCrumb?.pathology?.title) return navCrumb.pathology.title;
       if (indexPatho?.[pathologySlug]?.title) return indexPatho[pathologySlug].title;
@@ -510,6 +730,10 @@ export default function CaseDetail() {
     if (provisional?.title) return provisional.title;
     return caseSlug || 'Cas clinique';
   }, [
+    isDocNamespace,
+    docDisplaySlug,
+    item?.title,
+
     isPathologyPage,
     isCaseInPathology,
     isPlainCase,
@@ -519,7 +743,6 @@ export default function CaseDetail() {
     pathologySlug,
     caseSlug,
     item?.slug,
-    item?.title,
     provisional?.title,
   ]);
 
@@ -545,7 +768,70 @@ export default function CaseDetail() {
     item?.title,
   ]);
 
+  // DOC breadcrumb (best effort via parent chain)
+  const docCrumb = useMemo(() => {
+    if (!isDocNamespace) return null;
+
+    const chain = [];
+    let cur = item;
+    for (let i = 0; i < 6; i += 1) {
+      if (!cur) break;
+      chain.push({ slug: cur.slug, title: cur.title || cur.slug, level: cur.level || '' });
+      const p = cur?.parent?.data?.attributes || cur?.parent || null;
+      cur = p || null;
+    }
+    const rev = [...chain].reverse();
+
+    const subject =
+      rev.find((x) => x.level === 'subject') ||
+      (subjectSlug ? { slug: subjectSlug, title: subjectSlug, level: 'subject' } : null);
+
+    const chapter =
+      rev.find((x) => x.level === 'chapter') ||
+      (chapterSlug ? { slug: chapterSlug, title: chapterSlug, level: 'chapter' } : null);
+
+    const theItem =
+      rev.find((x) => x.level === 'item') ||
+      (docItemSlug ? { slug: docItemSlug, title: docItemSlug, level: 'item' } : null);
+
+    const theSection =
+      rev.find((x) => x.level === 'section') ||
+      (docSectionSlug ? { slug: docSectionSlug, title: docSectionSlug, level: 'section' } : null);
+
+    return { subject, chapter, theItem, theSection };
+  }, [isDocNamespace, item, subjectSlug, chapterSlug, docItemSlug, docSectionSlug]);
+
   const breadcrumbItems = useMemo(() => {
+    // DOC
+    if (isDocNamespace) {
+      const base = [
+        { label: 'Accueil', to: '/' },
+        { label: 'Documentation', to: '/documentation' },
+      ];
+
+      if (docCrumb?.subject) {
+        base.push({ label: docCrumb.subject.title, to: `/documentation/${docCrumb.subject.slug}` });
+      }
+
+      if (docCrumb?.chapter && subjectSlug) {
+        base.push({ label: docCrumb.chapter.title, to: `/documentation/${subjectSlug}/${docCrumb.chapter.slug}` });
+      }
+
+      if (docCrumb?.theItem && subjectSlug && chapterSlug) {
+        base.push({
+          label: docCrumb.theItem.title,
+          to: docSectionSlug ? `/documentation/${subjectSlug}/${chapterSlug}/${docCrumb.theItem.slug}` : null,
+        });
+      }
+
+      if (docSectionSlug && docCrumb?.theSection) {
+        base.push({ label: docCrumb.theSection.title, to: null });
+      }
+
+      return base;
+    }
+
+    // CASES
     const base = [
       { label: 'Accueil', to: '/' },
       { label: 'Cas cliniques', to: '/cas-cliniques' },
@@ -577,7 +863,20 @@ export default function CaseDetail() {
 
     base.push({ label: instantCurrentTitle, to: null });
     return base;
-  }, [isPresentationNamespace, isPathologyPage, pathologySlug, effectiveType, instantPathologyTitle, instantCurrentTitle]);
+  }, [
+    isDocNamespace,
+    docCrumb,
+    subjectSlug,
+    chapterSlug,
+    docSectionSlug,
+
+    isPresentationNamespace,
+    isPathologyPage,
+    pathologySlug,
+    effectiveType,
+    instantPathologyTitle,
+    instantCurrentTitle,
+  ]);
 
   // Lightbox
   const [lightbox, setLightbox] = useState(null);
@@ -599,7 +898,7 @@ export default function CaseDetail() {
 
     el.addEventListener('click', onClick);
     return () => el.removeEventListener('click', onClick);
-  }, [item?.content, qaList?.length, quizList?.length, relatedCases?.length]);
+  }, [item?.content, qaList?.length, quizList?.length, relatedCases?.length, docCurrentItemSections?.length]);
 
   useEffect(() => {
     if (!lightbox) return;
@@ -612,12 +911,23 @@ export default function CaseDetail() {
 
   const drawerOpen = isNarrow && mobileOpen;
 
+  // DOC child cards = sections du current item, uniquement sur la page item
+  const docChildSections = useMemo(() => {
+    if (!isDocItemPage) return [];
+    return Array.isArray(docCurrentItemSections) ? docCurrentItemSections : [];
+  }, [isDocItemPage, docCurrentItemSections]);
+
+  // Extras: toujours ceux du "node affiché"
+  // - page item => item = item
+  // - page section => item = section
+  const showExtras = Boolean(item?.references || item?.copyright);
+
   return (
     <div className={['cd-shell', collapsed ? 'is-collapsed' : '', drawerOpen ? 'is-drawer-open' : ''].join(' ')}>
       <Aside
-        mode={isPresentationNamespace ? 'presentation' : 'cases'}
-        currentType={isPresentationNamespace ? null : effectiveType}
-        currentCaseSlug={isPresentationNamespace ? (isCaseInPathology ? caseSlug : null) : caseSlug}
+        mode={isDocNamespace ? 'docs' : isPresentationNamespace ? 'presentation' : 'cases'}
+        currentType={isPresentationNamespace || isDocNamespace ? null : effectiveType}
+        currentCaseSlug={isPresentationNamespace ? (isCaseInPathology ? caseSlug : null) : (isPlainCase ? caseSlug : null)}
         currentPathologySlug={isPresentationNamespace ? pathologySlug : null}
         collapsed={collapsed}
         collapseDone={collapseDone}
@@ -628,6 +938,13 @@ export default function CaseDetail() {
         drawerView={drawerView}
         setDrawerView={setDrawerView}
         closeMobile={() => setMobileOpen(false)}
+        // docs context
+        docSubjectSlug={subjectSlug}
+        docChapterSlug={chapterSlug}
+        docItemSlug={docItemSlug}
+        docSectionSlug={docSectionSlug}
+        currentDocSections={docCurrentItemSections}
+        setCurrentDocSections={setDocCurrentItemSections}
       />
 
       {drawerOpen && (
@@ -663,14 +980,47 @@ export default function CaseDetail() {
         )}
 
         <article className="casedetail" ref={contentRef}>
-          {/* ✅ titre toujours affiché même si content vide */}
           <div className="cd-content">
             <PageTitle description={item?.excerpt || ''}>{instantCurrentTitle}</PageTitle>
             {item?.content ? <CaseMarkdown>{item.content}</CaseMarkdown> : null}
           </div>
 
+          {/* DOC: sections associées sous forme de child cards (UNIQUEMENT sur page item) */}
+          {isDocItemPage && docChildSections.length > 0 && (
+            <section className="cd-children">
+              <h2 className="cd-children-title">Sections</h2>
+
+              <div className="cd-children-grid">
+                {docChildSections.map((s) => {
+                  const to = `/documentation/${subjectSlug}/${chapterSlug}/${docItemSlug}/${s.slug}`;
+
+                  return (
+                    <Link
+                      key={s.slug}
+                      to={to}
+                      className="cd-child-card ui-card"
+                      state={{ prefetch: { slug: s.slug, title: s.title || s.slug, type: 'doc' } }}
+                    >
+                      {s.coverUrl && (
+                        <img
+                          className="cd-child-cover"
+                          src={s.coverUrl}
+                          alt={s.title || s.slug}
+                          loading="lazy"
+                          data-no-lightbox="1"
+                        />
+                      )}
+                      <div className="cd-child-title">{s.title || s.slug}</div>
+                      {s.excerpt && <div className="cd-child-excerpt">{s.excerpt}</div>}
+                    </Link>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+
           {/* PATHOLOGY: cas associés */}
-          {isPathologyPage && visibleRelatedCases.length > 0 && (
+          {!isDocNamespace && isPathologyPage && visibleRelatedCases.length > 0 && (
             <section className="cd-children">
               <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 }}>
                 <h2 className="cd-children-title">Cas associés</h2>
@@ -735,7 +1085,7 @@ export default function CaseDetail() {
           )}
 
           {/* QA */}
-          {qaList.length > 0 && (
+          {!isDocNamespace && qaList.length > 0 && (
             <section className="qa-section">
               <h2 className="qa-title">{isPathologyPage ? 'Questions (pathologie)' : 'Questions'}</h2>
 
@@ -759,7 +1109,7 @@ export default function CaseDetail() {
           )}
 
           {/* QUIZ */}
-          {quizList.length > 0 && (
+          {!isDocNamespace && quizList.length > 0 && (
             <section className="quiz-section">
               <h2 className="quiz-title">{isPathologyPage ? 'Quiz (pathologie)' : 'Quiz'}</h2>
 
@@ -776,7 +1126,12 @@ export default function CaseDetail() {
             </section>
           )}
 
-          {(item?.references || item?.copyright) && (
+          {/* EXTRAS (références / copyright)
+              -> Toujours ceux du node affiché :
+                 - page item => extras de l'item
+                 - page section => extras de la section
+          */}
+          {showExtras && (
             <section className="cd-extras">
               {item?.references && (
                 <div className="cd-references">
@@ -819,7 +1174,7 @@ export default function CaseDetail() {
    ========================= */
 
 function Aside({
-  mode, // 'cases' | 'presentation'
+  mode, // 'cases' | 'presentation' | 'docs'
   currentType, // cases only
   currentCaseSlug,
   currentPathologySlug,
@@ -832,6 +1187,14 @@ function Aside({
   drawerView,
   setDrawerView,
   closeMobile,
+
+  // docs
+  docSubjectSlug,
+  docChapterSlug,
+  docItemSlug,
+  docSectionSlug,
+  currentDocSections,
+  setCurrentDocSections,
 }) {
   const [loadingList, setLoadingList] = useState(false);
   const [errList, setErrList] = useState('');
@@ -839,20 +1202,51 @@ function Aside({
   const [caseList, setCaseList] = useState([]);
   const [pathoList, setPathoList] = useState([]);
 
-  // refs pour savoir si une liste existe déjà, sans dépendances qui rerunnent tout
+  // DOCS: items du chapitre + map sections préchargée par chapitre
+  const [docItems, setDocItems] = useState(() => (docChapterSlug ? getDocItemsFromSession(docChapterSlug) || [] : []));
+  const [docSectionsByItem, setDocSectionsByItem] = useState(() => {
+    // hydrate avec le currentDocSections si on est dessus
+    const map = {};
+    if (docItemSlug && Array.isArray(currentDocSections) && currentDocSections.length) {
+      map[docItemSlug] = currentDocSections;
+    }
+    // hydrate aussi avec la map chapitre si présente
+    const byChap = docChapterSlug ? getDocSectionsByChapterFromSession(docChapterSlug) : null;
+    if (byChap && typeof byChap === 'object') {
+      for (const [k, v] of Object.entries(byChap)) {
+        if (Array.isArray(v)) map[k] = v;
+      }
+    }
+    return map;
+  });
+
   const caseListRef = useRef([]);
   const pathoListRef = useRef([]);
-  useEffect(() => {
-    caseListRef.current = caseList;
-  }, [caseList]);
-  useEffect(() => {
-    pathoListRef.current = pathoList;
-  }, [pathoList]);
+  const docItemsRef = useRef([]);
+  useEffect(() => { caseListRef.current = caseList; }, [caseList]);
+  useEffect(() => { pathoListRef.current = pathoList; }, [pathoList]);
+  useEffect(() => { docItemsRef.current = docItems; }, [docItems]);
 
-  const hasList = mode === 'cases'
-    ? (Array.isArray(caseList) && caseList.length > 0)
-    : (Array.isArray(pathoList) && pathoList.length > 0);
+  // keep docSectionsByItem synced with currentDocSections (source unique pour l’item courant)
+  useEffect(() => {
+    if (mode !== 'docs') return;
+    if (!docItemSlug) return;
+    if (!Array.isArray(currentDocSections)) return;
 
+    setDocSectionsByItem((prev) => ({
+      ...prev,
+      [docItemSlug]: currentDocSections,
+    }));
+  }, [mode, docItemSlug, currentDocSections]);
+
+  const hasList =
+    mode === 'cases'
+      ? (Array.isArray(caseList) && caseList.length > 0)
+      : mode === 'presentation'
+        ? (Array.isArray(pathoList) && pathoList.length > 0)
+        : (Array.isArray(docItems) && docItems.length > 0);
+
+  // PRESENTATION expanded
   const [expandedPathoSlug, setExpandedPathoSlug] = useState(() => {
     try {
       return localStorage.getItem(LS_KEY_EXPANDED_PATHOLOGY) || '';
@@ -860,6 +1254,25 @@ function Aside({
       return '';
     }
   });
+  const saveExpandedPatho = (slug) => {
+    try {
+      localStorage.setItem(LS_KEY_EXPANDED_PATHOLOGY, slug || '');
+    } catch {}
+  };
+
+  // DOC expanded item
+  const [expandedDocItemSlug, setExpandedDocItemSlug] = useState(() => {
+    try {
+      return localStorage.getItem(LS_KEY_EXPANDED_DOC_ITEM) || '';
+    } catch {
+      return '';
+    }
+  });
+  const saveExpandedDocItem = (slug) => {
+    try {
+      localStorage.setItem(LS_KEY_EXPANDED_DOC_ITEM, slug || '');
+    } catch {}
+  };
 
   useEffect(() => {
     if (mode !== 'presentation') return;
@@ -867,19 +1280,23 @@ function Aside({
 
     setExpandedPathoSlug((prev) => {
       if (prev === currentPathologySlug) return prev;
-      try {
-        localStorage.setItem(LS_KEY_EXPANDED_PATHOLOGY, currentPathologySlug);
-      } catch {}
+      saveExpandedPatho(currentPathologySlug);
       return currentPathologySlug;
     });
   }, [mode, currentPathologySlug]);
 
-  const saveExpandedPatho = (slug) => {
-    try {
-      localStorage.setItem(LS_KEY_EXPANDED_PATHOLOGY, slug || '');
-    } catch {}
-  };
+  useEffect(() => {
+    if (mode !== 'docs') return;
+    if (!docItemSlug) return;
 
+    setExpandedDocItemSlug((prev) => {
+      if (prev === docItemSlug) return prev;
+      saveExpandedDocItem(docItemSlug);
+      return docItemSlug;
+    });
+  }, [mode, docItemSlug]);
+
+  // Prefetch for cases/pathologies
   const prefetchedRef = useRef(new Set());
   const prefetchIntent = (kind, slug) => {
     if (!slug) return;
@@ -899,7 +1316,94 @@ function Aside({
     }
   };
 
-  // boot cases list from prefetch/session (cases mode)
+  // ---- DOC loaders ----
+  async function loadDocItems() {
+    if (!docChapterSlug) {
+      setDocItems([]);
+      return [];
+    }
+
+    const cached = getDocItemsFromSession(docChapterSlug);
+    if (cached && cached.length) {
+      setDocItems(cached);
+      return cached;
+    }
+
+    const res = await strapiFetch(DOCS_ENDPOINT, {
+      params: {
+        locale: 'all',
+        publicationState: PUB_STATE,
+        filters: { level: { $eq: 'item' }, parent: { slug: { $eq: docChapterSlug } } },
+        fields: ['title', 'slug', 'level'],
+        populate: { cover: { fields: ['url', 'formats'] } },
+        sort: 'title:asc',
+        pagination: { page: 1, pageSize: 500 },
+      },
+    });
+
+    const rows = Array.isArray(res?.data) ? res.data : [];
+    const normalized = rows.map(normalizeEntity).filter(Boolean).filter((it) => it.slug);
+
+    const cooked = normalized.map((d) => {
+      const coverAttr = d?.cover?.data?.attributes || d?.cover || null;
+      const coverUrl = imgUrl(coverAttr, 'thumbnail') || imgUrl(coverAttr) || null;
+      return { ...d, coverUrl: coverUrl || null };
+    });
+
+    setDocItemsToSession(docChapterSlug, cooked);
+    setDocItems(cooked);
+    return cooked;
+  }
+
+  async function loadDocSectionsForChapter(chapterSlugToLoad) {
+    if (!chapterSlugToLoad) return {};
+
+    const cached = getDocSectionsByChapterFromSession(chapterSlugToLoad);
+    if (cached) return cached;
+
+    // Récupère toutes les sections du chapitre (via parent=item, et parent.parent=chapter)
+    const res = await strapiFetch(DOCS_ENDPOINT, {
+      params: {
+        locale: 'all',
+        publicationState: PUB_STATE,
+        filters: {
+          level: { $eq: 'section' },
+          parent: {
+            parent: { slug: { $eq: chapterSlugToLoad } },
+          },
+        },
+        fields: ['title', 'slug', 'level', 'excerpt', 'updatedAt'],
+        populate: {
+          cover: { fields: ['url', 'formats'] },
+          parent: { fields: ['slug'] }, // pour grouper
+        },
+        sort: 'title:asc',
+        pagination: { page: 1, pageSize: 1000 },
+      },
+    });
+
+    const rows = Array.isArray(res?.data) ? res.data : [];
+    const normalized = rows.map(normalizeEntity).filter(Boolean).filter((it) => it.slug);
+
+    const map = {};
+    for (const s of normalized) {
+      const parentSlug = getParentSlugSafe(s);
+      if (!parentSlug) continue;
+
+      const coverAttr = s?.cover?.data?.attributes || s?.cover || null;
+      const coverUrl =
+        imgUrl(coverAttr, 'medium') || imgUrl(coverAttr, 'thumbnail') || imgUrl(coverAttr) || null;
+
+      const cooked = { ...s, coverUrl: coverUrl || null };
+      if (!map[parentSlug]) map[parentSlug] = [];
+      map[parentSlug].push(cooked);
+    }
+
+    setDocSectionsByChapterToSession(chapterSlugToLoad, map);
+    return map;
+  }
+
+  // ---- boot cases list from prefetch/session (cases mode) ----
   useEffect(() => {
     if (mode !== 'cases') return;
 
@@ -930,13 +1434,11 @@ function Aside({
       } catch {}
     }
 
-    // ✅ important: si on a déjà une liste, on ne montre pas de "Chargement…"
-    if (!booted) setLoadingList(true);
-    else setLoadingList(false);
+    setLoadingList(!booted);
     setErrList('');
   }, [mode, prefetchRelated, currentType]);
 
-  // boot pathologies list from session (presentation mode)
+  // ---- boot pathologies list from session (presentation mode) ----
   useEffect(() => {
     if (mode !== 'presentation') return;
 
@@ -952,12 +1454,40 @@ function Aside({
       }
     } catch {}
 
-    if (!booted) setLoadingList(true);
-    else setLoadingList(false);
+    setLoadingList(!booted);
     setErrList('');
   }, [mode]);
 
-  // load sidebar lists (refresh / fetch)
+  // ---- boot docs (items + map chapitre si dispo) ----
+  useEffect(() => {
+    if (mode !== 'docs') return;
+    if (!docChapterSlug) return;
+
+    setErrList('');
+
+    const cachedItems = getDocItemsFromSession(docChapterSlug);
+    if (cachedItems) setDocItems(cachedItems);
+
+    const cachedMap = getDocSectionsByChapterFromSession(docChapterSlug);
+    if (cachedMap && typeof cachedMap === 'object') {
+      setDocSectionsByItem((prev) => ({ ...prev, ...cachedMap }));
+      setDocItems((prevItems) => {
+        const arr = Array.isArray(prevItems) ? prevItems : [];
+        return arr.map((it) => ({
+          ...it,
+          __hasSections: Array.isArray(cachedMap?.[it.slug]) && cachedMap[it.slug].length > 0,
+        }));
+      });
+
+      if (docItemSlug) {
+        const secs = cachedMap?.[docItemSlug] || [];
+        if (typeof setCurrentDocSections === 'function' && Array.isArray(secs)) setCurrentDocSections(secs);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, docChapterSlug, docItemSlug]);
+
+  // ---- load sidebar lists (refresh / fetch) ----
   useEffect(() => {
     let ignore = false;
 
@@ -997,7 +1527,6 @@ function Aside({
       } catch (e) {
         if (!ignore) setErrList(e?.message || 'Erreur de chargement');
       } finally {
-        // ✅ on n’affiche "Chargement…" que si la liste est vide
         if (!ignore) setLoadingList(false);
       }
     }
@@ -1068,30 +1597,74 @@ function Aside({
       }
     }
 
-    // ✅ IMPORTANT: ne pas repasser en "Chargement…" si une liste existe déjà
+    async function loadDocs() {
+      if (!docChapterSlug) {
+        setDocItems([]);
+        setLoadingList(false);
+        setErrList('');
+        return;
+      }
+
+      setErrList('');
+
+      try {
+        const items = await loadDocItems();
+        const chapterMap = await loadDocSectionsForChapter(docChapterSlug);
+
+        if (ignore) return;
+
+        // map sections par item (pour expand)
+        setDocSectionsByItem((prev) => ({ ...prev, ...chapterMap }));
+
+        // flag hasSections => pas de chevron si vide
+        const finalItems = (Array.isArray(items) ? items : []).map((it) => ({
+          ...it,
+          __hasSections: Array.isArray(chapterMap?.[it.slug]) && chapterMap[it.slug].length > 0,
+        }));
+        setDocItems(finalItems);
+
+        // hydrate current item sections (source unique)
+        if (docItemSlug) {
+          const secs = chapterMap?.[docItemSlug] || [];
+          if (typeof setCurrentDocSections === 'function') setCurrentDocSections(secs);
+          if (Array.isArray(secs)) setDocSectionsForItemToSession(docItemSlug, secs);
+        }
+      } catch (e) {
+        if (!ignore) setErrList(e?.message || 'Erreur de chargement');
+      } finally {
+        if (!ignore) setLoadingList(false);
+      }
+    }
+
     const hasListNow =
       mode === 'cases'
         ? (Array.isArray(caseListRef.current) && caseListRef.current.length > 0)
-        : (Array.isArray(pathoListRef.current) && pathoListRef.current.length > 0);
+        : mode === 'presentation'
+          ? (Array.isArray(pathoListRef.current) && pathoListRef.current.length > 0)
+          : (Array.isArray(docItemsRef.current) && docItemsRef.current.length > 0);
 
     if (!hasListNow) setLoadingList(true);
 
     if (mode === 'presentation') loadPathologies();
+    else if (mode === 'docs') loadDocs();
     else loadCases();
 
     return () => {
       ignore = true;
     };
-  }, [mode, currentType]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, currentType, docChapterSlug, docItemSlug]);
 
   const label =
     mode === 'presentation'
       ? 'Présentations'
-      : currentType === 'qa'
-        ? 'Cas Q/R'
-        : currentType === 'quiz'
-          ? 'Quiz'
-          : 'Cas';
+      : mode === 'docs'
+        ? 'Items'
+        : currentType === 'qa'
+          ? 'Cas Q/R'
+          : currentType === 'quiz'
+            ? 'Quiz'
+            : 'Cas';
 
   const showNavInsteadOfCases = isNarrow && drawerView === 'nav';
 
@@ -1157,10 +1730,115 @@ function Aside({
 
             <div className="cd-side-header">{label}</div>
 
-            {/* ✅ FIX: ne pas afficher "Chargement…" si la liste est déjà là */}
             {loadingList && !hasList && <div className="cd-side-state">Chargement…</div>}
             {errList && !loadingList && <div className="cd-side-state error">{errList}</div>}
 
+            {/* DOCS: items du chapitre + chevrons sections (uniquement si sections existent) */}
+            {!errList && mode === 'docs' && docSubjectSlug && docChapterSlug && (
+              <ul className="cd-side-list">
+                {docItems.map((it) => {
+                  const isInItem = it.slug === docItemSlug; // item courant (même si section)
+                  const isOpen = expandedDocItemSlug === it.slug;
+
+                  // sections affichées
+                  const sections =
+                    it.slug === docItemSlug
+                      ? (Array.isArray(currentDocSections) ? currentDocSections : [])
+                      : (docSectionsByItem[it.slug] || []);
+
+                  // ✅ pas de sections => pas de chevron
+                  const hasKids = Boolean(it.__hasSections);
+
+                  const toggle = () => {
+                    if (!hasKids) return;
+                    setExpandedDocItemSlug((prev) => {
+                      const next = prev === it.slug ? '' : it.slug;
+                      saveExpandedDocItem(next);
+                      return next;
+                    });
+                  };
+
+                  const isCurrentItemPage = it.slug === docItemSlug && !docSectionSlug;
+
+                  return (
+                    <li key={it.slug}>
+                      <div className={['cd-side-row', hasKids ? 'has-kids' : '', isInItem ? 'is-active' : ''].join(' ')}>
+                        {isCurrentItemPage ? (
+                          <span className="cd-side-link active cd-is-current" aria-current="page">
+                            <span className="cd-side-link-text">{it.title || it.slug}</span>
+                          </span>
+                        ) : (
+                          <Link
+                            className="cd-side-link"
+                            to={`/documentation/${docSubjectSlug}/${docChapterSlug}/${it.slug}`}
+                            onClick={() => {
+                              if (hasKids) {
+                                setExpandedDocItemSlug(() => {
+                                  saveExpandedDocItem(it.slug);
+                                  return it.slug;
+                                });
+                              }
+                              if (isNarrow) closeMobile();
+                            }}
+                          >
+                            <span className="cd-side-link-text">{it.title || it.slug}</span>
+                          </Link>
+                        )}
+
+                        {hasKids ? (
+                          <button
+                            type="button"
+                            className="cd-side-caret"
+                            aria-label={isOpen ? 'Réduire' : 'Développer'}
+                            aria-expanded={isOpen ? 'true' : 'false'}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              toggle();
+                            }}
+                          />
+                        ) : null}
+                      </div>
+
+                      {hasKids && (
+                        <div className={['cd-side-sublist', isOpen ? 'is-open' : ''].join(' ')}>
+                          <div className="cd-side-sublist-inner">
+                            <div className="cd-side-children">
+                              {sections.map((s) => {
+                                const isCurrentSection = it.slug === docItemSlug && s.slug === docSectionSlug;
+                                const to = `/documentation/${docSubjectSlug}/${docChapterSlug}/${it.slug}/${s.slug}`;
+
+                                return (
+                                  <div key={s.slug} className="cd-side-child">
+                                    {isCurrentSection ? (
+                                      <span className="cd-side-link cd-side-child-link active cd-is-current" aria-current="page">
+                                        <span className="cd-side-link-text">{s.title || s.slug}</span>
+                                      </span>
+                                    ) : (
+                                      <Link
+                                        className="cd-side-link cd-side-child-link"
+                                        to={to}
+                                        onClick={() => {
+                                          if (isNarrow) closeMobile();
+                                        }}
+                                      >
+                                        <span className="cd-side-link-text">{s.title || s.slug}</span>
+                                      </Link>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+
+            {/* CASES (qa/quiz) */}
             {!errList && mode === 'cases' && (
               <ul className="cd-side-list">
                 {caseList.map((it) => {
@@ -1191,6 +1869,7 @@ function Aside({
               </ul>
             )}
 
+            {/* PRESENTATION */}
             {!errList && mode === 'presentation' && (
               <ul className="cd-side-list">
                 {pathoList.map((p) => {
@@ -1212,7 +1891,11 @@ function Aside({
                   return (
                     <li key={p.slug}>
                       <div
-                        className={['cd-side-row', hasKids ? 'has-kids' : '', p.slug === currentPathologySlug ? 'is-active' : ''].join(' ')}
+                        className={[
+                          'cd-side-row',
+                          hasKids ? 'has-kids' : '',
+                          p.slug === currentPathologySlug ? 'is-active' : '',
+                        ].join(' ')}
                         onClick={(e) => {
                           if (!hasKids) return;
                           if (e.target?.closest?.('.cd-side-caret')) return;

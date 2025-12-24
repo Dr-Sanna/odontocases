@@ -32,14 +32,11 @@ function MaintenancePage() {
         />
 
         <h1 style={{ margin: 0 }}>Maintenance en cours</h1>
-        <p style={{ marginTop: 12 }}>
-          L’application est temporairement indisponible &#58;&#40;
-        </p>
+        <p style={{ marginTop: 12 }}>L’application est temporairement indisponible &#58;&#40;</p>
       </div>
     </div>
   );
 }
-
 
 function BackgroundRouteSync() {
   const { pathname } = useLocation();
@@ -48,10 +45,11 @@ function BackgroundRouteSync() {
     const body = document.body;
     body.classList.remove('bg-home', 'bg-secondary', 'bg-none');
 
-    const isCaseDetail = /^\/cas-cliniques\/[^/]+/.test(pathname);
+    const isCaseDetailCas = /^\/cas-cliniques\/[^/]+/.test(pathname);
+    const isCaseDetailDoc = /^\/documentation\/[^/]+\/[^/]+\/[^/]+/.test(pathname); // item
 
     if (pathname === '/') body.classList.add('bg-home');
-    else if (isCaseDetail) body.classList.add('bg-none');
+    else if (isCaseDetailCas || isCaseDetailDoc) body.classList.add('bg-none');
     else body.classList.add('bg-secondary');
   }, [pathname]);
 
@@ -74,16 +72,24 @@ export default function App() {
 
         <Routes>
           <Route path="/" element={<HomePage />} />
+
           <Route path="/cas-cliniques" element={<CasCliniques />} />
-<Route path="/cas-cliniques/presentation/:pathologySlug" element={<CaseDetail />} />
-<Route path="/cas-cliniques/presentation/:pathologySlug/:caseSlug" element={<CaseDetail />} />
-<Route path="/cas-cliniques/:slug" element={<CaseDetail />} />
+          <Route path="/cas-cliniques/presentation/:pathologySlug" element={<CaseDetail />} />
+          <Route path="/cas-cliniques/presentation/:pathologySlug/:caseSlug" element={<CaseDetail />} />
+          <Route path="/cas-cliniques/:slug" element={<CaseDetail />} />
 
           <Route path="/randomisation" element={<Randomisation />} />
+
+          {/* Documentation */}
           <Route path="/documentation" element={<Documentation />} />
+          <Route path="/documentation/:subjectSlug" element={<Documentation />} />
+          <Route path="/documentation/:subjectSlug/:chapterSlug" element={<Documentation />} />
+          {/* item -> CaseDetail (tu brancheras à la fin) */}
+<Route path="/documentation/:subjectSlug/:chapterSlug/:itemSlug" element={<CaseDetail />} />
+<Route path="/documentation/:subjectSlug/:chapterSlug/:itemSlug/:sectionSlug" element={<CaseDetail />} />
+
           <Route path="/liens-utiles" element={<LiensUtiles />} />
         </Routes>
-
       </CaseDetailSidebarProvider>
     </MobileDrawerProvider>
   );
