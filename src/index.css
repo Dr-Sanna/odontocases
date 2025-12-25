@@ -295,9 +295,6 @@ body::before {
 
   /* invisible par défaut */
   opacity: 0;
-
-  /* animation uniquement quand on va vers "secondary" */
-  transition: opacity 200ms ease;
 }
 
 /* Home: visible à 100% (sans transition quand on y revient) */
