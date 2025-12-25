@@ -13,7 +13,6 @@
   gap: 0;
   min-height: 100vh;
 
-  /* glissement du contenu en même temps que la sidebar */
   transition: grid-template-columns 260ms ease;
 }
 
@@ -40,11 +39,9 @@
   flex-direction: column;
   min-height: 0;
 
-  /* vitesse un peu plus lente que 160ms pour éviter “trop vite” */
   transition: width 260ms ease;
   font-weight: 600;
 
-  /* clé: on clippe le contenu (qui reste à 300px) => pas de reflow visible */
   overflow: hidden;
 }
 
@@ -52,7 +49,6 @@
   width: var(--cd-side-collapsed-w);
 }
 
-/* IMPORTANT: l'intérieur garde toujours la largeur “ouverte” => pas de recalcul de lignes */
 .cd-side-inner {
   width: var(--cd-side-open-w);
 
@@ -133,19 +129,17 @@
 .cd-side-list li + li {
   margin-top: 0;
 }
+
 /* =========================
    Scrollbar sidebar list
    ========================= */
-
-/* Firefox */
 .cd-side-list {
   scrollbar-width: thin;
   scrollbar-color: rgba(0, 0, 0, 0.35) transparent;
 }
 
-/* Chrome / Edge / Safari */
 .cd-side-list::-webkit-scrollbar {
-  width: 8px;          /* “thin” visuellement */
+  width: 8px;
 }
 
 .cd-side-list::-webkit-scrollbar-track {
@@ -155,7 +149,7 @@
 .cd-side-list::-webkit-scrollbar-thumb {
   background-color: rgba(0, 0, 0, 0.35);
   border-radius: 999px;
-  border: 2px solid transparent;  /* donne un “gap” autour du thumb */
+  border: 2px solid transparent;
   background-clip: content-box;
 }
 
@@ -163,7 +157,6 @@
   background-color: rgba(0, 0, 0, 0.5);
 }
 
-/* Dark theme */
 [data-theme="dark"] .cd-side-list {
   scrollbar-color: rgba(255, 255, 255, 0.35) transparent;
 }
@@ -203,7 +196,6 @@
   font-weight: 600;
 }
 
-/* clamp 2 lignes */
 .cd-side-link-text {
   display: -webkit-box;
   -webkit-box-orient: vertical;
@@ -223,7 +215,6 @@
   border-radius: 0.25rem;
 }
 
-/* hover uniquement sur la row hoverée (pas sur la liste entière) */
 .cd-side-row:hover {
   background-color: var(--ifm-menu-color-background-hover);
 }
@@ -232,7 +223,6 @@
   background-color: var(--ifm-menu-color-background-active);
 }
 
-/* le lien dans une row ne gère pas son propre hover background */
 .cd-side-row > .cd-side-link {
   background: transparent;
   border-color: transparent;
@@ -240,11 +230,11 @@
 .cd-side-row > .cd-side-link:hover {
   background: transparent;
 }
+
 .cd-side-row.is-active > .cd-side-link {
   color: var(--ifm-menu-color-active);
 }
 
-/* pointeur partout sur une row collapsible */
 .cd-side-row.has-kids {
   cursor: pointer;
 }
@@ -256,17 +246,25 @@
   cursor: pointer;
 }
 
-/* Parent du cas courant (quand on est sur un enfant):
-   pas de background, texte primary, hover normal OK */
-.cd-side-row.is-parent-current {
+/* =========================
+   Active parent but child selected
+   - NO background at rest
+   - keep hover/focus background working
+   ========================= */
+.cd-side-row.is-active.has-active-child:not(:hover):not(:focus-within) {
   background: transparent;
 }
-.cd-side-row.is-parent-current > .cd-side-link,
-.cd-side-row.is-parent-current .cd-side-link-text {
-  color: var(--ifm-color-primary);
+
+/* if background is on the link itself */
+.cd-side-row.is-active.has-active-child > .cd-side-link:not(:hover):not(:focus-visible):not(:focus-within),
+.cd-side-row.is-active.has-active-child > .cd-side-link.active:not(:hover):not(:focus-visible):not(:focus-within) {
+  background: transparent;
 }
-.cd-side-row.is-parent-current:hover {
-  background-color: var(--ifm-menu-color-background-hover);
+
+/* parent text color kept as "active" */
+.cd-side-row.is-active.has-active-child > .cd-side-link,
+.cd-side-row.is-active.has-active-child .cd-side-link-text {
+  color: var(--ifm-menu-color-active);
 }
 
 /* =========================
@@ -292,7 +290,6 @@
   background-color: color-mix(in srgb, var(--ifm-menu-color-background-hover) 85%, transparent);
 }
 
-/* icon (docusaurus-like) */
 .cd-side-caret::before {
   content: "";
   display: block;
@@ -347,7 +344,6 @@
 
 /* =========================
    Collapse behavior (desktop)
-   - on masque le contenu, mais le DOM reste => pas de “reflow visible”
    ========================= */
 .cd-side.is-collapsed .cd-side-header,
 .cd-side.is-collapsed .cd-side-state,
@@ -381,7 +377,6 @@
   color: var(--ifm-color-content);
 }
 
-/* état normal (sidebar ouverte) */
 .cd-side-toggle:hover {
   background: var(--docusaurus-collapse-button-bg-hover);
 }
@@ -391,7 +386,6 @@
   outline-offset: -2px;
 }
 
-/* en mode collapsed: le bouton couvre toute la sidebar pour pouvoir rouvrir */
 .cd-side.is-collapsed .cd-side-toggle {
   position: absolute;
   inset: 0;
@@ -399,18 +393,13 @@
   border: 0;
   z-index: 2;
 
-  /* pas de “hover flash” pendant la fermeture */
   background: transparent;
 }
 
-/* IMPORTANT:
-   tant que le menu n'est PAS totalement fermé, on désactive l'interaction du toggle
-   => pas de hover fantôme + pas de hover qui met 1s à apparaître */
 .cd-side.is-collapsed:not(.is-collapse-done) .cd-side-toggle {
   pointer-events: none;
 }
 
-/* une fois fermé: on autorise l'interaction et le hover */
 .cd-side.is-collapsed.is-collapse-done .cd-side-toggle {
   pointer-events: auto;
 }
@@ -420,14 +409,12 @@
   transition: background-color var(--ifm-transition-fast);
 }
 
-/* FIX SVG: on force la visibilité et une taille cohérente */
 .cd-side-toggle svg {
   width: 22px;
   height: 22px;
   display: block;
 }
 
-/* FIX robust: au cas où les icônes n’utilisent pas currentColor */
 .cd-side-toggle svg,
 .cd-side-toggle svg * {
   fill: rgb(122, 122, 122);
@@ -516,13 +503,7 @@
 
 .qa-item[open] > summary::before { transform: rotate(90deg); }
 
-.qa-num {
-  display: inline;
-  font-weight: inherit;
-  white-space: nowrap;
-  margin-right: 6px;
-}
-
+.qa-num { display: inline; font-weight: inherit; white-space: nowrap; margin-right: 6px; }
 .qa-text { display: inline; font-weight: inherit; }
 
 .qa-item[open] > summary {
@@ -531,23 +512,12 @@
   margin-bottom: 1rem;
 }
 
-.qa-a {
-  overflow: visible;
-  max-height: none;
-  opacity: 1;
-  transition: none;
-}
+.qa-a { overflow: visible; max-height: none; opacity: 1; transition: none; }
 
-
-.qa-a p {
-  margin-top: 0;
-  margin-bottom: var(--ifm-paragraph-margin-bottom);
-}
+.qa-a p { margin-top: 0; margin-bottom: var(--ifm-paragraph-margin-bottom); }
 
 .qa-a p:last-child,
-.qa-a ul:last-child {
-  margin-bottom: 0;
-}
+.qa-a ul:last-child { margin-bottom: 0; }
 
 /* =========================
    Extras
@@ -603,13 +573,9 @@
     background: var(--ifm-background-surface-color);
   }
 
-  .cd-side-inner {
-    width: 100%;
-  }
+  .cd-side-inner { width: 100%; }
 
-  .cd-shell.is-drawer-open .cd-side {
-    transform: translateX(0);
-  }
+  .cd-shell.is-drawer-open .cd-side { transform: translateX(0); }
 
   .cd-drawer-scrim {
     display: block;
@@ -636,9 +602,7 @@
   border-color: var(--ifm-alert-border-color);
 }
 
-[data-theme="dark"] .qa-item[open] > summary {
-  border-color: var(--ifm-alert-border-color);
-}
+[data-theme="dark"] .qa-item[open] > summary { border-color: var(--ifm-alert-border-color); }
 
 [data-theme="dark"] .cd-references,
 [data-theme="dark"] .cd-copyright {
@@ -780,14 +744,6 @@
    ========================= */
 .cd-children { margin-top: calc(-1 * var(--ifm-paragraph-margin-bottom)); }
 
-/* =========================
-   Children cards — grid responsive uniformisé
-   - < 980px : 3 cartes par ligne
-   - < 560px : 2 cartes par ligne
-   - sinon : auto-fit (desktop)
-   ========================= */
-
-/* Desktop / large: ton comportement actuel */
 .cd-children-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 260px));
@@ -797,7 +753,6 @@
   justify-content: start;
 }
 
-/* <= 980px: 3 colonnes fixes */
 @media (max-width: 980px) {
   .cd-children-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -806,7 +761,6 @@
   }
 }
 
-/* <= 560px: 2 colonnes fixes */
 @media (max-width: 560px) {
   .cd-children-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -820,7 +774,6 @@
   overflow: hidden;
 }
 
-
 .cd-child-cover {
   display: block;
   width: 100%;
@@ -831,14 +784,13 @@
   margin-bottom: 0.85rem;
 }
 
-.cd-child-title { font-weight: 650; line-height: 1.2;}
+.cd-child-title { font-weight: 650; line-height: 1.2; }
 
 @media (max-width: 560px) {
   .cd-child-title {
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 3;
-
     overflow: hidden;
   }
 }
@@ -849,17 +801,8 @@
   font-size: 0.95em;
 }
 
-
-
 @media (max-width: 560px) {
-  .cd-children-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  /* très important dans une grid : autoriser la shrink */
-  .cd-children-grid > * {
-    min-width: 0;
-  }
+  .cd-children-grid > * { min-width: 0; }
 
   .cd-child-card {
     min-width: 0;

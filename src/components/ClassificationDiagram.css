@@ -150,8 +150,9 @@ button.cdg-chip {
 
 /* ===== Tons (via variables Docusaurus) ===== */
 .cdg-chip-h1 {
-  --ifm-alert-foreground-color: var(--ifm-color-success-contrast-foreground);
-  --ifm-alert-background-color: var(--ifm-color-success-contrast-background);
+  border: none;
+  --ifm-alert-foreground-color: var(--ifm-font-color-base);
+  --ifm-alert-background-color: transparent;
   font-weight: 700;
 }
 
@@ -168,8 +169,8 @@ button.cdg-chip {
 }
 
 .cdg-chip-h4 {
-  --ifm-alert-foreground-color: var(--ifm-color-note-contrast-foreground);
-  --ifm-alert-background-color: var(--ifm-color-note-contrast-background);
+  --ifm-alert-foreground-color: var(--ifm-color-secondary-contrast-foreground);
+  --ifm-alert-background-color: var(--ifm-color-secondary-contrast-background);
   font-weight: 400;
   text-align: left;
 }

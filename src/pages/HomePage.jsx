@@ -1,17 +1,62 @@
+// src/pages/HomePage.jsx
 import { Link, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { isDocsPrimed, primeDocsEssentials } from '../lib/docsPrefetchStore';
 import './HomePage.css';
+
+const PUB_STATE = import.meta.env.DEV ? 'preview' : 'live';
 
 export default function HomePage() {
   const [query, setQuery] = useState('');
   const navigate = useNavigate();
+  const primingRef = useRef(false);
 
   function onSubmit(e) {
     e.preventDefault();
     const q = query.trim();
-      if (q) navigate(`/cas-cliniques?type=all&page=1&q=${encodeURIComponent(q)}`);
-      else navigate('/cas-cliniques');
+    if (q) navigate(`/cas-cliniques?type=all&page=1&q=${encodeURIComponent(q)}`);
+    else navigate('/cas-cliniques');
   }
+
+  const primeDocs = () => {
+    if (primingRef.current) return;
+    if (isDocsPrimed({ publicationState: PUB_STATE })) return;
+
+    primingRef.current = true;
+    const ctrl = new AbortController();
+
+    primeDocsEssentials({ publicationState: PUB_STATE, signal: ctrl.signal })
+      .catch(() => {})
+      .finally(() => {
+        primingRef.current = false;
+      });
+
+    return () => ctrl.abort();
+  };
+
+  // Prime en idle (pour que /documentation soit instant)
+  useEffect(() => {
+    let cleanup = null;
+
+    const run = () => {
+      cleanup = primeDocs() || null;
+    };
+
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      const id = window.requestIdleCallback(run, { timeout: 900 });
+      return () => {
+        window.cancelIdleCallback?.(id);
+        cleanup?.();
+      };
+    }
+
+    const t = setTimeout(run, 250);
+    return () => {
+      clearTimeout(t);
+      cleanup?.();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="homepage">
@@ -36,7 +81,7 @@ export default function HomePage() {
           <nav className="hero-actions">
             <HomeCard title="Cas cliniques" to="/cas-cliniques" />
             <HomeCard title="Randomisation" to="/randomisation" />
-            <HomeCard title="Documentation" to="/documentation" />
+            <HomeCard title="Documentation" to="/documentation" onPrefetch={primeDocs} />
             <HomeCard title="Liens utiles" to="/liens-utiles" />
           </nav>
         </section>
@@ -45,9 +90,16 @@ export default function HomePage() {
   );
 }
 
-function HomeCard({ title, to }) {
+function HomeCard({ title, to, onPrefetch }) {
   return (
-    <Link to={to} className="home-card ui-card" draggable="false">
+    <Link
+      to={to}
+      className="home-card ui-card"
+      draggable="false"
+      onMouseEnter={onPrefetch}
+      onFocus={onPrefetch}
+      onMouseDown={onPrefetch}
+    >
       <span>{title}</span>
     </Link>
   );

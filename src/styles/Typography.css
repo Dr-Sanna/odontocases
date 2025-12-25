@@ -129,37 +129,6 @@ li > ol {
 }
 
 /* =========================
-   IMAGES (hors tableaux)
-   ========================= */
-.cd-content p img:not(table img) {
-  display: block;
-  margin: 12px auto;
-  cursor: zoom-in;
-  border-radius: 8px;
-  max-width: 100%;
-  width: auto;
-  height: auto;
-  max-height: 60vh;
-  object-fit: contain;
-}
-
-/* =========================
-   CAPTIONS (global)
-   ========================= */
-figcaption {
-  margin-top: 0.35rem;
-  font-size: 0.9em;
-  opacity: 0.85;
-}
-
-.cd-figcaption {
-  font-size: 0.9em;
-  opacity: 0.85;
-  text-align: center;
-  font-weight: 600;
-}
-
-/* =========================
    TABLES CKEditor + Markdown
    ========================= */
 .cd-content figure.table {
@@ -204,6 +173,37 @@ figcaption {
 
 [data-theme="dark"] .cd-content th {
   background: rgba(255, 255, 255, 0.06);
+}
+
+/* =========================
+   IMAGES (hors tableaux)
+   ========================= */
+.cd-content p img:not(table img) {
+  display: block;
+  margin: 12px auto;
+  cursor: zoom-in;
+  border-radius: 8px;
+  max-width: 100%;
+  width: auto;
+  height: auto;
+  max-height: 60vh;
+  object-fit: contain;
+}
+
+/* =========================
+   CAPTIONS (global)
+   ========================= */
+figcaption {
+  margin-top: 0.35rem;
+  font-size: 0.9em;
+  opacity: 0.85;
+}
+
+.cd-figcaption {
+  font-size: 0.9em;
+  opacity: 0.85;
+  text-align: center;
+  font-weight: 600;
 }
 
 /* =========================

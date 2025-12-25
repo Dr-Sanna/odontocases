@@ -1,47 +1,36 @@
 /* src/pages/Documentation.css */
 
-/* Wrapper pour permettre un loader en overlay sans démonter la grille */
-.doc-gridwrap {
-  position: relative;
-}
-
-/* Loader overlay (ne casse pas le layout, évite le “clignotement”) */
-.doc-loading {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding-top: 0.75rem;
-  pointer-events: none;
-  opacity: 0.9;
-  z-index: 2;
-}
-
-/* petit badge loader */
-.doc-loading > .doc-loading-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.45rem 0.7rem;
-  border-radius: 999rem;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(10px);
-  font-size: 0.9rem;
-  opacity: 0.95;
-}
-
 /* Grille de cartes */
 .doc-grid {
   display: grid;
-  grid-template-columns: repeat(12, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.875rem;
+}
+
+/* Responsive */
+@media (max-width: 61.25rem) {
+  /* 980px */
+  .doc-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 40rem) {
+  /* 640px */
+  .doc-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* 1 colonne très petit */
+@media (max-width: 26rem) {
+  .doc-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Carte */
 .doc-card {
-  grid-column: span 4;
   display: flex;
   flex-direction: column;
   text-decoration: none;
@@ -52,33 +41,28 @@
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 0 10px 26px rgba(0, 0, 0, 0.25);
-  transition: transform 120ms ease, background 120ms ease, border-color 120ms ease;
+
+  /* ✅ taille constante sans "bloc vide" */
+  min-height: 11.25rem; /* ~180px : ajuste si besoin */
 }
 
-/* optionnel : léger feedback sans “hover effects” agressifs */
+/* Focus */
 .doc-card:focus-visible {
   outline: 2px solid rgba(255, 255, 255, 0.22);
   outline-offset: 2px;
 }
 
-/* Responsive */
-@media (max-width: 61.25rem) {
-  /* 980px */
-  .doc-card {
-    grid-column: span 6;
-  }
-}
-
-@media (max-width: 40rem) {
-  /* 640px */
-  .doc-card {
-    grid-column: span 12;
-  }
-}
-
-/* Image cover */
+/* Thumb */
 .doc-thumb {
-  height: 7.5rem; /* 120px */
+  position: relative;
+  overflow: hidden;
+
+  /* ✅ remplit l'espace si pas d'extrait */
+  flex: 1;
+
+  /* hauteur minimale type thumb */
+  min-height: 7.5rem;
+
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -101,85 +85,54 @@
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 
-/* Contenu carte */
-.doc-body {
-  padding: 0.75rem;
+/* Overlay sur l'image (badge + titre) */
+.doc-thumb-overlay {
+  position: absolute;
+  inset: 0;
   display: grid;
+  align-content: end;
   gap: 0.45rem;
+  padding: 0.75rem;
+
+  /* lisibilité du texte sur l'image */
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.55),
+    rgba(0, 0, 0, 0.18) 55%,
+    rgba(0, 0, 0, 0) 100%
+  );
 }
 
-/* Ligne meta (chip + éventuellement autre info) */
-.doc-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.15rem;
-}
-
-/* Chip */
-.doc-chip {
-  /* ✅ 1 seule couleur pour toutes les puces */
-  --ifm-alert-foreground-color: var(--ifm-color-note-contrast-foreground);
-  --ifm-alert-background-color: var(--ifm-color-note-contrast-background);
-
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-
-  padding: 0.2rem 0.55rem;
-  border-radius: 0.45rem;
-
-  font-size: 0.78rem;
-  line-height: 1;
-  font-weight: 400;
-  text-align: left;
-
-  color: var(--ifm-alert-foreground-color);
-  background: var(--ifm-alert-background-color);
-
-  border: 1px solid rgba(255, 255, 255, 0.14);
-}
-
-/* ✅ une seule couleur de puce (hérite du foreground) */
-.doc-chip::before {
-  content: "";
-  width: 0.45rem;
-  height: 0.45rem;
-  border-radius: 999rem;
-  background: var(--ifm-alert-foreground-color);
-  opacity: 0.75;
-  flex: 0 0 auto;
-}
-
-/* ✅ libellés (le span doit être vide en JSX) */
-.doc-chip.doc-subject::after { content: "Matière"; }
-.doc-chip.doc-chapter::after { content: "Chapitre"; }
-.doc-chip.doc-item::after { content: "Item"; }
-.doc-chip.doc-section::after { content: "Section"; }
-
-/* focus visible */
-.doc-card:focus-visible .doc-chip {
-  border-color: rgba(255, 255, 255, 0.22);
-}
-
-
-/* Titre carte */
-.doc-title {
+.doc-thumb-title {
   margin: 0;
   font-size: 1rem;
   line-height: 1.25;
+  font-weight: 700;
+  color: #fff;
+
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+
+  /* ✅ micro-sécurité (ne change pas le rendu) */
+  min-width: 0;
+}
+
+/* Body (affiché seulement si excerpt présent) */
+.doc-body {
+  padding: 0.75rem;
 }
 
 /* Extrait */
 .doc-excerpt {
-  margin: 0.2rem 0 0;
+  margin: 0;
   opacity: 0.85;
   font-size: 0.82rem;
   line-height: 1.35;
 }
 
-/* États (vide / erreur) */
+/* États */
 .doc-state {
   grid-column: 1 / -1;
   padding: 1.125rem;
@@ -197,7 +150,7 @@
 
 /* Réserve la hauteur de la description quand on n’est pas sur /documentation */
 .doc-header-spacer {
-  height: 1.5rem; /* en rem comme demandé */
+  height: 1.5rem;
 }
 
 /* Skeleton titre (si le cache titre n'est pas encore hydraté) */
@@ -214,12 +167,22 @@
 .doc-sk-h24 {
   height: 1.5rem; /* ~24px */
 }
+
 .doc-sk-h16 {
   height: 1rem; /* ~16px */
 }
+
 .doc-sk-w55 {
   width: 55%;
 }
+
 .doc-sk-w90 {
   width: 90%;
+}
+
+.doc-thumb-overlay .badge {
+  justify-self: start; /* ne prend pas toute la largeur en grid */
+  align-self: end;
+  width: fit-content; /* shrink-to-fit */
+  max-width: 100%;
 }

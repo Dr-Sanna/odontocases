@@ -2,65 +2,47 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import PageTitle from '../components/PageTitle';
-import { strapiFetch, imgUrl } from '../lib/strapi';
+import {
+  getPrefetchedBySlug,
+  getPrefetchedChildren,
+  isDocsPrimed,
+  primeDocsEssentials,
+  revalidateDocsEssentials,
+} from '../lib/docsPrefetchStore';
 import './Documentation.css';
 
-const DOCS_ENDPOINT = import.meta.env.VITE_DOCS_ENDPOINT || '/doc-nodes';
 const PUB_STATE = import.meta.env.DEV ? 'preview' : 'live';
 
 const ROOT_TITLE = 'Documentation';
+// Note: sous-titre affiché uniquement sur /documentation (racine).
+// Il sert à expliquer en une phrase le contenu de la section.
 const ROOT_DESC =
   "Atlas de pathologies buccales, items principaux et risques médicaux à connaître dans la pratique quotidienne";
 
-function safeJsonGet(key) {
-  try {
-    const raw = sessionStorage.getItem(key);
-    if (!raw) return null;
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
+function labelForLevel(level) {
+  if (level === 'subject') return 'Matière';
+  if (level === 'chapter') return 'Chapitre';
+  if (level === 'item') return 'Item';
+  if (level === 'section') return 'Section';
+  return 'Documentation';
 }
 
-function safeJsonSet(key, value) {
-  try {
-    sessionStorage.setItem(key, JSON.stringify(value));
-  } catch {}
+function toDocLink({ level, slug, subjectSlug, chapterSlug }) {
+  if (!slug) return '/documentation';
+  if (level === 'subject') return `/documentation/${slug}`;
+  if (level === 'chapter') return `/documentation/${subjectSlug}/${slug}`;
+  if (level === 'item') return `/documentation/${subjectSlug}/${chapterSlug}/${slug}`;
+  return '/documentation';
 }
 
-function getDocTitleFromIndex(slug) {
-  if (!slug) return null;
-  const idx = safeJsonGet('doc-index');
-  return idx?.[slug]?.title || null;
-}
+function compareByOrderThenTitle(a, b) {
+  const ao = Number.isFinite(a?.order) ? a.order : Number.POSITIVE_INFINITY;
+  const bo = Number.isFinite(b?.order) ? b.order : Number.POSITIVE_INFINITY;
+  if (ao !== bo) return ao - bo;
 
-function setDocTitleToIndex(slug, title) {
-  if (!slug || !title) return;
-  const idx = safeJsonGet('doc-index') || {};
-  idx[slug] = { title };
-  safeJsonSet('doc-index', idx);
-}
-
-function getListCacheKey(level, parentSlug) {
-  return `doc-list:${level}:${parentSlug || 'root'}`;
-}
-
-function getCachedList(level, parentSlug) {
-  const key = getListCacheKey(level, parentSlug);
-  const cached = safeJsonGet(key);
-  return Array.isArray(cached) ? cached : null;
-}
-
-function setCachedList(level, parentSlug, list) {
-  if (!Array.isArray(list)) return;
-  const key = getListCacheKey(level, parentSlug);
-  safeJsonSet(key, list);
-}
-
-function normalizeEntity(node) {
-  if (!node) return null;
-  if (node.attributes) return { id: node.id, ...node.attributes };
-  return node;
+  const at = String(a?.title || '');
+  const bt = String(b?.title || '');
+  return at.localeCompare(bt, 'fr', { sensitivity: 'base' });
 }
 
 export default function Documentation() {
@@ -70,123 +52,89 @@ export default function Documentation() {
   const level = isRoot ? 'subject' : !chapterSlug ? 'chapter' : 'item';
   const parentSlug = isRoot ? null : !chapterSlug ? subjectSlug : chapterSlug;
 
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [list, setList] = useState(() => getCachedList(level, parentSlug) || []);
+  const [loading, setLoading] = useState(false);
 
-  // titre header depuis l’index (jamais fallback vers slug)
+  // ✅ instant: depuis store
+  const [list, setList] = useState(() => {
+    const fromStore = getPrefetchedChildren(level, parentSlug, { publicationState: PUB_STATE });
+    return Array.isArray(fromStore) ? [...fromStore].sort(compareByOrderThenTitle) : [];
+  });
+
+  // ✅ titre dynamique (sans fallback vers slug)
   const headerTitle = useMemo(() => {
     if (isRoot) return ROOT_TITLE;
-    if (chapterSlug) return getDocTitleFromIndex(chapterSlug) || '';
-    return getDocTitleFromIndex(subjectSlug) || '';
-  }, [isRoot, subjectSlug, chapterSlug]);
 
-  // si titre manquant (reload deep link), on fetch juste le titre du parent pour remplir l’index
-  useEffect(() => {
-    let ignore = false;
-
-    async function hydrateParentTitleBySlug(slugToLoad) {
-      if (!slugToLoad) return;
-      if (getDocTitleFromIndex(slugToLoad)) return;
-
-      try {
-        const res = await strapiFetch(DOCS_ENDPOINT, {
-          params: {
-            locale: 'all',
-            publicationState: PUB_STATE,
-            filters: { slug: { $eq: slugToLoad } },
-            fields: ['title', 'slug'],
-            pagination: { page: 1, pageSize: 1 },
-          },
-        });
-
-        if (ignore) return;
-
-        const node = Array.isArray(res?.data) ? res.data[0] : null;
-        const attrs = normalizeEntity(node);
-        if (attrs?.slug && attrs?.title) setDocTitleToIndex(attrs.slug, attrs.title);
-      } catch {
-        // si ça échoue, on garde juste le skeleton (pas de slug)
-      }
-    }
-
-    if (!isRoot) {
-      const slug = chapterSlug || subjectSlug;
-      hydrateParentTitleBySlug(slug);
-    }
-
-    return () => {
-      ignore = true;
-    };
-  }, [isRoot, subjectSlug, chapterSlug]);
-
-  // boot instant depuis cache quand on change de niveau
-  useEffect(() => {
-    const cached = getCachedList(level, parentSlug);
-    if (cached) setList(cached);
-    else setList([]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [level, parentSlug]);
-
-  useEffect(() => {
-    let ignore = false;
-
-    async function load() {
-      setLoading(true);
-      setError('');
-
-      try {
-        const filters = { level: { $eq: level } };
-        if (parentSlug) filters.parent = { slug: { $eq: parentSlug } };
-
-        const res = await strapiFetch(DOCS_ENDPOINT, {
-          params: {
-            locale: 'all',
-            publicationState: PUB_STATE,
-            filters,
-            fields: ['title', 'slug', 'excerpt', 'level', 'updatedAt'],
-            populate: { cover: { fields: ['url', 'formats'] } },
-            sort: 'title:asc',
-            pagination: { page: 1, pageSize: 500 },
-          },
-        });
-
-        if (ignore) return;
-
-        const rows = Array.isArray(res?.data) ? res.data : [];
-        const normalized = rows
-          .map(normalizeEntity)
-          .filter(Boolean)
-          .filter((n) => n?.slug);
-
-        const cooked = normalized.map((n) => {
-          const coverAttr = n?.cover?.data?.attributes || n?.cover || null;
-          const coverUrl =
-            imgUrl(coverAttr, 'medium') || imgUrl(coverAttr, 'thumbnail') || imgUrl(coverAttr) || '';
-          return { ...n, coverUrl };
-        });
-
-        // index titres
-        for (const n of cooked) {
-          if (n?.slug && n?.title) setDocTitleToIndex(n.slug, n.title);
-        }
-
-        setList(cooked);
-        setCachedList(level, parentSlug, cooked);
-      } catch (e) {
-        if (!ignore) setError(e?.message || 'Erreur de chargement');
-      } finally {
-        if (!ignore) setLoading(false);
-      }
-    }
-
-    load();
-    return () => {
-      ignore = true;
-    };
-  }, [level, parentSlug]);
+    const parentNode = getPrefetchedBySlug(parentSlug, { publicationState: PUB_STATE });
+    return parentNode?.title || '';
+  }, [isRoot, parentSlug]);
 
   const description = isRoot ? ROOT_DESC : '';
+
+  // À chaque navigation interne : hydratation instant depuis store
+  useEffect(() => {
+    const fromStore = getPrefetchedChildren(level, parentSlug, { publicationState: PUB_STATE });
+    if (Array.isArray(fromStore)) setList([...fromStore].sort(compareByOrderThenTitle));
+    else setList([]);
+    setError('');
+  }, [level, parentSlug]);
+
+  // Prime si besoin (accès direct sans passer par HomePage)
+  useEffect(() => {
+    if (isDocsPrimed({ publicationState: PUB_STATE })) return;
+
+    let ignore = false;
+    const ctrl = new AbortController();
+
+    setLoading(true);
+    primeDocsEssentials({ publicationState: PUB_STATE, signal: ctrl.signal })
+      .then(() => {
+        if (ignore) return;
+        const fromStore = getPrefetchedChildren(level, parentSlug, { publicationState: PUB_STATE });
+        if (Array.isArray(fromStore)) setList([...fromStore].sort(compareByOrderThenTitle));
+      })
+      .catch((e) => {
+        if (!ignore) setError(e?.message || 'Erreur de chargement');
+      })
+      .finally(() => {
+        if (!ignore) setLoading(false);
+      });
+
+    return () => {
+      ignore = true;
+      ctrl.abort();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Revalidate en arrière-plan à chaque changement de niveau/parent
+  // ✅ pas de flash "Chargement…" si on a déjà une liste
+  useEffect(() => {
+    let ignore = false;
+    const ctrl = new AbortController();
+
+    const hasInstant = list.length > 0;
+    if (!hasInstant) setLoading(true);
+
+    revalidateDocsEssentials({ publicationState: PUB_STATE, signal: ctrl.signal })
+      .then(() => {
+        if (ignore) return;
+        const fromStore = getPrefetchedChildren(level, parentSlug, { publicationState: PUB_STATE });
+        if (Array.isArray(fromStore)) setList([...fromStore].sort(compareByOrderThenTitle));
+      })
+      .catch((e) => {
+        if (!ignore) setError(e?.message || 'Erreur de chargement');
+      })
+      .finally(() => {
+        if (!ignore) setLoading(false);
+      });
+
+    return () => {
+      ignore = true;
+      ctrl.abort();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [level, parentSlug]);
 
   return (
     <>
@@ -197,11 +145,7 @@ export default function Documentation() {
           ) : (
             <div className="doc-title-skel" aria-hidden="true">
               <div className="doc-sk-line doc-sk-h24 doc-sk-w55" />
-              {isRoot ? (
-                <div className="doc-sk-line doc-sk-h16 doc-sk-w90" />
-              ) : (
-                <div className="doc-header-spacer" />
-              )}
+              {isRoot ? <div className="doc-sk-line doc-sk-h16 doc-sk-w90" /> : <div className="doc-header-spacer" />}
             </div>
           )}
 
@@ -211,46 +155,58 @@ export default function Documentation() {
       </div>
 
       <div className="container">
-        <section className="doc-grid">
-          {loading && list.length === 0 && <div className="doc-state">Chargement…</div>}
-          {!loading && error && <div className="doc-state error">{error}</div>}
-          {!loading && !error && list.length === 0 && <div className="doc-state">Aucun contenu.</div>}
+        <div className="doc-gridwrap">
+          {/* overlay discret seulement si on a déjà quelque chose à afficher */}
+          {loading && list.length > 0 && (
+            <div className="doc-loading" aria-hidden="true">
+              <div className="doc-loading-pill">Mise à jour…</div>
+            </div>
+          )}
 
-          {!error &&
-            list.map((n) => {
-              const title = n?.title || '';
-              const slug = n?.slug || '';
-              if (!slug) return null;
+          <section className="doc-grid">
+            {loading && list.length === 0 && <div className="doc-state">Chargement…</div>}
+            {!loading && error && <div className="doc-state error">{error}</div>}
+            {!loading && !error && list.length === 0 && <div className="doc-state">Aucun contenu.</div>}
 
-              let to = '/documentation';
-              if (level === 'subject') to = `/documentation/${slug}`;
-              if (level === 'chapter') to = `/documentation/${subjectSlug}/${slug}`;
-              if (level === 'item') to = `/documentation/${subjectSlug}/${chapterSlug}/${slug}`;
+            {!error &&
+              list.map((n) => {
+                const title = n?.title || '';
+                const slug = n?.slug || '';
+                if (!slug) return null;
 
-              return (
-                <Link
-                  key={`${level}:${slug}`}
-                  to={to}
-                  className="doc-card ui-card"
-                  state={{ prefetch: { slug, title, type: 'doc' } }}
-                >
-                  <div
-                    className="doc-thumb"
-                    style={n.coverUrl ? { backgroundImage: `url(${n.coverUrl})` } : undefined}
-                    aria-hidden="true"
-                  />
-                  <div className="doc-body">
-                    <div className="doc-meta">
-                      <span className={`doc-chip doc-${level}`} aria-label={level} />
+                const to = toDocLink({ level, slug, subjectSlug, chapterSlug });
+                const badgeLabel = labelForLevel(level);
 
+                return (
+                  <Link
+                    key={`${level}:${slug}`}
+                    to={to}
+                    className="doc-card ui-card"
+                    state={{ prefetch: { slug, title, type: 'doc' } }}
+                  >
+                    <div
+                      className={n?.coverUrl ? 'doc-thumb' : 'doc-thumb is-empty'}
+                      style={n?.coverUrl ? { backgroundImage: `url(${n.coverUrl})` } : undefined}
+                      aria-hidden="true"
+                    >
+                      <div className="doc-thumb-overlay">
+                        <span className="badge badge-soft badge-secondary" aria-label={level}>
+                          {badgeLabel}
+                        </span>
+                        <h3 className="doc-thumb-title">{title}</h3>
+                      </div>
                     </div>
-                    <h3 className="doc-title">{title}</h3>
-                    {n?.excerpt ? <p className="doc-excerpt">{n.excerpt}</p> : null}
-                  </div>
-                </Link>
-              );
-            })}
-        </section>
+
+                    {n?.excerpt ? (
+                      <div className="doc-body">
+                        <p className="doc-excerpt">{n.excerpt}</p>
+                      </div>
+                    ) : null}
+                  </Link>
+                );
+              })}
+          </section>
+        </div>
       </div>
     </>
   );

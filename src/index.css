@@ -17,26 +17,34 @@
   --ifm-font-weight-semibold: 600;
   --ifm-font-weight-bold: 700;
   --ifm-font-size-base: 100%;
+
+  /* Line-height */
+  --ifm-line-height-base: 1.65;
+
+  /* Global */
   --ifm-global-spacing: 1rem;
+  --ifm-global-border-width: 1px;
+  --ifm-global-radius: .4rem;
+  --ifm-global-shadow-lw: 0 1px 2px 0 rgba(0, 0, 0, .1);
+
+  /* Spacing */
   --ifm-spacing-vertical: var(--ifm-global-spacing);
   --ifm-spacing-horizontal: var(--ifm-global-spacing);
-  
-
-    /* Line-height global (donne la “hauteur” visuelle du summary) */
-  --ifm-line-height-base: 1.65;
 
   /* Couleurs primaires */
   --site-primary-hue-saturation: 167 68%;
   --site-primary-hue-saturation-light: 167 56%;
-    --ifm-color-gray-100: #f5f6f7;
-    --ifm-color-gray-200: #ebedf0;
-    --ifm-color-gray-300: #dadde1;
-    --ifm-color-gray-400: #ccd0d5;
-    --ifm-color-gray-500: #bec3c9;
-    --ifm-color-gray-600: #8d949e;
-    --ifm-color-gray-700: #606770;
-    --ifm-color-gray-800: #444950;
-    --ifm-color-gray-900: #1c1e21;
+  --ifm-color-white: #ffffff;
+  --ifm-color-gray-100: #f5f6f7;
+  --ifm-color-gray-200: #ebedf0;
+  --ifm-color-gray-300: #dadde1;
+  --ifm-color-gray-400: #ccd0d5;
+  --ifm-color-gray-500: #bec3c9;
+  --ifm-color-gray-600: #8d949e;
+  --ifm-color-gray-700: #606770;
+  --ifm-color-gray-800: #444950;
+  --ifm-color-gray-900: #1c1e21;
+  --ifm-color-black: #000000;
   --ifm-hover-overlay: #0000000d;
 
   /* Navbar et links */
@@ -50,12 +58,9 @@
   --ifm-navbar-padding-vertical: calc(var(--ifm-spacing-vertical) * .5);
   --ifm-navbar-item-padding-horizontal: .75rem;
   --ifm-navbar-item-padding-vertical: .25rem;
-
-  /* Ombres */
   --ifm-navbar-shadow: var(--ifm-global-shadow-lw);
-  --ifm-global-shadow-lw: 0 1px 2px 0 rgba(0, 0, 0, .1);
 
-    /* Transition “fast” */
+  /* Transitions */
   --ifm-transition-fast: 200ms;
   --ifm-transition-timing-default: cubic-bezier(.08, .52, .52, 1);
 
@@ -67,31 +72,63 @@
   --ifm-alert-border-color: var(--ifm-color-info-dark);
   --ifm-alert-background-color: var(--ifm-color-info-contrast-background);
 
-  /* Note */
+  /* Secondary & Note */
+  --ifm-color-secondary: #ebedf0;
   --ifm-color-secondary-dark: #d4d5d8;
-  --ifm-color-note-dark: #d4d5d8;
+  --ifm-color-secondary-darker: #c8c9cc;
+  --ifm-color-secondary-darkest: #a4a6a8;
+  --ifm-color-secondary-light: #eef0f2;
+  --ifm-color-secondary-lighter: #f1f2f5;
+  --ifm-color-secondary-lightest: #f5f6f8;
 
   /* Info */
   --ifm-color-info: #54c7ec;
   --ifm-color-info-dark: #4cb3d4;
-
+  --ifm-color-info-darker: #47a9c9;
+  --ifm-color-info-darkest: #3b8ba5;
+  --ifm-color-info-light: #6ecfef;
+  --ifm-color-info-lighter: #87d8f2;
+  --ifm-color-info-lightest: #aae3f6;
 
   /* Warning */
-  --ifm-color-warning: #ffba00;
   --ifm-color-warning-dark: #e6a700;
+  --ifm-color-warning-darker: #d99e00;
+  --ifm-color-warning-darkest: #b38200;
+  --ifm-color-warning-light: #ffc426;
+  --ifm-color-warning-lighter: #ffcf4d;
+  --ifm-color-warning-lightest: #ffdd80;
 
   /*Success*/
   --ifm-color-success: #00a400;
   --ifm-color-success-dark: #009400;
+  --ifm-color-success-darker: #008b00;
+  --ifm-color-success-darkest: #007300;
+  --ifm-color-success-light: #26b226;
+  --ifm-color-success-lighter: #4dbf4d;
+  --ifm-color-success-lightest: #80d280;
 
   /* Danger */
   --ifm-color-danger: #fa383e;
   --ifm-color-danger-dark: #e13238;
+  --ifm-color-danger-darker: #d53035;
+  --ifm-color-danger-darkest: #af272b;
+  --ifm-color-danger-light: #fb565b;
+  --ifm-color-danger-lighter: #fb7478;
+  --ifm-color-danger-lightest: #fd9c9f;
 
-  /* Variables Docusaurus details */
+  /* Details */
   --docusaurus-details-summary-arrow-size: 0.38rem;
   --docusaurus-details-transition: transform 0.2s ease;
   --docusaurus-details-decoration-color: var(--ifm-alert-border-color);
+
+  /* Badges */
+  --ifm-badge-background-color: inherit;
+  --ifm-badge-border-color: inherit;
+  --ifm-badge-border-radius: var(--ifm-global-radius);
+  --ifm-badge-border-width: var(--ifm-global-border-width);
+  --ifm-badge-color: var(--ifm-color-white);
+  --ifm-badge-padding-horizontal: calc(var(--ifm-spacing-horizontal) * .5);
+  --ifm-badge-padding-vertical: calc(var(--ifm-spacing-vertical) * .25);
 
   /* Breadcrumbs */
   --ifm-breadcrumb-size-multiplier: .8;
@@ -118,7 +155,6 @@
 
   /* Cartes */
   --ifm-card-border-radius: calc(var(--ifm-global-radius) * 2);
-  --ifm-global-radius: .4rem;
   --card-radius: var(--ifm-card-border-radius);
   --card-border: 1px solid var(--ifm-color-emphasis-300);
   --card-bg: var(--ifm-background-surface-color);
@@ -149,9 +185,9 @@
     --ifm-color-content: var(--ifm-color-emphasis-900);
     --ifm-toc-border-color: var(--ifm-color-emphasis-300);
 
-        /* Note */
-    --ifm-color-note-contrast-background: #fdfdfe;
-    --ifm-color-note-contrast-foreground: #474748;
+    /* Secondary & Note */
+    --ifm-color-secondary-contrast-background: #f8f8f8;
+    --ifm-color-secondary-contrast-foreground: #474748;
 
     /* Info */
     --ifm-color-info-contrast-background: #eef9fd;
@@ -315,41 +351,6 @@ body.bg-secondary::before {
 body.bg-none::before {
   opacity: 0;
 }
-
-/* Chip casedetail*/
-.cd-type-chip {
-  margin: 2px 0 8px;
-}
-
-.cd-chip, .cc-chip {
-  font-size: 0.85rem;
-  padding: 0.25rem 0.6rem;
-  border-radius: 8px;
-  color: var(--ifm-alert-foreground-color);
-  background: var(--ifm-alert-background-color);
-}
-
-.cd-qa, .cc-chip.cc-qa { 
-  --ifm-alert-foreground-color: var(--ifm-color-success-contrast-foreground);
-  --ifm-alert-background-color: var(--ifm-color-success-contrast-background); 
-}
-
-.cd-quiz, .cc-chip.cc-quiz {
-  --ifm-alert-foreground-color: var(--ifm-color-info-contrast-foreground); 
-  --ifm-alert-background-color: var(--ifm-color-info-contrast-background);
-}
-
-.cd-presentation, .cc-chip.cc-presentation {  
-  --ifm-alert-foreground-color: var(--ifm-color-danger-contrast-foreground);
-  --ifm-alert-background-color: var(--ifm-color-danger-contrast-background);
-}
-
-@media (max-width: 560px) {
-  .cc-card .cc-chip {
-    display: none !important;
-  }
-}
-
 
   /* blur pour les moldus */
 /* Blur désactivé par défaut : rien */

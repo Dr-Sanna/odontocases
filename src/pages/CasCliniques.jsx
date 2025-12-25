@@ -4,22 +4,7 @@
  * - Écran "TypePicker" quand type=all et pas de recherche (q vide)
  * - Liste Strapi paginée
  * - Tri par numéro dans le slug (ex: qa-01, qa-12, quiz-03…)
- * - Cartes compactes (cover + titre + chip)
- *
- * Comportement :
- * - onglets "Q/R" et "Quiz" (et "Tous") => charge /cases
- * - onglet "Présentation" => charge /pathologies (cartes pathologies)
- *   et link vers /cas-cliniques/presentation/:slug
- * - recherche avec type=all&q=... => charge /cases + /pathologies (mix)
- *   + corrige l’URL des cases "presentation-xx" vers /cas-cliniques/presentation/:pathologySlug/:caseSlug
- *
- * Recherche "plus permissive" sans devenir aberrante :
- * - variantes: original / sans accents / “singulier” simple + slug
- * - + fallback côté React (accent-insensitive) SEULEMENT si Strapi ne renvoie rien
- *
- * Perf :
- * - le fallback ne se déclenche que si list.length===0 et q non vide
- * - il fetch max 300 items (ajuste si besoin)
+ * - Cartes compactes (cover + titre + badge sur image)
  */
 
 import { useEffect, useMemo, useState } from 'react';
@@ -54,7 +39,7 @@ function normalizeRelationArray(rel) {
   return [];
 }
 
-/** Tri par numéro trouvé dans le slug (asc). Ex: qa-01, qa-12, quiz-03. */
+/** Tri par numéro trouvé dans le slug (asc). */
 function compareBySlugNumberAsc(aNode, bNode) {
   const a = normalizeNode(aNode);
   const b = normalizeNode(bNode);
@@ -82,8 +67,13 @@ function typeLabel(type) {
   return 'Présentation';
 }
 
-// -------- Recherche permissive (simple, non “aberrante”) --------
+function badgeVariant(type) {
+  if (type === 'qa') return 'success';
+  if (type === 'quiz') return 'info';
+  return 'danger';
+}
 
+// -------- Recherche permissive --------
 function normalizeSearch(s) {
   const base = String(s || '').trim().toLowerCase();
   const noAccents = base.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -114,7 +104,6 @@ function buildOrFilterFromVariants(variants) {
   ]);
 }
 
-// fallback front (accent-insensitive) uniquement si Strapi n’a rien renvoyé
 function normForSearch(s) {
   return String(s || '')
     .toLowerCase()
@@ -123,6 +112,7 @@ function normForSearch(s) {
     .replace(/[^a-z0-9]+/g, ' ')
     .trim();
 }
+
 function itemMatchesQuery(item, q) {
   const nq = normForSearch(q);
   if (!nq) return true;
@@ -137,16 +127,13 @@ function itemMatchesQuery(item, q) {
 export default function CasCliniques() {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // UI state
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [items, setItems] = useState([]);
   const [total, setTotal] = useState(0);
 
-  // mapping: caseSlug -> { slug: pathologySlug, title: pathologyTitle }
   const [caseToPatho, setCaseToPatho] = useState({});
 
-  // URL params
   const q = searchParams.get('q') || '';
   const tab = searchParams.get('type') || 'all';
   const page = Number(searchParams.get('page') || 1);
@@ -178,14 +165,12 @@ export default function CasCliniques() {
     return f;
   }, [tab]);
 
-  // Filtres CASES (qa/quiz/all)
   const caseFilters = useMemo(() => {
     const f = { ...caseTypeFilterOnly };
     if (q) f.$or = buildOrFilterFromVariants(variants);
     return f;
   }, [caseTypeFilterOnly, q, variants]);
 
-  // Filtres PATHOLOGIES (presentation)
   const pathoFilters = useMemo(() => {
     const f = {};
     if (q) f.$or = buildOrFilterFromVariants(variants);
@@ -208,7 +193,6 @@ export default function CasCliniques() {
       setError('');
 
       try {
-        // MIXED: all + q => on charge pathologies + cases
         if (isMixedSearch) {
           const [pathoData, caseData] = await Promise.all([
             strapiFetch(PATHO_ENDPOINT, {
@@ -275,7 +259,6 @@ export default function CasCliniques() {
             .map((n) => ({ ...normalizeNode(n), __entity: 'case' }))
             .filter((it) => it?.slug);
 
-          // fallback cases ONLY si rien trouvé côté Strapi
           let finalCaseList = caseList;
           if (q && finalCaseList.length === 0) {
             const fallback = await strapiFetch(CASES_ENDPOINT, {
@@ -311,7 +294,6 @@ export default function CasCliniques() {
           return;
         }
 
-        // MODE NORMAL
         const endpoint = isPresentationTab ? PATHO_ENDPOINT : CASES_ENDPOINT;
 
         const baseParams = isPresentationTab
@@ -340,7 +322,6 @@ export default function CasCliniques() {
         let list = Array.isArray(data?.data) ? data.data : [];
         let normalized = list.map(normalizeNode).filter((it) => it?.slug);
 
-        // fallback : seulement si Strapi n’a rien trouvé
         if (q && normalized.length === 0) {
           const fallback = await strapiFetch(endpoint, {
             params: {
@@ -357,8 +338,6 @@ export default function CasCliniques() {
             .filter((it) => itemMatchesQuery(it, q));
         }
 
-        // on garde le format "node" pour le rendu (mais on a déjà normalisé)
-        // => on stocke des objets normalisés
         setItems(normalized);
         setTotal(data?.meta?.pagination?.total ?? normalized.length ?? 0);
         setCaseToPatho({});
@@ -393,7 +372,6 @@ export default function CasCliniques() {
     return arr;
   }, [items]);
 
-  // relatedPrefetch seulement pour les cases, hors presentation & mixed
   const prefetchByType = useMemo(() => {
     if (isPresentationTab || isMixedSearch) return {};
     const map = {};
@@ -452,9 +430,7 @@ export default function CasCliniques() {
               {loading && <div className="cc-state">Chargement…</div>}
               {error && !loading && <div className="cc-state error">{error}</div>}
 
-              {!loading && !error && sortedItems.length === 0 && (
-                <div className="cc-state">Aucun résultat.</div>
-              )}
+              {!loading && !error && sortedItems.length === 0 && <div className="cc-state">Aucun résultat.</div>}
 
               {!loading &&
                 !error &&
@@ -465,7 +441,7 @@ export default function CasCliniques() {
                   const entity = attrs.__entity || (isPresentationTab ? 'pathology' : 'case');
                   const { title = 'Sans titre', slug = '', excerpt = '' } = attrs;
 
-                  const type = entity === 'pathology' ? 'presentation' : (attrs.type || 'qa');
+                  const type = entity === 'pathology' ? 'presentation' : attrs.type || 'qa';
 
                   const relatedPrefetch =
                     entity === 'case' && !isPresentationTab && !isMixedSearch ? prefetchByType[type] || [] : [];
@@ -508,11 +484,13 @@ export default function CasCliniques() {
                       <div
                         className="cc-thumb"
                         style={{ backgroundImage: coverUrl ? `url(${coverUrl})` : undefined }}
-                      />
+                      >
+                        <span className={`cc-thumb-badge badge badge-soft badge-${badgeVariant(type)}`}>
+                          {typeLabel(type)}
+                        </span>
+                      </div>
+
                       <div className="cc-body">
-                        <div className="cc-meta">
-                          <span className={`cc-chip cc-${type}`}>{typeLabel(type)}</span>
-                        </div>
                         <h3 className="cc-title">{title}</h3>
                       </div>
                     </>
