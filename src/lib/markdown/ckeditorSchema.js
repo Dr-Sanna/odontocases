@@ -9,6 +9,7 @@ import { defaultSchema } from 'rehype-sanitize';
  * - div/span: className (heading callout)
  * - details/summary: pour callouts pliables
  * + ids (ancres) sur headings / span / div / a
+ * + liens dans le titre de callout (a[href...])
  */
 export const ckeditorSchema = (() => {
   const tagNames = new Set([...(defaultSchema.tagNames || [])]);
@@ -28,7 +29,7 @@ export const ckeditorSchema = (() => {
     'summary',
   ].forEach((t) => tagNames.add(t));
 
-  // si jamais certains headings n’étaient pas présents (normalement oui), on les garde
+  // headings
   ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].forEach((t) => tagNames.add(t));
 
   const attributes = {
@@ -55,7 +56,7 @@ export const ckeditorSchema = (() => {
     details: [...(defaultSchema.attributes?.details || []), 'className', 'open'],
     summary: [...(defaultSchema.attributes?.summary || []), 'className'],
 
-    // ✅ ancres sur titres (si tu ajoutes des ids à la main ou via rehypeSlug après sanitize, c’est safe)
+    // ancres sur titres
     h1: [...(defaultSchema.attributes?.h1 || []), 'id', 'className'],
     h2: [...(defaultSchema.attributes?.h2 || []), 'id', 'className'],
     h3: [...(defaultSchema.attributes?.h3 || []), 'id', 'className'],
@@ -63,8 +64,17 @@ export const ckeditorSchema = (() => {
     h5: [...(defaultSchema.attributes?.h5 || []), 'id', 'className'],
     h6: [...(defaultSchema.attributes?.h6 || []), 'id', 'className'],
 
-    // ✅ utile si tu poses des ancres sur <a id="...">
-    a: [...(defaultSchema.attributes?.a || []), 'id'],
+    // ✅ liens (utile pour les titres de callout + contenu)
+    // on garde le defaultSchema + on ajoute explicitement ce qu’on veut être sûr d’autoriser
+    a: [
+      ...(defaultSchema.attributes?.a || []),
+      'id',
+      'className',
+      'href',
+      'title',
+      'target',
+      'rel',
+    ],
   };
 
   return {

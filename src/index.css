@@ -67,6 +67,10 @@
   --ifm-alert-border-color: var(--ifm-color-info-dark);
   --ifm-alert-background-color: var(--ifm-color-info-contrast-background);
 
+  /* Note */
+  --ifm-color-secondary-dark: #d4d5d8;
+  --ifm-color-note-dark: #d4d5d8;
+
   /* Info */
   --ifm-color-info: #54c7ec;
   --ifm-color-info-dark: #4cb3d4;
@@ -124,7 +128,6 @@
   --card-transition: all var(--ifm-transition-fast) ease;
    
 }
-
 
 [data-theme=light] {
     --ifm-color-primary: #2E8555;

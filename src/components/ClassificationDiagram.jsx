@@ -1,5 +1,6 @@
 // src/components/ClassificationDiagram.jsx
 import { Link } from 'react-router-dom';
+import { useEffect, useRef } from 'react';
 import './ClassificationDiagram.css';
 
 function norm(s) {
@@ -36,7 +37,6 @@ function cssLenToPx(value) {
     return Number.isFinite(n) ? (n / 100) * (window.innerHeight || 0) : 0;
   }
 
-  // fallback: nombre nu = px
   const n = parseFloat(v);
   return Number.isFinite(n) ? n : 0;
 }
@@ -51,7 +51,6 @@ function readCssVarPx(varName) {
 }
 
 function getNavbarHeightPx() {
-  // Plus fiable si une navbar existe réellement dans le DOM
   const nav =
     document.querySelector('header.navbar') ||
     document.querySelector('.navbar') ||
@@ -60,12 +59,11 @@ function getNavbarHeightPx() {
   const hDom = nav?.getBoundingClientRect?.().height || 0;
   if (hDom > 0) return hDom;
 
-  // fallback: variable Docusaurus
   return readCssVarPx('--ifm-navbar-height');
 }
 
 function getScrollOffsetPx() {
-  return Math.round(getNavbarHeightPx() + 14); // marge confort
+  return Math.round(getNavbarHeightPx() + 14);
 }
 
 function scrollToElWithOffset(el) {
@@ -92,11 +90,7 @@ function scrollToHeadingText(text) {
 function Item({ label, anchor, to, className = '' }) {
   if (anchor) {
     return (
-      <button
-        type="button"
-        className={`cdg-chip ${className}`}
-        onClick={() => scrollToHeadingText(anchor)}
-      >
+      <button type="button" className={`cdg-chip ${className}`} onClick={() => scrollToHeadingText(anchor)}>
         {label}
       </button>
     );
@@ -125,9 +119,61 @@ function Item({ label, anchor, to, className = '' }) {
   );
 }
 
+function applySpineCut(rootEl) {
+  if (!rootEl) return;
+
+  const lists = rootEl.querySelectorAll('.cdg-list');
+  lists.forEach((list) => {
+    const last = list.querySelector('.cdg-chip-h4:last-child');
+    if (!last) {
+      list.style.setProperty('--cdg-spine-height', '0px');
+      return;
+    }
+
+    const listRect = list.getBoundingClientRect();
+    const lastRect = last.getBoundingClientRect();
+
+    // centre vertical de la dernière chip, relatif au top de la liste
+    const lastCenterY = (lastRect.top - listRect.top) + lastRect.height / 2;
+
+    // top de la spine (doit matcher --cdg-spine-top)
+    const spineTop = 2;
+
+    const height = Math.max(0, lastCenterY - spineTop);
+
+    list.style.setProperty('--cdg-spine-top', `${spineTop}px`);
+    list.style.setProperty('--cdg-spine-height', `${height}px`);
+  });
+}
+
 export default function ClassificationDiagram({ title, left, right }) {
+  const rootRef = useRef(null);
+
+  useEffect(() => {
+    const rootEl = rootRef.current;
+    if (!rootEl) return;
+
+    const raf = () => requestAnimationFrame(() => applySpineCut(rootEl));
+
+    // 1) première passe après paint
+    raf();
+
+    // 2) recalc au resize
+    const onResize = () => raf();
+    window.addEventListener('resize', onResize);
+
+    // 3) recalc si le layout change (font loading, contenu, etc.)
+    const ro = new ResizeObserver(() => raf());
+    ro.observe(rootEl);
+
+    return () => {
+      window.removeEventListener('resize', onResize);
+      ro.disconnect();
+    };
+  }, [title, left, right]);
+
   return (
-    <section className="cdg" aria-label={title || 'Diagramme de classification'}>
+    <section ref={rootRef} className="cdg" aria-label={title || 'Diagramme de classification'}>
       {title ? (
         <div className="cdg-root">
           <span className="cdg-chip cdg-chip-h1">{title}</span>
@@ -138,12 +184,7 @@ export default function ClassificationDiagram({ title, left, right }) {
         {/* LEFT COLUMN */}
         <div className="cdg-col">
           <div className="cdg-h2">
-            <Item
-              label={left?.label || ''}
-              anchor={left?.anchor}
-              to={left?.to}
-              className="cdg-chip-h2"
-            />
+            <Item label={left?.label || ''} anchor={left?.anchor} to={left?.to} className="cdg-chip-h2" />
           </div>
 
           {(left?.groups || []).map((g) => (
@@ -170,12 +211,7 @@ export default function ClassificationDiagram({ title, left, right }) {
         {/* RIGHT COLUMN */}
         <div className="cdg-col">
           <div className="cdg-h2">
-            <Item
-              label={right?.label || ''}
-              anchor={right?.anchor}
-              to={right?.to}
-              className="cdg-chip-h2"
-            />
+            <Item label={right?.label || ''} anchor={right?.anchor} to={right?.to} className="cdg-chip-h2" />
           </div>
 
           {(right?.groups || []).map((g) => (

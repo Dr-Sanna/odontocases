@@ -61,6 +61,12 @@ h3 {
   margin-top: calc(var(--ifm-h3-vertical-rhythm-top) * var(--ifm-leading));
 }
 
+h4 {
+  font-size: var(--ifm-h4-font-size);
+  margin-top: calc(var(--ifm-heading-vertical-rhythm-top) * var(--ifm-leading));
+  margin-bottom: 0.5rem;
+}
+
 /* =========================
    LISTS
    ========================= */
@@ -340,121 +346,6 @@ figcaption {
 .cd-content table td > img:hover {
   cursor: zoom-in;
 }
-
-/* =========================
-   CALLOUTS Obsidian-like
-   ========================= */
-.cd-callout {
-  margin: 1rem 0;
-  border-radius: 0.6rem;
-  padding: var(--ifm-alert-padding-vertical) var(--ifm-alert-padding-horizontal);
-  box-shadow: var(--ifm-alert-shadow);
-  color: var(--ifm-alert-foreground-color);
-}
-
-.cd-callout-info {
-  --ifm-alert-foreground-color: var(--ifm-color-info-contrast-foreground);
-  border-left: 4px solid var(--ifm-color-info-dark);
-  background: var(--ifm-color-info-contrast-background);
-}
-
-.cd-callout-warning {
-  --ifm-alert-foreground-color: var(--ifm-color-warning-contrast-foreground);
-  border-left: 4px solid var(--ifm-color-warning-dark);
-  background: var(--ifm-color-warning-contrast-background);
-}
-
-.cd-callout-success {
-  --ifm-alert-foreground-color: var(--ifm-color-success-contrast-foreground);
-  border-left: 4px solid var(--ifm-color-success-dark);
-  background: var(--ifm-color-success-contrast-background);
-}
-
-.cd-callout-danger {
-  --ifm-alert-foreground-color: var(--ifm-color-danger-contrast-foreground);
-  border-left: 4px solid var(--ifm-color-danger-dark);
-  background: var(--ifm-color-danger-contrast-background);
-}
-
-.cd-callout-heading {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-weight: 600;
-  margin-bottom: 0.8rem;
-}
-
-.cd-callout-icon svg {
-  display: block;
-}
-
-.cd-callout-content > :first-child {
-  margin-top: 0;
-}
-
-.cd-callout-content > :last-child {
-  margin-bottom: 0;
-}
-
-.cd-callout-details {
-  margin: 0;
-  padding: 0;
-}
-
-.cd-callout-details > summary.cd-callout-heading {
-  cursor: pointer;
-  user-select: none;
-  margin-bottom: 0;
-}
-
-.cd-callout-details > summary {
-  list-style: none;
-}
-
-.cd-callout-details > summary::-webkit-details-marker {
-  display: none;
-}
-
-.cd-callout-chevron {
-  margin-left: auto;
-  width: 0.6rem;
-  height: 0.6rem;
-  display: inline-block;
-  position: relative;
-}
-
-.cd-callout-chevron::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-right: 2px solid currentColor;
-  border-bottom: 2px solid currentColor;
-  transform: rotate(-45deg);
-  transition: transform 160ms ease;
-}
-
-.cd-callout-details[open] .cd-callout-chevron::before {
-  transform: rotate(-135deg);
-}
-
-.cd-callout-details:not([open]) .cd-callout-content {
-  display: none;
-}
-
-.cd-callout-details[open] > summary.cd-callout-heading {
-  margin-bottom: 0.8rem;
-}
-
-/* Pas de marge sous le titre si le callout n'a pas de contenu */
-.cd-callout.cd-callout--title-only > .cd-callout-heading {
-  margin-bottom: 0;
-}
-
-/* Et si jamais tu gardes quand même un content vide */
-.cd-callout.cd-callout--title-only > .cd-callout-content {
-  display: none;
-}
-
 
 /* caption sous l’image, largeur = largeur du figure (donc image), texte à gauche */
 .cd-content table td figure.image > figcaption,

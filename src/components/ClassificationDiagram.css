@@ -1,5 +1,40 @@
 /* src/components/ClassificationDiagram.css */
 
+/* =========================
+   Variables selon thème
+   ========================= */
+
+/* fallback */
+:root {
+  --cdg-chip-hover-brightness: 0.985;
+  --cdg-chip-hover-border: rgba(2, 6, 23, 0.14);
+  --cdg-chip-hover-shadow: none;
+
+  --cdg-line-color: rgba(2, 6, 23, 0.10);
+}
+
+/* Light */
+:root[data-theme='light'],
+html[data-theme='light'],
+body[data-theme='light'] {
+  --cdg-chip-hover-brightness: 0.97;
+  --cdg-chip-hover-border: rgba(2, 6, 23, 0.14);
+  --cdg-chip-hover-shadow: none;
+
+  --cdg-line-color: rgba(2, 6, 23, 0.10);
+}
+
+/* Dark */
+:root[data-theme='dark'],
+html[data-theme='dark'],
+body[data-theme='dark'] {
+  --cdg-chip-hover-brightness: 1.18;
+  --cdg-chip-hover-border: rgba(148, 163, 184, 0.22);
+  --cdg-chip-hover-shadow: none;
+
+  --cdg-line-color: rgba(148, 163, 184, 0.22);
+}
+
 /* police Docusaurus, même si injecté dans du markdown */
 .cdg,
 .cdg * {
@@ -65,7 +100,7 @@ button.cdg-chip {
   margin-bottom: 12px;
 }
 
-/* ===== CHIP (même logique que .cd-chip) ===== */
+/* ===== CHIP ===== */
 .cdg-chip {
   font-size: 0.85rem;
   line-height: 1.2;
@@ -88,12 +123,19 @@ button.cdg-chip {
   overflow-wrap: anywhere;
   hyphens: none;
 
-  transition: filter 120ms ease, border-color 120ms ease;
+  transition: filter 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
 }
 
-.cdg-chip:hover {
-  filter: brightness(0.985);
-  border-color: rgba(2, 6, 23, 0.14);
+/* ✅ H1 : pas de hover + pas de pointer */
+.cdg-chip-h1 {
+  cursor: default;
+}
+
+/* ✅ hover : toutes SAUF H1 et SAUF disabled */
+.cdg-chip:not(.cdg-chip-h1):not(.cdg-chip-disabled):hover {
+  filter: brightness(var(--cdg-chip-hover-brightness));
+  border-color: var(--cdg-chip-hover-border);
+  box-shadow: var(--cdg-chip-hover-shadow);
 }
 
 .cdg-chip:focus-visible {
@@ -132,7 +174,10 @@ button.cdg-chip {
   text-align: left;
 }
 
-/* liste H4 + spine discrète */
+/* =========================
+   Lignes du diagramme (JS coupe la spine)
+   ========================= */
+
 .cdg-list {
   margin-top: 6px;
   padding-left: 16px;
@@ -141,16 +186,22 @@ button.cdg-chip {
   display: flex;
   flex-direction: column;
   gap: 8px;
+
+  /* ✅ paramètres pilotés par JS */
+  --cdg-spine-top: 2px;
+  --cdg-spine-height: calc(100% - 4px);
 }
 
 .cdg-list::before {
   content: "";
   position: absolute;
   left: 6px;
-  top: 2px;
-  bottom: 2px;
+
+  top: var(--cdg-spine-top);
+  height: var(--cdg-spine-height);
+
   width: 2px;
-  background: rgba(2, 6, 23, 0.10);
+  background: var(--cdg-line-color);
   border-radius: 2px;
 }
 
@@ -159,6 +210,7 @@ button.cdg-chip {
   position: relative;
   justify-content: flex-start;
 }
+
 .cdg-list > .cdg-chip-h4::before {
   content: "";
   position: absolute;
@@ -166,7 +218,7 @@ button.cdg-chip {
   top: 50%;
   width: 10px;
   height: 2px;
-  background: rgba(2, 6, 23, 0.10);
+  background: var(--cdg-line-color);
   transform: translateY(-50%);
   border-radius: 2px;
 }

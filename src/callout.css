@@ -1,0 +1,182 @@
+/* =========================
+   CALLOUTS Obsidian-like
+   ========================= */
+
+.cd-callout {
+  margin: 1rem 0;
+  border-radius: 0.6rem;
+  padding: var(--ifm-alert-padding-vertical) var(--ifm-alert-padding-horizontal);
+  box-shadow: var(--ifm-alert-shadow);
+
+  /* valeurs par défaut (au cas où) */
+  --cd-callout-border: currentColor;
+  --cd-callout-bg: transparent;
+
+  /* texte du callout */
+  color: var(--ifm-alert-foreground-color);
+
+  /* ✅ structure commune */
+  border-left: 4px solid var(--cd-callout-border);
+  background: var(--cd-callout-bg);
+
+  /* =========================
+     Liens (scopés callout)
+     ========================= */
+
+  --cd-link-color: currentColor;
+  --cd-link-hover-color: currentColor;
+
+  /* underline : couleur = bordure par défaut (donc pas de répétition par type) */
+  --cd-link-underline-color: var(--cd-callout-border);
+
+  /* épaisseur underline normal / hover */
+  --cd-link-underline-thickness: 1.5px;
+  --cd-link-underline-thickness-hover: 2px;
+
+  /* offset underline */
+  --cd-link-underline-offset: 0.16em;
+}
+
+/* Liens dans callouts */
+.cd-callout a {
+  color: var(--cd-link-color);
+
+  text-decoration-line: underline !important;
+  text-decoration-style: solid;
+  text-decoration-color: var(--cd-link-underline-color) !important;
+  text-decoration-thickness: var(--cd-link-underline-thickness) !important;
+  text-underline-offset: var(--cd-link-underline-offset);
+
+  text-decoration-skip-ink: auto;
+}
+
+.cd-callout a:hover,
+.cd-callout a:focus-visible {
+  color: var(--cd-link-hover-color);
+
+  text-decoration-line: underline !important;
+  text-decoration-style: solid;
+  text-decoration-color: var(--cd-link-underline-color) !important;
+  text-decoration-thickness: var(--cd-link-underline-thickness-hover) !important;
+}
+
+.cd-callout a:visited {
+  color: var(--cd-link-color);
+}
+
+/* =========================
+   Variantes par type
+   (elles ne font que définir des variables)
+   ========================= */
+
+.cd-callout-info {
+  --ifm-alert-foreground-color: var(--ifm-color-info-contrast-foreground);
+  --cd-callout-border: var(--ifm-color-info-dark);
+  --cd-callout-bg: var(--ifm-color-info-contrast-background);
+}
+
+.cd-callout-warning {
+  --ifm-alert-foreground-color: var(--ifm-color-warning-contrast-foreground);
+  --cd-callout-border: var(--ifm-color-warning-dark);
+  --cd-callout-bg: var(--ifm-color-warning-contrast-background);
+}
+
+.cd-callout-success {
+  --ifm-alert-foreground-color: var(--ifm-color-success-contrast-foreground);
+  --cd-callout-border: var(--ifm-color-success-dark);
+  --cd-callout-bg: var(--ifm-color-success-contrast-background);
+}
+
+.cd-callout-danger {
+  --ifm-alert-foreground-color: var(--ifm-color-danger-contrast-foreground);
+  --cd-callout-border: var(--ifm-color-danger-dark);
+  --cd-callout-bg: var(--ifm-color-danger-contrast-background);
+}
+
+.cd-callout-note {
+  --ifm-alert-foreground-color: var(--ifm-color-note-contrast-foreground);
+  --cd-callout-border: var(--ifm-color-note-dark);
+  --cd-callout-bg: var(--ifm-color-note-contrast-background);
+}
+
+/* =========================
+   Structure
+   ========================= */
+
+.cd-callout-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 600;
+  margin-bottom: 0.8rem;
+}
+
+.cd-callout-icon svg {
+  display: block;
+}
+
+.cd-callout-content > :first-child {
+  margin-top: 0;
+}
+
+.cd-callout-content > :last-child {
+  margin-bottom: 0;
+}
+
+.cd-callout-details {
+  margin: 0;
+  padding: 0;
+}
+
+.cd-callout-details > summary.cd-callout-heading {
+  cursor: pointer;
+  user-select: none;
+  margin-bottom: 0;
+}
+
+.cd-callout-details > summary {
+  list-style: none;
+}
+
+.cd-callout-details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.cd-callout-chevron {
+  margin-left: auto;
+  width: 0.6rem;
+  height: 0.6rem;
+  display: inline-block;
+  position: relative;
+}
+
+.cd-callout-chevron::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform 160ms ease;
+}
+
+.cd-callout-details[open] .cd-callout-chevron::before {
+  transform: rotate(-135deg);
+}
+
+.cd-callout-details:not([open]) .cd-callout-content {
+  display: none;
+}
+
+.cd-callout-details[open] > summary.cd-callout-heading {
+  margin-bottom: 0.8rem;
+}
+
+/* Pas de marge sous le titre si le callout n'a pas de contenu */
+.cd-callout.cd-callout--title-only > .cd-callout-heading {
+  margin-bottom: 0;
+}
+
+.cd-callout.cd-callout--title-only > .cd-callout-content {
+  display: none;
+}
