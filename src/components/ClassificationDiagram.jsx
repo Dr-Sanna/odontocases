@@ -25,8 +25,7 @@ function cssLenToPx(value) {
   }
   if (v.endsWith("rem")) {
     const n = parseFloat(v);
-    const rootFs =
-      parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    const rootFs = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
     return Number.isFinite(n) ? n * rootFs : 0;
   }
   if (v.endsWith("vw")) {
@@ -44,9 +43,7 @@ function cssLenToPx(value) {
 
 function readCssVarPx(varName) {
   try {
-    const raw = getComputedStyle(document.documentElement).getPropertyValue(
-      varName
-    );
+    const raw = getComputedStyle(document.documentElement).getPropertyValue(varName);
     return cssLenToPx(raw);
   } catch {
     return 0;
@@ -114,27 +111,16 @@ function Item({ label, anchor, to, className = "" }) {
     );
   }
 
-  if (
-    typeof to === "string" &&
-    (to.startsWith("https://") || to.startsWith("http://"))
-  ) {
+  if (typeof to === "string" && (to.startsWith("https://") || to.startsWith("http://"))) {
     return (
-      <a
-        className={`cdg-chip ${className}`}
-        href={to}
-        target="_blank"
-        rel="noreferrer"
-      >
+      <a className={`cdg-chip ${className}`} href={to} target="_blank" rel="noreferrer">
         {label}
       </a>
     );
   }
 
   return (
-    <span
-      className={`cdg-chip cdg-chip-disabled ${className}`}
-      aria-disabled="true"
-    >
+    <span className={`cdg-chip cdg-chip-disabled ${className}`} aria-disabled="true">
       {label}
     </span>
   );
@@ -220,19 +206,14 @@ function nextDepthForGroup(parentNode, currentDepth) {
 
 /* =========================
    Training (React only)
-   maskLevel:
-   -1 => rien masqué (mais entraînement actif)
-    0 => masque items (H4/H5)
-    1 => masque items + labels H3/H4/H5
-    2 => masque items + labels H2/H3/H4/H5
    ========================= */
 const MIN_LEVEL = -1;
 const MAX_LEVEL = 2;
 
 function hideLabelsFromDepth(level) {
-  if (level <= 0) return 999; // aucun label masqué
-  if (level === 1) return 3; // H3+
-  return 2; // H2+
+  if (level <= 0) return 999;
+  if (level === 1) return 3;
+  return 2;
 }
 
 function collectHideTargets(node, depth, path, level, out) {
@@ -241,11 +222,9 @@ function collectHideTargets(node, depth, path, level, out) {
   const items = Array.isArray(node?.items) ? node.items : [];
   const groups = Array.isArray(node?.groups) ? node.groups : [];
 
-  // labels (headings)
   const fromDepth = hideLabelsFromDepth(level);
   if (node?.label && depth >= fromDepth) out.push(`${path}/label`);
 
-  // items + enfants si level >= 0
   if (level >= 0) {
     for (let i = 0; i < items.length; i++) {
       out.push(`${path}/item/${i}`);
@@ -272,7 +251,6 @@ function collectHideTargets(node, depth, path, level, out) {
     }
   }
 
-  // groups
   for (let gi = 0; gi < groups.length; gi++) {
     const nd = nextDepthForGroup(node, depth);
     collectHideTargets(groups[gi], nd, `${path}/group/${gi}`, level, out);
@@ -297,39 +275,22 @@ function ChildBlock({ child, depth, path, trainingOn, hidden, reveal }) {
   return (
     <div className="cdg-subwrap">
       {childItems.length ? (
-        <div
-          className="cdg-sublist"
-          data-layout={childLayout}
-          style={{ "--cdg-cols": String(childCols) }}
-        >
+        <div className="cdg-sublist" data-layout={childLayout} style={{ "--cdg-cols": String(childCols) }}>
           {childItems.map((c, ci) => {
             const id = `${path}/item/${ci}`;
             const isHidden = trainingOn && hidden.has(id);
 
             return isHidden ? (
-              <MaskedChip
-                key={id}
-                className={childChip}
-                onReveal={() => reveal(id)}
-              />
+              <MaskedChip key={id} className={childChip} onReveal={() => reveal(id)} />
             ) : (
-              <Item
-                key={id}
-                label={c.label}
-                anchor={c.anchor}
-                to={c.to}
-                className={childChip}
-              />
+              <Item key={id} label={c.label} anchor={c.anchor} to={c.to} className={childChip} />
             );
           })}
         </div>
       ) : null}
 
       {childGroups.length ? (
-        <div
-          className="cdg-groups"
-          style={{ "--cdg-groups-cols": String(childGroupCols) }}
-        >
+        <div className="cdg-groups" style={{ "--cdg-groups-cols": String(childGroupCols) }}>
           {childGroups.map((g, gi) => (
             <NodeBlock
               key={`${path}/group/${gi}`}
@@ -350,33 +311,11 @@ function ChildBlock({ child, depth, path, trainingOn, hidden, reveal }) {
 /* =========================
    Recursive renderer
    ========================= */
-function NodeBlock({
-  node,
-  depth = 2,
-  path = "root",
-  trainingOn,
-  hidden,
-  reveal,
-}) {
+function NodeBlock({ node, depth = 2, path = "root", trainingOn, hidden, reveal }) {
   if (!node) return null;
 
-  const headingWrap =
-    depth === 2
-      ? "cdg-h2"
-      : depth === 3
-      ? "cdg-h3"
-      : depth === 4
-      ? "cdg-h4"
-      : "cdg-h5";
-
-  const headingChip =
-    depth === 2
-      ? "cdg-chip-h2"
-      : depth === 3
-      ? "cdg-chip-h3"
-      : depth === 4
-      ? "cdg-chip-h4"
-      : "cdg-chip-h5";
+  const headingWrap = depth === 2 ? "cdg-h2" : depth === 3 ? "cdg-h3" : depth === 4 ? "cdg-h4" : "cdg-h5";
+  const headingChip = depth === 2 ? "cdg-chip-h2" : depth === 3 ? "cdg-chip-h3" : depth === 4 ? "cdg-chip-h4" : "cdg-chip-h5";
 
   const layout = resolveLayout(node);
   const cols = resolveCols(node, 2);
@@ -385,8 +324,7 @@ function NodeBlock({
   const items = Array.isArray(node?.items) ? node.items : [];
   const groups = Array.isArray(node?.groups) ? node.groups : [];
 
-  const itemChip =
-    depth >= 5 ? "cdg-chip-h6" : depth >= 4 ? "cdg-chip-h5" : "cdg-chip-h4";
+  const itemChip = depth >= 5 ? "cdg-chip-h6" : depth >= 4 ? "cdg-chip-h5" : "cdg-chip-h4";
 
   const labelId = `${path}/label`;
   const labelHidden = trainingOn && hidden.has(labelId);
@@ -396,47 +334,24 @@ function NodeBlock({
       {node.label ? (
         <div className={headingWrap}>
           {labelHidden ? (
-            <MaskedChip
-              className={headingChip}
-              onReveal={() => reveal(labelId)}
-            />
+            <MaskedChip className={headingChip} onReveal={() => reveal(labelId)} />
           ) : (
-            <Item
-              label={node.label}
-              anchor={node.anchor}
-              to={node.to}
-              className={headingChip}
-            />
+            <Item label={node.label} anchor={node.anchor} to={node.to} className={headingChip} />
           )}
         </div>
       ) : null}
 
-      {/* ITEMS */}
       {items.length ? (
         layout === "grid" ? (
-          <div
-            className="cdg-list"
-            data-layout="grid"
-            style={{ "--cdg-cols": String(cols) }}
-          >
+          <div className="cdg-list" data-layout="grid" style={{ "--cdg-cols": String(cols) }}>
             {items.map((it, i) => {
               const id = `${path}/item/${i}`;
               const isHidden = trainingOn && hidden.has(id);
 
               return isHidden ? (
-                <MaskedChip
-                  key={id}
-                  className={itemChip}
-                  onReveal={() => reveal(id)}
-                />
+                <MaskedChip key={id} className={itemChip} onReveal={() => reveal(id)} />
               ) : (
-                <Item
-                  key={id}
-                  label={it.label}
-                  anchor={it.anchor}
-                  to={it.to}
-                  className={itemChip}
-                />
+                <Item key={id} label={it.label} anchor={it.anchor} to={it.to} className={itemChip} />
               );
             })}
           </div>
@@ -449,10 +364,7 @@ function NodeBlock({
               return (
                 <div key={id} className="cdg-stack-row">
                   {isHidden ? (
-                    <MaskedChip
-                      className={`${itemChip} cdg-spine-target`}
-                      onReveal={() => reveal(id)}
-                    />
+                    <MaskedChip className={`${itemChip} cdg-spine-target`} onReveal={() => reveal(id)} />
                   ) : (
                     <Item
                       label={it.label}
@@ -479,12 +391,8 @@ function NodeBlock({
         )
       ) : null}
 
-      {/* GROUPS */}
       {groups.length ? (
-        <div
-          className="cdg-groups"
-          style={{ "--cdg-groups-cols": String(groupCols) }}
-        >
+        <div className="cdg-groups" style={{ "--cdg-groups-cols": String(groupCols) }}>
           {groups.map((g, i) => {
             const nd = nextDepthForGroup(node, depth);
             return (
@@ -510,34 +418,37 @@ function NodeBlock({
    ========================= */
 export default function ClassificationDiagram({
   title,
-  layout = "cols", // "cols" | "stack" | "grid"
+  layout = "cols",
   left,
   right,
   items,
   rootColumns = 2,
+
+  // ✅ ajouté : change quand tu changes d’item via la liste
+  scopeKey = "",
 }) {
   const rootRef = useRef(null);
 
-  const hasRootItems = useMemo(
-    () => Array.isArray(items) && items.length > 0,
-    [items]
-  );
+  const hasRootItems = useMemo(() => Array.isArray(items) && items.length > 0, [items]);
 
   const safeRootCols = clampInt(rootColumns, 1, 4, 2);
   const topLayout = layout === "stack" ? "stack" : "cols";
 
   // Training
   const [trainingOn, setTrainingOn] = useState(false);
-  const [maskLevel, setMaskLevel] = useState(0); // -1..2
+  const [maskLevel, setMaskLevel] = useState(0);
   const [revealed, setRevealed] = useState(() => new Set());
+
+  // ✅ NOUVEAU : si on change d’item (via sidebar), on sort de l’entraînement
+  useEffect(() => {
+    setTrainingOn(false);
+    setMaskLevel(0);
+    setRevealed(new Set());
+  }, [scopeKey]);
 
   const rootNodes = useMemo(() => {
     if (hasRootItems) {
-      return items.map((n, i) => ({
-        node: n,
-        depth: 2,
-        path: `root/node/${i}`,
-      }));
+      return items.map((n, i) => ({ node: n, depth: 2, path: `root/node/${i}` }));
     }
     return [
       { node: left, depth: 2, path: "root/left" },
@@ -545,7 +456,6 @@ export default function ClassificationDiagram({
     ];
   }, [hasRootItems, items, left, right]);
 
-  // BaseHidden = tout ce qui doit être masqué par le niveau (déterministe)
   const baseHidden = useMemo(() => {
     if (!trainingOn) return new Set();
     if (maskLevel === -1) return new Set();
@@ -557,7 +467,6 @@ export default function ClassificationDiagram({
     return new Set(targets);
   }, [trainingOn, rootNodes, maskLevel]);
 
-  // Hidden effectif = baseHidden - revealed
   const hidden = useMemo(() => {
     if (!trainingOn) return new Set();
     const s = new Set(baseHidden);
@@ -573,19 +482,11 @@ export default function ClassificationDiagram({
     });
   }, []);
 
-  // Inversion UX :
-  // "-" => incLevel (augmente masquage / remasque au max)
-  // "+" => decLevel (diminue masquage, et NE REMASQUE PAS ce qui a été révélé)
-
-  // ✅ "-" : augmente le niveau, et remasque (reset revealed) pour repartir propre
-  // ✅ si déjà au max : remasque juste (reset revealed) sans changer de niveau
   const incLevel = useCallback(() => {
     setRevealed(new Set());
     setMaskLevel((v) => (v >= MAX_LEVEL ? v : v + 1));
   }, []);
 
-  // ✅ "+" : diminue le masquage SANS toucher à revealed
-  // => un item révélé reste révélé (et de toute façon le masquage diminue)
   const decLevel = useCallback(() => {
     setMaskLevel((v) => Math.max(MIN_LEVEL, v - 1));
   }, []);
@@ -607,27 +508,13 @@ export default function ClassificationDiagram({
       window.removeEventListener("resize", onResize);
       ro.disconnect();
     };
-  }, [
-    title,
-    layout,
-    left,
-    right,
-    items,
-    rootColumns,
-    trainingOn,
-    maskLevel,
-    revealed,
-  ]);
+  }, [title, layout, left, right, items, rootColumns, trainingOn, maskLevel, revealed]);
 
-  const canMinus = maskLevel < MAX_LEVEL || revealed.size > 0; // "-" peut remasquer au max
-  const canPlus = maskLevel > MIN_LEVEL; // "+" réduit (ne remasque rien)
+  const canMinus = maskLevel < MAX_LEVEL || revealed.size > 0;
+  const canPlus = maskLevel > MIN_LEVEL;
 
   return (
-    <section
-      ref={rootRef}
-      className="cdg"
-      aria-label={title || "Diagramme de classification"}
-    >
+    <section ref={rootRef} className="cdg" aria-label={title || "Diagramme de classification"}>
       {title ? (
         <div className="cdg-root cdg-root--with-controls">
           <span className="cdg-chip cdg-chip-h1">{title}</span>
@@ -638,12 +525,10 @@ export default function ClassificationDiagram({
                 <button
                   type="button"
                   className="cdg-chip cdg-chip-h6"
-                  onClick={incLevel} // "-" = incLevel
+                  onClick={incLevel}
                   disabled={!canMinus}
                   aria-disabled={!canMinus}
-                  title={
-                    maskLevel >= MAX_LEVEL ? "Remasquer" : "Augmenter le masquage"
-                  }
+                  title={maskLevel >= MAX_LEVEL ? "Remasquer" : "Augmenter le masquage"}
                 >
                   -
                 </button>
@@ -651,7 +536,7 @@ export default function ClassificationDiagram({
                 <button
                   type="button"
                   className="cdg-chip cdg-chip-h6"
-                  onClick={decLevel} // "+" = decLevel
+                  onClick={decLevel}
                   disabled={!canPlus}
                   aria-disabled={!canPlus}
                   title="Réduire le masquage"
@@ -660,18 +545,17 @@ export default function ClassificationDiagram({
                 </button>
 
                 <button
-  type="button"
-  className="cdg-chip cdg-chip-h6"
-  onClick={() => {
-    setTrainingOn(false);
-    setMaskLevel(0);
-    setRevealed(new Set());
-  }}
-  title="Quitter le mode entraînement (tout est affiché)"
->
-  Quitter
-</button>
-
+                  type="button"
+                  className="cdg-chip cdg-chip-h6"
+                  onClick={() => {
+                    setTrainingOn(false);
+                    setMaskLevel(0);
+                    setRevealed(new Set());
+                  }}
+                  title="Quitter le mode entraînement (tout est affiché)"
+                >
+                  Quitter
+                </button>
               </>
             ) : (
               <button
@@ -679,7 +563,7 @@ export default function ClassificationDiagram({
                 className="cdg-chip cdg-chip-h6 cdg-training-toggle"
                 onClick={() => {
                   setTrainingOn(true);
-                  setMaskLevel(0); // démarre: items masqués
+                  setMaskLevel(0);
                   setRevealed(new Set());
                 }}
                 title="Activer le mode entraînement"
@@ -695,11 +579,7 @@ export default function ClassificationDiagram({
         <div
           className="cdg-root-items"
           data-layout={layout === "grid" ? "grid" : "stack"}
-          style={
-            layout === "grid"
-              ? { "--cdg-cols": String(safeRootCols) }
-              : undefined
-          }
+          style={layout === "grid" ? { "--cdg-cols": String(safeRootCols) } : undefined}
         >
           {items.map((n, i) => (
             <NodeBlock
@@ -716,14 +596,7 @@ export default function ClassificationDiagram({
       ) : (
         <div className="cdg-cols" data-layout={topLayout}>
           <div className="cdg-col">
-            <NodeBlock
-              node={left}
-              depth={2}
-              path="root/left"
-              trainingOn={trainingOn}
-              hidden={hidden}
-              reveal={reveal}
-            />
+            <NodeBlock node={left} depth={2} path="root/left" trainingOn={trainingOn} hidden={hidden} reveal={reveal} />
           </div>
           <div className="cdg-col">
             <NodeBlock

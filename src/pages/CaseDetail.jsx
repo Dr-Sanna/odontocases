@@ -269,6 +269,12 @@ export default function CaseDetail(props) {
     return isPathologyPage ? pathologySlug : caseSlug;
   }, [isDocNamespace, docDisplaySlug, isPathologyPage, pathologySlug, caseSlug]);
 
+  const diagramScopeKey = useMemo(() => {
+  // clé stable qui change quand tu changes de "page" via la liste
+  return String(provisionalKeySlug || location.pathname || "");
+  }, [provisionalKeySlug, location.pathname]);
+
+
   const provisional = useMemo(() => {
     if (!pre || !provisionalKeySlug) return null;
     return pre.slug === provisionalKeySlug ? pre : null;
@@ -1008,7 +1014,7 @@ export default function CaseDetail(props) {
         <article className="casedetail" ref={contentRef}>
           <div className="cd-content">
             <PageTitle description={item?.excerpt || ''}>{instantCurrentTitle}</PageTitle>
-            {item?.content ? <CaseMarkdown>{item.content}</CaseMarkdown> : null}
+{item?.content ? <CaseMarkdown scopeKey={diagramScopeKey}>{item.content}</CaseMarkdown> : null}
           </div>
 
           {isDocItemPage && docChildSections.length > 0 && (

@@ -36,7 +36,6 @@ function rehypePHash5ToH5() {
     if (!node) return;
 
     if (node.type === "element") {
-      // Ne jamais transformer à l'intérieur d'un <pre><code>
       if (node.tagName === "pre" || node.tagName === "code") return;
 
       if (node.tagName === "p") {
@@ -413,7 +412,7 @@ function parseClassificationDiagramBlock(rawText) {
 /* =========================
    Component (memoized)
    ========================= */
-const CaseMarkdown = memo(function CaseMarkdown({ children }) {
+const CaseMarkdown = memo(function CaseMarkdown({ children, scopeKey = "" }) {
   const containerRef = useRef(null);
 
   const source = useMemo(
@@ -421,18 +420,16 @@ const CaseMarkdown = memo(function CaseMarkdown({ children }) {
     [children]
   );
 
-  // ✅ stable objects to avoid rebuilding ReactMarkdown subtree unnecessarily
   const mdComponents = useMemo(
     () => ({
       code({ inline, className, children: codeChildren, ...props }) {
         const lang = String(className || "").replace("language-", "").trim();
         const raw = String(codeChildren ?? "").replace(/\n$/, "");
 
-        // injection via bloc plaintext + @classificationDiagram + JSON
         if (!inline && lang === "plaintext") {
           try {
             const spec = parseClassificationDiagramBlock(raw);
-            if (spec) return <ClassificationDiagram {...spec} />;
+            if (spec) return <ClassificationDiagram {...spec} scopeKey={scopeKey} />;
           } catch (e) {
             return (
               <pre style={{ whiteSpace: "pre-wrap", opacity: 0.9 }}>
@@ -459,7 +456,7 @@ const CaseMarkdown = memo(function CaseMarkdown({ children }) {
         );
       },
     }),
-    []
+    [scopeKey]
   );
 
   const mdRemarkPlugins = useMemo(
