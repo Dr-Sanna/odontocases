@@ -208,33 +208,53 @@ function sortListSafe(arr) {
   return list;
 }
 
+/** construit un chemin à partir d’un basePath ('' ou '/documentation') + segments */
+function buildPath(basePath, segments) {
+  const cleanBase = (basePath || '').replace(/\/+$/, '');
+  const cleanSegs = (segments || []).filter(Boolean).map((s) => String(s).replace(/^\/+|\/+$/g, ''));
+  const joined = [cleanBase, ...cleanSegs].filter(Boolean).join('/');
+  return '/' + joined.replace(/^\/+/, '');
+}
+
 /* =========================
    Page
    ========================= */
 
-export default function CaseDetail() {
+export default function CaseDetail(props) {
   const params = useParams();
   const location = useLocation();
 
-  // DOC routes
-  const subjectSlug = params.subjectSlug || null;
-  const chapterSlug = params.chapterSlug || null;
-  const docItemSlug = params.itemSlug || null;
-  const docSectionSlug = params.sectionSlug || null;
+  const kind = props?.kind || null;
 
+  // basePath docs: '/documentation' OU '' (URL courte)
+  const docBasePath =
+    typeof props?.basePath === 'string'
+      ? props.basePath
+      : location.pathname === '/documentation' || location.pathname.startsWith('/documentation/')
+        ? '/documentation'
+        : '';
+
+  // DOC slugs
+  const subjectSlug = props?.subjectSlug ?? params.subjectSlug ?? null;
+  const chapterSlug = props?.chapterSlug ?? params.chapterSlug ?? null;
+  const docItemSlug = props?.itemSlug ?? params.itemSlug ?? null;
+  const docSectionSlug = props?.sectionSlug ?? params.sectionSlug ?? null;
+
+  // doc: si router a explicitement envoyé kind="doc", c’est la source de vérité
   const isDocNamespace =
-    location.pathname.startsWith('/documentation') && Boolean(subjectSlug && chapterSlug && docItemSlug);
+    kind === 'doc' ||
+    (location.pathname.startsWith('/documentation') && Boolean(subjectSlug && chapterSlug && docItemSlug));
 
   const isDocItemPage = isDocNamespace && !docSectionSlug;
   const docDisplaySlug = isDocNamespace ? (docSectionSlug || docItemSlug) : null;
 
-  // CASE routes
-  const pathologySlug = !isDocNamespace ? (params.pathologySlug || null) : null;
-  const caseSlug = !isDocNamespace ? (params.caseSlug || params.slug || null) : null;
+  // CASE slugs
+  const pathologySlug = !isDocNamespace ? (props?.pathologySlug ?? params.pathologySlug ?? null) : null;
+  const caseSlug = !isDocNamespace ? (props?.caseSlug ?? params.caseSlug ?? props?.slug ?? params.slug ?? null) : null;
 
   const isPresentationNamespace = Boolean(pathologySlug);
-  const isPathologyPage = isPresentationNamespace && !params.caseSlug;
-  const isCaseInPathology = isPresentationNamespace && Boolean(params.caseSlug);
+  const isPathologyPage = isPresentationNamespace && !caseSlug;
+  const isCaseInPathology = isPresentationNamespace && Boolean(caseSlug);
   const isPlainCase = !isPresentationNamespace && !isDocNamespace;
 
   const isNarrow = useIsNarrow(980);
@@ -808,19 +828,28 @@ export default function CaseDetail() {
     if (isDocNamespace) {
       const base = [
         { label: 'Accueil', to: '/' },
+        // on garde un lien stable vers la page /documentation
         { label: 'Documentation', to: '/documentation' },
       ];
 
-      if (docCrumb?.subject) base.push({ label: docCrumb.subject.title, to: `/documentation/${docCrumb.subject.slug}` });
+      if (docCrumb?.subject) {
+        base.push({
+          label: docCrumb.subject.title,
+          to: buildPath(docBasePath, [docCrumb.subject.slug]),
+        });
+      }
 
       if (docCrumb?.chapter && subjectSlug) {
-        base.push({ label: docCrumb.chapter.title, to: `/documentation/${subjectSlug}/${docCrumb.chapter.slug}` });
+        base.push({
+          label: docCrumb.chapter.title,
+          to: buildPath(docBasePath, [subjectSlug, docCrumb.chapter.slug]),
+        });
       }
 
       if (docCrumb?.theItem && subjectSlug && chapterSlug) {
         base.push({
           label: docCrumb.theItem.title,
-          to: docSectionSlug ? `/documentation/${subjectSlug}/${chapterSlug}/${docCrumb.theItem.slug}` : null,
+          to: docSectionSlug ? buildPath(docBasePath, [subjectSlug, chapterSlug, docCrumb.theItem.slug]) : null,
         });
       }
 
@@ -860,6 +889,7 @@ export default function CaseDetail() {
   }, [
     isDocNamespace,
     docCrumb,
+    docBasePath,
     subjectSlug,
     chapterSlug,
     docSectionSlug,
@@ -930,6 +960,7 @@ export default function CaseDetail() {
         drawerView={drawerView}
         setDrawerView={setDrawerView}
         closeMobile={() => setMobileOpen(false)}
+        docBasePath={docBasePath}
         docSubjectSlug={subjectSlug}
         docChapterSlug={chapterSlug}
         docItemSlug={docItemSlug}
@@ -986,7 +1017,7 @@ export default function CaseDetail() {
 
               <div className="cd-children-grid">
                 {docChildSections.map((s) => {
-                  const to = `/documentation/${subjectSlug}/${chapterSlug}/${docItemSlug}/${s.slug}`;
+                  const to = buildPath(docBasePath, [subjectSlug, chapterSlug, docItemSlug, s.slug]);
                   return (
                     <Link
                       key={s.slug}
@@ -1173,6 +1204,7 @@ function Aside({
   setDrawerView,
   closeMobile,
 
+  docBasePath,
   docSubjectSlug,
   docChapterSlug,
   docItemSlug,
@@ -1762,6 +1794,8 @@ function Aside({
                     });
                   };
 
+                  const itemTo = buildPath(docBasePath, [docSubjectSlug, docChapterSlug, it.slug]);
+
                   return (
                     <li key={it.slug}>
                       <div
@@ -1779,7 +1813,7 @@ function Aside({
                         ) : (
                           <Link
                             className="cd-side-link"
-                            to={`/documentation/${docSubjectSlug}/${docChapterSlug}/${it.slug}`}
+                            to={itemTo}
                             onClick={() => {
                               if (hasKids) {
                                 setExpandedDocItemSlug(() => {
@@ -1815,7 +1849,7 @@ function Aside({
                             <div className="cd-side-children">
                               {knownSections.map((s) => {
                                 const isCurrentSection = it.slug === docItemSlug && s.slug === docSectionSlug;
-                                const to = `/documentation/${docSubjectSlug}/${docChapterSlug}/${it.slug}/${s.slug}`;
+                                const to = buildPath(docBasePath, [docSubjectSlug, docChapterSlug, it.slug, s.slug]);
 
                                 return (
                                   <div key={s.slug} className="cd-side-child">
@@ -1989,7 +2023,11 @@ function Aside({
                                             pathology: { slug: p.slug, title: p.title || p.slug },
                                             case: { slug: ch.slug, title: ch.title || ch.slug },
                                           },
-                                          prefetch: { slug: ch.slug, title: ch.title || ch.slug, type: ch.type || 'presentation' },
+                                          prefetch: {
+                                            slug: ch.slug,
+                                            title: ch.title || ch.slug,
+                                            type: ch.type || 'presentation',
+                                          },
                                         }}
                                         onClick={() => {
                                           if (isNarrow) closeMobile();
@@ -2026,7 +2064,11 @@ function Aside({
               onToggle();
             }}
           >
-            {collapsed ? <BottomExpandIcon className="expandButtonIcon_H1n0" /> : <BottomCollapseIcon className="collapseSidebarButtonIcon_DI0B" />}
+            {collapsed ? (
+              <BottomExpandIcon className="expandButtonIcon_H1n0" />
+            ) : (
+              <BottomCollapseIcon className="collapseSidebarButtonIcon_DI0B" />
+            )}
           </button>
         )}
       </div>

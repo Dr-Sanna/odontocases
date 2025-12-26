@@ -1,6 +1,6 @@
 // src/pages/Documentation.jsx
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import PageTitle from '../components/PageTitle';
 import {
   getPrefetchedBySlug,
@@ -14,8 +14,6 @@ import './Documentation.css';
 const PUB_STATE = import.meta.env.DEV ? 'preview' : 'live';
 
 const ROOT_TITLE = 'Documentation';
-// Note: sous-titre affiché uniquement sur /documentation (racine).
-// Il sert à expliquer en une phrase le contenu de la section.
 const ROOT_DESC =
   "Atlas de pathologies buccales, items principaux et risques médicaux à connaître dans la pratique quotidienne";
 
@@ -25,14 +23,6 @@ function labelForLevel(level) {
   if (level === 'item') return 'Item';
   if (level === 'section') return 'Section';
   return 'Documentation';
-}
-
-function toDocLink({ level, slug, subjectSlug, chapterSlug }) {
-  if (!slug) return '/documentation';
-  if (level === 'subject') return `/documentation/${slug}`;
-  if (level === 'chapter') return `/documentation/${subjectSlug}/${slug}`;
-  if (level === 'item') return `/documentation/${subjectSlug}/${chapterSlug}/${slug}`;
-  return '/documentation';
 }
 
 function compareByOrderThenTitle(a, b) {
@@ -45,9 +35,14 @@ function compareByOrderThenTitle(a, b) {
   return at.localeCompare(bt, 'fr', { sensitivity: 'base' });
 }
 
-export default function Documentation() {
-  const { subjectSlug = null, chapterSlug = null } = useParams();
+function buildPath(basePath, segments) {
+  const cleanBase = (basePath || '').replace(/\/+$/, ''); // enlève trailing /
+  const cleanSegs = (segments || []).filter(Boolean).map((s) => String(s).replace(/^\/+|\/+$/g, ''));
+  const joined = [cleanBase, ...cleanSegs].filter(Boolean).join('/');
+  return '/' + joined.replace(/^\/+/, '');
+}
 
+export default function Documentation({ basePath = '/documentation', subjectSlug = null, chapterSlug = null }) {
   const isRoot = !subjectSlug && !chapterSlug;
   const level = isRoot ? 'subject' : !chapterSlug ? 'chapter' : 'item';
   const parentSlug = isRoot ? null : !chapterSlug ? subjectSlug : chapterSlug;
@@ -61,17 +56,15 @@ export default function Documentation() {
     return Array.isArray(fromStore) ? [...fromStore].sort(compareByOrderThenTitle) : [];
   });
 
-  // ✅ titre dynamique (sans fallback vers slug)
-  const headerTitle = useMemo(() => {
-    if (isRoot) return ROOT_TITLE;
+  // ✅ titre dynamique
+const headerTitle = isRoot
+  ? ROOT_TITLE
+  : (getPrefetchedBySlug(parentSlug, { publicationState: PUB_STATE })?.title || '');
 
-    const parentNode = getPrefetchedBySlug(parentSlug, { publicationState: PUB_STATE });
-    return parentNode?.title || '';
-  }, [isRoot, parentSlug]);
 
   const description = isRoot ? ROOT_DESC : '';
 
-  // À chaque navigation interne : hydratation instant depuis store
+  // Hydratation instant depuis store
   useEffect(() => {
     const fromStore = getPrefetchedChildren(level, parentSlug, { publicationState: PUB_STATE });
     if (Array.isArray(fromStore)) setList([...fromStore].sort(compareByOrderThenTitle));
@@ -108,7 +101,6 @@ export default function Documentation() {
   }, []);
 
   // Revalidate en arrière-plan à chaque changement de niveau/parent
-  // ✅ pas de flash "Chargement…" si on a déjà une liste
   useEffect(() => {
     let ignore = false;
     const ctrl = new AbortController();
@@ -136,6 +128,14 @@ export default function Documentation() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [level, parentSlug]);
 
+  function toDocLink(slug) {
+    if (!slug) return buildPath(basePath, []);
+    if (level === 'subject') return buildPath(basePath, [slug]);
+    if (level === 'chapter') return buildPath(basePath, [subjectSlug, slug]);
+    if (level === 'item') return buildPath(basePath, [subjectSlug, chapterSlug, slug]);
+    return buildPath(basePath, []);
+  }
+
   return (
     <>
       <div className="page-header">
@@ -149,14 +149,12 @@ export default function Documentation() {
             </div>
           )}
 
-          {/* garde la hauteur de la description sur toutes les sous-routes */}
           {!isRoot && <div className="doc-header-spacer" aria-hidden="true" />}
         </div>
       </div>
 
       <div className="container">
         <div className="doc-gridwrap">
-          {/* overlay discret seulement si on a déjà quelque chose à afficher */}
           {loading && list.length > 0 && (
             <div className="doc-loading" aria-hidden="true">
               <div className="doc-loading-pill">Mise à jour…</div>
@@ -174,12 +172,12 @@ export default function Documentation() {
                 const slug = n?.slug || '';
                 if (!slug) return null;
 
-                const to = toDocLink({ level, slug, subjectSlug, chapterSlug });
+                const to = toDocLink(slug);
                 const badgeLabel = labelForLevel(level);
 
                 return (
                   <Link
-                    key={`${level}:${slug}`}
+                    key={`${level}:${to}`}
                     to={to}
                     className="doc-card ui-card"
                     state={{ prefetch: { slug, title, type: 'doc' } }}
