@@ -67,6 +67,12 @@ h4 {
   margin-bottom: 0.5rem;
 }
 
+h5 {
+  font-size: var(--ifm-h5-font-size);
+  margin-top: calc(var(--ifm-heading-vertical-rhythm-top) * var(--ifm-leading));
+  margin-bottom: 0.5rem;
+}
+
 /* =========================
    LISTS
    ========================= */

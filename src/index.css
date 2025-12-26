@@ -318,6 +318,8 @@ html {
   margin-bottom: 12px;
 }
 
+
+/*****BACKGROUND******/
 /* Background global : fixé en haut-gauche, compatible mobile/tablette */
 body::before {
   content: "";
@@ -389,43 +391,3 @@ html.blur-images .navbar img {
   vertical-align: middle;
   line-height: 1;
 }
-
-/* Cartes */
-.ui-card {
-  border-radius: var(--card-radius);
-  border: var(--card-border);
-  background: var(--card-bg);
-  box-shadow: var(--card-shadow);
-  transition: var(--card-transition);
-  color: inherit;
-  text-decoration: none;
-}
-
-.ui-card:hover {
-  box-shadow: var(--card-shadow-hover);
-  border: var(--card-border-hover);
-  cursor: pointer;
-}
-
-@media (hover: none), (pointer: coarse) {
-  /* Sur tactile : on neutralise les effets hover */
-  .ui-card:hover {
-    box-shadow: var(--card-shadow);
-    border: var(--card-border);
-    cursor: default;
-  }
-
-  /* Et on enlève le focus/active visuel du navigateur */
-  .ui-card:focus,
-  .ui-card:focus-visible,
-  .ui-card:active {
-    outline: none;
-    box-shadow: var(--card-shadow);
-  }
-
-  /* iOS/Android tap highlight */
-  .ui-card {
-    -webkit-tap-highlight-color: transparent;
-  }
-}
-

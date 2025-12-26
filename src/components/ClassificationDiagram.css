@@ -1,5 +1,3 @@
-/* src/components/ClassificationDiagram.css */
-
 /* =========================
    Variables selon thème
    ========================= */
@@ -69,7 +67,7 @@ button.cdg-chip {
 }
 
 /* =========================
-   Layout top-level
+   Layout top-level (legacy left/right)
    ========================= */
 
 .cdg-cols {
@@ -93,7 +91,36 @@ button.cdg-chip {
 }
 
 /* =========================
-   Titres
+   Root items (multi-H2)
+   ========================= */
+
+.cdg-root-items {
+  min-width: 0;
+}
+
+/* H2 empilés : l’espace entre blocs se fait ici */
+.cdg-root-items[data-layout="stack"] {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* Root items en grille */
+.cdg-root-items[data-layout="grid"] {
+  display: grid;
+  grid-template-columns: repeat(var(--cdg-cols, 2), minmax(0, 1fr));
+  gap: var(--cdg-gap-col);
+  align-items: start;
+}
+
+@media (max-width: 980px) {
+  .cdg-root-items[data-layout="grid"] {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =========================
+   Titres (wrappers)
    ========================= */
 
 .cdg-root,
@@ -102,18 +129,22 @@ button.cdg-chip {
   display: flex;
   justify-content: center;
 }
+
 .cdg-root {
   margin: 2px 0 10px 0;
 }
+
 .cdg-h2 {
   margin-bottom: 10px;
 }
+
 .cdg-h3 {
   margin-bottom: 8px;
 }
 
-/* H4 heading (rare) */
-.cdg-h4 {
+/* H4/H5 headings (si un node est rendu plus profond) */
+.cdg-h4,
+.cdg-h5 {
   display: flex;
   justify-content: flex-start;
   margin-bottom: 8px;
@@ -141,7 +172,7 @@ button.cdg-chip {
 }
 
 /* =========================
-   CHIP
+   CHIP (base)
    ========================= */
 
 .cdg-chip {
@@ -192,6 +223,7 @@ button.cdg-chip {
   opacity: 0.65;
 }
 
+/* niveaux */
 .cdg-chip-h2 {
   --ifm-alert-foreground-color: var(--ifm-color-danger-contrast-foreground);
   --ifm-alert-background-color: var(--ifm-color-danger-contrast-background);
@@ -211,15 +243,34 @@ button.cdg-chip {
   text-align: left;
 }
 
+/* H5 (enfants) : info (bleu) */
 .cdg-chip-h5 {
-  --ifm-alert-foreground-color: var(--ifm-color-secondary-contrast-foreground);
-  --ifm-alert-background-color: var(--ifm-color-secondary-contrast-background);
+  --ifm-alert-foreground-color: var(--ifm-color-info-contrast-foreground);
+  --ifm-alert-background-color: var(--ifm-color-info-contrast-background);
+
   font-weight: 400;
   text-align: left;
 
   font-size: 0.82rem;
   padding: 0.22rem 0.55rem;
-  opacity: 0.95;
+  opacity: 0.98;
+
+  border-color: rgba(59, 130, 246, 0.25);
+}
+
+/* H6 : encore un cran plus discret */
+.cdg-chip-h6 {
+  --ifm-alert-foreground-color: var(--ifm-color-info-contrast-foreground);
+  --ifm-alert-background-color: var(--ifm-color-info-contrast-background);
+
+  font-weight: 400;
+  text-align: left;
+
+  font-size: 0.80rem;
+  padding: 0.20rem 0.52rem;
+  opacity: 0.96;
+
+  border-color: rgba(59, 130, 246, 0.22);
 }
 
 /* =========================
@@ -257,7 +308,7 @@ button.cdg-chip {
   border-radius: 2px;
 }
 
-/* branche horizontale sur la chip marquée cdg-spine-target (descendant) */
+/* branche horizontale sur la chip marquée cdg-spine-target */
 .cdg-list[data-layout="stack"] .cdg-spine-target {
   position: relative;
   justify-content: flex-start;
@@ -275,7 +326,7 @@ button.cdg-chip {
   border-radius: 2px;
 }
 
-/* wrapper item + sous-liste (pour garder l’espacement uniforme) */
+/* wrapper item + sous-liste */
 .cdg-stack-row {
   display: flex;
   flex-direction: column;
@@ -283,12 +334,17 @@ button.cdg-chip {
   min-width: 0;
 }
 
-/* sous-liste attachée (H5) */
-.cdg-sublist {
+/* sous-liste attachée */
+.cdg-subwrap {
   min-width: 0;
 }
 
-/* H5 en GRID */
+.cdg-sublist {
+  min-width: 0;
+  padding-left: 14px; /* petit décalage visuel */
+}
+
+/* Sous-liste en GRID */
 .cdg-sublist[data-layout="grid"] {
   display: grid;
   grid-template-columns: repeat(var(--cdg-cols, 2), minmax(0, 1fr));
@@ -296,7 +352,7 @@ button.cdg-chip {
   align-items: start;
 }
 
-/* H5 en STACK (si besoin) */
+/* Sous-liste en STACK */
 .cdg-sublist[data-layout="stack"] {
   display: flex;
   flex-direction: column;
@@ -328,22 +384,4 @@ button.cdg-chip {
   .cdg-list[data-layout="grid"] {
     grid-template-columns: 1fr;
   }
-}
-
-/* ✅ Sous-liste H5 : petit décalage à gauche (sans ajouter de "border") */
-.cdg-sublist {
-  padding-left: 14px; /* ajuste si tu veux +/− */
-}
-
-/* ✅ H5 : style différent (bleu) */
-.cdg-chip-h5 {
-  --ifm-alert-foreground-color: var(--ifm-color-info-contrast-foreground);
-  --ifm-alert-background-color: var(--ifm-color-info-contrast-background);
-
-  font-size: 0.82rem;
-  padding: 0.22rem 0.55rem;
-  opacity: 0.98;
-
-  /* optionnel mais aide à différencier encore plus */
-  border-color: rgba(59, 130, 246, 0.25);
 }
