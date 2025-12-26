@@ -1,5 +1,5 @@
 // src/components/CaseMarkdown.jsx
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, memo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -16,11 +16,6 @@ import ClassificationDiagram from "./ClassificationDiagram";
 /* =========================
    Normalisation spécifique CKEditor
    ========================= */
-
-/**
- * Tu as déjà des blockquotes échappées côté API ("\\>" au début de ligne).
- * On garde EXACTEMENT ce comportement, sans toucher au reste.
- */
 function normalizeEscapedBlockquotes(src) {
   if (typeof src !== "string") return src;
   return src.replace(/^[ \t]*\\>\s?/gm, "> ");
@@ -28,11 +23,7 @@ function normalizeEscapedBlockquotes(src) {
 
 /* =========================
    ✅ Fix ultra-ciblé pour H5 échappés
-   =========================
-   L'API échappe les headings: "\##### Rubéole"
-   Markdown interprète "\#" comme un # littéral => ça devient <p>##### Rubéole</p>
-   Objectif: détecter UNIQUEMENT ces paragraphes et les transformer en <h5>.
-*/
+   ========================= */
 function rehypePHash5ToH5() {
   const getText = (node) => {
     if (!node) return "";
@@ -49,7 +40,7 @@ function rehypePHash5ToH5() {
       if (node.tagName === "pre" || node.tagName === "code") return;
 
       if (node.tagName === "p") {
-        const raw = getText(node).replace(/\u00A0/g, ""); // tolère NBSP
+        const raw = getText(node).replace(/\u00A0/g, "");
         const m = raw.match(/^\s*#####\s+(.+?)\s*$/);
         if (m && parent && Array.isArray(parent.children)) {
           const title = m[1];
@@ -81,42 +72,29 @@ function rehypePHash5ToH5() {
 /* =========================
    RÉGLAGES
    ========================= */
-
-// breakpoint mobile (aligné avec ton app)
 const MOBILE_BP = 980;
 
-// hauteur commune par ligne (clamp) - en px, seulement pour le calcul interne
 const ROW_MIN_H = 150;
 const ROW_MAX_H = 260;
 
-// marge sécurité
 const SAFETY_PX = 2;
-
-// cap ratio pour éviter pano extrême qui réduit trop la hauteur commune
 const RATIO_FIT_CAP = 2.2;
 
-// min/soft-max par nb colonnes (base) - en px, seulement pour le calcul interne
 const COL_MIN_W = { 1: 320, 2: 280, 3: 260, 4: 240 };
 const COL_SOFT_MAX_W = { 1: 900, 2: 650, 3: 600, 4: 480 };
 
-// espace entre colonnes (approx)
 const COL_GUTTER = 14;
 
-/* =========================
-   STABILISATION LAYOUT (pour cohérence refresh)
-   ========================= */
 const STABLE_FRAMES_REQUIRED = 8;
 const STABLE_TIMEOUT_MS = 1200;
 
 function clamp(v, min, max) {
   return Math.max(min, Math.min(max, v));
 }
-
 function px(v) {
   const n = parseFloat(v);
   return Number.isFinite(n) ? n : 0;
 }
-
 function isMobileNow() {
   if (typeof window === "undefined") return false;
   return (window.innerWidth || 0) <= MOBILE_BP;
@@ -125,8 +103,9 @@ function isMobileNow() {
 function getIntrinsicSize(img) {
   if (!img) return null;
 
-  if (img.naturalWidth && img.naturalHeight)
+  if (img.naturalWidth && img.naturalHeight) {
     return { w: img.naturalWidth, h: img.naturalHeight };
+  }
 
   const wAttr = parseFloat(img.getAttribute("width"));
   const hAttr = parseFloat(img.getAttribute("height"));
@@ -312,7 +291,6 @@ function layoutRow(row, rootEl) {
   if (items.length < 1) return;
 
   const cols = items.length;
-
   row.setAttribute("data-cd-cols", String(cols));
 
   const targetW = computeTargetW(cols, rootEl) - SAFETY_PX;
@@ -332,7 +310,8 @@ function layoutRow(row, rootEl) {
   const usable = getUsableWidthFromLayout(rootEl);
   const availableRowW = Math.max(0, usable - SAFETY_PX * 2);
 
-  const totalW = items.reduce((sum, it) => sum + H * it.ratio, 0) + COL_GUTTER * (cols - 1);
+  const totalW =
+    items.reduce((sum, it) => sum + H * it.ratio, 0) + COL_GUTTER * (cols - 1);
 
   if (availableRowW > 0 && totalW > availableRowW) {
     const scale = availableRowW / totalW;
@@ -341,7 +320,6 @@ function layoutRow(row, rootEl) {
 
   for (const it of items) {
     const W = H * it.ratio;
-
     setSizeVwVh(it.img, H, W);
     applyCaptionWidth(it.img, W, it.ratio, cols, rootEl);
   }
@@ -432,13 +410,71 @@ function parseClassificationDiagramBlock(rawText) {
   return spec;
 }
 
-export default function CaseMarkdown({ children }) {
+/* =========================
+   Component (memoized)
+   ========================= */
+const CaseMarkdown = memo(function CaseMarkdown({ children }) {
   const containerRef = useRef(null);
 
-  // ✅ on garde ton ancien comportement + on ne touche pas aux #
   const source = useMemo(
     () => normalizeEscapedBlockquotes(String(children ?? "")),
     [children]
+  );
+
+  // ✅ stable objects to avoid rebuilding ReactMarkdown subtree unnecessarily
+  const mdComponents = useMemo(
+    () => ({
+      code({ inline, className, children: codeChildren, ...props }) {
+        const lang = String(className || "").replace("language-", "").trim();
+        const raw = String(codeChildren ?? "").replace(/\n$/, "");
+
+        // injection via bloc plaintext + @classificationDiagram + JSON
+        if (!inline && lang === "plaintext") {
+          try {
+            const spec = parseClassificationDiagramBlock(raw);
+            if (spec) return <ClassificationDiagram {...spec} />;
+          } catch (e) {
+            return (
+              <pre style={{ whiteSpace: "pre-wrap", opacity: 0.9 }}>
+                Erreur diagramme JSON: {String(e?.message || e)}
+              </pre>
+            );
+          }
+        }
+
+        if (inline) {
+          return (
+            <code className={className} {...props}>
+              {codeChildren}
+            </code>
+          );
+        }
+
+        return (
+          <pre>
+            <code className={className} {...props}>
+              {codeChildren}
+            </code>
+          </pre>
+        );
+      },
+    }),
+    []
+  );
+
+  const mdRemarkPlugins = useMemo(
+    () => [remarkGfm, remarkFigureCaptions, remarkObsidianCallouts],
+    []
+  );
+
+  const mdRehypePlugins = useMemo(
+    () => [
+      rehypeRaw,
+      rehypePHash5ToH5,
+      [rehypeSanitize, ckeditorSchema],
+      rehypeSlug,
+    ],
+    []
   );
 
   useEffect(() => {
@@ -549,56 +585,14 @@ export default function CaseMarkdown({ children }) {
   return (
     <div ref={containerRef}>
       <ReactMarkdown
-        remarkPlugins={[remarkGfm, remarkFigureCaptions, remarkObsidianCallouts]}
-        rehypePlugins={[
-          rehypeRaw,
-
-          // ✅ transform uniquement <p>##### Titre</p> -> <h5>Titre</h5>
-          rehypePHash5ToH5,
-
-          [rehypeSanitize, ckeditorSchema],
-          rehypeSlug, // ids automatiques sur titres
-        ]}
-        components={{
-          code({ inline, className, children: codeChildren, ...props }) {
-            const lang = String(className || "").replace("language-", "").trim();
-            const raw = String(codeChildren ?? "").replace(/\n$/, "");
-
-            // injection via bloc plaintext + @classificationDiagram + JSON
-            if (!inline && lang === "plaintext") {
-              try {
-                const spec = parseClassificationDiagramBlock(raw);
-                if (spec) return <ClassificationDiagram {...spec} />;
-              } catch (e) {
-                return (
-                  <pre style={{ whiteSpace: "pre-wrap", opacity: 0.9 }}>
-                    Erreur diagramme JSON: {String(e?.message || e)}
-                  </pre>
-                );
-              }
-            }
-
-            // rendu normal
-            if (inline) {
-              return (
-                <code className={className} {...props}>
-                  {codeChildren}
-                </code>
-              );
-            }
-
-            return (
-              <pre>
-                <code className={className} {...props}>
-                  {codeChildren}
-                </code>
-              </pre>
-            );
-          },
-        }}
+        remarkPlugins={mdRemarkPlugins}
+        rehypePlugins={mdRehypePlugins}
+        components={mdComponents}
       >
         {source}
       </ReactMarkdown>
     </div>
   );
-}
+});
+
+export default CaseMarkdown;

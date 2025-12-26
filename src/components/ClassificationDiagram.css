@@ -385,3 +385,45 @@ button.cdg-chip {
     grid-template-columns: 1fr;
   }
 }
+
+/* Contrôles entraînement : à droite sans décentrer le titre */
+.cdg-root--with-controls {
+  position: relative;
+}
+
+/* bloc controls à droite */
+.cdg-root-controls {
+  position: absolute;
+  right: 0;
+  top: 0;
+
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+/* sur mobile, on repasse en flux normal pour éviter le chevauchement */
+@media (max-width: 720px) {
+  .cdg-root--with-controls {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .cdg-root-controls {
+    position: static;
+    justify-content: center;
+  }
+}
+
+/* bouton Entraînement (quand le mode est OFF) : opacité réduite, full au hover */
+.cdg-training-toggle {
+  opacity: 0.25;
+  transition: opacity 140ms ease, filter 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.cdg-training-toggle:hover,
+.cdg-training-toggle:focus-visible {
+  opacity: 1;
+}
