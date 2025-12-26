@@ -4,38 +4,43 @@
    Variables selon thème
    ========================= */
 
-/* fallback */
 :root {
   --cdg-chip-hover-brightness: 0.985;
   --cdg-chip-hover-border: rgba(2, 6, 23, 0.14);
   --cdg-chip-hover-shadow: none;
 
   --cdg-line-color: rgba(2, 6, 23, 0.10);
+
+  --cdg-gap-col: 14px;
+  --cdg-gap-group: 12px;
+  --cdg-gap-list: 10px;
+
+  --cdg-indent: 16px;
+  --cdg-branch: 10px;
+  --cdg-spine-x: 6px;
 }
 
 /* Light */
-:root[data-theme='light'],
-html[data-theme='light'],
-body[data-theme='light'] {
+:root[data-theme="light"],
+html[data-theme="light"],
+body[data-theme="light"] {
   --cdg-chip-hover-brightness: 0.97;
   --cdg-chip-hover-border: rgba(2, 6, 23, 0.14);
   --cdg-chip-hover-shadow: none;
-
   --cdg-line-color: rgba(2, 6, 23, 0.10);
 }
 
 /* Dark */
-:root[data-theme='dark'],
-html[data-theme='dark'],
-body[data-theme='dark'] {
+:root[data-theme="dark"],
+html[data-theme="dark"],
+body[data-theme="dark"] {
   --cdg-chip-hover-brightness: 1.18;
   --cdg-chip-hover-border: rgba(148, 163, 184, 0.22);
   --cdg-chip-hover-shadow: none;
-
   --cdg-line-color: rgba(148, 163, 184, 0.22);
 }
 
-/* police Docusaurus, même si injecté dans du markdown */
+/* police Docusaurus */
 .cdg,
 .cdg * {
   font-family: var(--ifm-font-family-base);
@@ -45,7 +50,7 @@ button.cdg-chip {
   font-family: var(--ifm-font-family-base);
 }
 
-/* conteneur sobre */
+/* conteneur */
 .cdg {
   padding: 10px 12px;
   border-radius: 12px;
@@ -63,22 +68,34 @@ button.cdg-chip {
   scroll-margin-top: calc(var(--ifm-navbar-height, 0px) + 14px);
 }
 
-/* layout colonnes */
+/* =========================
+   Layout top-level
+   ========================= */
+
 .cdg-cols {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 14px;
+  gap: var(--cdg-gap-col);
 }
+.cdg-cols[data-layout="stack"] {
+  grid-template-columns: 1fr;
+  gap: 18px;
+}
+
 .cdg-col {
   min-width: 0;
 }
+
 @media (max-width: 980px) {
   .cdg-cols {
     grid-template-columns: 1fr;
   }
 }
 
-/* centre H1/H2/H3 */
+/* =========================
+   Titres
+   ========================= */
+
 .cdg-root,
 .cdg-h2,
 .cdg-h3 {
@@ -95,12 +112,38 @@ button.cdg-chip {
   margin-bottom: 8px;
 }
 
-/* spacing groupe */
-.cdg-group {
-  margin-bottom: 12px;
+/* H4 heading (rare) */
+.cdg-h4 {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 8px;
 }
 
-/* ===== CHIP ===== */
+/* =========================
+   Sous-groupes (H3 en colonnes)
+   ========================= */
+
+.cdg-node {
+  min-width: 0;
+}
+
+.cdg-groups {
+  display: grid;
+  gap: var(--cdg-gap-group);
+  grid-template-columns: repeat(var(--cdg-groups-cols, 1), minmax(0, 1fr));
+  align-items: start;
+}
+
+@media (max-width: 720px) {
+  .cdg-groups {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =========================
+   CHIP
+   ========================= */
+
 .cdg-chip {
   font-size: 0.85rem;
   line-height: 1.2;
@@ -117,21 +160,22 @@ button.cdg-chip {
   appearance: none;
   outline: none;
 
-  /* wrap sans hyphen */
   white-space: normal;
-  word-break: normal;
   overflow-wrap: anywhere;
   hyphens: none;
 
   transition: filter 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
 }
 
-/* ✅ H1 : pas de hover + pas de pointer */
 .cdg-chip-h1 {
   cursor: default;
+  border: none;
+  --ifm-alert-foreground-color: var(--ifm-font-color-base);
+  --ifm-alert-background-color: transparent;
+  font-weight: 700;
 }
 
-/* ✅ hover : toutes SAUF H1 et SAUF disabled */
+/* hover : toutes SAUF H1 et SAUF disabled */
 .cdg-chip:not(.cdg-chip-h1):not(.cdg-chip-disabled):hover {
   filter: brightness(var(--cdg-chip-hover-brightness));
   border-color: var(--cdg-chip-hover-border);
@@ -146,14 +190,6 @@ button.cdg-chip {
 .cdg-chip-disabled {
   cursor: not-allowed;
   opacity: 0.65;
-}
-
-/* ===== Tons (via variables Docusaurus) ===== */
-.cdg-chip-h1 {
-  border: none;
-  --ifm-alert-foreground-color: var(--ifm-font-color-base);
-  --ifm-alert-background-color: transparent;
-  font-weight: 700;
 }
 
 .cdg-chip-h2 {
@@ -175,28 +211,43 @@ button.cdg-chip {
   text-align: left;
 }
 
+.cdg-chip-h5 {
+  --ifm-alert-foreground-color: var(--ifm-color-secondary-contrast-foreground);
+  --ifm-alert-background-color: var(--ifm-color-secondary-contrast-background);
+  font-weight: 400;
+  text-align: left;
+
+  font-size: 0.82rem;
+  padding: 0.22rem 0.55rem;
+  opacity: 0.95;
+}
+
 /* =========================
-   Lignes du diagramme (JS coupe la spine)
+   Listes : stack (squelette) / grid
    ========================= */
 
 .cdg-list {
   margin-top: 6px;
-  padding-left: 16px;
+  min-width: 0;
+}
+
+/* STACK */
+.cdg-list[data-layout="stack"] {
+  padding-left: var(--cdg-indent);
   position: relative;
 
   display: flex;
   flex-direction: column;
   gap: 8px;
 
-  /* ✅ paramètres pilotés par JS */
   --cdg-spine-top: 2px;
   --cdg-spine-height: calc(100% - 4px);
 }
 
-.cdg-list::before {
+.cdg-list[data-layout="stack"]::before {
   content: "";
   position: absolute;
-  left: 6px;
+  left: var(--cdg-spine-x);
 
   top: var(--cdg-spine-top);
   height: var(--cdg-spine-height);
@@ -206,20 +257,93 @@ button.cdg-chip {
   border-radius: 2px;
 }
 
-/* branche horizontale + alignement à gauche */
-.cdg-list > .cdg-chip-h4 {
+/* branche horizontale sur la chip marquée cdg-spine-target (descendant) */
+.cdg-list[data-layout="stack"] .cdg-spine-target {
   position: relative;
   justify-content: flex-start;
 }
 
-.cdg-list > .cdg-chip-h4::before {
+.cdg-list[data-layout="stack"] .cdg-spine-target::before {
   content: "";
   position: absolute;
-  left: -10px;
+  left: calc(-1 * var(--cdg-branch));
   top: 50%;
-  width: 10px;
+  width: var(--cdg-branch);
   height: 2px;
   background: var(--cdg-line-color);
   transform: translateY(-50%);
   border-radius: 2px;
+}
+
+/* wrapper item + sous-liste (pour garder l’espacement uniforme) */
+.cdg-stack-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* sous-liste attachée (H5) */
+.cdg-sublist {
+  min-width: 0;
+}
+
+/* H5 en GRID */
+.cdg-sublist[data-layout="grid"] {
+  display: grid;
+  grid-template-columns: repeat(var(--cdg-cols, 2), minmax(0, 1fr));
+  gap: var(--cdg-gap-list);
+  align-items: start;
+}
+
+/* H5 en STACK (si besoin) */
+.cdg-sublist[data-layout="stack"] {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+@media (max-width: 720px) {
+  .cdg-sublist[data-layout="grid"] {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* GRID (items simples) */
+.cdg-list[data-layout="grid"] {
+  display: grid;
+  grid-template-columns: repeat(var(--cdg-cols, 2), minmax(0, 1fr));
+  gap: var(--cdg-gap-list);
+  align-items: start;
+  padding-left: 0;
+  position: static;
+}
+
+.cdg-list[data-layout="grid"]::before {
+  display: none;
+  content: none;
+}
+
+@media (max-width: 720px) {
+  .cdg-list[data-layout="grid"] {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ✅ Sous-liste H5 : petit décalage à gauche (sans ajouter de "border") */
+.cdg-sublist {
+  padding-left: 14px; /* ajuste si tu veux +/− */
+}
+
+/* ✅ H5 : style différent (bleu) */
+.cdg-chip-h5 {
+  --ifm-alert-foreground-color: var(--ifm-color-info-contrast-foreground);
+  --ifm-alert-background-color: var(--ifm-color-info-contrast-background);
+
+  font-size: 0.82rem;
+  padding: 0.22rem 0.55rem;
+  opacity: 0.98;
+
+  /* optionnel mais aide à différencier encore plus */
+  border-color: rgba(59, 130, 246, 0.25);
 }
