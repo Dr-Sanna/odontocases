@@ -4,7 +4,8 @@
  * - Écran "TypePicker" quand type=all et pas de recherche (q vide)
  * - Liste Strapi paginée
  * - Tri par numéro dans le slug (ex: qa-01, qa-12, quiz-03…)
- * - Cartes compactes (cover + titre + badge sur image)
+ * - Cartes CC : cover + titre (2 lignes max) + badge absolu sur image
+ *   => className="cc-card ui-card" + cc-thumb/cc-thumb-badge/cc-body/cc-title
  */
 
 import { useEffect, useMemo, useState } from 'react';
@@ -39,7 +40,6 @@ function normalizeRelationArray(rel) {
   return [];
 }
 
-/** Tri par numéro trouvé dans le slug (asc). */
 function compareBySlugNumberAsc(aNode, bNode) {
   const a = normalizeNode(aNode);
   const b = normalizeNode(bNode);
@@ -73,7 +73,8 @@ function badgeVariant(type) {
   return 'danger';
 }
 
-// -------- Recherche permissive --------
+/* -------- Recherche permissive -------- */
+
 function normalizeSearch(s) {
   const base = String(s || '').trim().toLowerCase();
   const noAccents = base.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -260,6 +261,7 @@ export default function CasCliniques() {
             .filter((it) => it?.slug);
 
           let finalCaseList = caseList;
+
           if (q && finalCaseList.length === 0) {
             const fallback = await strapiFetch(CASES_ENDPOINT, {
               params: {
@@ -429,7 +431,6 @@ export default function CasCliniques() {
             <section className="cc-grid">
               {loading && <div className="cc-state">Chargement…</div>}
               {error && !loading && <div className="cc-state error">{error}</div>}
-
               {!loading && !error && sortedItems.length === 0 && <div className="cc-state">Aucun résultat.</div>}
 
               {!loading &&
@@ -439,9 +440,12 @@ export default function CasCliniques() {
                   if (!attrs) return null;
 
                   const entity = attrs.__entity || (isPresentationTab ? 'pathology' : 'case');
-                  const { title = 'Sans titre', slug = '', excerpt = '' } = attrs;
 
-                  const type = entity === 'pathology' ? 'presentation' : attrs.type || 'qa';
+                  const title = attrs?.title || 'Sans titre';
+                  const slug = attrs?.slug || '';
+                  const excerpt = attrs?.excerpt || '';
+
+                  const type = entity === 'pathology' ? 'presentation' : attrs?.type || 'qa';
 
                   const relatedPrefetch =
                     entity === 'case' && !isPresentationTab && !isMixedSearch ? prefetchByType[type] || [] : [];
@@ -453,12 +457,10 @@ export default function CasCliniques() {
                   if (slug) {
                     if (entity === 'pathology') {
                       toHref = `/cas-cliniques/presentation/${slug}`;
+                    } else if (type === 'presentation' && caseToPatho[slug]?.slug) {
+                      toHref = `/cas-cliniques/presentation/${caseToPatho[slug].slug}/${slug}`;
                     } else {
-                      if (type === 'presentation' && caseToPatho[slug]?.slug) {
-                        toHref = `/cas-cliniques/presentation/${caseToPatho[slug].slug}/${slug}`;
-                      } else {
-                        toHref = `/cas-cliniques/${slug}`;
-                      }
+                      toHref = `/cas-cliniques/${slug}`;
                     }
                   }
 
@@ -484,6 +486,7 @@ export default function CasCliniques() {
                       <div
                         className="cc-thumb"
                         style={{ backgroundImage: coverUrl ? `url(${coverUrl})` : undefined }}
+                        aria-hidden="true"
                       >
                         <span className={`cc-thumb-badge badge badge-soft badge-${badgeVariant(type)}`}>
                           {typeLabel(type)}

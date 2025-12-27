@@ -1,136 +1,10 @@
-/* src/pages/Documentation.css */
-
-/* Grille de cartes */
-.doc-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.875rem;
-}
-
-/* Responsive */
-@media (max-width: 61.25rem) {
-  /* 980px */
-  .doc-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 40rem) {
-  /* 640px */
-  .doc-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-/* 1 colonne très petit */
-@media (max-width: 26rem) {
-  .doc-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* Carte */
-.doc-card {
-  display: flex;
-  flex-direction: column;
-  text-decoration: none;
-  color: inherit;
-  overflow: hidden;
-
-  border-radius: 1.05rem;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.25);
-
-  /* ✅ taille constante sans "bloc vide" */
-  min-height: 11.25rem; /* ~180px : ajuste si besoin */
-}
-
-/* Focus */
-.doc-card:focus-visible {
-  outline: 2px solid rgba(255, 255, 255, 0.22);
-  outline-offset: 2px;
-}
-
-/* Thumb */
-.doc-thumb {
-  position: relative;
-  overflow: hidden;
-
-  /* ✅ remplit l'espace si pas d'extrait */
-  flex: 1;
-
-  /* hauteur minimale type thumb */
-  min-height: 7.5rem;
-
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-color: rgba(255, 255, 255, 0.06);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
-}
-
-/* fallback si pas d'image */
-.doc-thumb.is-empty {
-  display: grid;
-  place-items: center;
-}
-
-.doc-thumb.is-empty::after {
-  content: "";
-  width: 45%;
-  height: 45%;
-  border-radius: 0.9rem;
-  background: rgba(255, 255, 255, 0.06);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
-}
-
-/* Overlay sur l'image (badge + titre) */
-.doc-thumb-overlay {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  align-content: end;
-  gap: 0.45rem;
-  padding: 0.75rem;
-
-  /* lisibilité du texte sur l'image */
-  background: linear-gradient(
-    to top,
-    rgba(0, 0, 0, 0.55),
-    rgba(0, 0, 0, 0.18) 55%,
-    rgba(0, 0, 0, 0) 100%
-  );
-}
-
-.doc-thumb-title {
-  margin: 0;
-  font-size: 1rem;
-  line-height: 1.25;
-  font-weight: 700;
-  color: #fff;
-
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  overflow: hidden;
-
-  /* ✅ micro-sécurité (ne change pas le rendu) */
-  min-width: 0;
-}
-
-/* Body (affiché seulement si excerpt présent) */
-.doc-body {
-  padding: 0.75rem;
-}
-
-/* Extrait */
-.doc-excerpt {
-  margin: 0;
-  opacity: 0.85;
-  font-size: 0.82rem;
-  line-height: 1.35;
-}
+/* ===============================
+   Documentation.css (page)
+   Reste ici :
+   - états (loading / error / empty)
+   - layout page (spacer header)
+   - skeleton titre
+   =============================== */
 
 /* États */
 .doc-state {
@@ -178,11 +52,4 @@
 
 .doc-sk-w90 {
   width: 90%;
-}
-
-.doc-thumb-overlay .badge {
-  justify-self: start; /* ne prend pas toute la largeur en grid */
-  align-self: end;
-  width: fit-content; /* shrink-to-fit */
-  max-width: 100%;
 }
