@@ -61,6 +61,10 @@ h3 {
   margin-top: calc(var(--ifm-h3-vertical-rhythm-top) * var(--ifm-leading));
 }
 
+.cd-copyright h3, .cd-references h3 {
+  margin-bottom: var(--ifm-paragraph-margin-bottom);
+}
+
 h4 {
   font-size: var(--ifm-h4-font-size);
   margin-top: calc(var(--ifm-heading-vertical-rhythm-top) * var(--ifm-leading));

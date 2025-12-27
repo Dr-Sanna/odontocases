@@ -464,6 +464,7 @@
   display: grid;
   gap: 1rem;
   margin-top: calc(-1 * var(--ifm-paragraph-margin-bottom));
+  margin-bottom: var(--ifm-paragraph-margin-bottom);
 }
 
 .qa-item {
@@ -524,7 +525,6 @@
    ========================= */
 .cd-extras {
   display: grid;
-  gap: 18px;
   margin-top: 8px;
 }
 
@@ -642,7 +642,9 @@
 /* =========================
    Quiz blocks (inchangé)
    ========================= */
-.quiz-section { margin-top: calc(-1 * var(--ifm-paragraph-margin-bottom)); }
+.quiz-section { 
+  margin-top: calc(-1 * var(--ifm-paragraph-margin-bottom));
+}
 
 .quiz-item {
   margin: 1rem 0;

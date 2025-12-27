@@ -216,6 +216,17 @@ function buildPath(basePath, segments) {
   return '/' + joined.replace(/^\/+/, '');
 }
 
+function hasMeaningfulContentLike(obj) {
+  if (!obj) return false;
+  if (typeof obj?.content === 'string' && obj.content.trim().length > 0) return true;
+  if (typeof obj?.excerpt === 'string' && obj.excerpt.trim().length > 0) return true;
+  if (Array.isArray(obj?.qa_blocks) && obj.qa_blocks.length) return true;
+  if (Array.isArray(obj?.quiz_blocks) && obj.quiz_blocks.length) return true;
+  if (typeof obj?.references === 'string' && obj.references.trim().length > 0) return true;
+  if (typeof obj?.copyright === 'string' && obj.copyright.trim().length > 0) return true;
+  return false;
+}
+
 /* =========================
    Page
    ========================= */
@@ -264,56 +275,78 @@ export default function CaseDetail(props) {
   const navCrumb = location.state?.breadcrumb || null;
   const pre = location.state?.prefetch || null;
 
-  const provisionalKeySlug = useMemo(() => {
+  const expectedSlug = useMemo(() => {
     if (isDocNamespace) return docDisplaySlug;
-    return isPathologyPage ? pathologySlug : caseSlug;
-  }, [isDocNamespace, docDisplaySlug, isPathologyPage, pathologySlug, caseSlug]);
-
-  const diagramScopeKey = useMemo(() => {
-  // clé stable qui change quand tu changes de "page" via la liste
-  return String(provisionalKeySlug || location.pathname || "");
-  }, [provisionalKeySlug, location.pathname]);
-
+    if (isPathologyPage) return pathologySlug;
+    if (isCaseInPathology) return caseSlug;
+    return caseSlug;
+  }, [isDocNamespace, docDisplaySlug, isPathologyPage, pathologySlug, isCaseInPathology, caseSlug]);
 
   const provisional = useMemo(() => {
-    if (!pre || !provisionalKeySlug) return null;
-    return pre.slug === provisionalKeySlug ? pre : null;
-  }, [pre, provisionalKeySlug]);
+    if (!pre || !expectedSlug) return null;
+    return pre.slug === expectedSlug ? pre : null;
+  }, [pre, expectedSlug]);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // item = current entity displayed
+  // item = dernier résultat (cache/provisional/fetch) pour le slug attendu
   const [item, setItem] = useState(() => {
-    const key = provisionalKeySlug;
+    const key = expectedSlug;
     if (!key) return null;
 
-    if (isDocNamespace) return getDocNodeFromSession(key) || provisional || null;
-    if (isPathologyPage) return getPathologyFromCache(key) || provisional || null;
-    return getCaseFromCache(key) || provisional || null;
+    if (isDocNamespace) return getDocNodeFromSession(key) || (hasMeaningfulContentLike(provisional) ? provisional : null);
+    if (isPathologyPage)
+      return getPathologyFromCache(key) || (hasMeaningfulContentLike(provisional) ? provisional : null);
+    return getCaseFromCache(key) || (hasMeaningfulContentLike(provisional) ? provisional : null);
   });
 
-  // DOC: sections du current ITEM
+  // displayItem = ce qui reste affiché tant que le nouveau n’est pas prêt (stale-while-revalidate)
+  const [displayItem, setDisplayItem] = useState(() => item || null);
+  const [isReplacing, setIsReplacing] = useState(false);
+
+  const itemMatchesRoute = Boolean(item?.slug && expectedSlug && item.slug === expectedSlug);
+  const displayMatchesRoute = Boolean(displayItem?.slug && expectedSlug && displayItem.slug === expectedSlug);
+
+  // DOC: sections du current ITEM affiché (pas celui en cours de fetch)
   const [docCurrentItemSections, setDocCurrentItemSections] = useState(() => {
     if (!isDocNamespace || !docItemSlug) return [];
     return getDocSectionsForItemFromSession(docItemSlug) || [];
   });
 
-  // parent pathology (utile sur /presentation/:patho/:case)
+  // parent pathology (utile sur /presentation/:patho/:case) - pour l’affichage courant
   const [parentPathology, setParentPathology] = useState(() => {
     if (!isCaseInPathology || !pathologySlug) return null;
     return getPathologyFromCache(pathologySlug) || null;
   });
 
-  // stableType seulement pour les cas classiques
+  // stableType seulement pour les cas classiques (affichage)
   const [stableType, setStableType] = useState(() => {
     if (!isPlainCase) return null;
     return getCaseFromCache(caseSlug)?.type || provisional?.type || null;
   });
 
   useEffect(() => {
-    if (isPlainCase && item?.type) setStableType(item.type);
-  }, [item?.type, isPlainCase]);
+    if (isPlainCase && displayItem?.type) setStableType(displayItem.type);
+  }, [displayItem?.type, isPlainCase]);
+
+  // Dès que l’URL change, on garde l’ancien affichage et on marque "remplacement en cours"
+  useEffect(() => {
+    if (!expectedSlug) return;
+    if (!displayItem?.slug) {
+      setIsReplacing(true);
+      return;
+    }
+    if (displayItem.slug !== expectedSlug) setIsReplacing(true);
+  }, [expectedSlug, displayItem?.slug]);
+
+  // Quand le bon item est prêt, on "commit" dans displayItem d’un coup
+  useEffect(() => {
+    if (itemMatchesRoute && item) {
+      setDisplayItem(item);
+      setIsReplacing(false);
+    }
+  }, [itemMatchesRoute, item]);
 
   const [collapsedDesktop, setCollapsedDesktop] = useState(() => {
     try {
@@ -556,38 +589,47 @@ export default function CaseDetail(props) {
     return sorted;
   }
 
-  // ---------- main load ----------
+  // ---------- main load (ne vide jamais displayItem) ----------
   useEffect(() => {
     let ignore = false;
 
-    const keySlug = provisionalKeySlug;
-    if (!keySlug) {
+    const slugToLoad = expectedSlug;
+    if (!slugToLoad) {
       setError('Slug manquant.');
       setLoading(false);
       return () => {};
     }
 
-    const cached = isDocNamespace
-      ? getDocNodeFromSession(keySlug)
-      : isPathologyPage
-        ? getPathologyFromCache(keySlug)
-        : getCaseFromCache(keySlug);
+    setError('');
 
-    if (cached) {
+    // cache instant
+    const cached = isDocNamespace
+      ? getDocNodeFromSession(slugToLoad)
+      : isPathologyPage
+        ? getPathologyFromCache(slugToLoad)
+        : getCaseFromCache(slugToLoad);
+
+    // Si on a le cache complet, on commit immédiatement (pas de trou)
+    if (cached?.slug === slugToLoad) {
       setItem(cached);
       setLoading(false);
-    } else if (provisional) {
-      setItem(provisional);
-      setLoading(true);
+      // commit côté affichage aussi (swap instant)
+      setDisplayItem(cached);
+      setIsReplacing(false);
     } else {
+      // sinon, on peut poser un "provisional" seulement s’il a du contenu réel
+      if (provisional?.slug === slugToLoad && hasMeaningfulContentLike(provisional)) {
+        setItem(provisional);
+      } else {
+        setItem((prev) => (prev?.slug === slugToLoad ? prev : prev)); // no-op volontaire
+      }
       setLoading(true);
     }
 
     async function load() {
-      setError('');
       try {
         if (isDocNamespace) {
-          const fullDoc = await loadDocNodeBySlug(keySlug);
+          const fullDoc = await loadDocNodeBySlug(slugToLoad);
           if (ignore) return;
 
           if (!fullDoc) {
@@ -596,12 +638,15 @@ export default function CaseDetail(props) {
           }
 
           setItem(fullDoc);
-          setDocNodeToSession(keySlug, fullDoc);
+          setDocNodeToSession(slugToLoad, fullDoc);
 
+          // sections (si page item)
           if (isDocItemPage && docItemSlug) {
             const secs = await loadDocSectionsForItem(docItemSlug);
             if (ignore) return;
             setDocCurrentItemSections(secs);
+          } else {
+            // si on est sur une section, on ne force pas le chargement ici
           }
 
           return;
@@ -671,9 +716,10 @@ export default function CaseDetail(props) {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
+    expectedSlug,
+
     isDocNamespace,
     isDocItemPage,
-    provisionalKeySlug,
     docItemSlug,
     docSectionSlug,
 
@@ -683,12 +729,12 @@ export default function CaseDetail(props) {
     isCaseInPathology,
   ]);
 
-  // ---------- type + labels ----------
+  // ---------- type + labels (basés sur l’affichage) ----------
   const effectiveType = useMemo(() => {
     if (isDocNamespace) return 'doc';
     if (isPresentationNamespace) return 'presentation';
-    return item?.type || provisional?.type || stableType || null;
-  }, [isDocNamespace, isPresentationNamespace, item?.type, provisional?.type, stableType]);
+    return displayItem?.type || provisional?.type || stableType || null;
+  }, [isDocNamespace, isPresentationNamespace, displayItem?.type, provisional?.type, stableType]);
 
   const typeLabel = useMemo(() => {
     if (effectiveType === 'qa') return 'Q/R';
@@ -697,13 +743,13 @@ export default function CaseDetail(props) {
     return 'Présentation';
   }, [effectiveType]);
 
-  const qaList = !isDocNamespace && Array.isArray(item?.qa_blocks) ? item.qa_blocks : [];
-  const quizList = !isDocNamespace && Array.isArray(item?.quiz_blocks) ? item.quiz_blocks : [];
+  const qaList = !isDocNamespace && Array.isArray(displayItem?.qa_blocks) ? displayItem.qa_blocks : [];
+  const quizList = !isDocNamespace && Array.isArray(displayItem?.quiz_blocks) ? displayItem.quiz_blocks : [];
 
   const relatedCases = useMemo(() => {
     if (!isPathologyPage) return [];
-    return Array.isArray(item?.cases) ? item.cases : [];
-  }, [isPathologyPage, item?.cases]);
+    return Array.isArray(displayItem?.cases) ? displayItem.cases : [];
+  }, [isPathologyPage, displayItem?.cases]);
 
   const [showSpoilers, setShowSpoilers] = useState(false);
   useEffect(() => {
@@ -728,51 +774,62 @@ export default function CaseDetail(props) {
     return { pres, other };
   }, [isPathologyPage, relatedCases]);
 
-  // ---------- breadcrumb ----------
+  // ---------- breadcrumb / titres ----------
   const cdIndex = useMemo(() => safeGetSessionJson('cd-patho-index'), []);
   const indexPatho = cdIndex?.pathoIndex || {};
   const indexCase = cdIndex?.caseIndex || {};
 
-  const instantCurrentTitle = useMemo(() => {
+  // titre affiché = correspond au contenu affiché (pas à l’URL)
+  const displayTitle = useMemo(() => {
+    if (isDocNamespace) return displayItem?.title || displayItem?.slug || 'Documentation';
+    if (isPathologyPage) return displayItem?.title || displayItem?.slug || 'Pathologie';
+    if (isPresentationNamespace && isCaseInPathology) return displayItem?.title || displayItem?.slug || 'Cas clinique';
+    return displayItem?.title || displayItem?.slug || 'Cas clinique';
+  }, [isDocNamespace, isPathologyPage, isPresentationNamespace, isCaseInPathology, displayItem?.title, displayItem?.slug]);
+
+  // titre cible (celui vers lequel on navigue) = utilisé dans l’overlay pendant le remplacement
+  const targetTitle = useMemo(() => {
+    if (!expectedSlug) return null;
+
     if (isDocNamespace) {
-      if (item?.title) return item.title;
-      return docDisplaySlug || 'Documentation';
+      if (itemMatchesRoute && item?.title) return item.title;
+      if (provisional?.title) return provisional.title;
+      return expectedSlug;
     }
 
     if (isPathologyPage) {
       if (navCrumb?.pathology?.title) return navCrumb.pathology.title;
       if (indexPatho?.[pathologySlug]?.title) return indexPatho[pathologySlug].title;
-      if (item?.slug === pathologySlug && item?.title) return item.title;
+      if (itemMatchesRoute && item?.title) return item.title;
       if (provisional?.title) return provisional.title;
-      return pathologySlug || 'Pathologie';
+      return pathologySlug || expectedSlug;
     }
 
     if (isCaseInPathology) {
       if (navCrumb?.case?.title) return navCrumb.case.title;
       if (indexCase?.[caseSlug]?.title) return indexCase[caseSlug].title;
+      if (itemMatchesRoute && item?.title) return item.title;
+      if (provisional?.title) return provisional.title;
+      return caseSlug || expectedSlug;
     }
 
-    if (isPlainCase) {
-      if (navCrumb?.case?.title) return navCrumb.case.title;
-    }
-
-    if (item?.slug === caseSlug && item?.title) return item.title;
+    // plain case
+    if (navCrumb?.case?.title) return navCrumb.case.title;
+    if (itemMatchesRoute && item?.title) return item.title;
     if (provisional?.title) return provisional.title;
-    return caseSlug || 'Cas clinique';
+    return caseSlug || expectedSlug;
   }, [
+    expectedSlug,
     isDocNamespace,
-    docDisplaySlug,
-    item?.title,
-
     isPathologyPage,
     isCaseInPathology,
-    isPlainCase,
     navCrumb,
     indexPatho,
     indexCase,
     pathologySlug,
     caseSlug,
-    item?.slug,
+    itemMatchesRoute,
+    item?.title,
     provisional?.title,
   ]);
 
@@ -781,28 +838,16 @@ export default function CaseDetail(props) {
 
     if (navCrumb?.pathology?.title) return navCrumb.pathology.title;
     if (indexPatho?.[pathologySlug]?.title) return indexPatho[pathologySlug].title;
-
     if (parentPathology?.slug === pathologySlug && parentPathology?.title) return parentPathology.title;
-    if (isPathologyPage && item?.slug === pathologySlug && item?.title) return item.title;
-
+    // fallback
     return pathologySlug || 'Pathologie';
-  }, [
-    isPresentationNamespace,
-    navCrumb,
-    indexPatho,
-    pathologySlug,
-    parentPathology?.slug,
-    parentPathology?.title,
-    isPathologyPage,
-    item?.slug,
-    item?.title,
-  ]);
+  }, [isPresentationNamespace, navCrumb, indexPatho, pathologySlug, parentPathology?.slug, parentPathology?.title]);
 
   const docCrumb = useMemo(() => {
     if (!isDocNamespace) return null;
 
     const chain = [];
-    let cur = item;
+    let cur = itemMatchesRoute ? item : displayItem; // si déjà chargé, mieux ; sinon on s’appuie sur l’affichage
     for (let i = 0; i < 6; i += 1) {
       if (!cur) break;
       chain.push({ slug: cur.slug, title: cur.title || cur.slug, level: cur.level || '' });
@@ -828,13 +873,13 @@ export default function CaseDetail(props) {
       (docSectionSlug ? { slug: docSectionSlug, title: docSectionSlug, level: 'section' } : null);
 
     return { subject, chapter, theItem, theSection };
-  }, [isDocNamespace, item, subjectSlug, chapterSlug, docItemSlug, docSectionSlug]);
+  }, [isDocNamespace, itemMatchesRoute, item, displayItem, subjectSlug, chapterSlug, docItemSlug, docSectionSlug]);
 
   const breadcrumbItems = useMemo(() => {
+    // breadcrumb = reflète l’URL (navigation)
     if (isDocNamespace) {
       const base = [
         { label: 'Accueil', to: '/' },
-        // on garde un lien stable vers la page /documentation
         { label: 'Documentation', to: '/documentation' },
       ];
 
@@ -881,7 +926,7 @@ export default function CaseDetail(props) {
       }
 
       base.push({ label: pathoLabel, to: pathoTo });
-      base.push({ label: instantCurrentTitle, to: null });
+      base.push({ label: targetTitle || 'Cas clinique', to: null });
       return base;
     }
 
@@ -890,7 +935,7 @@ export default function CaseDetail(props) {
       base.push({ label: crumbTypeLabel, to: `/cas-cliniques?type=${encodeURIComponent(effectiveType)}&page=1` });
     }
 
-    base.push({ label: instantCurrentTitle, to: null });
+    base.push({ label: targetTitle || 'Cas clinique', to: null });
     return base;
   }, [
     isDocNamespace,
@@ -905,7 +950,7 @@ export default function CaseDetail(props) {
     pathologySlug,
     effectiveType,
     instantPathologyTitle,
-    instantCurrentTitle,
+    targetTitle,
   ]);
 
   // Lightbox
@@ -928,7 +973,13 @@ export default function CaseDetail(props) {
 
     el.addEventListener('click', onClick);
     return () => el.removeEventListener('click', onClick);
-  }, [item?.content, qaList?.length, quizList?.length, relatedCases?.length, docCurrentItemSections?.length]);
+  }, [
+    displayItem?.content,
+    qaList?.length,
+    quizList?.length,
+    visibleRelatedCases?.length,
+    docCurrentItemSections?.length,
+  ]);
 
   useEffect(() => {
     if (!lightbox) return;
@@ -946,7 +997,10 @@ export default function CaseDetail(props) {
     return Array.isArray(docCurrentItemSections) ? docCurrentItemSections : [];
   }, [isDocItemPage, docCurrentItemSections]);
 
-  const showExtras = Boolean(item?.references || item?.copyright);
+  const showExtras = Boolean(displayItem?.references || displayItem?.copyright);
+
+  // Key markdown basé sur ce qui est affiché => pas de "remount" au changement d’URL
+  const markdownScopeKey = String(displayItem?.slug || displayItem?.id || 'x');
 
   return (
     <div className={['cd-shell', collapsed ? 'is-collapsed' : '', drawerOpen ? 'is-drawer-open' : ''].join(' ')}>
@@ -1002,22 +1056,22 @@ export default function CaseDetail(props) {
 
         {error && <div className="cd-state error">{error}</div>}
 
-        {loading && !item && !error && (
-          <div className="cd-skel" aria-hidden="true">
-            <div className="sk-line sk-h24 sk-w80" />
-            <div className="sk-line sk-h16 sk-w100" />
-            <div className="sk-line sk-h16 sk-w95" />
-            <div className="sk-line sk-h16 sk-w90" />
-          </div>
-        )}
+        {/* NB: pas de skeleton qui masque le contenu => on garde displayItem visible */}
 
         <article className="casedetail" ref={contentRef}>
           <div className="cd-content">
-            <PageTitle description={item?.excerpt || ''}>{instantCurrentTitle}</PageTitle>
-{item?.content ? <CaseMarkdown scopeKey={diagramScopeKey}>{item.content}</CaseMarkdown> : null}
+
+            <PageTitle description={displayItem?.excerpt || ''}>{displayTitle}</PageTitle>
+
+            {displayItem?.content ? (
+              <CaseMarkdown scopeKey={markdownScopeKey}>{displayItem.content}</CaseMarkdown>
+            ) : (
+              !displayItem && !error && <div className="cd-state">Chargement…</div>
+            )}
           </div>
 
-          {isDocItemPage && docChildSections.length > 0 && (
+          {/* DOC children (affichés uniquement si l’affichage correspond à une page d’item doc) */}
+          {isDocNamespace && displayMatchesRoute && isDocItemPage && docChildSections.length > 0 && (
             <section className="cd-children">
               <h2 className="cd-children-title">Sections</h2>
 
@@ -1049,7 +1103,8 @@ export default function CaseDetail(props) {
             </section>
           )}
 
-          {!isDocNamespace && isPathologyPage && visibleRelatedCases.length > 0 && (
+          {/* PATHO children */}
+          {!isDocNamespace && isPathologyPage && displayMatchesRoute && visibleRelatedCases.length > 0 && (
             <section className="cd-children">
               <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 }}>
                 <h2 className="cd-children-title">Cas associés</h2>
@@ -1095,6 +1150,7 @@ export default function CaseDetail(props) {
                     className="cd-child-card ui-card"
                     onMouseEnter={() => prefetchCase(c.slug, { publicationState: PUB_STATE }).catch(() => {})}
                     onFocus={() => prefetchCase(c.slug, { publicationState: PUB_STATE }).catch(() => {})}
+                    onPointerDown={() => prefetchCase(c.slug, { publicationState: PUB_STATE }).catch(() => {})}
                   >
                     {c.coverUrl && (
                       <img
@@ -1113,7 +1169,8 @@ export default function CaseDetail(props) {
             </section>
           )}
 
-          {!isDocNamespace && qaList.length > 0 && (
+          {/* QA */}
+          {!isDocNamespace && displayMatchesRoute && qaList.length > 0 && (
             <section className="qa-section">
               <h2 className="qa-title">{isPathologyPage ? 'Questions (pathologie)' : 'Questions'}</h2>
 
@@ -1121,7 +1178,7 @@ export default function CaseDetail(props) {
                 const qTxt = qa?.question || `Question ${i + 1}`;
                 const ans = qa?.answer || '';
                 return (
-                  <details key={qa?.id ?? `${provisionalKeySlug ?? 'x'}-qa-${i}`} className="qa-item">
+                  <details key={qa?.id ?? `${markdownScopeKey}-qa-${i}`} className="qa-item">
                     <summary className="qa-q">
                       <span className="qa-num">{i + 1}.</span>
                       <span className="qa-text">{qTxt}</span>
@@ -1136,36 +1193,38 @@ export default function CaseDetail(props) {
             </section>
           )}
 
-          {!isDocNamespace && quizList.length > 0 && (
+          {/* QUIZ */}
+          {!isDocNamespace && displayMatchesRoute && quizList.length > 0 && (
             <section className="quiz-section">
               <h2 className="quiz-title">{isPathologyPage ? 'Quiz (pathologie)' : 'Quiz'}</h2>
 
               {quizList.map((qb, i) => (
                 <QuizBlock
-                  key={qb?.id ?? `${provisionalKeySlug ?? 'x'}-quiz-${i}`}
+                  key={qb?.id ?? `${markdownScopeKey}-quiz-${i}`}
                   block={qb}
                   index={i}
                   total={quizList.length}
-                  seedKey={`${provisionalKeySlug ?? 'x'}-${qb?.id ?? i}`}
+                  seedKey={`${markdownScopeKey}-${qb?.id ?? i}`}
                   Markdown={CaseMarkdown}
                 />
               ))}
             </section>
           )}
 
-          {showExtras && (
+          {/* EXTRAS */}
+          {displayMatchesRoute && showExtras && (
             <section className="cd-extras">
-              {item?.references && (
+              {displayItem?.references && (
                 <div className="cd-references">
                   <h3>Références</h3>
-                  <CaseMarkdown>{item.references}</CaseMarkdown>
+                  <CaseMarkdown>{displayItem.references}</CaseMarkdown>
                 </div>
               )}
 
-              {item?.copyright && (
+              {displayItem?.copyright && (
                 <div className="cd-copyright">
                   <h3>Copyright</h3>
-                  <CaseMarkdown>{item.copyright}</CaseMarkdown>
+                  <CaseMarkdown>{displayItem.copyright}</CaseMarkdown>
                 </div>
               )}
             </section>
@@ -1820,6 +1879,7 @@ function Aside({
                           <Link
                             className="cd-side-link"
                             to={itemTo}
+                            state={{ prefetch: { slug: it.slug, title: it.title || it.slug, type: 'doc' } }}
                             onClick={() => {
                               if (hasKids) {
                                 setExpandedDocItemSlug(() => {
@@ -1870,6 +1930,7 @@ function Aside({
                                       <Link
                                         className="cd-side-link cd-side-child-link"
                                         to={to}
+                                        state={{ prefetch: { slug: s.slug, title: s.title || s.slug, type: 'doc' } }}
                                         onClick={() => {
                                           if (isNarrow) closeMobile();
                                         }}
@@ -1906,11 +1967,16 @@ function Aside({
                         <Link
                           className="cd-side-link"
                           to={`/cas-cliniques/${it.slug}`}
+                          state={{
+                            prefetch: { slug: it.slug, title: it.title || it.slug, type: it.type || currentType || null },
+                            breadcrumb: { mode: 'cases', case: { slug: it.slug, title: it.title || it.slug } },
+                          }}
                           onClick={() => {
                             if (isNarrow) closeMobile();
                           }}
                           onMouseEnter={() => prefetchIntent('case', it.slug)}
                           onFocus={() => prefetchIntent('case', it.slug)}
+                          onPointerDown={() => prefetchIntent('case', it.slug)}
                         >
                           <span className="cd-side-link-text">{it.title || it.slug}</span>
                         </Link>
@@ -1984,6 +2050,7 @@ function Aside({
                             }}
                             onMouseEnter={() => prefetchIntent('pathology', p.slug)}
                             onFocus={() => prefetchIntent('pathology', p.slug)}
+                            onPointerDown={() => prefetchIntent('pathology', p.slug)}
                           >
                             <span className="cd-side-link-text">{p.title || p.slug}</span>
                           </Link>
@@ -2040,6 +2107,7 @@ function Aside({
                                         }}
                                         onMouseEnter={() => prefetchIntent('case', ch.slug)}
                                         onFocus={() => prefetchIntent('case', ch.slug)}
+                                        onPointerDown={() => prefetchIntent('case', ch.slug)}
                                       >
                                         <span className="cd-side-link-text">{ch.title || ch.slug}</span>
                                       </Link>
