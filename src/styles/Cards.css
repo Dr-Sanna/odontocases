@@ -48,7 +48,6 @@
   gap: 18px;
   padding-top: 8px !important;
   padding-bottom: 32px !important;
-  
 }
 
 /* <= 1200px : 3 colonnes */
@@ -76,24 +75,82 @@
 
 /* =========================================================
    CAS CLINIQUES : CARTES
-   - espace titre rétabli
-   - titre clamp 2 lignes max
-   - badge en absolu bas gauche sur l'image
+   Objectif :
+   - image arrondie (radius sur toute l'image)
+   - zone titre garde son padding d'origine
+   - au repos : pas d'aspect "carte"
+   - au hover : on "rétablit" l'aspect carte autour image + titre :
+     bordure + ombre de .ui-card, sans micro-déplacements
+     => bordure dessinée via ::after (n'affecte jamais le layout)
    ========================================================= */
 
-.cc-card {
+/* Le container garde la classe ui-card dans le JSX,
+   mais on neutralise son rendu de base et on contrôle le hover ici. */
+.cc-card.ui-card {
+  position: relative;
   display: grid;
   grid-template-rows: 160px auto;
-  overflow: hidden;
   height: auto;
+
+  /* neutralise l'apparence ui-card au repos */
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+
+  /* on garde le radius global pour que la bordure hover soit arrondie */
+  border-radius: var(--card-radius);
+  overflow: visible; /* la carte n'a pas besoin de clipper l'image */
 }
 
-/* Image / cover */
+/* Bordure hover (autour image + titre) sans layout shift */
+.cc-card.ui-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+
+  /* on utilise la même définition que ui-card:hover,
+     mais on la rend invisible au repos */
+  border: var(--card-border-hover);
+  opacity: 0;
+
+  transition: opacity 0.15s ease;
+}
+
+/* Hover : on remet l'aspect carte sur TOUT le bloc (image + titre) */
+.cc-card.ui-card:hover {
+  box-shadow: var(--card-shadow-hover) !important;
+  background: var(--card-bg) !important; /* fond de carte derrière le titre */
+  cursor: pointer;
+}
+
+/* Affiche la bordure hover arrondie */
+.cc-card.ui-card:hover::after {
+  opacity: 1;
+}
+
+/* Focus clavier : même rendu que hover */
+.cc-card.ui-card:focus-visible {
+  box-shadow: var(--card-shadow-hover) !important;
+  background: var(--card-bg) !important;
+  outline: none;
+}
+.cc-card.ui-card:focus-visible::after {
+  opacity: 1;
+}
+
+/* Image / cover (arrondie sur ses 4 coins) */
 .cc-thumb {
   position: relative; /* ancre pour le badge en absolu */
   background: #f5f5f7;
   background-size: cover;
   background-position: center;
+  background-repeat: no-repeat;
+
+  /* radius sur toute l'image */
+  border-radius: var(--card-radius);
+  overflow: hidden;
 }
 
 /* Badge sur l’image (bas gauche) */
@@ -104,9 +161,36 @@
   z-index: 2;
 }
 
+/* Contenu : on garde le padding d'origine */
+.cc-body {
+  padding: 12px 14px 14px; /* padding d'avant */
+  display: grid;
+  gap: 6px;
+  grid-template-rows: auto 1fr;
+
+  /* pas de bloc "fond/bordure" spécifique au titre */
+  background: transparent;
+  border: 0;
+}
+
+/* Titre : 2 lignes max + espace réservé */
+.cc-title {
+  margin: 2px 0 0;
+  font-size: 1.05rem;
+  line-height: 1.35;
+  font-weight: 700;
+
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+
+  min-height: calc(2 * 1.35em);
+}
+
 /* Mobile (<= 560px) : thumbs moins hauts */
 @media (max-width: 560px) {
-  .cc-card {
+  .cc-card.ui-card {
     grid-template-rows: 120px auto;
   }
 
@@ -120,28 +204,16 @@
   }
 }
 
-/* Contenu */
-.cc-body {
-  padding: 12px 14px 14px;
-  display: grid;
-  gap: 6px;
-  grid-template-rows: auto 1fr;
-}
-
-/* Titre : 2 lignes max + espace réservé (sans changer typo existante) */
-.cc-title {
-  margin: 2px 0 0;
-  font-size: 1.05rem;
-  line-height: 1.35;
-  font-weight: 700;
-
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2; /* 2 lignes max */
-  overflow: hidden;
-
-  /* réserve la hauteur de 2 lignes */
-  min-height: calc(2 * 1.35em);
+/* Sur mobile / pointer coarse : pas d'effet hover */
+@media (hover: none), (pointer: coarse) {
+  .cc-card.ui-card:hover {
+    box-shadow: none !important;
+    background: transparent !important;
+    cursor: default;
+  }
+  .cc-card.ui-card:hover::after {
+    opacity: 0;
+  }
 }
 
 /* =========================================================
@@ -267,4 +339,3 @@
   width: fit-content;
   max-width: 100%;
 }
-

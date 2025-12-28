@@ -1104,70 +1104,61 @@ export default function CaseDetail(props) {
           )}
 
           {/* PATHO children */}
-          {!isDocNamespace && isPathologyPage && displayMatchesRoute && visibleRelatedCases.length > 0 && (
-            <section className="cd-children">
-              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 }}>
-                <h2 className="cd-children-title">Cas associés</h2>
+          
+{!isDocNamespace && isPathologyPage && displayMatchesRoute && relatedCases.length > 0 && (
+  <section className="cd-children cd-related">
+    <div className="cd-related-head">
+      <h2 className="cd-children-title">Cas associés</h2>
 
-                {spoilerCounts.other > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setShowSpoilers((v) => !v)}
-                    aria-pressed={showSpoilers ? 'true' : 'false'}
-                    title="Afficher les quiz/Q-R liés (peut spoiler)"
-                    style={{
-                      border: '1px solid rgba(255,255,255,0.12)',
-                      borderRadius: 10,
-                      padding: '8px 10px',
-                      background: 'transparent',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {showSpoilers ? 'Masquer les quiz' : 'Afficher les quiz'}
-                  </button>
-                )}
-              </div>
+      {spoilerCounts.other > 0 && (
+        <button
+          type="button"
+          className="cd-related-spoil-btn"
+          onClick={() => setShowSpoilers((v) => !v)}
+          aria-pressed={showSpoilers ? 'true' : 'false'}
+          title="Afficher les quiz/Q-R liés (peut spoiler)"
+        >
+          {showSpoilers ? 'Masquer quiz' : 'Afficher quiz (spoil)'}
+        </button>
+      )}
+    </div>
 
-              {!showSpoilers && spoilerCounts.other > 0 && (
-                <div className="cd-state" style={{ marginTop: 8 }}>
-                  {spoilerCounts.pres} présentation(s) visible(s). {spoilerCounts.other} quiz/Q-R masqué(s) (spoiler).
-                </div>
-              )}
 
-              <div className="cd-children-grid">
-                {visibleRelatedCases.map((c) => (
-                  <Link
-                    key={c.slug}
-                    to={`/cas-cliniques/presentation/${pathologySlug}/${c.slug}`}
-                    state={{
-                      breadcrumb: {
-                        mode: 'presentation',
-                        pathology: { slug: pathologySlug, title: instantPathologyTitle || pathologySlug },
-                        case: { slug: c.slug, title: c.title || c.slug },
-                      },
-                      prefetch: { slug: c.slug, title: c.title || c.slug, type: c.type || 'presentation' },
-                    }}
-                    className="cd-child-card ui-card"
-                    onMouseEnter={() => prefetchCase(c.slug, { publicationState: PUB_STATE }).catch(() => {})}
-                    onFocus={() => prefetchCase(c.slug, { publicationState: PUB_STATE }).catch(() => {})}
-                    onPointerDown={() => prefetchCase(c.slug, { publicationState: PUB_STATE }).catch(() => {})}
-                  >
-                    {c.coverUrl && (
-                      <img
-                        className="cd-child-cover"
-                        src={c.coverUrl}
-                        alt={c.title || c.slug}
-                        loading="lazy"
-                        data-no-lightbox="1"
-                      />
-                    )}
-                    <div className="cd-child-title">{c.title || c.slug}</div>
-                    {c.excerpt && <div className="cd-child-excerpt">{c.excerpt}</div>}
-                  </Link>
-                ))}
-              </div>
-            </section>
+    <div className="cd-children-grid">
+      {visibleRelatedCases.map((c) => (
+        <Link
+          key={c.slug}
+          to={`/cas-cliniques/presentation/${pathologySlug}/${c.slug}`}
+          state={{
+            breadcrumb: {
+              mode: 'presentation',
+              pathology: { slug: pathologySlug, title: instantPathologyTitle || pathologySlug },
+              case: { slug: c.slug, title: c.title || c.slug },
+            },
+            prefetch: { slug: c.slug, title: c.title || c.slug, type: c.type || 'presentation' },
+          }}
+          className="cd-child-card ui-card"
+          onMouseEnter={() => prefetchCase(c.slug, { publicationState: PUB_STATE }).catch(() => {})}
+          onFocus={() => prefetchCase(c.slug, { publicationState: PUB_STATE }).catch(() => {})}
+          onPointerDown={() => prefetchCase(c.slug, { publicationState: PUB_STATE }).catch(() => {})}
+        >
+          {c.coverUrl && (
+            <img
+              className="cd-child-cover"
+              src={c.coverUrl}
+              alt={c.title || c.slug}
+              loading="lazy"
+              data-no-lightbox="1"
+            />
           )}
+          <div className="cd-child-title">{c.title || c.slug}</div>
+          {c.excerpt && <div className="cd-child-excerpt">{c.excerpt}</div>}
+        </Link>
+      ))}
+    </div>
+  </section>
+)}
+
 
           {/* QA */}
           {!isDocNamespace && displayMatchesRoute && qaList.length > 0 && (

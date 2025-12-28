@@ -828,3 +828,79 @@
     margin-bottom: 0.5rem;
   }
 }
+
+/* ===============================
+   Cas associés (pathologie)
+   - H2 inchangé (marges/rhythm conservés)
+   - bouton petit, custom, en absolu en haut à droite
+   - bouton aligné verticalement avec le margin-top du H2
+   =============================== */
+
+.cd-related {
+  position: relative;
+}
+
+/* Conteneur du header : on ne touche pas au H2 */
+.cd-related-head {
+  position: relative;
+}
+
+/* Le H2 reste inchangé (pas de margin override).
+   On réserve juste de la place à droite pour le bouton */
+.cd-related-head .cd-children-title {
+  padding-right: 190px; /* ajuste si le bouton est plus long */
+}
+
+/* Bouton : petit, sobre, fond bleu clair, texte légèrement coloré */
+.cd-related-spoil-btn {
+  position: absolute;
+  right: 0;
+
+  /* s'aligne sur le margin-top du H2 :
+     on se place en haut du header, puis on descend de la même valeur */
+  top: 1.5rem;
+
+  appearance: none;
+  border-radius: 8px;
+  padding: 4px 6px;
+
+  background: #e7f1ff;
+  border: 1px solid rgba(31, 95, 191, 0.22);
+  color: #1f5fbf;
+
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.1;
+
+  cursor: pointer;
+}
+
+.cd-related-spoil-btn:hover {
+  background: #dbeaff;
+  border-color: rgba(31, 95, 191, 0.32);
+}
+
+/* Dark mode (si data-theme='dark') */
+[data-theme='dark'] .cd-related-spoil-btn {
+  background: rgba(59, 130, 246, 0.18);
+  border-color: rgba(59, 130, 246, 0.35);
+  color: rgba(191, 219, 254, 0.95);
+}
+
+[data-theme='dark'] .cd-related-spoil-btn:hover {
+  background: rgba(59, 130, 246, 0.24);
+  border-color: rgba(59, 130, 246, 0.45);
+}
+
+/* Mobile : évite chevauchement si nécessaire */
+@media (max-width: 560px) {
+  .cd-related-head .cd-children-title {
+    padding-right: 0;
+  }
+
+  .cd-related-spoil-btn {
+    position: static;
+    margin-top: 8px;
+    display: inline-block;
+  }
+}
