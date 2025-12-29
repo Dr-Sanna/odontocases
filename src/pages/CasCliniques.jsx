@@ -4,8 +4,9 @@
  * - Écran "TypePicker" quand type=all et pas de recherche (q vide)
  * - Liste Strapi paginée
  * - Tri par numéro dans le slug (ex: qa-01, qa-12, quiz-03…)
- * - Cartes CC : cover + titre (2 lignes max) + badge absolu sur image
- *   => className="cc-card ui-card" + cc-thumb/cc-thumb-badge/cc-body/cc-title
+ * - Cartes : cover + titre (2 lignes max) + badge absolu sur image
+ *   - Cas cliniques : badge = type (Q/R, Quiz, Présentation)
+ *   - Pathologies (atlas) : badge = attrs.atlasBadge (enum Strapi = label), couleur déduite côté React
  */
 
 import { useEffect, useMemo, useState } from 'react';
@@ -27,6 +28,38 @@ const FALLBACK_PAGE_SIZE = 300;
 
 const CASES_ENDPOINT = import.meta.env.VITE_CASES_ENDPOINT || '/cases';
 const PATHO_ENDPOINT = import.meta.env.VITE_PATHO_ENDPOINT || '/pathologies';
+
+/* =========================
+   Badges atlas (pathologies)
+   - clé = label stocké dans l'enum Strapi (atlasBadge)
+   - valeur = variante CSS (badge-info, badge-success, badge-warning, badge-danger, badge-secondary)
+   ========================= */
+const ATLAS_BADGE_TO_VARIANT = {
+  'Tumeur bénigne': 'success',
+  'Technique': 'success',
+
+  'Tumeur maligne': 'danger',
+
+  'Infectieux': 'warning',
+  'Traumatologie': 'warning',
+
+  'Viral': 'info',
+  'Inflammatoire / immunitaire': 'info',
+  'Auto-immun': 'info',
+  'Lésion réactionnelle': 'info',
+
+  "Anomalie d'éruption": 'secondary',
+  'Kystes & pseudokystes': 'secondary',
+  'Vasculaire / génétique': 'secondary',
+};
+
+function getAtlasBadge(atlasBadge) {
+  if (!atlasBadge) return { text: 'Présentation', variant: 'info' };
+  return {
+    text: atlasBadge,
+    variant: ATLAS_BADGE_TO_VARIANT[atlasBadge] || 'info',
+  };
+}
 
 function normalizeNode(node) {
   return node?.attributes ? node.attributes : node;
@@ -215,7 +248,7 @@ export default function CasCliniques() {
                 },
                 sort: 'slug:asc',
                 pagination: { page: 1, pageSize: MIXED_PAGE_SIZE },
-                fields: ['title', 'slug', 'excerpt', 'updatedAt'],
+                fields: ['title', 'slug', 'excerpt', 'updatedAt', 'atlasBadge'],
                 publicationState: 'live',
               },
             }),
@@ -305,7 +338,7 @@ export default function CasCliniques() {
               filters: pathoFilters,
               sort: 'slug:asc',
               pagination: { page, pageSize: PAGE_SIZE },
-              fields: ['title', 'slug', 'excerpt', 'updatedAt'],
+              fields: ['title', 'slug', 'excerpt', 'updatedAt', 'atlasBadge'],
               publicationState: 'live',
             }
           : {
@@ -481,6 +514,13 @@ export default function CasCliniques() {
                           }
                         : { prefetch: { slug, title, type, coverUrl, excerpt, entity: 'case' }, relatedPrefetch };
 
+                  // Badge affiché sur la thumb
+                  const isPathology = entity === 'pathology';
+                  const atlas = isPathology ? getAtlasBadge(attrs?.atlasBadge) : null;
+
+                  const badgeText = isPathology ? atlas.text : typeLabel(type);
+                  const badgeVar = isPathology ? atlas.variant : badgeVariant(type);
+
                   const Inner = (
                     <>
                       <div
@@ -488,9 +528,7 @@ export default function CasCliniques() {
                         style={{ backgroundImage: coverUrl ? `url(${coverUrl})` : undefined }}
                         aria-hidden="true"
                       >
-                        <span className={`cc-thumb-badge badge badge-soft badge-${badgeVariant(type)}`}>
-                          {typeLabel(type)}
-                        </span>
+                        <span className={`cc-thumb-badge badge badge-soft badge-${badgeVar}`}>{badgeText}</span>
                       </div>
 
                       <div className="cc-body">
