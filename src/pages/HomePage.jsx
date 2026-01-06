@@ -14,8 +14,10 @@ export default function HomePage() {
   function onSubmit(e) {
     e.preventDefault();
     const q = query.trim();
-    if (q) navigate(`/cas-cliniques?type=all&page=1&q=${encodeURIComponent(q)}`);
-    else navigate('/cas-cliniques');
+
+    // Recherche globale : par défaut on envoie vers /atlas
+    if (q) navigate(`/atlas?q=${encodeURIComponent(q)}`);
+    else navigate('/atlas');
   }
 
   const primeDocs = () => {
@@ -34,7 +36,6 @@ export default function HomePage() {
     return () => ctrl.abort();
   };
 
-  // Prime en idle (pour que /documentation soit instant)
   useEffect(() => {
     let cleanup = null;
 
@@ -65,24 +66,26 @@ export default function HomePage() {
           <h1 className="hero-title">Odontocases</h1>
 
           <p className="hero-subtitle">
-            Bibliothèque interactive de cas cliniques et outil de randomisation dédiés aux pathologies orales.
+            Atlas de pathologies orales, cas cliniques interactifs et outil de randomisation dédiés aux pathologies
+            orales.
           </p>
 
           <form onSubmit={onSubmit} className="hero-search">
             <input
               type="text"
-              placeholder="Rechercher un cas…"
+              placeholder="Rechercher une pathologie ou un cas…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              aria-label="Recherche de cas cliniques"
+              aria-label="Recherche"
             />
           </form>
 
           <nav className="hero-actions">
-            <HomeCard title="Cas cliniques" to="/cas-cliniques" />
+            <HomeCard title="Atlas" to="/atlas" />
+            <HomeCard title="Q/R & Quiz" to="/qr-quiz" />
             <HomeCard title="Randomisation" to="/randomisation" />
             <HomeCard title="Documentation" to="/documentation" onPrefetch={primeDocs} />
-            <HomeCard title="Liens utiles" to="/liens-utiles" />
+            {/* Liens utiles retiré de la Home (reste dans la navbar) */}
           </nav>
         </section>
       </main>

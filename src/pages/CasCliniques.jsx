@@ -1,29 +1,34 @@
-/**
- * CasCliniques.jsx
- * ----------------
- * - Écran "TypePicker" quand type=all et pas de recherche (q vide)
- * - Liste Strapi paginée
- * - Tri par numéro dans le slug (ex: qa-01, qa-12, quiz-03…)
- * - Cartes : cover + titre (2 lignes max) + badge absolu sur image
- *   - Cas cliniques : badge = type (Q/R, Quiz, Présentation)
- *   - Pathologies (atlas) : badge = attrs.atlasBadge (enum Strapi = label), couleur déduite côté React
- */
-
+// src/pages/CasCliniques.jsx
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import PageTitle from '../components/PageTitle';
 import { strapiFetch, imgUrl } from '../lib/strapi';
 import './CasCliniques.css';
 
-const TYPE_TABS = [
-  { key: 'all', label: 'Tous' },
-  { key: 'qa', label: 'Q/R' },
-  { key: 'quiz', label: 'Quiz' },
-  { key: 'presentation', label: 'Présentation' },
-];
+/**
+ * Hubs :
+ * - /atlas            => Atlas (liste pathologies)
+ * - /qr-quiz          => Picker "Choisissez un type de cas"
+ * - /qr-quiz/tous     => Liste mix (Q/R + Quiz)
+ * - /qr-quiz/qr       => Liste Q/R (Strapi type = "qa")
+ * - /qr-quiz/quiz     => Liste Quiz (Strapi type = "quiz")
+ *
+ * Détails (via CasCliniquesRouter) :
+ * - /atlas/:pathologySlug/:caseSlug?
+ * - /qr-quiz/cas/:slug
+ *
+ * Strapi types (inchangés) : "qa" | "quiz" | "presentation"
+ * UI : "Atlas" pour le type "presentation"
+ */
+
+const STRAPI_ATLAS_TYPE = 'presentation';
+const STRAPI_QA_TYPE = 'qa';
+const STRAPI_QUIZ_TYPE = 'quiz';
+
+// "Tous" = mix Q/R + Quiz (pas un type Strapi)
+const MIXED_KEY = 'mixed';
 
 const PAGE_SIZE = 12;
-const MIXED_PAGE_SIZE = 80;
 const FALLBACK_PAGE_SIZE = 300;
 
 const CASES_ENDPOINT = import.meta.env.VITE_CASES_ENDPOINT || '/cases';
@@ -31,19 +36,17 @@ const PATHO_ENDPOINT = import.meta.env.VITE_PATHO_ENDPOINT || '/pathologies';
 
 /* =========================
    Badges atlas (pathologies)
-   - clé = label stocké dans l'enum Strapi (atlasBadge)
-   - valeur = variante CSS (badge-info, badge-success, badge-warning, badge-danger, badge-secondary)
    ========================= */
 const ATLAS_BADGE_TO_VARIANT = {
   'Tumeur bénigne': 'success',
-  'Technique': 'success',
+  Technique: 'success',
 
   'Tumeur maligne': 'danger',
 
-  'Infectieux': 'warning',
-  'Traumatologie': 'warning',
+  Infectieux: 'warning',
+  Traumatologie: 'warning',
 
-  'Viral': 'info',
+  Viral: 'info',
   'Inflammatoire / immunitaire': 'info',
   'Auto-immun': 'info',
   'Lésion réactionnelle': 'info',
@@ -54,7 +57,7 @@ const ATLAS_BADGE_TO_VARIANT = {
 };
 
 function getAtlasBadge(atlasBadge) {
-  if (!atlasBadge) return { text: 'Présentation', variant: 'info' };
+  if (!atlasBadge) return { text: 'Atlas', variant: 'info' };
   return {
     text: atlasBadge,
     variant: ATLAS_BADGE_TO_VARIANT[atlasBadge] || 'info',
@@ -63,14 +66,6 @@ function getAtlasBadge(atlasBadge) {
 
 function normalizeNode(node) {
   return node?.attributes ? node.attributes : node;
-}
-
-function normalizeRelationArray(rel) {
-  if (!rel) return [];
-  if (Array.isArray(rel)) return rel.map(normalizeNode).filter(Boolean);
-  if (Array.isArray(rel.data)) return rel.data.map(normalizeNode).filter(Boolean);
-  if (Array.isArray(rel?.results)) return rel.results.map(normalizeNode).filter(Boolean);
-  return [];
 }
 
 function compareBySlugNumberAsc(aNode, bNode) {
@@ -94,15 +89,36 @@ function compareBySlugNumberAsc(aNode, bNode) {
   return sa.localeCompare(sb, 'fr', { numeric: true, sensitivity: 'base' });
 }
 
+function compareByTitleAsc(aNode, bNode) {
+  const a = normalizeNode(aNode);
+  const b = normalizeNode(bNode);
+
+  const ta = String(a?.title ?? '').trim();
+  const tb = String(b?.title ?? '').trim();
+
+  // titres vides à la fin
+  const aEmpty = !ta;
+  const bEmpty = !tb;
+  if (aEmpty && !bEmpty) return 1;
+  if (!aEmpty && bEmpty) return -1;
+
+  const c = ta.localeCompare(tb, 'fr', { numeric: true, sensitivity: 'base' });
+  if (c !== 0) return c;
+
+  const sa = String(a?.slug ?? '');
+  const sb = String(b?.slug ?? '');
+  return sa.localeCompare(sb, 'fr', { numeric: true, sensitivity: 'base' });
+}
+
 function typeLabel(type) {
-  if (type === 'qa') return 'Q/R';
-  if (type === 'quiz') return 'Quiz';
-  return 'Présentation';
+  if (type === STRAPI_QA_TYPE) return 'Q/R';
+  if (type === STRAPI_QUIZ_TYPE) return 'Quiz';
+  return 'Atlas';
 }
 
 function badgeVariant(type) {
-  if (type === 'qa') return 'success';
-  if (type === 'quiz') return 'info';
+  if (type === STRAPI_QA_TYPE) return 'success';
+  if (type === STRAPI_QUIZ_TYPE) return 'info';
   return 'danger';
 }
 
@@ -158,42 +174,80 @@ function itemMatchesQuery(item, q) {
   return title.includes(nq) || excerpt.includes(nq) || slug.includes(nq);
 }
 
+function buildSearch({ q, page }) {
+  const sp = new URLSearchParams();
+  if (q) sp.set('q', q);
+  if (page && page > 1) sp.set('page', String(page));
+  const s = sp.toString();
+  return s ? `?${s}` : '';
+}
+
+/* -------- Mode depuis l’URL -------- */
+
+function getHubAndSelection(pathname) {
+  // hub atlas
+  if (pathname === '/atlas' || pathname.startsWith('/atlas/')) {
+    return { hub: 'atlas', selection: STRAPI_ATLAS_TYPE };
+  }
+
+  // hub qr-quiz
+  if (pathname === '/qr-quiz' || pathname.startsWith('/qr-quiz/')) {
+    const segs = pathname.split('/').filter(Boolean); // ['qr-quiz', ...]
+    const sub = segs[1] || null; // 'tous' | 'qr' | 'quiz' | 'cas' | null
+    if (sub === 'tous') return { hub: 'qr-quiz', selection: MIXED_KEY };
+    if (sub === 'qr') return { hub: 'qr-quiz', selection: STRAPI_QA_TYPE };
+    if (sub === 'quiz') return { hub: 'qr-quiz', selection: STRAPI_QUIZ_TYPE };
+    return { hub: 'qr-quiz', selection: 'all' }; // root => TypePicker
+  }
+
+  return { hub: 'unknown', selection: 'all' };
+}
+
 export default function CasCliniques() {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [items, setItems] = useState([]);
   const [total, setTotal] = useState(0);
 
-  const [caseToPatho, setCaseToPatho] = useState({});
-
   const q = searchParams.get('q') || '';
-  const tab = searchParams.get('type') || 'all';
   const page = Number(searchParams.get('page') || 1);
 
-  const showTypePicker = tab === 'all' && !q;
-  const isPresentationTab = tab === 'presentation';
-  const isMixedSearch = tab === 'all' && !!q;
+  const { hub, selection } = getHubAndSelection(pathname);
+
+  const isAtlasHub = hub === 'atlas';
+  const isQrQuizHub = hub === 'qr-quiz';
+
+  const showTypePicker = isQrQuizHub && selection === 'all';
+  const tab = selection; // 'qa' | 'quiz' | 'mixed' | 'presentation' | 'all'
 
   const variants = useMemo(() => (q ? buildVariants(q) : []), [q]);
 
-  const onTab = (key) => {
-    const next = new URLSearchParams(searchParams);
-    next.set('type', key);
-    next.set('page', '1');
-    setSearchParams(next, { replace: true });
-  };
-
-  const onPage = (p) => {
-    const next = new URLSearchParams(searchParams);
-    next.set('page', String(p));
-    setSearchParams(next);
+  const goPage = (p) => {
+    const base = isAtlasHub
+      ? '/atlas'
+      : isQrQuizHub
+        ? tab === MIXED_KEY
+          ? '/qr-quiz/tous'
+          : tab === STRAPI_QA_TYPE
+            ? '/qr-quiz/qr'
+            : '/qr-quiz/quiz'
+        : '/';
+    navigate(`${base}${buildSearch({ q, page: p })}`);
   };
 
   const caseTypeFilterOnly = useMemo(() => {
     const f = {};
-    if (tab !== 'all' && tab !== 'presentation') {
+
+    if (tab === MIXED_KEY) {
+      f.type = { $in: [STRAPI_QA_TYPE, STRAPI_QUIZ_TYPE] };
+      return f;
+    }
+
+    if (tab === STRAPI_QA_TYPE || tab === STRAPI_QUIZ_TYPE) {
       f.type = { $eq: tab };
     }
     return f;
@@ -227,112 +281,10 @@ export default function CasCliniques() {
       setError('');
 
       try {
-        if (isMixedSearch) {
-          const [pathoData, caseData] = await Promise.all([
-            strapiFetch(PATHO_ENDPOINT, {
-              params: {
-                populate: {
-                  cover: { fields: ['url', 'formats'] },
-                  cases: { fields: ['title', 'slug', 'type', 'excerpt'] },
-                },
-                locale: 'all',
-                filters: {
-                  $or: [
-                    ...buildOrFilterFromVariants(variants),
-                    ...variants.flatMap((v) => [
-                      { cases: { title: { $containsi: v } } },
-                      { cases: { excerpt: { $containsi: v } } },
-                      { cases: { slug: { $containsi: v } } },
-                    ]),
-                  ],
-                },
-                sort: 'slug:asc',
-                pagination: { page: 1, pageSize: MIXED_PAGE_SIZE },
-                fields: ['title', 'slug', 'excerpt', 'updatedAt', 'atlasBadge'],
-                publicationState: 'live',
-              },
-            }),
-            strapiFetch(CASES_ENDPOINT, {
-              params: {
-                populate: { cover: { fields: ['url', 'formats'] } },
-                locale: 'all',
-                filters: caseFilters,
-                sort: 'slug:asc',
-                pagination: { page: 1, pageSize: MIXED_PAGE_SIZE },
-                fields: ['title', 'slug', 'type', 'excerpt', 'updatedAt'],
-                publicationState: 'live',
-              },
-            }),
-          ]);
-
-          if (ignore) return;
-
-          const pathoListRaw = Array.isArray(pathoData?.data) ? pathoData.data : [];
-          const map = {};
-
-          for (const pNode of pathoListRaw) {
-            const p = normalizeNode(pNode);
-            if (!p?.slug) continue;
-
-            const kids = normalizeRelationArray(p?.cases);
-            for (const c of kids) {
-              const cc = normalizeNode(c);
-              if (!cc?.slug) continue;
-              if (!map[cc.slug]) map[cc.slug] = { slug: p.slug, title: p.title || p.slug };
-            }
-          }
-
-          setCaseToPatho(map);
-
-          const pathoList = pathoListRaw
-            .map((n) => ({ ...normalizeNode(n), __entity: 'pathology' }))
-            .filter((it) => it?.slug);
-
-          const caseListRaw = Array.isArray(caseData?.data) ? caseData.data : [];
-          const caseList = caseListRaw
-            .map((n) => ({ ...normalizeNode(n), __entity: 'case' }))
-            .filter((it) => it?.slug);
-
-          let finalCaseList = caseList;
-
-          if (q && finalCaseList.length === 0) {
-            const fallback = await strapiFetch(CASES_ENDPOINT, {
-              params: {
-                populate: { cover: { fields: ['url', 'formats'] } },
-                locale: 'all',
-                filters: caseTypeFilterOnly,
-                sort: 'slug:asc',
-                pagination: { page: 1, pageSize: FALLBACK_PAGE_SIZE },
-                fields: ['title', 'slug', 'type', 'excerpt', 'updatedAt'],
-                publicationState: 'live',
-              },
-            });
-
-            const all = Array.isArray(fallback?.data) ? fallback.data : [];
-            finalCaseList = all
-              .map((n) => ({ ...normalizeNode(n), __entity: 'case' }))
-              .filter((it) => it?.slug)
-              .filter((it) => itemMatchesQuery(it, q));
-          }
-
-          const seen = new Set();
-          const merged = [];
-          for (const it of [...pathoList, ...finalCaseList]) {
-            const key = `${it.__entity}:${it.slug}`;
-            if (seen.has(key)) continue;
-            seen.add(key);
-            merged.push(it);
-          }
-
-          setItems(merged);
-          setTotal(merged.length);
-          return;
-        }
-
-        const endpoint = isPresentationTab ? PATHO_ENDPOINT : CASES_ENDPOINT;
-
-        const baseParams = isPresentationTab
-          ? {
+        // Atlas => pathologies
+        if (isAtlasHub && tab === STRAPI_ATLAS_TYPE) {
+          const data = await strapiFetch(PATHO_ENDPOINT, {
+            params: {
               populate: { cover: { fields: ['url', 'formats'] } },
               locale: 'all',
               filters: pathoFilters,
@@ -340,42 +292,86 @@ export default function CasCliniques() {
               pagination: { page, pageSize: PAGE_SIZE },
               fields: ['title', 'slug', 'excerpt', 'updatedAt', 'atlasBadge'],
               publicationState: 'live',
-            }
-          : {
-              populate: { cover: { fields: ['url', 'formats'] } },
-              locale: 'all',
-              filters: caseFilters,
-              sort: 'slug:asc',
-              pagination: { page, pageSize: PAGE_SIZE },
-              fields: ['title', 'slug', 'type', 'excerpt', 'updatedAt'],
-              publicationState: 'live',
-            };
-
-        const data = await strapiFetch(endpoint, { params: baseParams });
-        if (ignore) return;
-
-        let list = Array.isArray(data?.data) ? data.data : [];
-        let normalized = list.map(normalizeNode).filter((it) => it?.slug);
-
-        if (q && normalized.length === 0) {
-          const fallback = await strapiFetch(endpoint, {
-            params: {
-              ...baseParams,
-              filters: isPresentationTab ? {} : caseTypeFilterOnly,
-              pagination: { page: 1, pageSize: FALLBACK_PAGE_SIZE },
             },
           });
 
-          const all = Array.isArray(fallback?.data) ? fallback.data : [];
-          normalized = all
-            .map(normalizeNode)
-            .filter((it) => it?.slug)
-            .filter((it) => itemMatchesQuery(it, q));
+          if (ignore) return;
+
+          let list = Array.isArray(data?.data) ? data.data : [];
+          let normalized = list.map(normalizeNode).filter((it) => it?.slug);
+
+          if (q && normalized.length === 0) {
+            const fallback = await strapiFetch(PATHO_ENDPOINT, {
+              params: {
+                populate: { cover: { fields: ['url', 'formats'] } },
+                locale: 'all',
+                filters: {},
+                sort: 'slug:asc',
+                pagination: { page: 1, pageSize: FALLBACK_PAGE_SIZE },
+                fields: ['title', 'slug', 'excerpt', 'updatedAt', 'atlasBadge'],
+                publicationState: 'live',
+              },
+            });
+
+            const all = Array.isArray(fallback?.data) ? fallback.data : [];
+            normalized = all
+              .map(normalizeNode)
+              .filter((it) => it?.slug)
+              .filter((it) => itemMatchesQuery(it, q));
+          }
+
+          setItems(normalized.map((it) => ({ ...it, __entity: 'pathology' })));
+          setTotal(data?.meta?.pagination?.total ?? normalized.length ?? 0);
+          return;
         }
 
-        setItems(normalized);
-        setTotal(data?.meta?.pagination?.total ?? normalized.length ?? 0);
-        setCaseToPatho({});
+        // Q/R & Quiz => cases (qa/quiz ou mix)
+        if (isQrQuizHub && (tab === STRAPI_QA_TYPE || tab === STRAPI_QUIZ_TYPE || tab === MIXED_KEY)) {
+          const data = await strapiFetch(CASES_ENDPOINT, {
+            params: {
+              populate: { cover: { fields: ['url', 'formats'] } },
+              locale: 'all',
+              filters: caseFilters,
+              // ✅ pour "Tous", Strapi trie déjà par titre (et React retrie aussi)
+              sort: tab === MIXED_KEY ? 'title:asc' : 'slug:asc',
+              pagination: { page, pageSize: PAGE_SIZE },
+              fields: ['title', 'slug', 'type', 'excerpt', 'updatedAt'],
+              publicationState: 'live',
+            },
+          });
+
+          if (ignore) return;
+
+          let list = Array.isArray(data?.data) ? data.data : [];
+          let normalized = list.map(normalizeNode).filter((it) => it?.slug);
+
+          if (q && normalized.length === 0) {
+            const fallback = await strapiFetch(CASES_ENDPOINT, {
+              params: {
+                populate: { cover: { fields: ['url', 'formats'] } },
+                locale: 'all',
+                filters: caseTypeFilterOnly,
+                sort: tab === MIXED_KEY ? 'title:asc' : 'slug:asc',
+                pagination: { page: 1, pageSize: FALLBACK_PAGE_SIZE },
+                fields: ['title', 'slug', 'type', 'excerpt', 'updatedAt'],
+                publicationState: 'live',
+              },
+            });
+
+            const all = Array.isArray(fallback?.data) ? fallback.data : [];
+            normalized = all
+              .map(normalizeNode)
+              .filter((it) => it?.slug)
+              .filter((it) => itemMatchesQuery(it, q));
+          }
+
+          setItems(normalized.map((it) => ({ ...it, __entity: 'case' })));
+          setTotal(data?.meta?.pagination?.total ?? normalized.length ?? 0);
+          return;
+        }
+
+        setItems([]);
+        setTotal(0);
       } catch (e) {
         if (!ignore) setError(e?.message || 'Erreur de chargement');
       } finally {
@@ -387,81 +383,92 @@ export default function CasCliniques() {
     return () => {
       ignore = true;
     };
-  }, [
-    showTypePicker,
-    page,
-    isPresentationTab,
-    isMixedSearch,
-    q,
-    variants,
-    caseFilters,
-    pathoFilters,
-    caseTypeFilterOnly,
-  ]);
+  }, [showTypePicker, isAtlasHub, isQrQuizHub, tab, page, q, variants, caseFilters, pathoFilters, caseTypeFilterOnly]);
 
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const sortedItems = useMemo(() => {
     const arr = Array.isArray(items) ? [...items] : [];
+
+    // ✅ en mode "Tous" => tri alphabétique par titre
+    if (isQrQuizHub && tab === MIXED_KEY) {
+      arr.sort(compareByTitleAsc);
+      return arr;
+    }
+
+    // ✅ sinon => tri par numéro dans le slug (historique)
     arr.sort(compareBySlugNumberAsc);
     return arr;
-  }, [items]);
+  }, [items, isQrQuizHub, tab]);
 
-  const prefetchByType = useMemo(() => {
-    if (isPresentationTab || isMixedSearch) return {};
-    const map = {};
-    for (const it of sortedItems) {
-      if (!it?.slug || !it?.type) continue;
-      if (!map[it.type]) map[it.type] = [];
-      map[it.type].push({ slug: it.slug, title: it.title, type: it.type });
-    }
-    for (const t of Object.keys(map)) map[t].sort(compareBySlugNumberAsc);
-    return map;
-  }, [sortedItems, isPresentationTab, isMixedSearch]);
+  const title = isAtlasHub ? 'Atlas' : isQrQuizHub ? 'Q/R & Quiz' : 'Atlas';
+  const description = isAtlasHub
+    ? 'Atlas de pathologies orales.'
+    : isQrQuizHub
+      ? 'Cas cliniques interactifs.'
+      : 'Atlas de pathologies orales.';
 
-  useEffect(() => {
-    try {
-      for (const [t, list] of Object.entries(prefetchByType)) {
-        sessionStorage.setItem(`cd-prefetch-${t}`, JSON.stringify(list));
-      }
-    } catch {
-      /* ignore */
-    }
-  }, [prefetchByType]);
+  // Chips : boutons (pas de lien)
+  const showChips =
+    !showTypePicker && isQrQuizHub && (tab === MIXED_KEY || tab === STRAPI_QA_TYPE || tab === STRAPI_QUIZ_TYPE);
+
+  const onChip = (nextTab) => {
+    const base =
+      nextTab === MIXED_KEY ? '/qr-quiz/tous' : nextTab === STRAPI_QA_TYPE ? '/qr-quiz/qr' : '/qr-quiz/quiz';
+    navigate(`${base}${buildSearch({ q, page: 1 })}`);
+  };
 
   return (
     <>
       <div className="page-header">
         <div className="container">
-          <PageTitle description="Bibliothèque de cas cliniques pour s'entraîner, adaptés à la pratique en pathologie orale.">
-            Cas Cliniques
-          </PageTitle>
+          <PageTitle description={description}>{title}</PageTitle>
         </div>
       </div>
 
       <div className="container">
-        {showTypePicker && <TypePicker onPick={onTab} />}
+        {showTypePicker && <TypePicker />}
 
-        {!showTypePicker && (
+        {/* Chips : boutons (pas des liens) */}
+        {showChips && (
           <section className="cc-toolbar">
-            <div className="cc-tabs">
-              {TYPE_TABS.map((t) => (
-                <button
-                  key={t.key}
-                  className={`cc-tab ${tab === t.key ? 'active' : ''}`}
-                  onClick={() => onTab(t.key)}
-                  type="button"
-                >
-                  {t.label}
-                </button>
-              ))}
+            <div className="cc-tabs" role="tablist" aria-label="Filtrer">
+              <button
+                type="button"
+                className={`cc-tab ${tab === MIXED_KEY ? 'active' : ''}`}
+                onClick={() => onChip(MIXED_KEY)}
+                role="tab"
+                aria-selected={tab === MIXED_KEY}
+              >
+                Tous
+              </button>
+
+              <button
+                type="button"
+                className={`cc-tab ${tab === STRAPI_QA_TYPE ? 'active' : ''}`}
+                onClick={() => onChip(STRAPI_QA_TYPE)}
+                role="tab"
+                aria-selected={tab === STRAPI_QA_TYPE}
+              >
+                Q/R
+              </button>
+
+              <button
+                type="button"
+                className={`cc-tab ${tab === STRAPI_QUIZ_TYPE ? 'active' : ''}`}
+                onClick={() => onChip(STRAPI_QUIZ_TYPE)}
+                role="tab"
+                aria-selected={tab === STRAPI_QUIZ_TYPE}
+              >
+                Quiz
+              </button>
             </div>
           </section>
         )}
 
         {!showTypePicker && (
           <>
-            <section className="cc-grid">
+            <section className="cc-grid" aria-label="Ressources">
               {loading && <div className="cc-state">Chargement…</div>}
               {error && !loading && <div className="cc-state error">{error}</div>}
               {!loading && !error && sortedItems.length === 0 && <div className="cc-state">Aucun résultat.</div>}
@@ -472,54 +479,34 @@ export default function CasCliniques() {
                 sortedItems.map((attrs, idx) => {
                   if (!attrs) return null;
 
-                  const entity = attrs.__entity || (isPresentationTab ? 'pathology' : 'case');
+                  const entity = attrs.__entity || (isAtlasHub ? 'pathology' : 'case');
 
-                  const title = attrs?.title || 'Sans titre';
+                  const titleText = attrs?.title || 'Sans titre';
                   const slug = attrs?.slug || '';
                   const excerpt = attrs?.excerpt || '';
-
-                  const type = entity === 'pathology' ? 'presentation' : attrs?.type || 'qa';
-
-                  const relatedPrefetch =
-                    entity === 'case' && !isPresentationTab && !isMixedSearch ? prefetchByType[type] || [] : [];
 
                   const coverAttr = attrs?.cover?.data?.attributes || attrs?.cover || null;
                   const coverUrl = imgUrl(coverAttr, 'medium') || imgUrl(coverAttr) || '';
 
                   let toHref = null;
+
                   if (slug) {
                     if (entity === 'pathology') {
-                      toHref = `/cas-cliniques/presentation/${slug}`;
-                    } else if (type === 'presentation' && caseToPatho[slug]?.slug) {
-                      toHref = `/cas-cliniques/presentation/${caseToPatho[slug].slug}/${slug}`;
+                      // détail atlas : /atlas/:pathologySlug
+                      toHref = `/atlas/${slug}`;
                     } else {
-                      toHref = `/cas-cliniques/${slug}`;
+                      // détail cas : /qr-quiz/cas/:slug
+                      toHref = `/qr-quiz/cas/${slug}`;
                     }
                   }
 
-                  const linkState =
-                    entity === 'pathology'
-                      ? {
-                          prefetch: { slug, title, coverUrl, excerpt, entity: 'pathology' },
-                          breadcrumb: { mode: 'presentation', pathology: { slug, title }, case: null },
-                        }
-                      : type === 'presentation' && caseToPatho[slug]?.slug
-                        ? {
-                            prefetch: { slug, title, type, coverUrl, excerpt, entity: 'case' },
-                            breadcrumb: {
-                              mode: 'presentation',
-                              pathology: caseToPatho[slug],
-                              case: { slug, title },
-                            },
-                          }
-                        : { prefetch: { slug, title, type, coverUrl, excerpt, entity: 'case' }, relatedPrefetch };
-
-                  // Badge affiché sur la thumb
                   const isPathology = entity === 'pathology';
-                  const atlas = isPathology ? getAtlasBadge(attrs?.atlasBadge) : null;
+                  const atlasBadge = isPathology ? getAtlasBadge(attrs?.atlasBadge) : null;
 
-                  const badgeText = isPathology ? atlas.text : typeLabel(type);
-                  const badgeVar = isPathology ? atlas.variant : badgeVariant(type);
+                  const itemType = isPathology ? STRAPI_ATLAS_TYPE : attrs?.type || STRAPI_QA_TYPE;
+
+                  const badgeText = isPathology ? atlasBadge.text : typeLabel(itemType);
+                  const badgeVar = isPathology ? atlasBadge.variant : badgeVariant(itemType);
 
                   const Inner = (
                     <>
@@ -532,7 +519,8 @@ export default function CasCliniques() {
                       </div>
 
                       <div className="cc-body">
-                        <h3 className="cc-title">{title}</h3>
+                        <h3 className="cc-title">{titleText}</h3>
+                        <span className="sr-only">{excerpt}</span>
                       </div>
                     </>
                   );
@@ -540,7 +528,7 @@ export default function CasCliniques() {
                   const key = `${entity}:${slug || idx}`;
 
                   return toHref ? (
-                    <Link key={key} to={toHref} state={linkState} className="cc-card ui-card">
+                    <Link key={key} to={toHref} className="cc-card ui-card">
                       {Inner}
                     </Link>
                   ) : (
@@ -551,15 +539,15 @@ export default function CasCliniques() {
                 })}
             </section>
 
-            {!isMixedSearch && pages > 1 && (
-              <nav className="cc-pagination">
-                <button disabled={page <= 1} onClick={() => onPage(page - 1)} type="button">
+            {pages > 1 && (
+              <nav className="cc-pagination" aria-label="Pagination">
+                <button disabled={page <= 1} onClick={() => goPage(page - 1)} type="button">
                   Précédent
                 </button>
                 <span>
                   Page {page} / {pages}
                 </span>
-                <button disabled={page >= pages} onClick={() => onPage(page + 1)} type="button">
+                <button disabled={page >= pages} onClick={() => goPage(page + 1)} type="button">
                   Suivant
                 </button>
               </nav>
@@ -571,23 +559,26 @@ export default function CasCliniques() {
   );
 }
 
-function TypePicker({ onPick }) {
+function TypePicker() {
   return (
     <section className="cc-typepicker">
       <h3>Choisissez un type de cas</h3>
       <div className="cc-typegrid">
-        <button className="cc-typecard ui-card" onClick={() => onPick('qa')} type="button">
+        {/* Links => l’URL s’affiche en bas du navigateur au survol */}
+        <Link className="cc-typecard ui-card" to="/qr-quiz/tous" draggable="false">
+          <span className="cc-type">Tous</span>
+          <span className="cc-typedesc">Q/R + Quiz</span>
+        </Link>
+
+        <Link className="cc-typecard ui-card" to="/qr-quiz/qr" draggable="false">
           <span className="cc-type">Q/R</span>
           <span className="cc-typedesc">12 items d'internat issus du CNECO</span>
-        </button>
-        <button className="cc-typecard ui-card" onClick={() => onPick('quiz')} type="button">
+        </Link>
+
+        <Link className="cc-typecard ui-card" to="/qr-quiz/quiz" draggable="false">
           <span className="cc-type">Quiz diagnostic</span>
           <span className="cc-typedesc">60 cas issus du SFCO</span>
-        </button>
-        <button className="cc-typecard ui-card" onClick={() => onPick('presentation')} type="button">
-          <span className="cc-type">Présentation</span>
-          <span className="cc-typedesc">Atlas de pathologies + cas issus de la littérature</span>
-        </button>
+        </Link>
       </div>
     </section>
   );

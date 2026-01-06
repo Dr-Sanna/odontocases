@@ -73,7 +73,7 @@ function compareBySlugNumberAsc(a, b) {
 function typeLabelFromKey(typeKey) {
   if (typeKey === 'qa') return 'Q/R';
   if (typeKey === 'quiz') return 'Quiz';
-  if (typeKey === 'presentation') return 'Présentation';
+  if (typeKey === 'presentation') return 'Atlas';
   if (typeKey === 'doc') return 'Documentation';
   return null;
 }
@@ -314,7 +314,7 @@ export default function CaseDetail(props) {
     return getDocSectionsForItemFromSession(docItemSlug) || [];
   });
 
-  // parent pathology (utile sur /presentation/:patho/:case) - pour l’affichage courant
+  // parent pathology (utile sur /atlas/:patho/:case) - pour l’affichage courant
   const [parentPathology, setParentPathology] = useState(() => {
     if (!isCaseInPathology || !pathologySlug) return null;
     return getPathologyFromCache(pathologySlug) || null;
@@ -613,15 +613,13 @@ export default function CaseDetail(props) {
     if (cached?.slug === slugToLoad) {
       setItem(cached);
       setLoading(false);
-      // commit côté affichage aussi (swap instant)
       setDisplayItem(cached);
       setIsReplacing(false);
     } else {
-      // sinon, on peut poser un "provisional" seulement s’il a du contenu réel
       if (provisional?.slug === slugToLoad && hasMeaningfulContentLike(provisional)) {
         setItem(provisional);
       } else {
-        setItem((prev) => (prev?.slug === slugToLoad ? prev : prev)); // no-op volontaire
+        setItem((prev) => (prev?.slug === slugToLoad ? prev : prev));
       }
       setLoading(true);
     }
@@ -640,13 +638,10 @@ export default function CaseDetail(props) {
           setItem(fullDoc);
           setDocNodeToSession(slugToLoad, fullDoc);
 
-          // sections (si page item)
           if (isDocItemPage && docItemSlug) {
             const secs = await loadDocSectionsForItem(docItemSlug);
             if (ignore) return;
             setDocCurrentItemSections(secs);
-          } else {
-            // si on est sur une section, on ne force pas le chargement ici
           }
 
           return;
@@ -740,7 +735,7 @@ export default function CaseDetail(props) {
     if (effectiveType === 'qa') return 'Q/R';
     if (effectiveType === 'quiz') return 'Quiz';
     if (effectiveType === 'doc') return 'Documentation';
-    return 'Présentation';
+    return 'Atlas';
   }, [effectiveType]);
 
   const qaList = !isDocNamespace && Array.isArray(displayItem?.qa_blocks) ? displayItem.qa_blocks : [];
@@ -779,7 +774,6 @@ export default function CaseDetail(props) {
   const indexPatho = cdIndex?.pathoIndex || {};
   const indexCase = cdIndex?.caseIndex || {};
 
-  // titre affiché = correspond au contenu affiché (pas à l’URL)
   const displayTitle = useMemo(() => {
     if (isDocNamespace) return displayItem?.title || displayItem?.slug || 'Documentation';
     if (isPathologyPage) return displayItem?.title || displayItem?.slug || 'Pathologie';
@@ -787,7 +781,6 @@ export default function CaseDetail(props) {
     return displayItem?.title || displayItem?.slug || 'Cas clinique';
   }, [isDocNamespace, isPathologyPage, isPresentationNamespace, isCaseInPathology, displayItem?.title, displayItem?.slug]);
 
-  // titre cible (celui vers lequel on navigue) = utilisé dans l’overlay pendant le remplacement
   const targetTitle = useMemo(() => {
     if (!expectedSlug) return null;
 
@@ -813,7 +806,6 @@ export default function CaseDetail(props) {
       return caseSlug || expectedSlug;
     }
 
-    // plain case
     if (navCrumb?.case?.title) return navCrumb.case.title;
     if (itemMatchesRoute && item?.title) return item.title;
     if (provisional?.title) return provisional.title;
@@ -839,7 +831,6 @@ export default function CaseDetail(props) {
     if (navCrumb?.pathology?.title) return navCrumb.pathology.title;
     if (indexPatho?.[pathologySlug]?.title) return indexPatho[pathologySlug].title;
     if (parentPathology?.slug === pathologySlug && parentPathology?.title) return parentPathology.title;
-    // fallback
     return pathologySlug || 'Pathologie';
   }, [isPresentationNamespace, navCrumb, indexPatho, pathologySlug, parentPathology?.slug, parentPathology?.title]);
 
@@ -847,7 +838,7 @@ export default function CaseDetail(props) {
     if (!isDocNamespace) return null;
 
     const chain = [];
-    let cur = itemMatchesRoute ? item : displayItem; // si déjà chargé, mieux ; sinon on s’appuie sur l’affichage
+    let cur = itemMatchesRoute ? item : displayItem;
     for (let i = 0; i < 6; i += 1) {
       if (!cur) break;
       chain.push({ slug: cur.slug, title: cur.title || cur.slug, level: cur.level || '' });
@@ -875,8 +866,13 @@ export default function CaseDetail(props) {
     return { subject, chapter, theItem, theSection };
   }, [isDocNamespace, itemMatchesRoute, item, displayItem, subjectSlug, chapterSlug, docItemSlug, docSectionSlug]);
 
+  const qrHubTo = useMemo(() => {
+    if (effectiveType === 'qa') return '/qr-quiz/qr';
+    if (effectiveType === 'quiz') return '/qr-quiz/quiz';
+    return '/qr-quiz/tous';
+  }, [effectiveType]);
+
   const breadcrumbItems = useMemo(() => {
-    // breadcrumb = reflète l’URL (navigation)
     if (isDocNamespace) {
       const base = [
         { label: 'Accueil', to: '/' },
@@ -909,16 +905,15 @@ export default function CaseDetail(props) {
       return base;
     }
 
-    const base = [
-      { label: 'Accueil', to: '/' },
-      { label: 'Cas cliniques', to: '/cas-cliniques' },
-    ];
-
+    // ✅ nouveaux hubs
     if (isPresentationNamespace) {
-      base.push({ label: 'Présentation', to: `/cas-cliniques?type=presentation&page=1` });
+      const base = [
+        { label: 'Accueil', to: '/' },
+        { label: 'Atlas', to: '/atlas' },
+      ];
 
       const pathoLabel = instantPathologyTitle || pathologySlug || 'Pathologie';
-      const pathoTo = pathologySlug ? `/cas-cliniques/presentation/${pathologySlug}` : null;
+      const pathoTo = pathologySlug ? `/atlas/${pathologySlug}` : null;
 
       if (isPathologyPage) {
         base.push({ label: pathoLabel, to: null });
@@ -930,9 +925,15 @@ export default function CaseDetail(props) {
       return base;
     }
 
+    // plain case (qa/quiz) => hub /qr-quiz
+    const base = [
+      { label: 'Accueil', to: '/' },
+      { label: 'Q/R & Quiz', to: '/qr-quiz' },
+    ];
+
     const crumbTypeLabel = typeLabelFromKey(effectiveType);
-    if (crumbTypeLabel && effectiveType) {
-      base.push({ label: crumbTypeLabel, to: `/cas-cliniques?type=${encodeURIComponent(effectiveType)}&page=1` });
+    if (crumbTypeLabel && (effectiveType === 'qa' || effectiveType === 'quiz')) {
+      base.push({ label: crumbTypeLabel, to: qrHubTo });
     }
 
     base.push({ label: targetTitle || 'Cas clinique', to: null });
@@ -948,9 +949,11 @@ export default function CaseDetail(props) {
     isPresentationNamespace,
     isPathologyPage,
     pathologySlug,
-    effectiveType,
     instantPathologyTitle,
     targetTitle,
+
+    effectiveType,
+    qrHubTo,
   ]);
 
   // Lightbox
@@ -999,7 +1002,6 @@ export default function CaseDetail(props) {
 
   const showExtras = Boolean(displayItem?.references || displayItem?.copyright);
 
-  // Key markdown basé sur ce qui est affiché => pas de "remount" au changement d’URL
   const markdownScopeKey = String(displayItem?.slug || displayItem?.id || 'x');
 
   return (
@@ -1056,11 +1058,8 @@ export default function CaseDetail(props) {
 
         {error && <div className="cd-state error">{error}</div>}
 
-        {/* NB: pas de skeleton qui masque le contenu => on garde displayItem visible */}
-
         <article className="casedetail" ref={contentRef}>
           <div className="cd-content">
-
             <PageTitle description={displayItem?.excerpt || ''}>{displayTitle}</PageTitle>
 
             {displayItem?.content ? (
@@ -1070,7 +1069,7 @@ export default function CaseDetail(props) {
             )}
           </div>
 
-          {/* DOC children (affichés uniquement si l’affichage correspond à une page d’item doc) */}
+          {/* DOC children */}
           {isDocNamespace && displayMatchesRoute && isDocItemPage && docChildSections.length > 0 && (
             <section className="cd-children">
               <h2 className="cd-children-title">Sections</h2>
@@ -1104,61 +1103,58 @@ export default function CaseDetail(props) {
           )}
 
           {/* PATHO children */}
-          
-{!isDocNamespace && isPathologyPage && displayMatchesRoute && relatedCases.length > 0 && (
-  <section className="cd-children cd-related">
-    <div className="cd-related-head">
-      <h2 className="cd-children-title">Cas associés</h2>
+          {!isDocNamespace && isPathologyPage && displayMatchesRoute && relatedCases.length > 0 && (
+            <section className="cd-children cd-related">
+              <div className="cd-related-head">
+                <h2 className="cd-children-title">Cas associés</h2>
 
-      {spoilerCounts.other > 0 && (
-        <button
-          type="button"
-          className="cd-related-spoil-btn"
-          onClick={() => setShowSpoilers((v) => !v)}
-          aria-pressed={showSpoilers ? 'true' : 'false'}
-          title="Afficher les quiz/Q-R liés (peut spoiler)"
-        >
-          {showSpoilers ? 'Masquer quiz' : 'Afficher quiz (spoil)'}
-        </button>
-      )}
-    </div>
+                {spoilerCounts.other > 0 && (
+                  <button
+                    type="button"
+                    className="cd-related-spoil-btn"
+                    onClick={() => setShowSpoilers((v) => !v)}
+                    aria-pressed={showSpoilers ? 'true' : 'false'}
+                    title="Afficher les quiz/Q-R liés (peut spoiler)"
+                  >
+                    {showSpoilers ? 'Masquer quiz' : 'Afficher quiz (spoil)'}
+                  </button>
+                )}
+              </div>
 
-
-    <div className="cd-children-grid">
-      {visibleRelatedCases.map((c) => (
-        <Link
-          key={c.slug}
-          to={`/cas-cliniques/presentation/${pathologySlug}/${c.slug}`}
-          state={{
-            breadcrumb: {
-              mode: 'presentation',
-              pathology: { slug: pathologySlug, title: instantPathologyTitle || pathologySlug },
-              case: { slug: c.slug, title: c.title || c.slug },
-            },
-            prefetch: { slug: c.slug, title: c.title || c.slug, type: c.type || 'presentation' },
-          }}
-          className="cd-child-card ui-card"
-          onMouseEnter={() => prefetchCase(c.slug, { publicationState: PUB_STATE }).catch(() => {})}
-          onFocus={() => prefetchCase(c.slug, { publicationState: PUB_STATE }).catch(() => {})}
-          onPointerDown={() => prefetchCase(c.slug, { publicationState: PUB_STATE }).catch(() => {})}
-        >
-          {c.coverUrl && (
-            <img
-              className="cd-child-cover"
-              src={c.coverUrl}
-              alt={c.title || c.slug}
-              loading="lazy"
-              data-no-lightbox="1"
-            />
+              <div className="cd-children-grid">
+                {visibleRelatedCases.map((c) => (
+                  <Link
+                    key={c.slug}
+                    to={`/atlas/${pathologySlug}/${c.slug}`}
+                    state={{
+                      breadcrumb: {
+                        mode: 'atlas',
+                        pathology: { slug: pathologySlug, title: instantPathologyTitle || pathologySlug },
+                        case: { slug: c.slug, title: c.title || c.slug },
+                      },
+                      prefetch: { slug: c.slug, title: c.title || c.slug, type: c.type || 'presentation' },
+                    }}
+                    className="cd-child-card ui-card"
+                    onMouseEnter={() => prefetchCase(c.slug, { publicationState: PUB_STATE }).catch(() => {})}
+                    onFocus={() => prefetchCase(c.slug, { publicationState: PUB_STATE }).catch(() => {})}
+                    onPointerDown={() => prefetchCase(c.slug, { publicationState: PUB_STATE }).catch(() => {})}
+                  >
+                    {c.coverUrl && (
+                      <img
+                        className="cd-child-cover"
+                        src={c.coverUrl}
+                        alt={c.title || c.slug}
+                        loading="lazy"
+                        data-no-lightbox="1"
+                      />
+                    )}
+                    <div className="cd-child-title">{c.title || c.slug}</div>
+                    {c.excerpt && <div className="cd-child-excerpt">{c.excerpt}</div>}
+                  </Link>
+                ))}
+              </div>
+            </section>
           )}
-          <div className="cd-child-title">{c.title || c.slug}</div>
-          {c.excerpt && <div className="cd-child-excerpt">{c.excerpt}</div>}
-        </Link>
-      ))}
-    </div>
-  </section>
-)}
-
 
           {/* QA */}
           {!isDocNamespace && displayMatchesRoute && qaList.length > 0 && (
@@ -1692,7 +1688,6 @@ function Aside({
       setErrList('');
 
       try {
-        // always refresh from Strapi (cache is only for instant paint)
         const items = await loadDocItems();
         const chapterMap = await loadDocSectionsForChapter(docChapterSlug);
 
@@ -1748,7 +1743,7 @@ function Aside({
 
   const label =
     mode === 'presentation'
-      ? 'Présentations'
+      ? 'Atlas'
       : mode === 'docs'
         ? 'Items'
         : currentType === 'qa'
@@ -1786,20 +1781,29 @@ function Aside({
               </li>
 
               <li>
-                <NavLink className="cd-side-link" to="/cas-cliniques" onClick={closeMobile}>
-                  Cas cliniques
+                <NavLink className="cd-side-link" to="/atlas" onClick={closeMobile}>
+                  Atlas
                 </NavLink>
               </li>
+
+              <li>
+                <NavLink className="cd-side-link" to="/qr-quiz" onClick={closeMobile}>
+                  Q/R &amp; Quiz
+                </NavLink>
+              </li>
+
               <li>
                 <NavLink className="cd-side-link" to="/randomisation" onClick={closeMobile}>
                   Randomisation
                 </NavLink>
               </li>
+
               <li>
                 <NavLink className="cd-side-link" to="/documentation" onClick={closeMobile}>
                   Documentation
                 </NavLink>
               </li>
+
               <li>
                 <NavLink className="cd-side-link" to="/liens-utiles" onClick={closeMobile}>
                   Liens utiles
@@ -1942,7 +1946,7 @@ function Aside({
               </ul>
             )}
 
-            {/* CASES */}
+            {/* CASES (qa/quiz) */}
             {!errList && mode === 'cases' && (
               <ul className="cd-side-list">
                 {caseList.map((it) => {
@@ -1957,10 +1961,10 @@ function Aside({
                       ) : (
                         <Link
                           className="cd-side-link"
-                          to={`/cas-cliniques/${it.slug}`}
+                          to={`/qr-quiz/cas/${it.slug}`}
                           state={{
                             prefetch: { slug: it.slug, title: it.title || it.slug, type: it.type || currentType || null },
-                            breadcrumb: { mode: 'cases', case: { slug: it.slug, title: it.title || it.slug } },
+                            breadcrumb: { mode: 'qr-quiz', case: { slug: it.slug, title: it.title || it.slug } },
                           }}
                           onClick={() => {
                             if (isNarrow) closeMobile();
@@ -1978,7 +1982,7 @@ function Aside({
               </ul>
             )}
 
-            {/* PRESENTATION */}
+            {/* PRESENTATION (atlas) */}
             {!errList && mode === 'presentation' && (
               <ul className="cd-side-list">
                 {pathoList.map((p) => {
@@ -2021,10 +2025,10 @@ function Aside({
                         ) : (
                           <Link
                             className="cd-side-link"
-                            to={`/cas-cliniques/presentation/${p.slug}`}
+                            to={`/atlas/${p.slug}`}
                             state={{
                               breadcrumb: {
-                                mode: 'presentation',
+                                mode: 'atlas',
                                 pathology: { slug: p.slug, title: p.title || p.slug },
                                 case: null,
                               },
@@ -2080,10 +2084,10 @@ function Aside({
                                     ) : (
                                       <Link
                                         className="cd-side-link cd-side-child-link"
-                                        to={`/cas-cliniques/presentation/${p.slug}/${ch.slug}`}
+                                        to={`/atlas/${p.slug}/${ch.slug}`}
                                         state={{
                                           breadcrumb: {
-                                            mode: 'presentation',
+                                            mode: 'atlas',
                                             pathology: { slug: p.slug, title: p.title || p.slug },
                                             case: { slug: ch.slug, title: ch.title || ch.slug },
                                           },

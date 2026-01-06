@@ -7,18 +7,31 @@ export default function CasCliniquesRouter() {
   const splat = (useParams()['*'] || '').replace(/^\/+/, '');
   const parts = splat.split('/').filter(Boolean);
 
-  if (parts.length === 0) {
-    return <CasCliniques />;
+  // /atlas  ou /qr-quiz
+  if (parts.length === 0) return <CasCliniques />;
+
+  // ✅ QR/QUIZ hub — LISTES (doivent rester des listes)
+  // /qr-quiz/tous
+  if (parts[0] === 'tous' && parts.length === 1) return <CasCliniques />;
+
+  // /qr-quiz/qr
+  if (parts[0] === 'qr' && parts.length === 1) return <CasCliniques />;
+
+  // /qr-quiz/quiz
+  if (parts[0] === 'quiz' && parts.length === 1) return <CasCliniques />;
+
+  // ✅ QR/QUIZ hub — DETAIL
+  // /qr-quiz/cas/:slug
+  if (parts[0] === 'cas') {
+    const slug = parts[1] || null;
+    if (!slug) return <CasCliniques />;
+    return <CaseDetail kind="cas" slug={slug} />;
   }
 
-  // /cas-cliniques/presentation/:pathologySlug/:caseSlug?
-  if (parts[0] === 'presentation') {
-    const pathologySlug = parts[1] || null;
-    const caseSlug = parts[2] || null;
-
-    return <CaseDetail kind="cas-presentation" pathologySlug={pathologySlug} caseSlug={caseSlug} />;
-  }
-
-  // /cas-cliniques/:slug
-  return <CaseDetail kind="cas" slug={parts[0]} />;
+  // ✅ ATLAS hub — DETAIL
+  // /atlas/:pathologySlug/:caseSlug?
+  // (ici parts[0] est directement la pathologie)
+  const pathologySlug = parts[0] || null;
+  const caseSlug = parts[1] || null;
+  return <CaseDetail kind="cas-presentation" pathologySlug={pathologySlug} caseSlug={caseSlug} />;
 }

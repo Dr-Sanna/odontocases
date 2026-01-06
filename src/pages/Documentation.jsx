@@ -15,7 +15,7 @@ const PUB_STATE = import.meta.env.DEV ? 'preview' : 'live';
 
 const ROOT_TITLE = 'Documentation';
 const ROOT_DESC =
-  "Atlas de pathologies buccales, items principaux et risques médicaux à connaître dans la pratique quotidienne";
+  "Démarche diagnostique, items principaux en médecine orale et risques médicaux à connaître dans la pratique quotidienne";
 
 function labelForLevel(level) {
   if (level === 'subject') return 'Matière';

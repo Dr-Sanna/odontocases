@@ -42,21 +42,39 @@ function BackgroundRouteSync() {
 
     const segs = pathname.split('/').filter(Boolean);
 
-    // case detail cas : tout ce qui est sous /cas-cliniques/... sauf la racine
-    const isCaseDetailCas = pathname.startsWith('/cas-cliniques/') && pathname !== '/cas-cliniques';
+    // atlas :
+    // - liste : /atlas
+    // - detail : tout le reste sous /atlas/...
+    const isAtlasRoot = pathname === '/atlas';
+    const isCaseDetailAtlas = pathname.startsWith('/atlas/') && !isAtlasRoot;
 
-    // case detail doc :
-    // - mode /documentation/... : à partir de 3 segments après "documentation" => item/section
-    // - mode URL courte /moco/... : à partir de 3 segments (subject/chapter/item) si le 1er segment n'est pas une route réservée
-    const isReservedRoot = segs.length > 0 && ['randomisation', 'cas-cliniques', 'liens-utiles', 'documentation'].includes(segs[0]);
+    // qr-quiz :
+    // - listes : /qr-quiz, /qr-quiz/tous, /qr-quiz/qr, /qr-quiz/quiz
+    // - detail : tout le reste sous /qr-quiz/...
+    const isQrQuizRoot = pathname === '/qr-quiz';
+    const isQrQuizList =
+      pathname === '/qr-quiz/tous' || pathname === '/qr-quiz/qr' || pathname === '/qr-quiz/quiz';
+    const isCaseDetailQrQuiz = pathname.startsWith('/qr-quiz/') && !isQrQuizRoot && !isQrQuizList;
+
+    // compat ancien
+    const isOldCasListRoot = pathname === '/cas-cliniques';
+    const isCaseDetailOldCas = pathname.startsWith('/cas-cliniques/') && !isOldCasListRoot;
+
+    // doc detail :
+    const isReservedRoot =
+      segs.length > 0 &&
+      ['randomisation', 'atlas', 'qr-quiz', 'cas-cliniques', 'liens-utiles', 'documentation'].includes(segs[0]);
 
     const isCaseDetailDoc =
       (pathname.startsWith('/documentation/') && segs.length >= 4) ||
       (!pathname.startsWith('/documentation/') && !isReservedRoot && segs.length >= 3);
 
     if (pathname === '/') body.classList.add('bg-home');
-    else if (isCaseDetailCas || isCaseDetailDoc) body.classList.add('bg-none');
-    else body.classList.add('bg-secondary');
+    else if (isCaseDetailAtlas || isCaseDetailQrQuiz || isCaseDetailOldCas || isCaseDetailDoc) {
+      body.classList.add('bg-none');
+    } else {
+      body.classList.add('bg-secondary');
+    }
   }, [pathname]);
 
   return null;
@@ -81,7 +99,11 @@ export default function App() {
           <Route path="/randomisation" element={<Randomisation />} />
           <Route path="/liens-utiles" element={<LiensUtiles />} />
 
-          {/* cas cliniques : route générique */}
+          {/* ✅ hubs */}
+          <Route path="/atlas/*" element={<CasCliniquesRouter />} />
+          <Route path="/qr-quiz/*" element={<CasCliniquesRouter />} />
+
+          {/* compat ancien */}
           <Route path="/cas-cliniques/*" element={<CasCliniquesRouter />} />
 
           {/* documentation : route générique */}

@@ -1,3 +1,4 @@
+// src/components/Navbar.jsx
 import { useEffect, useMemo, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import './Navbar.css';
@@ -53,14 +54,22 @@ function useIsNarrow(maxWidthPx = 980) {
   return isNarrow;
 }
 
+function isDetailRoute(pathname) {
+  // hubs actuels
+  const isAtlasDetail = pathname.startsWith('/atlas/') && pathname !== '/atlas';
+  const isQrQuizDetail = pathname.startsWith('/qr-quiz/') && pathname !== '/qr-quiz';
+
+  // compat anciennes routes
+  const isOldCasDetail = pathname.startsWith('/cas-cliniques/') && pathname !== '/cas-cliniques';
+
+  return isAtlasDetail || isQrQuizDetail || isOldCasDetail;
+}
+
 export default function Navbar() {
   const location = useLocation();
   const isNarrow = useIsNarrow(980);
 
-  const isCaseDetail = useMemo(
-    () => /^\/cas-cliniques\/[^/]+/.test(location.pathname),
-    [location.pathname]
-  );
+  const isCaseDetail = useMemo(() => isDetailRoute(location.pathname), [location.pathname]);
 
   const [theme, setTheme] = useState(getInitialTheme);
   const [blurImages, setBlurImages] = useState(getInitialBlur);
@@ -117,7 +126,7 @@ export default function Navbar() {
   const toggleTheme = () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
 
   const onMenuClick = () => {
-    if (!isNarrow) return; // en desktop, on ne fait rien
+    if (!isNarrow) return;
 
     if (isCaseDetail) {
       setMobileOpen((v) => !v);
@@ -130,12 +139,7 @@ export default function Navbar() {
     <>
       <nav className="navbar">
         <div className="navbar-left">
-          <button
-            type="button"
-            className="navbar-menu-button"
-            aria-label="Ouvrir le menu"
-            onClick={onMenuClick}
-          >
+          <button type="button" className="navbar-menu-button" aria-label="Ouvrir le menu" onClick={onMenuClick}>
             ☰
           </button>
 
@@ -145,23 +149,29 @@ export default function Navbar() {
           </Link>
 
           <div className="nav-links" aria-label="Navigation principale">
-            <NavLink to="/cas-cliniques" className={({ isActive }) => (isActive ? 'active' : '')}>
-              Cas Cliniques
+            <NavLink to="/atlas" className={({ isActive }) => (isActive ? 'active' : '')}>
+              Atlas
             </NavLink>
+
+            <NavLink to="/qr-quiz" className={({ isActive }) => (isActive ? 'active' : '')}>
+              Q/R &amp; Quiz
+            </NavLink>
+
             <NavLink to="/randomisation" className={({ isActive }) => (isActive ? 'active' : '')}>
               Randomisation
             </NavLink>
+
             <NavLink to="/documentation" className={({ isActive }) => (isActive ? 'active' : '')}>
               Documentation
             </NavLink>
+
             <NavLink to="/liens-utiles" className={({ isActive }) => (isActive ? 'active' : '')}>
-              Liens Utiles
+              Liens utiles
             </NavLink>
           </div>
         </div>
 
         <div className="navbar-right">
-          {/* Toggle Blur (à gauche de GitHub) */}
           <label className="blur-toggle" title="Flouter les images">
             <input
               type="checkbox"
@@ -204,17 +214,14 @@ export default function Navbar() {
       {/* Drawer NAV : uniquement mobile et uniquement hors CaseDetail */}
       {isNarrow && !isCaseDetail && navOpen && (
         <>
-          <div
-            className="md-scrim"
-            onClick={closeNav}
-            role="button"
-            tabIndex={0}
-            aria-label="Fermer le menu"
-          />
+          <div className="md-scrim" onClick={closeNav} role="button" tabIndex={0} aria-label="Fermer le menu" />
           <aside className="md-drawer" aria-label="Menu mobile">
             <nav className="md-nav">
-              <NavLink to="/cas-cliniques" className="md-link" onClick={() => setNavOpen(false)}>
-                Cas Cliniques
+              <NavLink to="/atlas" className="md-link" onClick={() => setNavOpen(false)}>
+                Atlas
+              </NavLink>
+              <NavLink to="/qr-quiz" className="md-link" onClick={() => setNavOpen(false)}>
+                Q/R &amp; Quiz
               </NavLink>
               <NavLink to="/randomisation" className="md-link" onClick={() => setNavOpen(false)}>
                 Randomisation
@@ -223,7 +230,7 @@ export default function Navbar() {
                 Documentation
               </NavLink>
               <NavLink to="/liens-utiles" className="md-link" onClick={() => setNavOpen(false)}>
-                Liens Utiles
+                Liens utiles
               </NavLink>
             </nav>
           </aside>

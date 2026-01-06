@@ -45,6 +45,12 @@ const RESOURCES = [
     desc: 'Ressources sur les affections à potentiel malin de la muqueuse buccale et test de connaissance.',
     tags: ['Dermatologie buccale', 'Pathologies', 'Documentation / fiches'],
   },
+  {
+    name: 'Dermatologie buccale (Nice)',
+    url: 'https://dermatologiebuccale-nice.fr/',
+    desc: 'Aide au diagnostic en dermatologie buccale : démarche clinique, fiches lésionnelles et cas cliniques.',
+    tags: ['Dermatologie buccale', 'Cas cliniques', 'Documentation / fiches'],
+  },
 ];
 
 function ExternalIcon() {
