@@ -41,15 +41,10 @@ function normalizeNode(node) {
 /* =========================
    Badges atlas (pathologies)
    Strapi : relation "badges"
-   -> d’après ton exemple API : badges est un tableau d’objets
-   On supporte aussi l'ancien format Strapi { badges: { data: [...] } }
+   Supporte aussi anciens formats
    ========================= */
 
 function normalizeBadges(badgesAny) {
-  // Supporte:
-  // - badges: [ { label, variant, ... }, ... ]
-  // - badges: { data: [ { attributes: {..} }, ... ] }
-  // - badges: { data: [ { label, variant }, ... ] }
   const list = Array.isArray(badgesAny)
     ? badgesAny
     : Array.isArray(badgesAny?.data)
@@ -66,7 +61,6 @@ function normalizeBadges(badgesAny) {
     .filter((b) => b.label);
 }
 
-// Pour l’instant tu veux 1 badge affiché, mais tu prépares le multi-badges
 function pickPrimaryBadge(badgesAny) {
   const badges = normalizeBadges(badgesAny);
 
@@ -346,9 +340,6 @@ export default function CasCliniques() {
         if (isAtlasHub && tab === STRAPI_ATLAS_TYPE) {
           const data = await strapiFetch(PATHO_ENDPOINT, {
             params: {
-              // IMPORTANT:
-              // Ton exemple d’API montre déjà "badges: [ ... ]" directement.
-              // On garde populate badges/cover pour être sûr d’avoir les champs.
               populate: {
                 cover: { fields: ['url', 'formats'] },
                 badges: { fields: ['label', 'variant'] },
@@ -357,7 +348,6 @@ export default function CasCliniques() {
               filters: pathoFilters,
               sort: 'slug:asc',
               pagination: { page, pageSize: PAGE_SIZE },
-              // on ne demande plus atlasBadge (tu vas le supprimer)
               fields: ['title', 'slug', 'excerpt', 'updatedAt'],
               publicationState: 'live',
             },
@@ -396,7 +386,7 @@ export default function CasCliniques() {
           return;
         }
 
-        // Q/R & Quiz => cases (qa/quiz ou mix)
+        // Q/R & Quiz => cases
         if (isQrQuizHub && (tab === STRAPI_QA_TYPE || tab === STRAPI_QUIZ_TYPE || tab === MIXED_KEY)) {
           const data = await strapiFetch(CASES_ENDPOINT, {
             params: {
@@ -563,7 +553,7 @@ export default function CasCliniques() {
                   const excerpt = attrs?.excerpt || '';
 
                   const coverAttr = attrs?.cover?.data?.attributes || attrs?.cover || null;
-                  const coverUrl = imgUrl(coverAttr, 'medium') || imgUrl(coverAttr) || '';
+                  const coverUrl = imgUrl(coverAttr, 'medium') || imgUrl(coverAttr, 'thumbnail') || imgUrl(coverAttr) || '';
 
                   let toHref = null;
 
@@ -577,9 +567,7 @@ export default function CasCliniques() {
 
                   const isPathology = entity === 'pathology';
 
-                  // IMPORTANT:
-                  // Ton exemple montre: pathology.badges = [ ... ]
-                  // Mais on garde un fallback ancien format: { data: [...] }
+                  // ✅ Badge déterministe calculé ici
                   const primaryBadge = isPathology ? pickPrimaryBadge(attrs?.badges) : null;
 
                   const itemType = isPathology ? STRAPI_ATLAS_TYPE : attrs?.type || STRAPI_QA_TYPE;
@@ -612,8 +600,33 @@ export default function CasCliniques() {
                   const key = `${entity}:${slug || idx}`;
                   const cardClass = `cc-card ui-card ${view === 'list' ? 'cc-card--list' : ''}`;
 
+                  // ✅ IMPORTANT: on pousse breadcrumb + prefetch avec badge (évite le flash "Atlas" dans CaseDetail)
+                  const linkState =
+                    entity === 'pathology'
+                      ? {
+                          breadcrumb: {
+                            mode: 'atlas',
+                            pathology: {
+                              slug,
+                              title: titleText,
+                              badge: primaryBadge, // {text, variant}
+                            },
+                            case: null,
+                          },
+                          prefetch: {
+                            slug,
+                            title: titleText,
+                            type: 'presentation',
+                            badges: attrs?.badges ?? null,
+                          },
+                        }
+                      : {
+                          breadcrumb: { mode: 'qr-quiz', case: { slug, title: titleText } },
+                          prefetch: { slug, title: titleText, type: attrs?.type || null },
+                        };
+
                   return toHref ? (
-                    <Link key={key} to={toHref} className={cardClass}>
+                    <Link key={key} to={toHref} className={cardClass} state={linkState}>
                       {Inner}
                     </Link>
                   ) : (

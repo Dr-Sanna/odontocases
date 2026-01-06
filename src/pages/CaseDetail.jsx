@@ -9,7 +9,7 @@ import CaseMarkdown from '../components/CaseMarkdown';
 
 import { strapiFetch, imgUrl } from '../lib/strapi';
 import { getCaseFromCache, setCaseToCache, prefetchCase } from '../lib/caseCache';
-import { getPathologyFromCache, setPathologyToCache } from '../lib/pathologyCache';
+import { getPathologyFromCache, setPathologyToCache, prefetchPathology } from '../lib/pathologyCache';
 
 import { BottomExpandIcon, BottomCollapseIcon } from '../components/Icons';
 import { useCaseDetailSidebar } from '../ui/CaseDetailSidebarContext';
@@ -99,30 +99,19 @@ function normalizeRelationArray(rel) {
   return [];
 }
 
-/* =========================
-   Badges (pathologies)
-   - supporte badges: [ ... ] (ton API)
-   - supporte badges: { data: [...] } (relation Strapi)
-   ========================= */
-function normalizeBadges(badgesAny) {
-  const list = Array.isArray(badgesAny) ? badgesAny : Array.isArray(badgesAny?.data) ? badgesAny.data : [];
-
-  return list
-    .map((n) => (n?.attributes ? n.attributes : n))
-    .filter(Boolean)
-    .map((b) => ({
-      label: String(b?.label || '').trim(),
-      variant: String(b?.variant || 'info').trim() || 'info',
-    }))
-    .filter((b) => b.label);
+/** Badge helpers (pathologies.badges) */
+function pickPrimaryBadge(badgesRel) {
+  const list = normalizeRelationArray(badgesRel);
+  const first = list.find((b) => b && (b.label || b.variant));
+  if (!first?.label) return null;
+  return { text: first.label, variant: first.variant || 'info' };
 }
-
-function pickPrimaryBadge(badgesAny) {
-  const badges = normalizeBadges(badgesAny);
-  if (badges.length === 0) return { text: 'Atlas', variant: 'info' };
-
-  badges.sort((a, b) => String(a.label).localeCompare(String(b.label), 'fr', { sensitivity: 'base' }));
-  return { text: badges[0].label || 'Atlas', variant: badges[0].variant || 'info' };
+function ensureBadge(b) {
+  if (!b || typeof b !== 'object') return null;
+  const text = typeof b.text === 'string' ? b.text : typeof b.label === 'string' ? b.label : '';
+  if (!text) return null;
+  const variant = typeof b.variant === 'string' ? b.variant : 'info';
+  return { text, variant };
 }
 
 /* ===== DOC session helpers (perf only) ===== */
@@ -689,9 +678,9 @@ export default function CaseDetail(props) {
         }
 
         if (isCaseInPathology) {
-          // ✅ parent complet avec badges (sans cases)
+          // on tente un prefetch (peut déjà avoir badges selon ton helper)
           const parentPromise = pathologySlug
-            ? loadPathologyBySlug(pathologySlug, { withCases: false }).catch(() => null)
+            ? prefetchPathology(pathologySlug, { publicationState: PUB_STATE }).catch(() => null)
             : Promise.resolve(null);
 
           const fullCase = await loadCaseBySlug(caseSlug);
@@ -707,10 +696,8 @@ export default function CaseDetail(props) {
           setItem(fullCase);
           setCaseToCache(caseSlug, fullCase);
 
-          if (parent) {
-            setParentPathology(parent);
-            if (pathologySlug) setPathologyToCache(pathologySlug, parent);
-          } else if (pathologySlug) {
+          if (parent) setParentPathology(parent);
+          else if (pathologySlug) {
             const p = getPathologyFromCache(pathologySlug);
             if (p) setParentPathology(p);
           }
@@ -768,13 +755,6 @@ export default function CaseDetail(props) {
     return 'Atlas';
   }, [effectiveType]);
 
-  // ✅ badge de pathologie (au lieu de "Atlas") dans le namespace /atlas
-  const pathologyBadge = useMemo(() => {
-    if (!isPresentationNamespace) return null;
-    const srcBadges = isPathologyPage ? displayItem?.badges : parentPathology?.badges;
-    return pickPrimaryBadge(srcBadges);
-  }, [isPresentationNamespace, isPathologyPage, displayItem?.badges, parentPathology?.badges]);
-
   const qaList = !isDocNamespace && Array.isArray(displayItem?.qa_blocks) ? displayItem.qa_blocks : [];
   const quizList = !isDocNamespace && Array.isArray(displayItem?.quiz_blocks) ? displayItem.quiz_blocks : [];
 
@@ -810,6 +790,42 @@ export default function CaseDetail(props) {
   const cdIndex = useMemo(() => safeGetSessionJson('cd-patho-index'), []);
   const indexPatho = cdIndex?.pathoIndex || {};
   const indexCase = cdIndex?.caseIndex || {};
+
+  // ✅ badge instant (évite le flash "Atlas" quand on a déjà l’info via state/index/cache)
+  const instantBadge = useMemo(() => {
+    if (!isPresentationNamespace) return null;
+
+    const fromState = ensureBadge(navCrumb?.pathology?.badge);
+    if (fromState) return fromState;
+
+    const fromIndexPatho = ensureBadge(indexPatho?.[pathologySlug]?.badge);
+    if (fromIndexPatho) return fromIndexPatho;
+
+    const fromIndexCase = ensureBadge(indexCase?.[caseSlug]?.pathologyBadge);
+    if (fromIndexCase) return fromIndexCase;
+
+    const fromParent = pickPrimaryBadge(parentPathology?.badges);
+    if (fromParent) return fromParent;
+
+    const fromDisplay = pickPrimaryBadge(displayItem?.badges);
+    if (fromDisplay) return fromDisplay;
+
+    return null;
+  }, [
+    isPresentationNamespace,
+    navCrumb,
+    indexPatho,
+    indexCase,
+    pathologySlug,
+    caseSlug,
+    parentPathology?.badges,
+    displayItem?.badges,
+  ]);
+
+  const pathologyBadge = useMemo(() => {
+    if (!isPresentationNamespace) return null;
+    return instantBadge || { text: 'Atlas', variant: 'info' };
+  }, [isPresentationNamespace, instantBadge]);
 
   const displayTitle = useMemo(() => {
     if (isDocNamespace) return displayItem?.title || displayItem?.slug || 'Documentation';
@@ -942,7 +958,7 @@ export default function CaseDetail(props) {
       return base;
     }
 
-    // hubs atlas
+    // ✅ nouveaux hubs
     if (isPresentationNamespace) {
       const base = [
         { label: 'Accueil', to: '/' },
@@ -1038,6 +1054,7 @@ export default function CaseDetail(props) {
   }, [isDocItemPage, docCurrentItemSections]);
 
   const showExtras = Boolean(displayItem?.references || displayItem?.copyright);
+
   const markdownScopeKey = String(displayItem?.slug || displayItem?.id || 'x');
 
   return (
@@ -1171,7 +1188,11 @@ export default function CaseDetail(props) {
                     state={{
                       breadcrumb: {
                         mode: 'atlas',
-                        pathology: { slug: pathologySlug, title: instantPathologyTitle || pathologySlug },
+                        pathology: {
+                          slug: pathologySlug,
+                          title: instantPathologyTitle || pathologySlug,
+                          badge: pathologyBadge, // ✅ passe le badge pour éviter le flash si navigation interne
+                        },
                         case: { slug: c.slug, title: c.title || c.slug },
                       },
                       prefetch: { slug: c.slug, title: c.title || c.slug, type: c.type || 'presentation' },
@@ -1419,22 +1440,9 @@ function Aside({
     if (prefetchedRef.current.has(key)) return;
     prefetchedRef.current.add(key);
 
-    const run =
-      kind === 'pathology'
-        ? () => {
-            // ici on conserve le prefetch "léger" existant, car le badge s’affiche en header via parentPathology (chargée full)
-            // donc pas besoin d’alourdir la sidebar
-            // Si tu veux badges dans la sidebar, on pourra ajouter populate badges ici aussi.
-            // eslint-disable-next-line no-throw-literal
-            throw null;
-          }
-        : () => prefetchCase(slug, { publicationState: pubState }).catch(() => {});
+    if (kind === 'pathology') return; // no-op (pas de throw)
 
-    if (kind === 'pathology') {
-      // pas de prefetchPathology importé ici (volontaire)
-      return;
-    }
-
+    const run = () => prefetchCase(slug, { publicationState: pubState }).catch(() => {});
     if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
       window.requestIdleCallback(run, { timeout: 600 });
     } else {
@@ -1676,7 +1684,10 @@ function Aside({
             locale: 'all',
             publicationState: pubState,
             fields: ['title', 'slug', 'excerpt'],
-            populate: { cases: { fields: ['title', 'slug', 'type'], sort: ['slug:asc'] } },
+            populate: {
+              badges: { fields: ['label', 'variant'] }, // ✅ AJOUT
+              cases: { fields: ['title', 'slug', 'type'], sort: ['slug:asc'] },
+            },
             sort: 'title:asc',
             pagination: { page: 1, pageSize: 400 },
           },
@@ -1701,12 +1712,20 @@ function Aside({
 
         setPathoList(cooked);
 
+        // ✅ index + badges pour affichage instant dans l'entête
         try {
           const pathoIndex = {};
           const caseIndex = {};
           for (const p of cooked) {
             if (!p?.slug) continue;
-            pathoIndex[p.slug] = { title: p.title || p.slug };
+
+            const badge = pickPrimaryBadge(p?.badges);
+
+            pathoIndex[p.slug] = {
+              title: p.title || p.slug,
+              badge: badge || null,
+            };
+
             const kids = Array.isArray(p._children) ? p._children : [];
             for (const c of kids) {
               if (!c?.slug) continue;
@@ -1714,6 +1733,7 @@ function Aside({
                 title: c.title || c.slug,
                 pathologySlug: p.slug,
                 pathologyTitle: p.title || p.slug,
+                pathologyBadge: badge || null,
               };
             }
           }
@@ -2056,6 +2076,8 @@ function Aside({
                     });
                   };
 
+                  const badge = pickPrimaryBadge(p?.badges);
+
                   return (
                     <li key={p.slug}>
                       <div
@@ -2082,7 +2104,7 @@ function Aside({
                             state={{
                               breadcrumb: {
                                 mode: 'atlas',
-                                pathology: { slug: p.slug, title: p.title || p.slug },
+                                pathology: { slug: p.slug, title: p.title || p.slug, badge: badge || null },
                                 case: null,
                               },
                               prefetch: { slug: p.slug, title: p.title || p.slug, type: 'presentation' },
@@ -2141,7 +2163,7 @@ function Aside({
                                         state={{
                                           breadcrumb: {
                                             mode: 'atlas',
-                                            pathology: { slug: p.slug, title: p.title || p.slug },
+                                            pathology: { slug: p.slug, title: p.title || p.slug, badge: badge || null },
                                             case: { slug: ch.slug, title: ch.title || ch.slug },
                                           },
                                           prefetch: {

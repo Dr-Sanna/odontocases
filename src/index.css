@@ -90,6 +90,7 @@
   --ifm-color-info-lightest: #aae3f6;
 
   /* Warning */
+  --ifm-color-warning: #ffba00;
   --ifm-color-warning-dark: #e6a700;
   --ifm-color-warning-darker: #d99e00;
   --ifm-color-warning-darkest: #b38200;
