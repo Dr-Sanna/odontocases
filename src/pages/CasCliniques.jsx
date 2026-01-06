@@ -34,38 +34,51 @@ const FALLBACK_PAGE_SIZE = 300;
 const CASES_ENDPOINT = import.meta.env.VITE_CASES_ENDPOINT || '/cases';
 const PATHO_ENDPOINT = import.meta.env.VITE_PATHO_ENDPOINT || '/pathologies';
 
-/* =========================
-   Badges atlas (pathologies)
-   ========================= */
-const ATLAS_BADGE_TO_VARIANT = {
-  'Tumeur bénigne': 'success',
-  Technique: 'success',
-
-  'Tumeur maligne': 'danger',
-
-  Infectieux: 'warning',
-  Traumatologie: 'warning',
-
-  Viral: 'info',
-  'Inflammatoire / immunitaire': 'info',
-  'Auto-immun': 'info',
-  'Lésion réactionnelle': 'info',
-
-  "Anomalie d'éruption": 'secondary',
-  'Kystes & pseudokystes': 'secondary',
-  'Vasculaire / génétique': 'secondary',
-};
-
-function getAtlasBadge(atlasBadge) {
-  if (!atlasBadge) return { text: 'Atlas', variant: 'info' };
-  return {
-    text: atlasBadge,
-    variant: ATLAS_BADGE_TO_VARIANT[atlasBadge] || 'info',
-  };
-}
-
 function normalizeNode(node) {
   return node?.attributes ? node.attributes : node;
+}
+
+/* =========================
+   Badges atlas (pathologies)
+   Strapi : relation "badges"
+   -> d’après ton exemple API : badges est un tableau d’objets
+   On supporte aussi l'ancien format Strapi { badges: { data: [...] } }
+   ========================= */
+
+function normalizeBadges(badgesAny) {
+  // Supporte:
+  // - badges: [ { label, variant, ... }, ... ]
+  // - badges: { data: [ { attributes: {..} }, ... ] }
+  // - badges: { data: [ { label, variant }, ... ] }
+  const list = Array.isArray(badgesAny)
+    ? badgesAny
+    : Array.isArray(badgesAny?.data)
+      ? badgesAny.data
+      : [];
+
+  return list
+    .map((n) => (n?.attributes ? n.attributes : n))
+    .filter(Boolean)
+    .map((b) => ({
+      label: String(b?.label || '').trim(),
+      variant: String(b?.variant || 'info').trim() || 'info',
+    }))
+    .filter((b) => b.label);
+}
+
+// Pour l’instant tu veux 1 badge affiché, mais tu prépares le multi-badges
+function pickPrimaryBadge(badgesAny) {
+  const badges = normalizeBadges(badgesAny);
+
+  if (badges.length === 0) return { text: 'Atlas', variant: 'info' };
+
+  // déterministe
+  badges.sort((a, b) => String(a.label).localeCompare(String(b.label), 'fr', { sensitivity: 'base' }));
+
+  return {
+    text: badges[0].label || 'Atlas',
+    variant: badges[0].variant || 'info',
+  };
 }
 
 function compareBySlugNumberAsc(aNode, bNode) {
@@ -236,7 +249,6 @@ function ViewToggle({ view, setView }) {
             d="M4 6h2v2H4V6zm4 0h12v2H8V6zM4 11h2v2H4v-2zm4 0h12v2H8v-2zM4 16h2v2H4v-2zm4 0h12v2H8v-2z"
           />
         </svg>
-
       </button>
     </div>
   );
@@ -252,7 +264,7 @@ export default function CasCliniques() {
   const [items, setItems] = useState([]);
   const [total, setTotal] = useState(0);
 
-  // ✅ toggle Cartes / Liste (persisté)
+  // toggle Cartes / Liste (persisté)
   const [view, setView] = useState(() => {
     const saved = localStorage.getItem('cc:view');
     return saved === 'list' ? 'list' : 'cards';
@@ -334,12 +346,19 @@ export default function CasCliniques() {
         if (isAtlasHub && tab === STRAPI_ATLAS_TYPE) {
           const data = await strapiFetch(PATHO_ENDPOINT, {
             params: {
-              populate: { cover: { fields: ['url', 'formats'] } },
+              // IMPORTANT:
+              // Ton exemple d’API montre déjà "badges: [ ... ]" directement.
+              // On garde populate badges/cover pour être sûr d’avoir les champs.
+              populate: {
+                cover: { fields: ['url', 'formats'] },
+                badges: { fields: ['label', 'variant'] },
+              },
               locale: 'all',
               filters: pathoFilters,
               sort: 'slug:asc',
               pagination: { page, pageSize: PAGE_SIZE },
-              fields: ['title', 'slug', 'excerpt', 'updatedAt', 'atlasBadge'],
+              // on ne demande plus atlasBadge (tu vas le supprimer)
+              fields: ['title', 'slug', 'excerpt', 'updatedAt'],
               publicationState: 'live',
             },
           });
@@ -352,12 +371,15 @@ export default function CasCliniques() {
           if (q && normalized.length === 0) {
             const fallback = await strapiFetch(PATHO_ENDPOINT, {
               params: {
-                populate: { cover: { fields: ['url', 'formats'] } },
+                populate: {
+                  cover: { fields: ['url', 'formats'] },
+                  badges: { fields: ['label', 'variant'] },
+                },
                 locale: 'all',
                 filters: {},
                 sort: 'slug:asc',
                 pagination: { page: 1, pageSize: FALLBACK_PAGE_SIZE },
-                fields: ['title', 'slug', 'excerpt', 'updatedAt', 'atlasBadge'],
+                fields: ['title', 'slug', 'excerpt', 'updatedAt'],
                 publicationState: 'live',
               },
             });
@@ -554,12 +576,16 @@ export default function CasCliniques() {
                   }
 
                   const isPathology = entity === 'pathology';
-                  const atlasBadge = isPathology ? getAtlasBadge(attrs?.atlasBadge) : null;
+
+                  // IMPORTANT:
+                  // Ton exemple montre: pathology.badges = [ ... ]
+                  // Mais on garde un fallback ancien format: { data: [...] }
+                  const primaryBadge = isPathology ? pickPrimaryBadge(attrs?.badges) : null;
 
                   const itemType = isPathology ? STRAPI_ATLAS_TYPE : attrs?.type || STRAPI_QA_TYPE;
 
-                  const badgeText = isPathology ? atlasBadge.text : typeLabel(itemType);
-                  const badgeVar = isPathology ? atlasBadge.variant : badgeVariant(itemType);
+                  const badgeText = isPathology ? primaryBadge.text : typeLabel(itemType);
+                  const badgeVar = isPathology ? primaryBadge.variant : badgeVariant(itemType);
 
                   const Inner = (
                     <>

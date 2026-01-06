@@ -9,7 +9,7 @@ import CaseMarkdown from '../components/CaseMarkdown';
 
 import { strapiFetch, imgUrl } from '../lib/strapi';
 import { getCaseFromCache, setCaseToCache, prefetchCase } from '../lib/caseCache';
-import { getPathologyFromCache, setPathologyToCache, prefetchPathology } from '../lib/pathologyCache';
+import { getPathologyFromCache, setPathologyToCache } from '../lib/pathologyCache';
 
 import { BottomExpandIcon, BottomCollapseIcon } from '../components/Icons';
 import { useCaseDetailSidebar } from '../ui/CaseDetailSidebarContext';
@@ -97,6 +97,32 @@ function normalizeRelationArray(rel) {
   if (Array.isArray(rel.data)) return rel.data.map(normalizeEntity).filter(Boolean);
   if (Array.isArray(rel?.results)) return rel.results.map(normalizeEntity).filter(Boolean);
   return [];
+}
+
+/* =========================
+   Badges (pathologies)
+   - supporte badges: [ ... ] (ton API)
+   - supporte badges: { data: [...] } (relation Strapi)
+   ========================= */
+function normalizeBadges(badgesAny) {
+  const list = Array.isArray(badgesAny) ? badgesAny : Array.isArray(badgesAny?.data) ? badgesAny.data : [];
+
+  return list
+    .map((n) => (n?.attributes ? n.attributes : n))
+    .filter(Boolean)
+    .map((b) => ({
+      label: String(b?.label || '').trim(),
+      variant: String(b?.variant || 'info').trim() || 'info',
+    }))
+    .filter((b) => b.label);
+}
+
+function pickPrimaryBadge(badgesAny) {
+  const badges = normalizeBadges(badgesAny);
+  if (badges.length === 0) return { text: 'Atlas', variant: 'info' };
+
+  badges.sort((a, b) => String(a.label).localeCompare(String(b.label), 'fr', { sensitivity: 'base' }));
+  return { text: badges[0].label || 'Atlas', variant: badges[0].variant || 'info' };
 }
 
 /* ===== DOC session helpers (perf only) ===== */
@@ -479,6 +505,7 @@ export default function CaseDetail(props) {
           publicationState: PUB_STATE,
           populate: {
             cover: { fields: ['url', 'formats'] },
+            badges: { fields: ['label', 'variant'] }, // ✅ badges
             ...(withQa ? { qa_blocks: { populate: '*' } } : {}),
             ...(withQuiz ? { quiz_blocks: { populate: { propositions: true } } } : {}),
             ...(withCasesInner
@@ -662,8 +689,9 @@ export default function CaseDetail(props) {
         }
 
         if (isCaseInPathology) {
+          // ✅ parent complet avec badges (sans cases)
           const parentPromise = pathologySlug
-            ? prefetchPathology(pathologySlug, { publicationState: PUB_STATE }).catch(() => null)
+            ? loadPathologyBySlug(pathologySlug, { withCases: false }).catch(() => null)
             : Promise.resolve(null);
 
           const fullCase = await loadCaseBySlug(caseSlug);
@@ -679,8 +707,10 @@ export default function CaseDetail(props) {
           setItem(fullCase);
           setCaseToCache(caseSlug, fullCase);
 
-          if (parent) setParentPathology(parent);
-          else if (pathologySlug) {
+          if (parent) {
+            setParentPathology(parent);
+            if (pathologySlug) setPathologyToCache(pathologySlug, parent);
+          } else if (pathologySlug) {
             const p = getPathologyFromCache(pathologySlug);
             if (p) setParentPathology(p);
           }
@@ -737,6 +767,13 @@ export default function CaseDetail(props) {
     if (effectiveType === 'doc') return 'Documentation';
     return 'Atlas';
   }, [effectiveType]);
+
+  // ✅ badge de pathologie (au lieu de "Atlas") dans le namespace /atlas
+  const pathologyBadge = useMemo(() => {
+    if (!isPresentationNamespace) return null;
+    const srcBadges = isPathologyPage ? displayItem?.badges : parentPathology?.badges;
+    return pickPrimaryBadge(srcBadges);
+  }, [isPresentationNamespace, isPathologyPage, displayItem?.badges, parentPathology?.badges]);
 
   const qaList = !isDocNamespace && Array.isArray(displayItem?.qa_blocks) ? displayItem.qa_blocks : [];
   const quizList = !isDocNamespace && Array.isArray(displayItem?.quiz_blocks) ? displayItem.quiz_blocks : [];
@@ -905,7 +942,7 @@ export default function CaseDetail(props) {
       return base;
     }
 
-    // ✅ nouveaux hubs
+    // hubs atlas
     if (isPresentationNamespace) {
       const base = [
         { label: 'Accueil', to: '/' },
@@ -1001,7 +1038,6 @@ export default function CaseDetail(props) {
   }, [isDocItemPage, docCurrentItemSections]);
 
   const showExtras = Boolean(displayItem?.references || displayItem?.copyright);
-
   const markdownScopeKey = String(displayItem?.slug || displayItem?.id || 'x');
 
   return (
@@ -1050,9 +1086,15 @@ export default function CaseDetail(props) {
           <Breadcrumbs items={breadcrumbItems} />
 
           <div className="cd-type-badge">
-            <span className={`badge badge-soft-outline badge-${badgeVariantFromKey(effectiveType || 'qa')}`}>
-              {typeLabel}
-            </span>
+            {isPresentationNamespace ? (
+              <span className={`badge badge-soft-outline badge-${pathologyBadge?.variant || 'info'}`}>
+                {pathologyBadge?.text || 'Atlas'}
+              </span>
+            ) : (
+              <span className={`badge badge-soft-outline badge-${badgeVariantFromKey(effectiveType || 'qa')}`}>
+                {typeLabel}
+              </span>
+            )}
           </div>
         </div>
 
@@ -1379,8 +1421,19 @@ function Aside({
 
     const run =
       kind === 'pathology'
-        ? () => prefetchPathology(slug, { publicationState: pubState }).catch(() => {})
+        ? () => {
+            // ici on conserve le prefetch "léger" existant, car le badge s’affiche en header via parentPathology (chargée full)
+            // donc pas besoin d’alourdir la sidebar
+            // Si tu veux badges dans la sidebar, on pourra ajouter populate badges ici aussi.
+            // eslint-disable-next-line no-throw-literal
+            throw null;
+          }
         : () => prefetchCase(slug, { publicationState: pubState }).catch(() => {});
+
+    if (kind === 'pathology') {
+      // pas de prefetchPathology importé ici (volontaire)
+      return;
+    }
 
     if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
       window.requestIdleCallback(run, { timeout: 600 });
