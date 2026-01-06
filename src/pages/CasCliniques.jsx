@@ -28,7 +28,7 @@ const STRAPI_QUIZ_TYPE = 'quiz';
 // "Tous" = mix Q/R + Quiz (pas un type Strapi)
 const MIXED_KEY = 'mixed';
 
-const PAGE_SIZE = 12;
+const PAGE_SIZE = 24;
 const FALLBACK_PAGE_SIZE = 300;
 
 const CASES_ENDPOINT = import.meta.env.VITE_CASES_ENDPOINT || '/cases';
@@ -203,6 +203,45 @@ function getHubAndSelection(pathname) {
   return { hub: 'unknown', selection: 'all' };
 }
 
+function ViewToggle({ view, setView }) {
+  return (
+    <div className="cc-viewtoggle" role="group" aria-label="Affichage">
+      <button
+        type="button"
+        className={`cc-viewbtn ${view === 'cards' ? 'active' : ''}`}
+        onClick={() => setView('cards')}
+        aria-pressed={view === 'cards'}
+        aria-label="Affichage cartes"
+        title="Cartes"
+      >
+        <svg className="cc-ico" viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            fill="currentColor"
+            d="M4 4h7v7H4V4zm9 0h7v7h-7V4zM4 13h7v7H4v-7zm9 0h7v7h-7v-7z"
+          />
+        </svg>
+      </button>
+
+      <button
+        type="button"
+        className={`cc-viewbtn ${view === 'list' ? 'active' : ''}`}
+        onClick={() => setView('list')}
+        aria-pressed={view === 'list'}
+        aria-label="Affichage liste"
+        title="Liste"
+      >
+        <svg className="cc-ico" viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            fill="currentColor"
+            d="M4 6h2v2H4V6zm4 0h12v2H8V6zM4 11h2v2H4v-2zm4 0h12v2H8v-2zM4 16h2v2H4v-2zm4 0h12v2H8v-2z"
+          />
+        </svg>
+
+      </button>
+    </div>
+  );
+}
+
 export default function CasCliniques() {
   const [searchParams] = useSearchParams();
   const { pathname } = useLocation();
@@ -212,6 +251,16 @@ export default function CasCliniques() {
   const [error, setError] = useState('');
   const [items, setItems] = useState([]);
   const [total, setTotal] = useState(0);
+
+  // ✅ toggle Cartes / Liste (persisté)
+  const [view, setView] = useState(() => {
+    const saved = localStorage.getItem('cc:view');
+    return saved === 'list' ? 'list' : 'cards';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('cc:view', view);
+  }, [view]);
 
   const q = searchParams.get('q') || '';
   const page = Number(searchParams.get('page') || 1);
@@ -332,7 +381,6 @@ export default function CasCliniques() {
               populate: { cover: { fields: ['url', 'formats'] } },
               locale: 'all',
               filters: caseFilters,
-              // ✅ pour "Tous", Strapi trie déjà par titre (et React retrie aussi)
               sort: tab === MIXED_KEY ? 'title:asc' : 'slug:asc',
               pagination: { page, pageSize: PAGE_SIZE },
               fields: ['title', 'slug', 'type', 'excerpt', 'updatedAt'],
@@ -390,13 +438,13 @@ export default function CasCliniques() {
   const sortedItems = useMemo(() => {
     const arr = Array.isArray(items) ? [...items] : [];
 
-    // ✅ en mode "Tous" => tri alphabétique par titre
+    // en mode "Tous" => tri alphabétique par titre
     if (isQrQuizHub && tab === MIXED_KEY) {
       arr.sort(compareByTitleAsc);
       return arr;
     }
 
-    // ✅ sinon => tri par numéro dans le slug (historique)
+    // sinon => tri par numéro dans le slug
     arr.sort(compareBySlugNumberAsc);
     return arr;
   }, [items, isQrQuizHub, tab]);
@@ -429,9 +477,8 @@ export default function CasCliniques() {
       <div className="container">
         {showTypePicker && <TypePicker />}
 
-        {/* Chips : boutons (pas des liens) */}
         {showChips && (
-          <section className="cc-toolbar">
+          <section className="cc-toolbar cc-toolbar--top">
             <div className="cc-tabs" role="tablist" aria-label="Filtrer">
               <button
                 type="button"
@@ -463,12 +510,20 @@ export default function CasCliniques() {
                 Quiz
               </button>
             </div>
+
+            <ViewToggle view={view} setView={setView} />
+          </section>
+        )}
+
+        {!showTypePicker && !showChips && (
+          <section className="cc-toolbar cc-toolbar--views">
+            <ViewToggle view={view} setView={setView} />
           </section>
         )}
 
         {!showTypePicker && (
           <>
-            <section className="cc-grid" aria-label="Ressources">
+            <section className={`cc-grid ${view === 'list' ? 'cc-grid--list' : ''}`} aria-label="Ressources">
               {loading && <div className="cc-state">Chargement…</div>}
               {error && !loading && <div className="cc-state error">{error}</div>}
               {!loading && !error && sortedItems.length === 0 && <div className="cc-state">Aucun résultat.</div>}
@@ -492,10 +547,8 @@ export default function CasCliniques() {
 
                   if (slug) {
                     if (entity === 'pathology') {
-                      // détail atlas : /atlas/:pathologySlug
                       toHref = `/atlas/${slug}`;
                     } else {
-                      // détail cas : /qr-quiz/cas/:slug
                       toHref = `/qr-quiz/cas/${slug}`;
                     }
                   }
@@ -520,19 +573,25 @@ export default function CasCliniques() {
 
                       <div className="cc-body">
                         <h3 className="cc-title">{titleText}</h3>
-                        <span className="sr-only">{excerpt}</span>
+
+                        {view === 'list' ? (
+                          excerpt ? <p className="cc-excerpt">{excerpt}</p> : null
+                        ) : (
+                          <span className="sr-only">{excerpt}</span>
+                        )}
                       </div>
                     </>
                   );
 
                   const key = `${entity}:${slug || idx}`;
+                  const cardClass = `cc-card ui-card ${view === 'list' ? 'cc-card--list' : ''}`;
 
                   return toHref ? (
-                    <Link key={key} to={toHref} className="cc-card ui-card">
+                    <Link key={key} to={toHref} className={cardClass}>
                       {Inner}
                     </Link>
                   ) : (
-                    <div key={key} className="cc-card ui-card cc-card--disabled" title="Slug manquant">
+                    <div key={key} className={`${cardClass} cc-card--disabled`} title="Slug manquant">
                       {Inner}
                     </div>
                   );
@@ -564,7 +623,6 @@ function TypePicker() {
     <section className="cc-typepicker">
       <h3>Choisissez un type de cas</h3>
       <div className="cc-typegrid">
-        {/* Links => l’URL s’affiche en bas du navigateur au survol */}
         <Link className="cc-typecard ui-card" to="/qr-quiz/tous" draggable="false">
           <span className="cc-type">Tous</span>
           <span className="cc-typedesc">Q/R + Quiz</span>

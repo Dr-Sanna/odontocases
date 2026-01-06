@@ -2,6 +2,9 @@ Réorganisation de l'interface : la section "Cas Cliniques" est divisée en 2 se
 - Atlas : l'atlas de pathlogies orales et les cas associés
 - Q/R & Quiz : les questions rédactionnelles d'internat et les quiz du SFCO
 
+UI : tri de l'interface. 
+- Les pathologies et cas cliniques peuvent désormais être triés par listes pour un affichage plus compact
+
 Ajout de pathologies :
 - myxome odontogène
 
