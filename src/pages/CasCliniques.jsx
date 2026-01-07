@@ -248,6 +248,45 @@ function ViewToggle({ view, setView }) {
   );
 }
 
+/* =========================
+   Tri (UI only)
+   ========================= */
+
+function SortControls({ sortKey, setSortKey }) {
+  const options = [
+    { key: 'alpha', label: 'Alphabétique', enabled: true },
+    { key: 'nature', label: 'Type', enabled: false },
+    { key: 'site', label: 'Siège', enabled: false },
+    { key: 'potmal', label: 'Potentiel malin', enabled: false },
+    { key: 'lesion', label: 'Lésion élémentaire', enabled: false },
+  ];
+
+  return (
+    <div className="cc-sort" role="group" aria-label="Trier">
+      <span className="cc-sortlabel">Trier :</span>
+
+      {options.map((opt) => {
+        const isActive = sortKey === opt.key;
+
+        return (
+          <button
+            key={opt.key}
+            type="button"
+            className={`cc-sortbtn ${isActive ? 'active' : ''}`}
+            onClick={opt.enabled ? () => setSortKey(opt.key) : undefined}
+            disabled={!opt.enabled}
+            aria-pressed={opt.enabled ? isActive : undefined}
+            title={opt.enabled ? 'Actif' : 'En construction'}
+          >
+            {opt.label}
+            
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function CasCliniques() {
   const [searchParams] = useSearchParams();
   const { pathname } = useLocation();
@@ -267,6 +306,16 @@ export default function CasCliniques() {
   useEffect(() => {
     localStorage.setItem('cc:view', view);
   }, [view]);
+
+  // tri (UI uniquement pour l’instant)
+  const [sortKey, setSortKey] = useState(() => {
+    const saved = localStorage.getItem('cc:sort');
+    return saved || 'alpha';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('cc:sort', sortKey);
+  }, [sortKey]);
 
   const q = searchParams.get('q') || '';
   const page = Number(searchParams.get('page') || 1);
@@ -463,7 +512,7 @@ export default function CasCliniques() {
 
   const title = isAtlasHub ? 'Atlas' : isQrQuizHub ? 'Q/R & Quiz' : 'Atlas';
   const description = isAtlasHub
-    ? 'Atlas de pathologies orales.'
+    ? 'Atlas de pathologies orales, variations physiologiques de la muqueuse et cas cliniques associés.'
     : isQrQuizHub
       ? 'Cas cliniques interactifs.'
       : 'Atlas de pathologies orales.';
@@ -529,6 +578,12 @@ export default function CasCliniques() {
 
         {!showTypePicker && !showChips && (
           <section className="cc-toolbar cc-toolbar--views">
+            {isAtlasHub && tab === STRAPI_ATLAS_TYPE ? (
+              <SortControls sortKey={sortKey} setSortKey={setSortKey} />
+            ) : (
+              <span />
+            )}
+
             <ViewToggle view={view} setView={setView} />
           </section>
         )}
@@ -553,7 +608,8 @@ export default function CasCliniques() {
                   const excerpt = attrs?.excerpt || '';
 
                   const coverAttr = attrs?.cover?.data?.attributes || attrs?.cover || null;
-                  const coverUrl = imgUrl(coverAttr, 'medium') || imgUrl(coverAttr, 'thumbnail') || imgUrl(coverAttr) || '';
+                  const coverUrl =
+                    imgUrl(coverAttr, 'medium') || imgUrl(coverAttr, 'thumbnail') || imgUrl(coverAttr) || '';
 
                   let toHref = null;
 
@@ -588,9 +644,7 @@ export default function CasCliniques() {
                       <div className="cc-body">
                         <h3 className="cc-title">{titleText}</h3>
 
-                        {view === 'list' ? (
-                          excerpt ? <p className="cc-excerpt">{excerpt}</p> : null
-                        ) : (
+                        {view === 'list' ? (excerpt ? <p className="cc-excerpt">{excerpt}</p> : null) : (
                           <span className="sr-only">{excerpt}</span>
                         )}
                       </div>

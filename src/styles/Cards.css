@@ -1,6 +1,7 @@
 /* ===============================
    Cards.css (partagé)
-   Uniquement : grilles + cartes + toggle (UI)
+   Uniquement : grilles + cartes
+   (toggle déplacé vers CasCliniques.css)
    =============================== */
 
 /* ===============================
@@ -299,114 +300,6 @@
 }
 
 /* =========================================================
-   Toggle Cartes / Liste (icônes, sans ombre)
-   - coins arrondis uniquement aux extrémités
-   ========================================================= */
-
-.cc-toolbar--top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.cc-toolbar--views {
-  margin-top: 12px;
-  display: flex;
-  justify-content: flex-end;
-}
-
-/* conteneur segmented */
-.cc-viewtoggle {
-  display: inline-grid;
-  grid-auto-flow: column;
-  gap: 0;
-  padding: 0;
-
-  border-radius: 999px;
-  overflow: hidden; /* coupe les coins internes */
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  box-shadow: none;
-}
-
-.cc-viewbtn {
-  border: 0;
-  background: transparent;
-  color: inherit;
-
-  width: 40px;
-  height: 34px;
-
-  display: grid;
-  place-items: center;
-
-  opacity: 0.75;
-  cursor: pointer;
-
-  border-radius: 0; /* coins internes droits */
-}
-
-/* coins externes uniquement */
-.cc-viewbtn:first-child {
-  border-top-left-radius: 999px;
-  border-bottom-left-radius: 999px;
-}
-
-.cc-viewbtn:last-child {
-  border-top-right-radius: 999px;
-  border-bottom-right-radius: 999px;
-}
-
-/* séparation subtile */
-.cc-viewbtn + .cc-viewbtn {
-  border-left: 1px solid rgba(255, 255, 255, 0.10);
-}
-
-.cc-viewbtn:hover {
-  opacity: 0.95;
-  background: rgba(255, 255, 255, 0.06);
-}
-
-.cc-viewbtn.active {
-  opacity: 1;
-  background: rgba(255, 255, 255, 0.12);
-}
-
-.cc-viewbtn:focus-visible {
-  outline: 2px solid rgba(255, 255, 255, 0.35);
-  outline-offset: -2px;
-}
-
-.cc-ico {
-  width: 18px;
-  height: 18px;
-  display: block;
-}
-
-/* thème light : rendu plus net */
-[data-theme='light'] .cc-viewtoggle {
-  background: rgba(0, 0, 0, 0.03);
-  border: 1px solid rgba(0, 0, 0, 0.10);
-}
-
-[data-theme='light'] .cc-viewbtn + .cc-viewbtn {
-  border-left: 1px solid rgba(0, 0, 0, 0.10);
-}
-
-[data-theme='light'] .cc-viewbtn:hover {
-  background: rgba(0, 0, 0, 0.04);
-}
-
-[data-theme='light'] .cc-viewbtn.active {
-  background: rgba(0, 0, 0, 0.06);
-}
-
-[data-theme='light'] .cc-viewbtn:focus-visible {
-  outline: 2px solid rgba(0, 0, 0, 0.25);
-}
-
-/* =========================================================
    DOCUMENTATION : GRILLE
    ========================================================= */
 
@@ -529,12 +422,3 @@
   width: fit-content;
   max-width: 100%;
 }
-/* Décalage optique des icônes vers le centre (à cause des bords arrondis) */
-.cc-viewbtn:first-child .cc-ico {
-  transform: translateX(1px);
-}
-
-.cc-viewbtn:last-child .cc-ico {
-  transform: translateX(-2px);
-}
-

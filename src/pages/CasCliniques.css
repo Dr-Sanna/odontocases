@@ -1,6 +1,7 @@
 /* ===============================
    CasCliniques.css
    Onglets + grille + états + pagination + TypePicker
+   + toolbar (toggle + tri)
    (les styles de cartes sont dans Cards.css)
    =============================== */
 
@@ -144,3 +145,206 @@
   line-height: 1.5;
 }
 
+/* =========================================================
+   TOOLBARS
+   ========================================================= */
+
+.cc-toolbar--top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* toolbar en dessous (tri à gauche / toggle à droite) */
+.cc-toolbar--views {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* =========================================================
+   Toggle Cartes / Liste (icônes, sans ombre)
+   - coins arrondis uniquement aux extrémités
+   (extrait de Cards.css)
+   ========================================================= */
+
+/* conteneur segmented */
+.cc-viewtoggle {
+  display: inline-grid;
+  grid-auto-flow: column;
+  gap: 0;
+  padding: 0;
+
+  border-radius: 999px;
+  overflow: hidden; /* coupe les coins internes */
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  box-shadow: none;
+}
+
+.cc-viewbtn {
+  border: 0;
+  background: transparent;
+  color: inherit;
+
+  width: 40px;
+  height: 34px;
+
+  display: grid;
+  place-items: center;
+
+  opacity: 0.75;
+  cursor: pointer;
+
+  border-radius: 0; /* coins internes droits */
+}
+
+/* coins externes uniquement */
+.cc-viewbtn:first-child {
+  border-top-left-radius: 999px;
+  border-bottom-left-radius: 999px;
+}
+
+.cc-viewbtn:last-child {
+  border-top-right-radius: 999px;
+  border-bottom-right-radius: 999px;
+}
+
+/* séparation subtile */
+.cc-viewbtn + .cc-viewbtn {
+  border-left: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+.cc-viewbtn:hover {
+  opacity: 0.95;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.cc-viewbtn.active {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.cc-viewbtn:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.35);
+  outline-offset: -2px;
+}
+
+.cc-ico {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+/* thème light : rendu plus net */
+[data-theme='light'] .cc-viewtoggle {
+  background: rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.10);
+}
+
+[data-theme='light'] .cc-viewbtn + .cc-viewbtn {
+  border-left: 1px solid rgba(0, 0, 0, 0.10);
+}
+
+[data-theme='light'] .cc-viewbtn:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme='light'] .cc-viewbtn.active {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+[data-theme='light'] .cc-viewbtn:focus-visible {
+  outline: 2px solid rgba(0, 0, 0, 0.25);
+}
+
+/* Décalage optique des icônes vers le centre (à cause des bords arrondis) */
+.cc-viewbtn:first-child .cc-ico {
+  transform: translateX(1px);
+}
+
+.cc-viewbtn:last-child .cc-ico {
+  transform: translateX(-2px);
+}
+
+/* =========================================================
+   Tri (UI seulement)
+   ========================================================= */
+
+.cc-sort {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* petit label "Trier :" */
+.cc-sortlabel {
+  font-size: 0.9rem;
+  opacity: 0.85;
+  font-weight: 600;
+}
+
+/* boutons : style proche des tabs, cohérent light/dark */
+.cc-sortbtn {
+  appearance: none;
+  border: 1px solid rgba(0, 0, 0, 0.10);
+  background: rgba(0, 0, 0, 0.02);
+  color: inherit;
+
+  padding: 8px 12px;
+  border-radius: 999px;
+
+  font-size: 0.92rem;
+  font-weight: 650;
+
+  cursor: pointer;
+  user-select: none;
+
+  transition: background 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+}
+
+.cc-sortbtn:hover {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.14);
+}
+
+/* actif (seul "Alphabétique" pour l’instant) */
+.cc-sortbtn.active {
+  background: #eef4ff;
+  border-color: #dce8ff;
+}
+
+.cc-sortbtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.cc-sortbtn:disabled:hover {
+  background: rgba(0, 0, 0, 0.02);
+  border-color: rgba(0, 0, 0, 0.10);
+}
+
+/* dark */
+[data-theme='dark'] .cc-sortbtn {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+[data-theme='dark'] .cc-sortbtn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+[data-theme='dark'] .cc-sortbtn.active {
+  background: #1f2940;
+  border-color: #2a3a5a;
+}
+
+[data-theme='dark'] .cc-sortbtn:disabled:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.12);
+}
