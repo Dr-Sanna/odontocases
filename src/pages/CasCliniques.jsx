@@ -75,24 +75,46 @@ function pickPrimaryBadge(badgesAny) {
   };
 }
 
-function compareBySlugNumberAsc(aNode, bNode) {
+function hasBadgeLabel(badgesAny, label) {
+  const target = String(label || '').trim().toLowerCase();
+  return normalizeBadges(badgesAny).some((b) => String(b.label).trim().toLowerCase() === target);
+}
+
+/**
+ * Groupe "Type" (Atlas) = badge principal déterministe.
+ * Règle anti-duplication : si plusieurs badges dont OPMD,
+ * on choisit un badge non-OPMD si possible.
+ */
+function getGroupTypeLabel(badgesAny) {
+  const badges = normalizeBadges(badgesAny);
+  if (badges.length === 0) return 'Atlas';
+
+  const nonOpmd = badges.filter((b) => String(b.label).trim().toLowerCase() !== 'opmd');
+  const pool = nonOpmd.length ? nonOpmd : badges;
+
+  pool.sort((a, b) => String(a.label).localeCompare(String(b.label), 'fr', { sensitivity: 'base' }));
+  return pool[0]?.label || 'Atlas';
+}
+
+function getFirstLetter(title) {
+  const t = String(title || '').trim();
+  if (!t) return '#';
+
+  const first = t[0]
+    .toUpperCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+
+  return /[A-Z]/.test(first) ? first : '#';
+}
+
+function compareBySlugAsc(aNode, bNode) {
   const a = normalizeNode(aNode);
   const b = normalizeNode(bNode);
 
   const sa = String(a?.slug ?? '');
   const sb = String(b?.slug ?? '');
 
-  const na = sa.match(/\d+/);
-  const nb = sb.match(/\d+/);
-  const ai = na ? parseInt(na[0], 10) : Number.POSITIVE_INFINITY;
-  const bi = nb ? parseInt(nb[0], 10) : Number.POSITIVE_INFINITY;
-
-  if (Number.isFinite(ai) && Number.isFinite(bi)) {
-    if (ai !== bi) return ai - bi;
-    return sa.localeCompare(sb, 'fr', { numeric: true, sensitivity: 'base' });
-  }
-  if (Number.isFinite(ai)) return -1;
-  if (Number.isFinite(bi)) return 1;
   return sa.localeCompare(sb, 'fr', { numeric: true, sensitivity: 'base' });
 }
 
@@ -249,40 +271,64 @@ function ViewToggle({ view, setView }) {
 }
 
 /* =========================
-   Tri (UI only)
+   Contrôles Atlas
    ========================= */
 
-function SortControls({ sortKey, setSortKey }) {
-  const options = [
-    { key: 'alpha', label: 'Alphabétique', enabled: true },
-    { key: 'nature', label: 'Type', enabled: false },
-    { key: 'site', label: 'Siège', enabled: false },
-    { key: 'potmal', label: 'Potentiel malin', enabled: false },
-    { key: 'lesion', label: 'Lésion élémentaire', enabled: false },
-  ];
-
+function AtlasControls({ atlasShow, setAtlasShow, atlasGroup, setAtlasGroup }) {
   return (
-    <div className="cc-sort" role="group" aria-label="Trier">
-      <span className="cc-sortlabel">Trier :</span>
+    <div className="cc-atlas-controls" role="group" aria-label="Contrôles Atlas">
+      <div className="cc-atlas-control" role="group" aria-label="Afficher">
+        <span className="cc-sortlabel">Afficher :</span>
 
-      {options.map((opt) => {
-        const isActive = sortKey === opt.key;
+        <button
+          type="button"
+          className={`cc-sortbtn ${atlasShow === 'all' ? 'active' : ''}`}
+          onClick={() => setAtlasShow('all')}
+          aria-pressed={atlasShow === 'all'}
+        >
+          Tous
+        </button>
 
-        return (
-          <button
-            key={opt.key}
-            type="button"
-            className={`cc-sortbtn ${isActive ? 'active' : ''}`}
-            onClick={opt.enabled ? () => setSortKey(opt.key) : undefined}
-            disabled={!opt.enabled}
-            aria-pressed={opt.enabled ? isActive : undefined}
-            title={opt.enabled ? 'Actif' : 'En construction'}
-          >
-            {opt.label}
-            
-          </button>
-        );
-      })}
+        <button
+          type="button"
+          className={`cc-sortbtn ${atlasShow === 'opmd' ? 'active' : ''}`}
+          onClick={() => setAtlasShow('opmd')}
+          aria-pressed={atlasShow === 'opmd'}
+        >
+          OPMD
+        </button>
+      </div>
+
+      <div className="cc-atlas-control" role="group" aria-label="Grouper par">
+        <span className="cc-sortlabel">Grouper par :</span>
+
+        <button
+          type="button"
+          className={`cc-sortbtn ${atlasGroup === 'none' ? 'active' : ''}`}
+          onClick={() => setAtlasGroup('none')}
+          aria-pressed={atlasGroup === 'none'}
+        >
+          Aucun
+        </button>
+
+        <button
+          type="button"
+          className={`cc-sortbtn ${atlasGroup === 'letter' ? 'active' : ''}`}
+          onClick={() => setAtlasGroup('letter')}
+          aria-pressed={atlasGroup === 'letter'}
+        >
+          Lettre
+        </button>
+
+        <button
+          type="button"
+          className={`cc-sortbtn ${atlasGroup === 'type' ? 'active' : ''}`}
+          onClick={() => setAtlasGroup('type')}
+          aria-pressed={atlasGroup === 'type'}
+        >
+          Type
+        </button>
+      </div>
     </div>
   );
 }
@@ -307,15 +353,17 @@ export default function CasCliniques() {
     localStorage.setItem('cc:view', view);
   }, [view]);
 
-  // tri (UI uniquement pour l’instant)
-  const [sortKey, setSortKey] = useState(() => {
-    const saved = localStorage.getItem('cc:sort');
-    return saved || 'alpha';
-  });
+  // Atlas: Afficher (Tous/OPMD) + Grouper
+  const [atlasShow, setAtlasShow] = useState(() => localStorage.getItem('atlas:show') || 'all'); // 'all' | 'opmd'
+  const [atlasGroup, setAtlasGroup] = useState(() => localStorage.getItem('atlas:group') || 'none'); // 'none' | 'letter' | 'type'
 
   useEffect(() => {
-    localStorage.setItem('cc:sort', sortKey);
-  }, [sortKey]);
+    localStorage.setItem('atlas:show', atlasShow);
+  }, [atlasShow]);
+
+  useEffect(() => {
+    localStorage.setItem('atlas:group', atlasGroup);
+  }, [atlasGroup]);
 
   const q = searchParams.get('q') || '';
   const page = Number(searchParams.get('page') || 1);
@@ -395,7 +443,8 @@ export default function CasCliniques() {
               },
               locale: 'all',
               filters: pathoFilters,
-              sort: 'slug:asc',
+              // Atlas doit être trié par title alphabétique
+              sort: 'title:asc,slug:asc',
               pagination: { page, pageSize: PAGE_SIZE },
               fields: ['title', 'slug', 'excerpt', 'updatedAt'],
               publicationState: 'live',
@@ -416,7 +465,7 @@ export default function CasCliniques() {
                 },
                 locale: 'all',
                 filters: {},
-                sort: 'slug:asc',
+                sort: 'title:asc,slug:asc',
                 pagination: { page: 1, pageSize: FALLBACK_PAGE_SIZE },
                 fields: ['title', 'slug', 'excerpt', 'updatedAt'],
                 publicationState: 'live',
@@ -442,7 +491,8 @@ export default function CasCliniques() {
               populate: { cover: { fields: ['url', 'formats'] } },
               locale: 'all',
               filters: caseFilters,
-              sort: tab === MIXED_KEY ? 'title:asc' : 'slug:asc',
+              // Tous => title, QR/Quiz => slug
+              sort: tab === MIXED_KEY ? 'title:asc,slug:asc' : 'slug:asc',
               pagination: { page, pageSize: PAGE_SIZE },
               fields: ['title', 'slug', 'type', 'excerpt', 'updatedAt'],
               publicationState: 'live',
@@ -460,7 +510,7 @@ export default function CasCliniques() {
                 populate: { cover: { fields: ['url', 'formats'] } },
                 locale: 'all',
                 filters: caseTypeFilterOnly,
-                sort: tab === MIXED_KEY ? 'title:asc' : 'slug:asc',
+                sort: tab === MIXED_KEY ? 'title:asc,slug:asc' : 'slug:asc',
                 pagination: { page: 1, pageSize: FALLBACK_PAGE_SIZE },
                 fields: ['title', 'slug', 'type', 'excerpt', 'updatedAt'],
                 publicationState: 'live',
@@ -496,19 +546,70 @@ export default function CasCliniques() {
 
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
+  // Tri UI (cohérent avec tes règles)
   const sortedItems = useMemo(() => {
     const arr = Array.isArray(items) ? [...items] : [];
 
-    // en mode "Tous" => tri alphabétique par titre
+    // ATLAS => title
+    if (isAtlasHub && tab === STRAPI_ATLAS_TYPE) {
+      arr.sort(compareByTitleAsc);
+      return arr;
+    }
+
+    // QR/QUIZ Tous => title
     if (isQrQuizHub && tab === MIXED_KEY) {
       arr.sort(compareByTitleAsc);
       return arr;
     }
 
-    // sinon => tri par numéro dans le slug
-    arr.sort(compareBySlugNumberAsc);
+    // QR ou Quiz => slug
+    if (isQrQuizHub && (tab === STRAPI_QA_TYPE || tab === STRAPI_QUIZ_TYPE)) {
+      arr.sort(compareBySlugAsc);
+      return arr;
+    }
+
+    // fallback
+    arr.sort(compareBySlugAsc);
     return arr;
-  }, [items, isQrQuizHub, tab]);
+  }, [items, isAtlasHub, isQrQuizHub, tab]);
+
+  // Filtre Atlas "Afficher: OPMD" (client-side)
+  const atlasVisibleItems = useMemo(() => {
+    if (!(isAtlasHub && tab === STRAPI_ATLAS_TYPE)) return sortedItems;
+
+    let arr = [...sortedItems];
+    if (atlasShow === 'opmd') {
+      arr = arr.filter((it) => hasBadgeLabel(it?.badges, 'OPMD'));
+    }
+    return arr;
+  }, [sortedItems, isAtlasHub, tab, atlasShow]);
+
+  // Sections Atlas (groupement)
+  const atlasSections = useMemo(() => {
+    if (!(isAtlasHub && tab === STRAPI_ATLAS_TYPE)) return null;
+
+    const list = atlasVisibleItems;
+
+    if (atlasGroup === 'none') {
+      return [{ key: 'all', label: null, items: list }];
+    }
+
+    const map = new Map();
+
+    for (const it of list) {
+      const label = atlasGroup === 'letter' ? getFirstLetter(it?.title) : getGroupTypeLabel(it?.badges);
+      if (!map.has(label)) map.set(label, []);
+      map.get(label).push(it);
+    }
+
+    const labels = Array.from(map.keys()).sort((a, b) => String(a).localeCompare(String(b), 'fr', { sensitivity: 'base' }));
+
+    return labels.map((label) => ({
+      key: String(label),
+      label,
+      items: map.get(label),
+    }));
+  }, [isAtlasHub, tab, atlasVisibleItems, atlasGroup]);
 
   const title = isAtlasHub ? 'Atlas' : isQrQuizHub ? 'Q/R & Quiz' : 'Atlas';
   const description = isAtlasHub
@@ -526,6 +627,123 @@ export default function CasCliniques() {
       nextTab === MIXED_KEY ? '/qr-quiz/tous' : nextTab === STRAPI_QA_TYPE ? '/qr-quiz/qr' : '/qr-quiz/quiz';
     navigate(`${base}${buildSearch({ q, page: 1 })}`);
   };
+
+  const renderItem = (attrs, idx) => {
+    if (!attrs) return null;
+
+    const entity = attrs.__entity || (isAtlasHub ? 'pathology' : 'case');
+
+    const titleText = attrs?.title || 'Sans titre';
+    const slug = attrs?.slug || '';
+    const excerpt = attrs?.excerpt || '';
+
+    const coverAttr = attrs?.cover?.data?.attributes || attrs?.cover || null;
+    const coverUrl = imgUrl(coverAttr, 'medium') || imgUrl(coverAttr, 'thumbnail') || imgUrl(coverAttr) || '';
+
+    let toHref = null;
+    if (slug) {
+      toHref = entity === 'pathology' ? `/atlas/${slug}` : `/qr-quiz/cas/${slug}`;
+    }
+
+    const isPathology = entity === 'pathology';
+    const itemType = isPathology ? STRAPI_ATLAS_TYPE : attrs?.type || STRAPI_QA_TYPE;
+
+    // ✅ Badges (pathologies: multi / cases: 1)
+    const pathoBadges = isPathology ? normalizeBadges(attrs?.badges) : [];
+    const badgesToRender = isPathology
+      ? (pathoBadges.length ? pathoBadges : [{ label: 'Atlas', variant: 'info' }])
+      : [{ label: typeLabel(itemType), variant: badgeVariant(itemType) }];
+
+    // ✅ On garde un "primary" pour le breadcrumb/prefetch (évite flash dans le détail)
+    const primaryBadge = isPathology ? pickPrimaryBadge(attrs?.badges) : null;
+
+    const Inner = (
+      <>
+        <div
+          className="cc-thumb"
+          style={{ backgroundImage: coverUrl ? `url(${coverUrl})` : undefined }}
+          aria-hidden="true"
+        >
+          {/* Badges sur l'image uniquement en mode cartes */}
+          {view !== 'list' && (
+            <div className="cc-thumb-badges">
+              {badgesToRender.map((b) => (
+                <span
+                  key={`${b.variant}:${b.label}`}
+                  className={`cc-thumb-badge badge badge-soft badge-${b.variant}`}
+                >
+                  {b.label}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="cc-body">
+          <h3 className="cc-title">
+            <span className="cc-title-text">{titleText}</span>
+          </h3>
+
+          {/* Badges sous le titre uniquement en mode liste */}
+          {view === 'list' && (
+            <div className="cc-title-badges">
+              {badgesToRender.map((b) => (
+                <span
+                  key={`${b.variant}:${b.label}`}
+                  className={`cc-title-badge badge badge-soft-outline badge-${b.variant}`}
+                >
+                  {b.label}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {view === 'list' ? (excerpt ? <p className="cc-excerpt">{excerpt}</p> : null) : <span className="sr-only">{excerpt}</span>}
+        </div>
+      </>
+    );
+
+    const key = `${entity}:${slug || idx}`;
+    const cardClass = `cc-card ui-card ${view === 'list' ? 'cc-card--list' : ''}`;
+
+    const linkState =
+      entity === 'pathology'
+        ? {
+            breadcrumb: {
+              mode: 'atlas',
+              pathology: {
+                slug,
+                title: titleText,
+                badge: primaryBadge, // {text, variant} (compat)
+                badges: badgesToRender, // bonus si tu veux l'utiliser plus tard
+              },
+              case: null,
+            },
+            prefetch: {
+              slug,
+              title: titleText,
+              type: 'presentation',
+              badges: attrs?.badges ?? null, // données brutes Strapi
+            },
+          }
+        : {
+            breadcrumb: { mode: 'qr-quiz', case: { slug, title: titleText } },
+            prefetch: { slug, title: titleText, type: attrs?.type || null },
+          };
+
+    return toHref ? (
+      <Link key={key} to={toHref} className={cardClass} state={linkState}>
+        {Inner}
+      </Link>
+    ) : (
+      <div key={key} className={`${cardClass} cc-card--disabled`} title="Slug manquant">
+        {Inner}
+      </div>
+    );
+  };
+
+  const isAtlasList = isAtlasHub && tab === STRAPI_ATLAS_TYPE;
+  const listForEmptyCheck = isAtlasList ? atlasVisibleItems : sortedItems;
 
   return (
     <>
@@ -579,7 +797,12 @@ export default function CasCliniques() {
         {!showTypePicker && !showChips && (
           <section className="cc-toolbar cc-toolbar--views">
             {isAtlasHub && tab === STRAPI_ATLAS_TYPE ? (
-              <SortControls sortKey={sortKey} setSortKey={setSortKey} />
+              <AtlasControls
+                atlasShow={atlasShow}
+                setAtlasShow={setAtlasShow}
+                atlasGroup={atlasGroup}
+                setAtlasGroup={setAtlasGroup}
+              />
             ) : (
               <span />
             )}
@@ -590,119 +813,54 @@ export default function CasCliniques() {
 
         {!showTypePicker && (
           <>
-            <section className={`cc-grid ${view === 'list' ? 'cc-grid--list' : ''}`} aria-label="Ressources">
-              {loading && <div className="cc-state">Chargement…</div>}
-              {error && !loading && <div className="cc-state error">{error}</div>}
-              {!loading && !error && sortedItems.length === 0 && <div className="cc-state">Aucun résultat.</div>}
+            {/* États globaux */}
+            {loading && <div className="cc-state">Chargement…</div>}
+            {error && !loading && <div className="cc-state error">{error}</div>}
+            {!loading && !error && listForEmptyCheck.length === 0 && <div className="cc-state">Aucun résultat.</div>}
 
-              {!loading &&
-                !error &&
-                sortedItems.length > 0 &&
-                sortedItems.map((attrs, idx) => {
-                  if (!attrs) return null;
-
-                  const entity = attrs.__entity || (isAtlasHub ? 'pathology' : 'case');
-
-                  const titleText = attrs?.title || 'Sans titre';
-                  const slug = attrs?.slug || '';
-                  const excerpt = attrs?.excerpt || '';
-
-                  const coverAttr = attrs?.cover?.data?.attributes || attrs?.cover || null;
-                  const coverUrl =
-                    imgUrl(coverAttr, 'medium') || imgUrl(coverAttr, 'thumbnail') || imgUrl(coverAttr) || '';
-
-                  let toHref = null;
-
-                  if (slug) {
-                    if (entity === 'pathology') {
-                      toHref = `/atlas/${slug}`;
-                    } else {
-                      toHref = `/qr-quiz/cas/${slug}`;
-                    }
-                  }
-
-                  const isPathology = entity === 'pathology';
-
-                  // ✅ Badge déterministe calculé ici
-                  const primaryBadge = isPathology ? pickPrimaryBadge(attrs?.badges) : null;
-
-                  const itemType = isPathology ? STRAPI_ATLAS_TYPE : attrs?.type || STRAPI_QA_TYPE;
-
-                  const badgeText = isPathology ? primaryBadge.text : typeLabel(itemType);
-                  const badgeVar = isPathology ? primaryBadge.variant : badgeVariant(itemType);
-
-                  const Inner = (
-                    <>
-                      <div
-                        className="cc-thumb"
-                        style={{ backgroundImage: coverUrl ? `url(${coverUrl})` : undefined }}
-                        aria-hidden="true"
-                      >
-                        <span className={`cc-thumb-badge badge badge-soft badge-${badgeVar}`}>{badgeText}</span>
-                      </div>
-
-                      <div className="cc-body">
-                        <h3 className="cc-title">{titleText}</h3>
-
-                        {view === 'list' ? (excerpt ? <p className="cc-excerpt">{excerpt}</p> : null) : (
-                          <span className="sr-only">{excerpt}</span>
+            {/* Rendu */}
+            {!loading && !error && listForEmptyCheck.length > 0 && (
+              <>
+                {isAtlasList && atlasSections && atlasGroup !== 'none' ? (
+                  <div className="cc-groups" aria-label="Ressources">
+                    {atlasSections.map((section) => (
+                      <div key={section.key} className="cc-group">
+                        {section.label && (
+                          <div className="cc-group-header" aria-hidden="true">
+                            <span className="cc-group-title">{section.label}</span>
+                            <div className="cc-group-rule" />
+                          </div>
                         )}
+
+                        <section
+                          className={`cc-grid ${view === 'list' ? 'cc-grid--list' : ''}`}
+                          aria-label={section.label ? `Groupe ${section.label}` : 'Ressources'}
+                        >
+                          {section.items.map(renderItem)}
+                        </section>
                       </div>
-                    </>
-                  );
+                    ))}
+                  </div>
+                ) : (
+                  <section className={`cc-grid ${view === 'list' ? 'cc-grid--list' : ''}`} aria-label="Ressources">
+                    {(isAtlasList ? atlasVisibleItems : sortedItems).map(renderItem)}
+                  </section>
+                )}
 
-                  const key = `${entity}:${slug || idx}`;
-                  const cardClass = `cc-card ui-card ${view === 'list' ? 'cc-card--list' : ''}`;
-
-                  // ✅ IMPORTANT: on pousse breadcrumb + prefetch avec badge (évite le flash "Atlas" dans CaseDetail)
-                  const linkState =
-                    entity === 'pathology'
-                      ? {
-                          breadcrumb: {
-                            mode: 'atlas',
-                            pathology: {
-                              slug,
-                              title: titleText,
-                              badge: primaryBadge, // {text, variant}
-                            },
-                            case: null,
-                          },
-                          prefetch: {
-                            slug,
-                            title: titleText,
-                            type: 'presentation',
-                            badges: attrs?.badges ?? null,
-                          },
-                        }
-                      : {
-                          breadcrumb: { mode: 'qr-quiz', case: { slug, title: titleText } },
-                          prefetch: { slug, title: titleText, type: attrs?.type || null },
-                        };
-
-                  return toHref ? (
-                    <Link key={key} to={toHref} className={cardClass} state={linkState}>
-                      {Inner}
-                    </Link>
-                  ) : (
-                    <div key={key} className={`${cardClass} cc-card--disabled`} title="Slug manquant">
-                      {Inner}
-                    </div>
-                  );
-                })}
-            </section>
-
-            {pages > 1 && (
-              <nav className="cc-pagination" aria-label="Pagination">
-                <button disabled={page <= 1} onClick={() => goPage(page - 1)} type="button">
-                  Précédent
-                </button>
-                <span>
-                  Page {page} / {pages}
-                </span>
-                <button disabled={page >= pages} onClick={() => goPage(page + 1)} type="button">
-                  Suivant
-                </button>
-              </nav>
+                {pages > 1 && (
+                  <nav className="cc-pagination" aria-label="Pagination">
+                    <button disabled={page <= 1} onClick={() => goPage(page - 1)} type="button">
+                      Précédent
+                    </button>
+                    <span>
+                      Page {page} / {pages}
+                    </span>
+                    <button disabled={page >= pages} onClick={() => goPage(page + 1)} type="button">
+                      Suivant
+                    </button>
+                  </nav>
+                )}
+              </>
             )}
           </>
         )}

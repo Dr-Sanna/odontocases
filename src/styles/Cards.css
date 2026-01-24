@@ -77,7 +77,7 @@
 /* =========================================================
    CAS CLINIQUES : CARTES (mode cartes)
    - cover en haut
-   - badge en absolu sur la cover
+   - badges sur la cover (multi)
    - body en dessous
    ========================================================= */
 
@@ -112,8 +112,8 @@
   height: 160px;
 
   background: #f5f5f7;
-  background-size: cover;
-  background-position: center;
+  background-size: cover;            /* ✅ RESTAURÉ */
+  background-position: center;       /* ✅ RESTAURÉ */
   background-repeat: no-repeat;
 
   /* radius sur les 4 coins */
@@ -121,12 +121,30 @@
   overflow: hidden;
 }
 
-/* Badge sur l’image (bas gauche) */
+/* (compat) Badge unique sur l’image (bas gauche) */
 .cc-thumb .cc-thumb-badge {
   position: absolute;
   left: 10px;
   bottom: 10px;
   z-index: 2;
+}
+
+/* ✅ Multi badges sur l’image (mode cartes) */
+.cc-thumb-badges {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  z-index: 2;
+
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-width: calc(100% - 20px);
+}
+
+/* ✅ Dans le conteneur multi, les badges ne doivent PAS être absolute */
+.cc-thumb-badges .cc-thumb-badge {
+  position: static;
 }
 
 /* Contenu */
@@ -169,6 +187,12 @@
     left: 8px;
     bottom: 8px;
   }
+
+  .cc-thumb-badges {
+    left: 8px;
+    bottom: 8px;
+    max-width: calc(100% - 16px);
+  }
 }
 
 /* Mobile/pointer coarse : pas d'effet hover */
@@ -187,7 +211,7 @@
 
 .cc-grid.cc-grid--list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
   gap: 12px;
 
   margin-top: 8px;
@@ -197,7 +221,7 @@
 
 @media (max-width: 980px) {
   .cc-grid.cc-grid--list {
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     gap: 10px;
   }
 }
@@ -211,55 +235,78 @@
 /* Carte horizontale */
 .cc-card.ui-card.cc-card--list {
   display: grid;
-  grid-template-rows: none; /* annule le modèle cover en haut */
+  grid-template-rows: none;
   grid-template-columns: 120px minmax(0, 1fr);
   align-items: stretch;
   height: auto;
 }
 
-/* Thumb compact (la carte clippe déjà via .ui-card overflow:hidden) */
+/* Thumb : remplit toute la hauteur de la carte */
 .cc-card--list .cc-thumb {
   width: 120px;
-  height: 92px;
+  height: 100%;        /* ✅ RESTAURÉ (évite l’effet “zoom” dû à une hauteur fixe trop petite) */
+  min-height: 92px;
 
-  border-radius: 0; /* évite un double arrondi interne */
+  border-radius: 0;
   overflow: hidden;
-}
 
-/* Badge bas gauche + anti-étalement si 2 lignes */
-.cc-card--list .cc-thumb .cc-thumb-badge {
-  left: 10px;
-  bottom: 10px;
-
-  /* évite le badge qui prend toute la largeur si retour à la ligne */
-  display: inline-flex;
-  width: fit-content;
-  max-width: calc(100% - 20px);
-
-  white-space: normal;
-  text-align: center;
-  overflow-wrap: anywhere;
-
-  align-items: center;
-  justify-content: center;
-
-  line-height: 1.1;
+  background-size: cover;      /* ✅ RESTAURÉ */
+  background-position: center; /* ✅ RESTAURÉ */
 }
 
 /* Body compact + extrait visible (si rendu en JSX) */
 .cc-card--list .cc-body {
-  padding: 12px 14px;
+  padding: 0px !important;
+  padding-left: 12px !important;
+  padding-right: 12px !important;
+
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 6px;
+  gap: 0px;
 }
 
-/* Titre en liste : pas de réserve 2 lignes imposée */
+/* Boîte du titre : hauteur 2 lignes + centrage vertical */
 .cc-card--list .cc-title {
+  margin: 0;
+  min-height: calc(2 * 1.25em);
+  display: flex;
+  align-items: center;
+}
+
+/* Texte : clamp 2 lignes */
+.cc-card--list .cc-title-text {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+
   font-size: 1.02rem;
   line-height: 1.25;
-  min-height: 0;
+}
+
+/* Conteneur badges sous le titre : côte à côte */
+.cc-card--list .cc-title-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+
+  align-self: flex-start;
+  margin-top: 4px;
+}
+
+/* Badge individuel sous le titre (mode liste) */
+.cc-card--list .cc-title-badge {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+
+  align-self: flex-start;
+  margin-top: 0;
+
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.1;
 }
 
 /* Excerpt (si rendu en JSX) */
@@ -285,22 +332,22 @@
 
   .cc-card--list .cc-thumb {
     width: 110px;
-    height: 84px;
+    height: 100%;
+    min-height: 84px;
   }
 
   .cc-card--list .cc-body {
-    padding: 10px 12px;
+    padding: 10px 12px !important;
   }
 
-  .cc-card--list .cc-thumb .cc-thumb-badge {
-    left: 8px;
-    bottom: 8px;
-    max-width: calc(100% - 16px);
+  .cc-card--list .cc-title {
+    min-height: calc(2 * 1.25em);
   }
 }
 
 /* =========================================================
    DOCUMENTATION : GRILLE
+   (séparée de CC, ne touche pas aux thumbs CC)
    ========================================================= */
 
 .doc-grid {

@@ -13,7 +13,7 @@ const RESOURCES = [
     name: 'SFCO',
     url: 'https://societechirorale.com/',
     desc: 'Société savante en chirurgie orale : ressources professionnelles, fiches et contenus.',
-    tags: ['Cas cliniques', 'Documentation / fiches'],
+    tags: ['Cas cliniques', 'Documentation / fiches', 'Quiz'],
   },
   {
     name: 'Le CRAT',
@@ -50,6 +50,12 @@ const RESOURCES = [
     url: 'https://dermatologiebuccale-nice.fr/',
     desc: 'Aide au diagnostic en dermatologie buccale : démarche clinique, fiches lésionnelles et cas cliniques.',
     tags: ['Dermatologie buccale', 'Cas cliniques', 'Documentation / fiches'],
+  },
+  {
+    name: 'Manuels MSD — Questionnaires',
+    url: 'https://www.msdmanuals.com/fr/professional/pages-with-widgets/questionnaires?mode=list',
+    desc: 'Questionnaires (quiz) généraux en médecine : entraînement et auto-évaluation.',
+    tags: ['Quiz', 'Médecine'],
   },
 ];
 
@@ -129,12 +135,14 @@ export default function LiensUtiles() {
               <p className="lu-desc">{r.desc}</p>
 
               <div className="lu-tags" aria-label="Mots-clés">
-                {(r.tags || []).map((t) => (
-                  <span key={t} className="lu-tag">
-                    {t}
-                  </span>
-                ))}
-              </div>
+  {[...(r.tags || [])]
+    .sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' }))
+    .map((t) => (
+      <span key={t} className="lu-tag">
+        {t}
+      </span>
+    ))}
+</div>
 
               <div className="lu-url" aria-hidden="true">
                 {new URL(r.url).hostname.replace(/^www\./, '')}
