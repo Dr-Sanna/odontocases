@@ -28,7 +28,7 @@ const STRAPI_QUIZ_TYPE = 'quiz';
 // "Tous" = mix Q/R + Quiz (pas un type Strapi)
 const MIXED_KEY = 'mixed';
 
-const PAGE_SIZE = 24;
+const PAGE_SIZE = 28;
 const FALLBACK_PAGE_SIZE = 300;
 
 const CASES_ENDPOINT = import.meta.env.VITE_CASES_ENDPOINT || '/cases';
