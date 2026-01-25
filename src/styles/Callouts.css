@@ -94,9 +94,9 @@
 }
 
 .cd-callout-note {
-  --ifm-alert-foreground-color: var(--ifm-color-note-contrast-foreground);
-  --cd-callout-border: var(--ifm-color-note-dark);
-  --cd-callout-bg: var(--ifm-color-note-contrast-background);
+  --ifm-alert-foreground-color: var(--ifm-color-secondary-contrast-foreground);
+  --cd-callout-border: var(--ifm-color-secondary-dark);
+  --cd-callout-bg: var(--ifm-color-secondary-contrast-background);
 }
 
 /* =========================
