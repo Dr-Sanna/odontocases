@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react';
 
+import './QuizBlock.css';
+
 function hashToUint32(str) {
   let h = 2166136261;
   for (let i = 0; i < str.length; i++) {
@@ -53,50 +55,45 @@ export default function QuizBlock({
     return shuffle ? stableShuffle(base, String(seedKey || `${index}`)) : base;
   }, [rawProps, shuffle, seedKey, index]);
 
-  const [selected, setSelected] = useState(() => new Set());
+  const [selectedId, setSelectedId] = useState(null);
   const [checkedOnce, setCheckedOnce] = useState(false);
   const [result, setResult] = useState(null);
 
-  const toggleId = (id) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+  const correctProposition = useMemo(() => {
+    return propositions.find((p) => p.isCorrect) || null;
+  }, [propositions]);
+
+  const selectedProposition = useMemo(() => {
+    return propositions.find((p) => p._id === selectedId) || null;
+  }, [propositions, selectedId]);
+
+  const onSelect = (id) => {
+    if (checkedOnce) return;
+    setSelectedId(id);
   };
 
   const onVerify = () => {
-    const correctIds = new Set(propositions.filter((p) => p.isCorrect).map((p) => p._id));
-    const selectedIds = new Set(selected);
+    if (!selectedId) return;
 
-    let missing = 0;
-    for (const cid of correctIds) if (!selectedIds.has(cid)) missing++;
-
-    let extra = 0;
-    for (const sid of selectedIds) if (!correctIds.has(sid)) extra++;
-
-    const ok = missing === 0 && extra === 0;
+    const ok = Boolean(selectedProposition?.isCorrect);
     setCheckedOnce(true);
-    setResult({ ok, missing, extra });
+    setResult({ ok });
   };
 
   const onReset = () => {
-    setSelected(new Set());
+    setSelectedId(null);
     setCheckedOnce(false);
     setResult(null);
   };
 
-  const msg =
+  const answerTitle =
     result == null
       ? ''
       : result.ok
-      ? 'Correct.'
-      : result.missing > 0 && result.extra > 0
-      ? `Partiel : ${result.missing} manquante(s), ${result.extra} en trop.`
-      : result.missing > 0
-      ? `Partiel : ${result.missing} manquante(s).`
-      : `Partiel : ${result.extra} en trop.`;
+        ? 'Bonne réponse'
+        : correctProposition?.label
+          ? `Mauvaise réponse, la bonne réponse était : ${correctProposition.label}`
+          : 'Mauvaise réponse';
 
   const showNumber = total > 1;
 
@@ -107,9 +104,9 @@ export default function QuizBlock({
         <span className="quiz-text">{question}</span>
       </div>
 
-      <div className="quiz-options">
+      <div className="quiz-options" role="radiogroup" aria-label={question}>
         {propositions.map((p, i) => {
-          const isSelected = selected.has(p._id);
+          const isSelected = selectedId === p._id;
           const showState = checkedOnce && result != null;
 
           const optionClass = [
@@ -127,44 +124,40 @@ export default function QuizBlock({
             <div
               key={p._id}
               className={optionClass}
-              role="checkbox"
+              role="radio"
               aria-checked={isSelected}
-              tabIndex={0}
-              onClick={() => {
-                if (checkedOnce) return;
-                toggleId(p._id);
-              }}
+              tabIndex={checkedOnce ? -1 : 0}
+              onClick={() => onSelect(p._id)}
               onKeyDown={(e) => {
                 if (checkedOnce) return;
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();
-                  toggleId(p._id);
+                  onSelect(p._id);
                 }
               }}
             >
-              {/* Ligne checkbox + texte */}
               <div className="quiz-row">
                 <input
                   id={inputId}
                   className="quiz-check"
-                  type="checkbox"
+                  type="radio"
+                  name={`quiz-${index}-${seedKey || 'default'}`}
                   checked={isSelected}
                   disabled={checkedOnce}
-                  onClick={(e) => e.stopPropagation()} // évite double toggle
-                  onChange={() => toggleId(p._id)}
+                  onClick={(e) => e.stopPropagation()}
+                  onChange={() => onSelect(p._id)}
                 />
 
                 <label
                   className="quiz-label-text"
                   htmlFor={inputId}
-                  onClick={(e) => e.stopPropagation()} // le label clique déjà via htmlFor
+                  onClick={(e) => e.stopPropagation()}
                 >
                   {p.label}
                 </label>
               </div>
 
-              {/* Feedback */}
-              {showState && p.feedback && (
+              {showState && isSelected && p.feedback && (
                 <div className="quiz-feedback" onClick={(e) => e.stopPropagation()}>
                   <Markdown>{p.feedback}</Markdown>
                 </div>
@@ -180,7 +173,7 @@ export default function QuizBlock({
             type="button"
             className="quiz-verify"
             onClick={onVerify}
-            disabled={propositions.length === 0}
+            disabled={propositions.length === 0 || !selectedId}
           >
             Vérifier
           </button>
@@ -189,17 +182,19 @@ export default function QuizBlock({
             Réinitialiser
           </button>
         )}
-
-        {result != null && (
-          <div className={['quiz-result', result.ok ? 'is-ok' : 'is-ko'].join(' ')}>
-            {msg}
-          </div>
-        )}
       </div>
 
-      {checkedOnce && explanation && (
-        <div className="quiz-explanation">
-          <Markdown>{explanation}</Markdown>
+      {checkedOnce && (
+        <div className="quiz-answer">
+          <h4 className={['quiz-answer-title', result?.ok ? 'is-ok' : 'is-ko'].join(' ')}>
+            {answerTitle}
+          </h4>
+
+          {explanation && (
+            <div className="quiz-explanation">
+              <Markdown>{explanation}</Markdown>
+            </div>
+          )}
         </div>
       )}
     </article>

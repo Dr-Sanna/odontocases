@@ -1,0 +1,144 @@
+/* =========================
+   Quiz blocks
+   ========================= */
+
+.quiz-section {
+  margin-top: calc(-1 * var(--ifm-paragraph-margin-bottom));
+}
+
+.quiz-item {
+  margin: 1rem 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+}
+
+.quiz-question {
+  display: flex;
+  gap: 0.6rem;
+  font-weight: 650;
+  margin-bottom: 0.8rem;
+}
+
+.quiz-num {
+  flex: 0 0 auto;
+}
+
+.quiz-text {
+  flex: 1;
+}
+
+.quiz-options {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.quiz-option {
+  padding: 0.55rem 0.65rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(0, 0, 0, 0.10);
+  transition: background-color 140ms ease, border-color 140ms ease;
+  cursor: pointer;
+}
+
+[data-theme="dark"] .quiz-option {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.quiz-option:hover {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+[data-theme="dark"] .quiz-option:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.quiz-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+}
+
+.quiz-label-text {
+  flex: 1;
+  cursor: pointer;
+  line-height: 1.35;
+}
+
+.quiz-check {
+  margin-top: 0.22rem;
+  cursor: pointer;
+}
+
+.quiz-check:disabled {
+  cursor: not-allowed;
+}
+
+.quiz-option.is-selected {
+  border-color: rgba(0, 0, 0, 0.25);
+  background: rgba(0, 0, 0, 0.03);
+}
+
+[data-theme="dark"] .quiz-option.is-selected {
+  border-color: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.quiz-feedback {
+  margin-top: 0.5rem;
+  padding-left: 1.55rem;
+  opacity: 0.95;
+}
+
+.quiz-actions {
+  margin-top: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.quiz-verify,
+.quiz-reset {
+  padding: 0.45rem 0.7rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  background: transparent;
+  cursor: pointer;
+}
+
+[data-theme="dark"] .quiz-verify,
+[data-theme="dark"] .quiz-reset {
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.quiz-verify:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.quiz-answer {
+  margin-top: 0.9rem;
+}
+
+.quiz-answer-title {
+  margin: 0 0 0.55rem;
+  font-size: 1rem;
+  line-height: 1.35;
+}
+
+.quiz-explanation {
+  margin-top: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.quiz-option.is-correct {
+  border-color: var(--ifm-color-primary) !important;
+}
+
+.quiz-option.is-wrong {
+  border-color: var(--ifm-color-danger) !important;
+}
