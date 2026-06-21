@@ -512,3 +512,19 @@ figcaption {
     margin: 0 !important;
   }
 }
+
+.cd-figure:has(> table.cd-imgtable + figcaption) > table.cd-imgtable {
+  margin-bottom: 0 !important;
+}
+
+.cd-figure > table.cd-imgtable + figcaption.cd-figcaption {
+  border: 1px solid rgba(0, 0, 0, 0.12) ; /* ou une couleur fixe */
+  border-top: none;
+  padding: 0.5rem 0.75rem;
+  margin-top: 0 !important;
+  display: block;
+}
+
+[data-theme="dark"] .cd-figure > table.cd-imgtable + figcaption.cd-figcaption {
+    border-color: rgba(255, 255, 255, 0.14);
+}

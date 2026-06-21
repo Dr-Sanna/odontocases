@@ -425,8 +425,12 @@
    ========================= */
 .cd-main {
   min-width: 0;
-  padding: 1rem;
-  padding-bottom: 2rem;
+  padding-block: 1rem 2rem;
+  padding-inline: clamp(3rem, 10vw, 7rem);
+}
+
+.cd-shell.is-collapsed .cd-main {
+  padding-inline: clamp(5rem, 15vw, 10rem);
 }
 
 .cd-page-header {
@@ -435,7 +439,7 @@
 
 .casedetail {
   display: grid;
-  padding-right: clamp(200px, 6vw, 200px);
+  padding-right: 0;
 }
 
 /* =========================
@@ -588,7 +592,12 @@
     background: rgba(0, 0, 0, 0.35);
   }
 
-  .casedetail { padding-right: 0px; }
+  .cd-main {
+    padding-block: 1rem 2rem;
+    padding-inline: clamp(0.875rem, 4vw, 1.25rem);
+  }
+
+  .casedetail { padding-right: 0; }
   .cd-side-toggle { display: none; }
 }
 
