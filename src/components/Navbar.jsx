@@ -7,14 +7,9 @@ import { useMobileDrawer } from '../ui/MobileDrawerContext';
 import { useCaseDetailSidebar } from '../ui/CaseDetailSidebarContext';
 
 const THEME_KEY = 'theme';
-const BLUR_KEY = 'blur_images';
+const THEME_MODE_KEY = 'theme_mode';
 
-function getInitialTheme() {
-  try {
-    const saved = localStorage.getItem(THEME_KEY);
-    if (saved === 'dark' || saved === 'light') return saved;
-  } catch {}
-
+function getSystemTheme() {
   const prefersDark =
     typeof window !== 'undefined' &&
     window.matchMedia &&
@@ -23,16 +18,26 @@ function getInitialTheme() {
   return prefersDark ? 'dark' : 'light';
 }
 
-function getInitialBlur() {
+function getInitialThemeMode() {
   try {
-    return localStorage.getItem(BLUR_KEY) === '1';
-  } catch {
-    return false;
-  }
+    const savedMode = localStorage.getItem(THEME_MODE_KEY);
+    if (savedMode === 'auto' || savedMode === 'dark' || savedMode === 'light') return savedMode;
+
+    // Compat avec l'ancien fonctionnement qui ne stockait que "dark" ou "light" dans "theme".
+    const legacyTheme = localStorage.getItem(THEME_KEY);
+    if (legacyTheme === 'dark' || legacyTheme === 'light') return legacyTheme;
+  } catch {}
+
+  return 'auto';
 }
 
 function useIsNarrow(maxWidthPx = 980) {
-  const get = () => window.matchMedia?.(`(max-width: ${maxWidthPx}px)`)?.matches ?? false;
+  const get = () =>
+    typeof window !== 'undefined' &&
+    window.matchMedia?.(`(max-width: ${maxWidthPx}px)`)?.matches
+      ? true
+      : false;
+
   const [isNarrow, setIsNarrow] = useState(get);
 
   useEffect(() => {
@@ -71,27 +76,50 @@ export default function Navbar() {
 
   const isCaseDetail = useMemo(() => isDetailRoute(location.pathname), [location.pathname]);
 
-  const [theme, setTheme] = useState(getInitialTheme);
-  const [blurImages, setBlurImages] = useState(getInitialBlur);
+  const [themeMode, setThemeMode] = useState(getInitialThemeMode);
+  const [systemTheme, setSystemTheme] = useState(getSystemTheme);
+
+  const activeTheme = themeMode === 'auto' ? systemTheme : themeMode;
 
   const { navOpen, setNavOpen, toggleNav, closeNav } = useMobileDrawer();
   const { mobileOpen, setMobileOpen } = useCaseDetailSidebar();
 
-  // Thème
+  // Thème système : utilisé quand le mode automatique est actif.
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    try {
-      localStorage.setItem(THEME_KEY, theme);
-    } catch {}
-  }, [theme]);
+    const mq = window.matchMedia?.('(prefers-color-scheme: dark)');
+    if (!mq) return;
 
-  // Blur (classe sur <html>)
+    const onChange = () => setSystemTheme(mq.matches ? 'dark' : 'light');
+    onChange();
+
+    if (mq.addEventListener) mq.addEventListener('change', onChange);
+    else mq.addListener(onChange);
+
+    return () => {
+      if (mq.removeEventListener) mq.removeEventListener('change', onChange);
+      else mq.removeListener(onChange);
+    };
+  }, []);
+
+  // Thème appliqué sur <html>.
   useEffect(() => {
-    document.documentElement.classList.toggle('blur-images', blurImages);
+    document.documentElement.setAttribute('data-theme', activeTheme);
+    document.documentElement.setAttribute('data-theme-mode', themeMode);
+
     try {
-      localStorage.setItem(BLUR_KEY, blurImages ? '1' : '0');
+      localStorage.setItem(THEME_KEY, activeTheme);
+      localStorage.setItem(THEME_MODE_KEY, themeMode);
     } catch {}
-  }, [blurImages]);
+  }, [activeTheme, themeMode]);
+
+  // Nettoyage de l'ancienne option de flou des images.
+  useEffect(() => {
+    document.documentElement.classList.remove('blur-images');
+
+    try {
+      localStorage.removeItem('blur_images');
+    } catch {}
+  }, []);
 
   // Lock scroll uniquement pour le drawer "nav"
   useEffect(() => {
@@ -123,7 +151,34 @@ export default function Navbar() {
     if (mobileOpen) setNavOpen(false);
   }, [navOpen, mobileOpen, isNarrow, setNavOpen, setMobileOpen]);
 
-  const toggleTheme = () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
+  const themeButton = useMemo(() => {
+    if (themeMode === 'auto') {
+      return {
+        icon: '🌓',
+        label: `Thème automatique (${activeTheme === 'dark' ? 'sombre' : 'clair'})`,
+      };
+    }
+
+    if (themeMode === 'dark') {
+      return {
+        icon: '🌕',
+        label: 'Thème sombre',
+      };
+    }
+
+    return {
+      icon: '☀️',
+      label: 'Thème clair',
+    };
+  }, [activeTheme, themeMode]);
+
+  const toggleTheme = () => {
+    setThemeMode((mode) => {
+      if (mode === 'auto') return 'light';
+      if (mode === 'light') return 'dark';
+      return 'auto';
+    });
+  };
 
   const onMenuClick = () => {
     if (!isNarrow) return;
@@ -172,16 +227,6 @@ export default function Navbar() {
         </div>
 
         <div className="navbar-right">
-          <label className="blur-toggle" title="Flouter les images">
-            <input
-              type="checkbox"
-              checked={blurImages}
-              onChange={(e) => setBlurImages(e.target.checked)}
-              aria-label="Flouter les images"
-            />
-            <span className="blur-toggle-label">Blur</span>
-          </label>
-
           <a
             className="github-link"
             href="https://github.com/Dr-Sanna"
@@ -201,12 +246,11 @@ export default function Navbar() {
           <button
             onClick={toggleTheme}
             className="theme-toggle"
-            title="Changer le thème"
-            aria-label="Changer le thème"
-            aria-pressed={theme === 'dark'}
+            title={`${themeButton.label} — cliquer pour changer`}
+            aria-label={`${themeButton.label}. Cliquer pour changer le thème.`}
             type="button"
           >
-            {theme === 'dark' ? '🌕' : '☀️'}
+            {themeButton.icon}
           </button>
         </div>
       </nav>
