@@ -886,7 +886,7 @@ function TypePicker() {
 
         <Link className="cc-typecard ui-card" to="/qr-quiz/quiz" draggable="false">
           <span className="cc-type">Quiz diagnostic</span>
-          <span className="cc-typedesc">60 cas issus du SFCO</span>
+          <span className="cc-typedesc">68 cas issus du SFCO</span>
         </Link>
       </div>
     </section>

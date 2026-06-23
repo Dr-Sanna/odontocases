@@ -6,7 +6,7 @@ export default function Randomisation() {
 
       <div className="page-header">
         <div className="container">
-          <PageTitle description="Tirer des cas aléatoires parmis la bibliothèque de cas cliniques.">
+          <PageTitle description="Tirer des cas aléatoires parmi la bibliothèque de cas cliniques.">
             Randomisation
           </PageTitle>
         </div>
