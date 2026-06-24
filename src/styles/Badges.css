@@ -10,6 +10,21 @@
   /* danger (par défaut) */
   --badge-danger-soft-border-strength: var(--badge-soft-border-strength);
   --badge-danger-outline-border-strength: 45%;
+
+  /* Notion : fallback local pour éviter les variables non définies */
+  --badge-notion-fallback-marker: 1;
+  --ifm-color-notion: #7c3aed;
+  --ifm-color-notion-dark: #6d28d9;
+  --ifm-color-notion-darker: #5b21b6;
+  --ifm-color-notion-darkest: #4c1d95;
+  --ifm-color-notion-light: #8b5cf6;
+  --ifm-color-notion-lighter: #a78bfa;
+  --ifm-color-notion-lightest: #c4b5fd;
+}
+
+[data-theme='light'] {
+  --ifm-color-notion-contrast-background: #f3efff;
+  --ifm-color-notion-contrast-foreground: #2e1065;
 }
 
 [data-theme='dark'] {
@@ -18,6 +33,9 @@
 
   --badge-danger-soft-border-strength: 45%;
   --badge-danger-outline-border-strength: 35%;
+
+  --ifm-color-notion-contrast-background: #2e1065;
+  --ifm-color-notion-contrast-foreground: #ede9fe;
 }
 
 /* ✅ Danger: bordures moins agressives en LIGHT */
@@ -198,6 +216,20 @@
 
   --badge-outline-border: var(--ifm-color-warning);
   --badge-outline-fg: var(--ifm-color-warning);
+}
+
+/* Notion */
+.badge-notion {
+  --ifm-badge-background-color: var(--ifm-color-notion, #7c3aed);
+  --ifm-badge-border-color: var(--ifm-badge-background-color);
+  --ifm-badge-color: var(--ifm-color-white, #ffffff);
+
+  --badge-soft-bg: var(--ifm-color-notion-contrast-background, #f3efff);
+  --badge-soft-fg: var(--ifm-color-notion-contrast-foreground, #2e1065);
+  --badge-soft-border: var(--ifm-color-notion-dark, #6d28d9);
+
+  --badge-outline-border: var(--ifm-color-notion, #7c3aed);
+  --badge-outline-fg: var(--ifm-color-notion, #7c3aed);
 }
 
 /* =========================

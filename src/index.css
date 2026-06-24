@@ -116,6 +116,15 @@
   --ifm-color-danger-lighter: #fb7478;
   --ifm-color-danger-lightest: #fd9c9f;
 
+  /* Notion */
+  --ifm-color-notion: #7c3aed;
+  --ifm-color-notion-dark: #6d28d9;
+  --ifm-color-notion-darker: #5b21b6;
+  --ifm-color-notion-darkest: #4c1d95;
+  --ifm-color-notion-light: #8b5cf6;
+  --ifm-color-notion-lighter: #a78bfa;
+  --ifm-color-notion-lightest: #c4b5fd;
+
   /* Details */
   --docusaurus-details-summary-arrow-size: 0.38rem;
   --docusaurus-details-transition: transform 0.2s ease;
@@ -206,6 +215,10 @@
     --ifm-color-danger-contrast-background: #ffebec;
     --ifm-color-danger-contrast-foreground: #4b1113;
 
+    /* Notion */
+    --ifm-color-notion-contrast-background: #f3efff;
+    --ifm-color-notion-contrast-foreground: #2e1065;
+
         /*Bouton collapse*/
     --docusaurus-collapse-button-bg: transparent;
     --docusaurus-collapse-button-bg-hover: #0000001a;
@@ -257,6 +270,10 @@
     /*Danger*/
     --ifm-color-danger-contrast-background: #4b1113;
     --ifm-color-danger-contrast-foreground: #ffebec;
+
+    /* Notion */
+    --ifm-color-notion-contrast-background: #2e1065;
+    --ifm-color-notion-contrast-foreground: #ede9fe;
 
     /*Breadcrumb*/
     --ifm-breadcrumb-separator-filter: invert(64%) sepia(11%) saturate(0%) hue-rotate(149deg) brightness(99%) contrast(95%);
