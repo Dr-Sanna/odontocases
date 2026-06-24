@@ -22,9 +22,9 @@
   --ifm-heading-vertical-rhythm-bottom: 1;
 
   --ifm-h1-font-size: 2.5rem;
-  --ifm-h2-font-size: 2rem;
-  --ifm-h3-font-size: 1.4rem;
-  --ifm-h4-font-size: 1rem;
+  --ifm-h2-font-size: 1.8rem;
+  --ifm-h3-font-size: 1.5rem;
+  --ifm-h4-font-size: 1.2rem;
   --ifm-h5-font-size: 0.875rem;
   --ifm-h6-font-size: 0.85rem;
 
@@ -51,8 +51,32 @@ h1, h2, h3, h4, h5, h6 {
 
 h2 {
   font-size: var(--ifm-h2-font-size);
-  margin-bottom: calc(var(--ifm-heading-vertical-rhythm-bottom) * var(--ifm-leading));
+  margin-bottom: 0.5rem;
   margin-top: calc(var(--ifm-h2-vertical-rhythm-top) * var(--ifm-leading));
+
+  display: block;
+  width: 100%;
+  padding-bottom: 0.45rem;
+}
+
+h2::after {
+  content: "";
+  display: block;
+
+  width: 100%;
+  height: 4px;
+  margin-top: 0.45rem;
+
+  background-image: linear-gradient(
+    to right,
+    currentColor 0 2px,
+    transparent 2px 6px
+  );
+  background-size: 6px 2px;
+  background-repeat: repeat-x;
+  background-position: left center;
+
+  opacity: 0.3;
 }
 
 h3 {
@@ -141,48 +165,93 @@ li > ol {
 /* =========================
    TABLES CKEditor + Markdown
    ========================= */
+.cd-content {
+  --cd-table-border: rgba(0, 0, 0, 0.12);
+  --cd-table-bg-head: rgba(0, 0, 0, 0.03);
+  --cd-table-code-bg: #f6f8fa;
+  --cd-table-font-size: 0.9em;
+  --cd-table-padding: 0.5em 0.5em;
+}
+
+[data-theme="dark"] .cd-content {
+  --cd-table-border: rgba(255, 255, 255, 0.14);
+  --cd-table-bg-head: rgba(255, 255, 255, 0.06);
+  --cd-table-code-bg: rgba(255, 255, 255, 0.08);
+}
+
 .cd-content figure.table {
   margin: 0.9em 0;
 }
 
-.cd-content table {
+.cd-content table:not(.cd-imgtable) {
+  width: 100%;
+  max-width: 100%;
   border-collapse: collapse;
-  margin: 0 0 var(--ifm-paragraph-margin-bottom);
-
-  display: block;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
+  border-spacing: 0;
+  margin: 1em 0 var(--ifm-paragraph-margin-bottom);
+  border: 1px solid var(--cd-table-border);
+  table-layout: auto;
 }
 
-.cd-content table.ck-table-resized {
+.cd-content table:not(.cd-imgtable).ck-table-resized {
   table-layout: fixed;
 }
 
-.cd-content table thead,
-.cd-content table tbody,
-.cd-content table tfoot {
-  display: table;
+.cd-content table:not(.cd-imgtable) thead {
+  display: table-header-group;
 }
 
-.cd-content th,
-.cd-content td {
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  padding: 0.5rem 0.65rem;
+.cd-content table:not(.cd-imgtable) tbody {
+  display: table-row-group;
+}
+
+.cd-content table:not(.cd-imgtable) tfoot {
+  display: table-footer-group;
+}
+
+.cd-content table:not(.cd-imgtable) tr {
+  display: table-row;
+}
+
+.cd-content table:not(.cd-imgtable) th,
+.cd-content table:not(.cd-imgtable) td {
+  display: table-cell;
+  border: 1px solid var(--cd-table-border);
+  padding: var(--cd-table-padding);
   vertical-align: top;
+  text-align: left;
+  font-size: var(--cd-table-font-size);
+  line-height: 1.5;
 }
 
-.cd-content th {
-  font-weight: 700;
-  background: rgba(0, 0, 0, 0.03);
+.cd-content table:not(.cd-imgtable) th {
+  background: var(--cd-table-bg-head);
+  font-weight: 600;
+  text-align: center;
+  vertical-align: middle;
 }
 
-[data-theme="dark"] .cd-content th,
-[data-theme="dark"] .cd-content td {
-  border-color: rgba(255, 255, 255, 0.14);
+.cd-content table:not(.cd-imgtable) strong,
+.cd-content table:not(.cd-imgtable) th strong,
+.cd-content table:not(.cd-imgtable) td strong {
+  font-weight: 600;
 }
 
-[data-theme="dark"] .cd-content th {
-  background: rgba(255, 255, 255, 0.06);
+.cd-content table:not(.cd-imgtable) code {
+  background: var(--cd-table-code-bg);
+  border-radius: 6px;
+  padding: 0.15em 0.35em;
+  font-size: 90%;
+}
+
+.cd-content table:not(.cd-imgtable) td p,
+.cd-content table:not(.cd-imgtable) th p {
+  margin: 0;
+}
+
+.cd-content table:not(.cd-imgtable) td p:not(:last-child),
+.cd-content table:not(.cd-imgtable) th p:not(:last-child) {
+  margin-bottom: 0.5em;
 }
 
 /* =========================
@@ -232,6 +301,43 @@ figcaption {
 /* =========================
    TABLEAUX D’IMAGES (vh/vw)
    ========================= */
+
+/* bordures desktop pour les tableaux d’images */
+.cd-content table.cd-imgtable {
+  width: 100%;
+  max-width: 100%;
+  border-collapse: collapse;
+  border-spacing: 0;
+  margin: 1em 0 var(--ifm-paragraph-margin-bottom);
+  border: 1px solid var(--cd-table-border) !important;
+  table-layout: auto;
+}
+
+.cd-content table.cd-imgtable thead {
+  display: table-header-group;
+}
+
+.cd-content table.cd-imgtable tbody {
+  display: table-row-group;
+}
+
+.cd-content table.cd-imgtable tfoot {
+  display: table-footer-group;
+}
+
+.cd-content table.cd-imgtable tr {
+  display: table-row;
+}
+
+.cd-content table.cd-imgtable th,
+.cd-content table.cd-imgtable td {
+  display: table-cell;
+  border: 1px solid var(--cd-table-border) !important;
+  padding: 0.35rem;
+  vertical-align: top;
+  text-align: center;
+}
+
 
 /* centre le contenu des cellules avec image */
 .cd-content table td:has(img) {

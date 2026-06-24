@@ -426,9 +426,13 @@
 .cd-main {
   min-width: 0;
   padding-block: 1rem 2rem;
-  padding-inline: clamp(2rem, 5vw, 5.5rem);
+
+  /* menu ouvert */
+  padding-inline-start: clamp(4rem, 5vw, 5.5rem);   /* gauche : valeur actuelle */
+  padding-inline-end: clamp(8rem, 15vw, 11rem);     /* droite : valeur doublée */
 }
 
+  /* menu fermé */
 .cd-shell.is-collapsed .cd-main {
   padding-inline: clamp(4rem, 14vw, 14rem);
 }
