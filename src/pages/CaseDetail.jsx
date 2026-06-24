@@ -763,27 +763,11 @@ export default function CaseDetail(props) {
     return Array.isArray(displayItem?.cases) ? displayItem.cases : [];
   }, [isPathologyPage, displayItem?.cases]);
 
-  const [showSpoilers, setShowSpoilers] = useState(false);
-  useEffect(() => {
-    if (isPathologyPage) setShowSpoilers(false);
-  }, [pathologySlug, isPathologyPage]);
-
   const visibleRelatedCases = useMemo(() => {
     if (!isPathologyPage) return [];
-    const arr = Array.isArray(relatedCases) ? relatedCases : [];
-    const pres = arr.filter((c) => c?.type === 'presentation');
-    const others = arr.filter((c) => c?.type !== 'presentation');
-    const merged = showSpoilers ? [...pres, ...others] : pres;
-    merged.sort(compareBySlugNumberAsc);
-    return merged;
-  }, [isPathologyPage, relatedCases, showSpoilers]);
-
-  const spoilerCounts = useMemo(() => {
-    if (!isPathologyPage) return { pres: 0, other: 0 };
-    const arr = Array.isArray(relatedCases) ? relatedCases : [];
-    const pres = arr.filter((c) => c?.type === 'presentation').length;
-    const other = arr.filter((c) => c?.type !== 'presentation').length;
-    return { pres, other };
+    const arr = Array.isArray(relatedCases) ? [...relatedCases] : [];
+    arr.sort(compareBySlugNumberAsc);
+    return arr;
   }, [isPathologyPage, relatedCases]);
 
   // ---------- breadcrumb / titres ----------
@@ -1166,18 +1150,6 @@ export default function CaseDetail(props) {
             <section className="cd-children cd-related">
               <div className="cd-related-head">
                 <h2 className="cd-children-title">Cas associés</h2>
-
-                {spoilerCounts.other > 0 && (
-                  <button
-                    type="button"
-                    className="cd-related-spoil-btn"
-                    onClick={() => setShowSpoilers((v) => !v)}
-                    aria-pressed={showSpoilers ? 'true' : 'false'}
-                    title="Afficher les quiz/Q-R liés (peut spoiler)"
-                  >
-                    {showSpoilers ? 'Masquer quiz' : 'Afficher quiz (spoil)'}
-                  </button>
-                )}
               </div>
 
               <div className="cd-children-grid">
@@ -1699,9 +1671,8 @@ function Aside({
         const normalized = rows.map(normalizeEntity).filter(Boolean).filter((it) => it.slug);
 
         const cooked = normalized.map((p) => {
-          const kids = normalizeRelationArray(p?.cases).filter((c) => c?.slug);
-          const presKids = kids.filter((c) => c?.type === 'presentation').sort(compareBySlugNumberAsc);
-          return { ...p, _children: presKids };
+          const kids = normalizeRelationArray(p?.cases).filter((c) => c?.slug).sort(compareBySlugNumberAsc);
+          return { ...p, _children: kids };
         });
 
         cooked.sort((a, b) => {
