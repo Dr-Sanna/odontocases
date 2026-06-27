@@ -815,3 +815,85 @@
     display: inline-block;
   }
 }
+
+/* =========================
+   Références modernisées
+   =========================
+   Objectif :
+   - rendu plus discret et plus doux
+   - texte plus petit
+   - listes de références sans indentation ni puces
+   - interligne réduit dans une même référence
+   - espace plus visible entre deux références
+*/
+.cd-references {
+  margin-top: 0.35rem;
+  padding-top: 0.85rem;
+  border-top-color: color-mix(in srgb, var(--ifm-toc-border-color) 72%, transparent);
+  color: color-mix(in srgb, var(--ifm-font-color-base) 72%, transparent);
+}
+
+.cd-references h3 {
+  margin: 0 0 0.45rem;
+  font-size: 0.95rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  color: color-mix(in srgb, var(--ifm-font-color-base) 86%, transparent);
+}
+
+.cd-references :where(p, li) {
+  font-size: 0.9rem;
+  line-height: 1.36;
+}
+
+.cd-references :where(ul, ol) {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.cd-references :where(li) {
+  margin: 0;
+  padding: 0;
+}
+
+.cd-references li::marker {
+  content: "";
+}
+
+.cd-references li + li {
+  margin-top: 0.82rem;
+}
+
+.cd-references li > :where(p, ul, ol) {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.cd-references li > * + * {
+  margin-top: 0.22rem;
+}
+
+.cd-references p {
+  margin-top: 0;
+  margin-bottom: 0.35rem;
+}
+
+.cd-references p:last-child {
+  margin-bottom: 0;
+}
+
+.cd-references a {
+  font-weight: 500;
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.16em;
+}
+
+[data-theme="dark"] .cd-references {
+  border-top-color: color-mix(in srgb, #2a3a5a 78%, transparent);
+  color: color-mix(in srgb, var(--ifm-font-color-base) 72%, transparent);
+}
+
+[data-theme="dark"] .cd-references h3 {
+  color: color-mix(in srgb, var(--ifm-font-color-base) 88%, transparent);
+}
