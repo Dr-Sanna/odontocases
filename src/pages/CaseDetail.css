@@ -817,23 +817,37 @@
 }
 
 /* =========================
-   Références modernisées
+   Références et copyright modernisés
    =========================
    Objectif :
    - rendu plus discret et plus doux
    - texte plus petit
-   - listes de références sans indentation ni puces
-   - interligne réduit dans une même référence
-   - espace plus visible entre deux références
+   - listes sans indentation ni puces
+   - interligne réduit dans une même entrée
+   - espace plus visible entre deux entrées
+
+   Important : les sélecteurs évitent :where() pour garder une
+   spécificité suffisante face aux règles Markdown/Docusaurus.
 */
-.cd-references {
+.cd-references,
+.cd-copyright {
   margin-top: 0.35rem;
   padding-top: 0.85rem;
   border-top-color: color-mix(in srgb, var(--ifm-toc-border-color) 72%, transparent);
   color: color-mix(in srgb, var(--ifm-font-color-base) 72%, transparent);
 }
 
-.cd-references h3 {
+/* Le bloc copyright vient après les références :
+   on augmente l'espace avant son trait, et on rapproche légèrement
+   le titre du trait pour que la séparation appartienne visuellement
+   au bloc copyright plutôt qu'à la dernière référence. */
+.cd-copyright {
+  margin-top: 1.45rem;
+  padding-top: 0.62rem;
+}
+
+.cd-references h3,
+.cd-copyright h3 {
   margin: 0 0 0.45rem;
   font-size: 0.95rem;
   font-weight: 650;
@@ -841,59 +855,89 @@
   color: color-mix(in srgb, var(--ifm-font-color-base) 86%, transparent);
 }
 
-.cd-references :where(p, li) {
+.cd-references p,
+.cd-references li,
+.cd-copyright p,
+.cd-copyright li {
   font-size: 0.9rem;
   line-height: 1.36;
 }
 
-.cd-references :where(ul, ol) {
-  margin: 0;
-  padding-left: 0;
-  list-style: none;
+/* Reset fort des listes Markdown dans références/copyright.
+   Docusaurus applique souvent un padding-left aux listes .markdown ;
+   on force donc le retrait à zéro uniquement dans ces deux blocs. */
+.cd-references ul,
+.cd-references ol,
+.cd-references .markdown ul,
+.cd-references .markdown ol,
+.cd-copyright ul,
+.cd-copyright ol,
+.cd-copyright .markdown ul,
+.cd-copyright .markdown ol {
+  margin-top: 0 !important;
+  margin-right: 0 !important;
+  margin-bottom: 0 !important;
+  margin-left: 0 !important;
+  padding-left: 0 !important;
+  list-style: none !important;
 }
 
-.cd-references :where(li) {
-  margin: 0;
-  padding: 0;
+.cd-references li,
+.cd-copyright li {
+  margin-left: 0 !important;
+  padding-left: 0 !important;
 }
 
-.cd-references li::marker {
+.cd-references li::marker,
+.cd-copyright li::marker {
   content: "";
 }
 
-.cd-references li + li {
-  margin-top: 0.82rem;
+.cd-references li + li,
+.cd-copyright li + li {
+  margin-top: 0.82rem !important;
 }
 
-.cd-references li > :where(p, ul, ol) {
+.cd-references li > p,
+.cd-references li > ul,
+.cd-references li > ol,
+.cd-copyright li > p,
+.cd-copyright li > ul,
+.cd-copyright li > ol {
   margin-top: 0;
   margin-bottom: 0;
 }
 
-.cd-references li > * + * {
+.cd-references li > * + *,
+.cd-copyright li > * + * {
   margin-top: 0.22rem;
 }
 
-.cd-references p {
+.cd-references p,
+.cd-copyright p {
   margin-top: 0;
   margin-bottom: 0.35rem;
 }
 
-.cd-references p:last-child {
+.cd-references p:last-child,
+.cd-copyright p:last-child {
   margin-bottom: 0;
 }
 
-.cd-references a {
+.cd-references a,
+.cd-copyright a {
   font-weight: 500;
   text-decoration-thickness: 0.08em;
   text-underline-offset: 0.16em;
 }
 
-[data-theme="dark"] .cd-references {
+[data-theme="dark"] .cd-references,
+[data-theme="dark"] .cd-copyright {
   border-top-color: color-mix(in srgb, #2a3a5a 78%, transparent);
   color: color-mix(in srgb, var(--ifm-font-color-base) 72%, transparent);
 }
 
-[data-theme="dark"] .cd-references h3 {
+[data-theme="dark"] .cd-references h3,
+[data-theme="dark"] .cd-copyright h3 {
   color: color-mix(in srgb, var(--ifm-font-color-base) 88%, transparent);
 }

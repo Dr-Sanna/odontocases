@@ -50,7 +50,7 @@ export const ckeditorSchema = (() => {
     img: [...(defaultSchema.attributes?.img || []), 'style', 'width', 'height'],
 
     blockquote: [...(defaultSchema.attributes?.blockquote || []), 'className', 'data-callout'],
-    div: [...(defaultSchema.attributes?.div || []), 'className', 'id'],
+    div: [...(defaultSchema.attributes?.div || []), 'className', 'id', 'style', 'data-callout', 'data-callout-col'],
     span: [...(defaultSchema.attributes?.span || []), 'className', 'id'],
 
     details: [...(defaultSchema.attributes?.details || []), 'className', 'open'],

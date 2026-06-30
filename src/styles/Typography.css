@@ -254,6 +254,69 @@ li > ol {
   margin-bottom: 0.5em;
 }
 
+
+/* =========================
+   TABLES — alignement avec Obsidian
+   - TH en capitales
+   - H4 dans une cellule = même aspect qu'un TH, sans capitales
+   ========================= */
+.cd-content table:not(.cd-imgtable) th {
+  background: var(--cd-table-bg-head) !important;
+  font-weight: 600 !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+  text-transform: uppercase !important;
+}
+
+.cd-content table:not(.cd-imgtable) :is(td, th):has(h4) {
+  background: var(--cd-table-bg-head) !important;
+  font-weight: 600 !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+  text-transform: none !important;
+}
+
+/* Cas direct : <td><h4>...</h4></td> */
+.cd-content table:not(.cd-imgtable) :is(td, th):has(> h4) {
+  height: 1px;
+}
+
+.cd-content table:not(.cd-imgtable) :is(td, th):has(> h4) > h4 {
+  height: 100%;
+}
+
+/* Cas enveloppé : <td><p><h4>...</h4></p></td> ou wrappers similaires */
+.cd-content table:not(.cd-imgtable) :is(td, th):has(h4) > :where(p, div) {
+  margin: 0 !important;
+  text-align: center !important;
+  text-transform: none !important;
+}
+
+.cd-content table:not(.cd-imgtable) :is(td, th):has(> p > h4) > p,
+.cd-content table:not(.cd-imgtable) :is(td, th):has(> div > h4) > div {
+  min-height: 100%;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.cd-content table:not(.cd-imgtable) :is(td, th) h4 {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  color: inherit !important;
+  background: transparent !important;
+  font-family: inherit !important;
+  font-size: inherit !important;
+  line-height: inherit !important;
+  font-weight: 600 !important;
+  text-align: center !important;
+  text-transform: none !important;
+}
+
 /* =========================
    IMAGES (hors tableaux)
    ========================= */

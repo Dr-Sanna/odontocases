@@ -180,3 +180,91 @@
 .cd-callout.cd-callout--title-only > .cd-callout-content {
   display: none;
 }
+
+/* =========================
+   Callouts multi-colonnes Obsidian
+   Syntaxe :
+   > [!multi-column|bordered]
+   >> [!col|46]
+   >> Contenu
+   >> [!col|54]
+   >> Contenu
+
+   bordered = séparateur simple entre colonnes,
+   pas de carte autour de chaque colonne.
+   ========================= */
+
+.cd-callout-multi-column {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  margin: 1rem 0;
+  width: 100%;
+}
+
+.cd-callout-multi-column > .cd-callout-column {
+  flex: var(--cd-callout-col-weight, 1) 1 0;
+  min-width: 0;
+}
+
+.cd-callout-column {
+  padding: 0 1.1rem;
+  background: transparent;
+  border-radius: 0;
+  border: 0;
+  box-shadow: none;
+}
+
+.cd-callout-multi-column > .cd-callout-column:first-child {
+  padding-left: 0;
+}
+
+.cd-callout-multi-column > .cd-callout-column:last-child {
+  padding-right: 0;
+}
+
+.cd-callout-multi-column--bordered > .cd-callout-column {
+  border: 0;
+  box-shadow: none;
+}
+
+.cd-callout-multi-column--bordered > .cd-callout-column + .cd-callout-column {
+  border-left: 1px solid var(--ifm-color-emphasis-300, rgba(127, 127, 127, 0.28));
+}
+
+.cd-callout-column > :first-child {
+  margin-top: 0;
+}
+
+.cd-callout-column > :last-child {
+  margin-bottom: 0;
+}
+
+.cd-callout-column ul,
+.cd-callout-column ol {
+  margin-bottom: 0;
+}
+
+@media (max-width: 780px) {
+  .cd-callout-multi-column {
+    flex-direction: column;
+  }
+
+  .cd-callout-multi-column > .cd-callout-column {
+    flex-basis: auto;
+    padding: 0.85rem 0;
+  }
+
+  .cd-callout-multi-column > .cd-callout-column:first-child {
+    padding-top: 0;
+  }
+
+  .cd-callout-multi-column > .cd-callout-column:last-child {
+    padding-bottom: 0;
+  }
+
+  .cd-callout-multi-column--bordered > .cd-callout-column + .cd-callout-column {
+    border-left: 0;
+    border-top: 1px solid var(--ifm-color-emphasis-300, rgba(127, 127, 127, 0.28));
+  }
+}

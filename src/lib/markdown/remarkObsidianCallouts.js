@@ -45,11 +45,76 @@ function hasMeaningfulContent(nodes) {
     if (!n) return false;
 
     if (n.type === 'text') return String(n.value || '').trim().length > 0;
-    if (n.type === 'paragraph') return true;
+    if (n.type === 'paragraph') return !isEmptyParagraph(n);
     if (n.type === 'html') return String(n.value || '').trim().length > 0;
 
     return true;
   });
+}
+
+function isEmptyParagraph(node) {
+  if (!node || node.type !== 'paragraph') return false;
+  const children = Array.isArray(node.children) ? node.children : [];
+  if (children.length === 0) return true;
+
+  return children.every((child) => {
+    if (!child) return true;
+    if (child.type === 'text') return String(child.value || '').trim().length === 0;
+    if (child.type === 'break') return true;
+    return false;
+  });
+}
+
+function stripEmptyParagraphs(nodes) {
+  if (!Array.isArray(nodes)) return [];
+  return nodes.filter((node) => !isEmptyParagraph(node));
+}
+
+function paragraphRemainderAfterMarker(firstParagraph, marker) {
+  if (!firstParagraph || firstParagraph.type !== 'paragraph') return [];
+  const originalChildren = Array.isArray(firstParagraph.children) ? firstParagraph.children : [];
+  if (originalChildren.length === 0) return [];
+
+  const children = [];
+
+  // Texte situé sur la même ligne que le marqueur : [!col|46] Texte conservé
+  if (marker?.title) {
+    children.push({ ...originalChildren[0], value: String(marker.title) });
+  }
+
+  // Texte situé sur la ligne suivante du même paragraphe MDAST :
+  // [!col|46]\nTexte conservé
+  children.push(...originalChildren.slice(1));
+
+  // Nettoyage du début : CommonMark insère souvent un break puis du texte.
+  while (children.length > 0) {
+    const first = children[0];
+
+    if (first?.type === 'break') {
+      children.shift();
+      continue;
+    }
+
+    if (first?.type === 'text') {
+      const trimmed = String(first.value || '').replace(/^\s+/, '');
+      if (!trimmed) {
+        children.shift();
+        continue;
+      }
+      first.value = trimmed;
+    }
+
+    break;
+  }
+
+  if (children.length === 0) return [];
+
+  const paragraph = {
+    ...firstParagraph,
+    children,
+  };
+
+  return isEmptyParagraph(paragraph) ? [] : [paragraph];
 }
 
 /** Render inline MDAST -> HTML (subset volontairement safe) */
@@ -97,14 +162,52 @@ function renderInlineNodesToHtml(nodes) {
   return nodes.map(render).join('');
 }
 
-/** Callout start = blockquote dont 1ère ligne commence par [!type] */
-function isCalloutStart(blockquoteNode) {
-  if (!blockquoteNode || blockquoteNode.type !== 'blockquote') return false;
+/**
+ * Marqueur de callout Obsidian.
+ * Supporte aussi les variantes avec options :
+ * - [!multi-column|bordered]
+ * - [!col|46]
+ * - [!info]- Titre
+ */
+const CALLOUT_MARKER_RE = /^\s*\[!([a-z][\w-]*)(?:\|([^\]]+))?\]([+-])?\s*(.*?)\s*$/i;
+
+function parseCalloutMarker(value) {
+  if (typeof value !== 'string') return null;
+  const m = value.match(CALLOUT_MARKER_RE);
+  if (!m) return null;
+
+  const rawType = String(m[1] || '').toLowerCase();
+  const rawOptions = String(m[2] || '').trim();
+  const options = rawOptions
+    ? rawOptions
+        .split('|')
+        .map((part) => part.trim())
+        .filter(Boolean)
+    : [];
+
+  return {
+    rawType,
+    options,
+    fold: m[3] || '', // '' | '-' | '+'
+    title: String(m[4] || '').trim(),
+  };
+}
+
+function getCalloutStart(blockquoteNode) {
+  if (!blockquoteNode || blockquoteNode.type !== 'blockquote') return null;
   const firstParagraph = blockquoteNode.children?.[0];
   const firstChild = firstParagraph?.children?.[0];
-  if (!firstParagraph || firstParagraph.type !== 'paragraph') return false;
-  if (!firstChild || firstChild.type !== 'text') return false;
-  return /^\s*\[\!(\w+)\]([+-])?\s*(.*?)\s*$/i.test(firstChild.value);
+  if (!firstParagraph || firstParagraph.type !== 'paragraph') return null;
+  if (!firstChild || firstChild.type !== 'text') return null;
+
+  const marker = parseCalloutMarker(firstChild.value);
+  if (!marker) return null;
+  return { marker, firstParagraph, firstChild };
+}
+
+/** Callout start = blockquote dont 1ère ligne commence par [!type] */
+function isCalloutStart(blockquoteNode) {
+  return Boolean(getCalloutStart(blockquoteNode));
 }
 
 function isTableishHtml(val) {
@@ -113,6 +216,81 @@ function isTableishHtml(val) {
   if (s.startsWith('<table')) return true;
   if (s.startsWith('<figure') && s.includes('<table')) return true;
   return false;
+}
+
+function normalizeOption(option) {
+  return String(option || '').trim().toLowerCase();
+}
+
+function hasOption(options, wanted) {
+  const key = normalizeOption(wanted);
+  return (options || []).some((option) => normalizeOption(option) === key);
+}
+
+function parseColumnWeight(options) {
+  const raw = (options || []).find((option) => /^\d+(?:[.,]\d+)?%?\s*$/.test(String(option || '').trim()));
+  if (!raw) return null;
+
+  const value = Number.parseFloat(String(raw).replace(',', '.').replace('%', '').trim());
+  if (!Number.isFinite(value) || value <= 0) return null;
+
+  // Les nombres représentent des pourcentages/poids visuels. On borne pour éviter
+  // une valeur accidentelle extrême qui casserait la mise en page.
+  return Math.max(1, Math.min(100, value));
+}
+
+function appendClasses(existing, classes) {
+  const baseClasses = Array.isArray(existing) ? existing : existing ? [existing] : [];
+  return [...baseClasses, ...classes];
+}
+
+function prepareHProperties(node) {
+  if (!node.data) node.data = {};
+  if (!node.data.hProperties) node.data.hProperties = {};
+  return node.data.hProperties;
+}
+
+function transformMultiColumnCallout(node, parsed) {
+  const { marker, firstParagraph } = parsed;
+  const firstParagraphRemainder = paragraphRemainderAfterMarker(firstParagraph, marker);
+  node.children.shift();
+  const innerChildren = stripEmptyParagraphs([...firstParagraphRemainder, ...node.children]);
+
+  node.data = node.data || {};
+  node.data.hName = 'div';
+
+  const h = prepareHProperties(node);
+  const classes = ['cd-callout-multi-column'];
+  if (hasOption(marker.options, 'bordered') || hasOption(marker.options, 'border')) {
+    classes.push('cd-callout-multi-column--bordered');
+  }
+
+  h.className = appendClasses(h.className, classes);
+  h['data-callout'] = 'multi-column';
+
+  node.children = innerChildren;
+}
+
+function transformColumnCallout(node, parsed) {
+  const { marker, firstParagraph } = parsed;
+  const firstParagraphRemainder = paragraphRemainderAfterMarker(firstParagraph, marker);
+  node.children.shift();
+  const innerChildren = stripEmptyParagraphs([...firstParagraphRemainder, ...node.children]);
+  const weight = parseColumnWeight(marker.options);
+
+  node.data = node.data || {};
+  node.data.hName = 'div';
+
+  const h = prepareHProperties(node);
+  h.className = appendClasses(h.className, ['cd-callout-column']);
+  h['data-callout'] = 'col';
+
+  if (weight !== null) {
+    h.style = `--cd-callout-col-weight: ${weight};`;
+    h['data-callout-col'] = String(weight);
+  }
+
+  node.children = innerChildren;
 }
 
 /**
@@ -135,24 +313,32 @@ export function remarkObsidianCallouts() {
     visit(tree, 'blockquote', (node, index, parent) => {
       if (!Array.isArray(node.children) || node.children.length === 0) return;
 
-      const firstParagraph = node.children[0];
-      const firstChild = firstParagraph?.children?.[0];
-      if (!firstParagraph || firstParagraph.type !== 'paragraph') return;
-      if (!firstChild || firstChild.type !== 'text') return;
+      const parsed = getCalloutStart(node);
+      if (!parsed) return;
 
-      // IMPORTANT : le match se fait avant qu’on modifie firstChild.value
-      const m = firstChild.value.match(/^\s*\[\!(\w+)\]([+-])?\s*(.*?)\s*$/i);
-      if (!m) return;
+      const { marker, firstParagraph, firstChild } = parsed;
+      const rawType = marker.rawType;
 
-      const rawType = String(m[1] || '').toLowerCase();
-      const fold = m[2] || ''; // '' | '-' | '+'
+      // Callout spécial : grille multicolonnes. Pas de titre, pas d'icône.
+      if (rawType === 'multi-column' || rawType === 'multicolumn' || rawType === 'columns') {
+        transformMultiColumnCallout(node, parsed);
+        return;
+      }
 
+      // Callout spécial : colonne d'une grille multicolonnes. Le chiffre après | est
+      // utilisé comme poids relatif, ex. [!col|46] + [!col|54].
+      if (rawType === 'col' || rawType === 'column') {
+        transformColumnCallout(node, parsed);
+        return;
+      }
+
+      const fold = marker.fold; // '' | '-' | '+'
       const calloutType = KNOWN.has(rawType) ? rawType : 'info';
       const icon = ICON[calloutType] || 'ℹ️';
 
       // ---- titre : on rend les inline nodes du 1er paragraphe (liens, bold, etc.)
       // on enlève le préfixe "[!type][+-]" du tout premier text node
-      firstChild.value = firstChild.value.replace(/^\s*\[\!(\w+)\]([+-])?\s*/i, '');
+      firstChild.value = marker.title;
 
       // on récupère tous les inline nodes (texte + link...) qui restent dans le 1er paragraphe
       let titleNodes = Array.isArray(firstParagraph.children) ? [...firstParagraph.children] : [];
@@ -202,12 +388,9 @@ export function remarkObsidianCallouts() {
 
       const contentExists = hasMeaningfulContent(innerChildren);
 
-      if (!node.data) node.data = {};
-      if (!node.data.hProperties) node.data.hProperties = {};
-      const h = node.data.hProperties;
+      const h = prepareHProperties(node);
 
-      const baseClasses = Array.isArray(h.className) ? h.className : h.className ? [h.className] : [];
-      h.className = [...baseClasses, 'cd-callout', `cd-callout-${calloutType}`];
+      h.className = appendClasses(h.className, ['cd-callout', `cd-callout-${calloutType}`]);
       h['data-callout'] = calloutType;
 
       if (!contentExists) h.className.push('cd-callout--title-only');

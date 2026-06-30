@@ -16,7 +16,7 @@ function isCalloutStart(blockquoteNode) {
   const firstChild = firstParagraph?.children?.[0];
   if (!firstParagraph || firstParagraph.type !== "paragraph") return false;
   if (!firstChild || firstChild.type !== "text") return false;
-  return /^\s*\[\!(\w+)\]([+-])?\s*(.*?)\s*$/i.test(firstChild.value);
+  return /^\s*\[!([a-z][\w-]*)(?:\|([^\]]+))?\]([+-])?\s*(.*?)\s*$/i.test(firstChild.value);
 }
 
 // Extraction texte "simple" (on ignore la mise en forme Markdown dans la caption)
