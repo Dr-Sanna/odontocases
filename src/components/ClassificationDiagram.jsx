@@ -15,6 +15,26 @@ function norm(s) {
     .toLowerCase();
 }
 
+export function parseClassificationDiagramSource(source) {
+  let raw = String(source || "").trim();
+  if (!raw) return null;
+  if (raw.startsWith("@classificationDiagram")) {
+    raw = raw.replace(/^@classificationDiagram\s*/, "").trim();
+  }
+  if (!raw.startsWith("{")) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+export function isClassificationDiagramCodeBlock(language = "", source = "") {
+  const lang = String(language || "").toLowerCase().replace(/^language-/, "");
+  const raw = String(source || "").trim();
+  return lang === "classificationdiagram" || raw.startsWith("@classificationDiagram");
+}
+
 function cssLenToPx(value) {
   const v = String(value || "").trim();
   if (!v) return 0;
@@ -251,6 +271,16 @@ function collectHideTargets(node, depth, path, level, out) {
     }
   }
 
+  if (Array.isArray(node?.mixedRows)) {
+    for (let ri = 0; ri < node.mixedRows.length; ri++) {
+      const row = node.mixedRows[ri];
+      const nodes = Array.isArray(row?.nodes) ? row.nodes : [];
+      for (let ni = 0; ni < nodes.length; ni++) {
+        collectHideTargets(nodes[ni], nodes[ni]?.level || Math.min(depth + 1, 6), `${path}/row/${ri}/node/${ni}`, level, out);
+      }
+    }
+  }
+
   for (let gi = 0; gi < groups.length; gi++) {
     const nd = nextDepthForGroup(node, depth);
     collectHideTargets(groups[gi], nd, `${path}/group/${gi}`, level, out);
@@ -341,7 +371,35 @@ function NodeBlock({ node, depth = 2, path = "root", trainingOn, hidden, reveal 
         </div>
       ) : null}
 
-      {items.length ? (
+      {node.mixedItems === "customRows" && Array.isArray(node.mixedRows) ? (
+        <div className="cdg-mixed-rows cdg-mixed-rows-custom">
+          {node.mixedRows.map((row, rowIndex) => {
+            const rowNodes = Array.isArray(row?.nodes) ? row.nodes : [];
+            const rowCols = clampInt(row?.columns, 1, 4, rowNodes.length || 1);
+            return (
+              <div
+                key={`${path}/row/${rowIndex}`}
+                className={`cdg-mixed-row cdg-mixed-row-${rowIndex + 1}`}
+                style={{ "--cdg-row-cols": String(rowCols) }}
+              >
+                {rowNodes.map((childNode, childIndex) => (
+                  <NodeBlock
+                    key={`${path}/row/${rowIndex}/node/${childIndex}`}
+                    node={childNode}
+                    depth={childNode?.level || Math.min(depth + 1, 6)}
+                    path={`${path}/row/${rowIndex}/node/${childIndex}`}
+                    trainingOn={trainingOn}
+                    hidden={hidden}
+                    reveal={reveal}
+                  />
+                ))}
+              </div>
+            );
+          })}
+        </div>
+      ) : null}
+
+      {node.mixedItems !== "customRows" && items.length ? (
         layout === "grid" ? (
           <div className="cdg-list" data-layout="grid" style={{ "--cdg-cols": String(cols) }}>
             {items.map((it, i) => {
@@ -391,7 +449,7 @@ function NodeBlock({ node, depth = 2, path = "root", trainingOn, hidden, reveal 
         )
       ) : null}
 
-      {groups.length ? (
+      {node.mixedItems !== "customRows" && groups.length ? (
         <div className="cdg-groups" style={{ "--cdg-groups-cols": String(groupCols) }}>
           {groups.map((g, i) => {
             const nd = nextDepthForGroup(node, depth);

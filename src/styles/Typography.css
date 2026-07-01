@@ -317,6 +317,54 @@ li > ol {
   text-transform: none !important;
 }
 
+
+/* =========================
+   TABLES — listes alignées avec Obsidian
+   - pas d'indentation dans les cellules
+   - puces UL remplacées par des tirets
+   - interligne interne conservé
+   - espace entre deux éléments = espace entre deux paragraphes du tableau
+   ========================= */
+.cd-content table:not(.cd-imgtable) :is(td, th) :is(ul, ol) {
+  margin: 0 !important;
+  padding-left: 0 !important;
+  line-height: 1.5 !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.cd-content table:not(.cd-imgtable) :is(td, th) ul {
+  list-style: none !important;
+}
+
+.cd-content table:not(.cd-imgtable) :is(td, th) ul > li::before {
+  content: "– ";
+}
+
+.cd-content table:not(.cd-imgtable) :is(td, th) ol {
+  list-style-position: inside !important;
+}
+
+.cd-content table:not(.cd-imgtable) :is(td, th) li {
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1.5 !important;
+}
+
+.cd-content table:not(.cd-imgtable) :is(td, th) li + li {
+  margin-top: 0.5em !important;
+}
+
+.cd-content table:not(.cd-imgtable) :is(td, th) li > p {
+  margin: 0 !important;
+  line-height: inherit !important;
+}
+
+.cd-content table:not(.cd-imgtable) :is(td, th) li > p:not(:last-child) {
+  margin-bottom: 0.5em !important;
+}
+
 /* =========================
    IMAGES (hors tableaux)
    ========================= */

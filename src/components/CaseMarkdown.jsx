@@ -1,5 +1,5 @@
 // src/components/CaseMarkdown.jsx
-import { useEffect, useMemo, useRef, memo } from "react";
+import { useEffect, useMemo, useRef, memo, isValidElement } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -397,16 +397,55 @@ function runRelayoutLoop(relayoutFn, durationMs = 420) {
 /* =========================
    Diagram injection helper
    ========================= */
+function textFromReactChildren(children) {
+  if (children == null) return "";
+  if (typeof children === "string" || typeof children === "number") return String(children);
+  if (Array.isArray(children)) return children.map(textFromReactChildren).join("");
+  if (isValidElement(children)) return textFromReactChildren(children.props?.children);
+  return "";
+}
+
+function unwrapFence(rawText) {
+  let raw = String(rawText ?? "").trim();
+  const fenced = raw.match(/^```([^\n`]*)\n([\s\S]*?)\n```$/);
+  if (fenced) raw = String(fenced[2] || "").trim();
+  return raw;
+}
+
 function parseClassificationDiagramBlock(rawText) {
-  const raw = String(rawText ?? "").trim();
-  if (!raw.startsWith("@classificationDiagram")) return null;
+  let raw = unwrapFence(rawText);
+  if (!raw) return null;
 
-  const jsonText = raw.replace(/^@classificationDiagram\s*/m, "").trim();
-  if (!jsonText) return null;
+  if (raw.startsWith("@classificationDiagram")) {
+    raw = raw.replace(/^@classificationDiagram\s*/m, "").trim();
+  }
 
-  const spec = JSON.parse(jsonText);
+  if (!raw.startsWith("{")) return null;
+
+  const spec = JSON.parse(raw);
   if (!spec || typeof spec !== "object") return null;
   return spec;
+}
+
+function isClassificationDiagramBlock(className, rawText) {
+  const lang = String(className || "")
+    .toLowerCase()
+    .replace(/^language-/, "")
+    .trim();
+
+  const raw = unwrapFence(rawText);
+
+  return lang === "classificationdiagram" || raw.startsWith("@classificationDiagram");
+}
+
+function renderClassificationDiagramFromCode(className, codeChildren, scopeKey) {
+  const raw = textFromReactChildren(codeChildren).replace(/\n$/, "");
+  if (!isClassificationDiagramBlock(className, raw)) return null;
+
+  const spec = parseClassificationDiagramBlock(raw);
+  if (!spec) return null;
+
+  return <ClassificationDiagram {...spec} scopeKey={scopeKey} />;
 }
 
 /* =========================
@@ -422,14 +461,17 @@ const CaseMarkdown = memo(function CaseMarkdown({ children, scopeKey = "" }) {
 
   const mdComponents = useMemo(
     () => ({
-      code({ inline, className, children: codeChildren, ...props }) {
-        const lang = String(className || "").replace("language-", "").trim();
-        const raw = String(codeChildren ?? "").replace(/\n$/, "");
+      pre({ children: preChildren, ...props }) {
+        const onlyChild = Array.isArray(preChildren) ? preChildren[0] : preChildren;
 
-        if (!inline && lang === "plaintext") {
+        if (isValidElement(onlyChild)) {
           try {
-            const spec = parseClassificationDiagramBlock(raw);
-            if (spec) return <ClassificationDiagram {...spec} scopeKey={scopeKey} />;
+            const diagram = renderClassificationDiagramFromCode(
+              onlyChild.props?.className,
+              onlyChild.props?.children,
+              scopeKey
+            );
+            if (diagram) return diagram;
           } catch (e) {
             return (
               <pre style={{ whiteSpace: "pre-wrap", opacity: 0.9 }}>
@@ -439,20 +481,27 @@ const CaseMarkdown = memo(function CaseMarkdown({ children, scopeKey = "" }) {
           }
         }
 
-        if (inline) {
-          return (
-            <code className={className} {...props}>
-              {codeChildren}
-            </code>
-          );
+        return <pre {...props}>{preChildren}</pre>;
+      },
+
+      code({ inline, className, children: codeChildren, node, ...props }) {
+        if (!inline) {
+          try {
+            const diagram = renderClassificationDiagramFromCode(className, codeChildren, scopeKey);
+            if (diagram) return diagram;
+          } catch (e) {
+            return (
+              <code className={className} {...props}>
+                Erreur diagramme JSON: {String(e?.message || e)}
+              </code>
+            );
+          }
         }
 
         return (
-          <pre>
-            <code className={className} {...props}>
-              {codeChildren}
-            </code>
-          </pre>
+          <code className={className} {...props}>
+            {codeChildren}
+          </code>
         );
       },
     }),

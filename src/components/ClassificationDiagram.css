@@ -427,3 +427,31 @@ button.cdg-chip {
 .cdg-training-toggle:focus-visible {
   opacity: 1;
 }
+
+/* =========================
+   Lignes personnalisées H3 générées depuis Obsidian
+   ========================= */
+
+.cdg-mixed-rows {
+  display: grid;
+  gap: var(--cdg-gap-group);
+  min-width: 0;
+}
+
+.cdg-mixed-row {
+  display: grid;
+  grid-template-columns: repeat(var(--cdg-row-cols, 2), minmax(0, 1fr));
+  gap: var(--cdg-gap-group);
+  align-items: start;
+  min-width: 0;
+}
+
+.cdg-mixed-row > .cdg-node {
+  min-width: 0;
+}
+
+@media (max-width: 720px) {
+  .cdg-mixed-row {
+    grid-template-columns: 1fr !important;
+  }
+}
