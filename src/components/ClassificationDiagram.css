@@ -455,3 +455,2120 @@ button.cdg-chip {
     grid-template-columns: 1fr !important;
   }
 }
+
+/* =========================
+   Séparateurs structurels — alignement avec le plugin Obsidian
+   ========================= */
+
+.cdg {
+  position: relative;
+  --cdg-outer-pad-x: 12px;
+  --cdg-separator-color: var(--cdg-line-color);
+  --cdg-separator-size: 1px;
+}
+
+/* Titre du diagramme : texte seul, sans capsule visible. */
+.cdg .cdg-root .cdg-chip-h1,
+.cdg .cdg-root--with-controls .cdg-chip-h1 {
+  color: var(--ifm-font-color-base);
+  background: transparent;
+  background-color: transparent;
+  border: 0;
+  box-shadow: none;
+  font-weight: 700;
+  cursor: default;
+}
+
+/* Poids typographiques des puces, explicités pour éviter les régressions. */
+.cdg .cdg-chip-h2 {
+  font-weight: 700;
+}
+
+.cdg .cdg-chip-h3 {
+  font-weight: 600;
+}
+
+.cdg .cdg-chip-h4,
+.cdg .cdg-chip-h5,
+.cdg .cdg-chip-h6 {
+  font-weight: 400;
+}
+
+/* Séparation pleine largeur entre le titre du diagramme et les H2. */
+.cdg > .cdg-root,
+.cdg > .cdg-root--with-controls {
+  margin: 2px calc(-1 * var(--cdg-outer-pad-x)) 14px calc(-1 * var(--cdg-outer-pad-x));
+  padding: 0 var(--cdg-outer-pad-x) 10px var(--cdg-outer-pad-x);
+  border-bottom: var(--cdg-separator-size) solid var(--cdg-separator-color);
+}
+
+.cdg > .cdg-root--with-controls .cdg-root-controls {
+  right: var(--cdg-outer-pad-x);
+}
+
+/* H2 empilés : séparation horizontale avant chaque nouveau bloc H2. */
+.cdg > .cdg-root-items[data-layout="stack"] {
+  gap: 0;
+  margin-left: calc(-1 * var(--cdg-outer-pad-x));
+  margin-right: calc(-1 * var(--cdg-outer-pad-x));
+}
+
+.cdg > .cdg-root-items[data-layout="stack"] > .cdg-node {
+  padding-left: var(--cdg-outer-pad-x);
+  padding-right: var(--cdg-outer-pad-x);
+}
+
+.cdg > .cdg-root-items[data-layout="stack"] > .cdg-node + .cdg-node {
+  border-top: var(--cdg-separator-size) solid var(--cdg-separator-color);
+  margin-top: 18px;
+  padding-top: 18px;
+}
+
+/* H2 en grille : séparateurs verticaux pleine hauteur entre les colonnes. */
+.cdg > .cdg-root-items[data-layout="grid"] {
+  gap: 0;
+  position: relative;
+  margin-left: calc(-1 * var(--cdg-outer-pad-x));
+  margin-right: calc(-1 * var(--cdg-outer-pad-x));
+}
+
+.cdg > .cdg-root-items[data-layout="grid"]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: linear-gradient(
+    to right,
+    transparent calc(100% - var(--cdg-separator-size)),
+    var(--cdg-separator-color) calc(100% - var(--cdg-separator-size))
+  );
+  background-size: calc(100% / var(--cdg-cols, 2)) 100%;
+  background-repeat: repeat-x;
+}
+
+/* Masque la ligne artificielle du bord droit : on ne garde que les séparateurs internes. */
+.cdg > .cdg-root-items[data-layout="grid"]::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  width: var(--cdg-separator-size);
+  pointer-events: none;
+  background: var(--ifm-background-surface-color);
+}
+
+.cdg > .cdg-root-items[data-layout="grid"] > .cdg-node {
+  position: relative;
+  z-index: 2;
+  padding-left: var(--cdg-outer-pad-x);
+  padding-right: var(--cdg-outer-pad-x);
+}
+
+/* Si une grille H2 passe sur plusieurs lignes : séparation horizontale entre rangées.
+   Le JSX n'est pas nécessaire tant que le nombre de colonnes reste 2 ou 3. */
+.cdg > .cdg-root-items[data-layout="grid"] > .cdg-node:nth-child(n + 3),
+.cdg > .cdg-root-items[data-layout="grid"][data-columns="2"] > .cdg-node:nth-child(n + 3),
+.cdg > .cdg-root-items[data-layout="grid"][style*="--cdg-cols: 2"] > .cdg-node:nth-child(n + 3) {
+  border-top: var(--cdg-separator-size) solid var(--cdg-separator-color);
+  margin-top: 18px;
+  padding-top: 18px;
+}
+
+.cdg > .cdg-root-items[data-layout="grid"][data-columns="3"] > .cdg-node:nth-child(n + 3),
+.cdg > .cdg-root-items[data-layout="grid"][style*="--cdg-cols: 3"] > .cdg-node:nth-child(n + 3) {
+  border-top: 0;
+  margin-top: 0;
+  padding-top: 0;
+}
+
+.cdg > .cdg-root-items[data-layout="grid"][data-columns="3"] > .cdg-node:nth-child(n + 4),
+.cdg > .cdg-root-items[data-layout="grid"][style*="--cdg-cols: 3"] > .cdg-node:nth-child(n + 4) {
+  border-top: var(--cdg-separator-size) solid var(--cdg-separator-color);
+  margin-top: 18px;
+  padding-top: 18px;
+}
+
+/* Layout legacy gauche/droite : même logique que les H2 en colonnes. */
+.cdg > .cdg-cols {
+  gap: 0;
+  margin-left: calc(-1 * var(--cdg-outer-pad-x));
+  margin-right: calc(-1 * var(--cdg-outer-pad-x));
+}
+
+.cdg > .cdg-cols > .cdg-col {
+  padding-left: var(--cdg-outer-pad-x);
+  padding-right: var(--cdg-outer-pad-x);
+}
+
+.cdg > .cdg-cols:not([data-layout="stack"]) > .cdg-col + .cdg-col {
+  border-left: var(--cdg-separator-size) solid var(--cdg-separator-color);
+}
+
+.cdg > .cdg-cols[data-layout="stack"] > .cdg-col + .cdg-col {
+  border-left: 0;
+  border-top: var(--cdg-separator-size) solid var(--cdg-separator-color);
+  margin-top: 18px;
+  padding-top: 18px;
+}
+
+@media (max-width: 980px) {
+  .cdg > .cdg-root-items[data-layout="grid"]::before,
+  .cdg > .cdg-root-items[data-layout="grid"]::after {
+    display: none;
+    content: none;
+  }
+
+  .cdg > .cdg-root-items[data-layout="grid"] > .cdg-node,
+  .cdg > .cdg-root-items[data-layout="grid"][data-columns="3"] > .cdg-node:nth-child(n + 3),
+  .cdg > .cdg-root-items[data-layout="grid"][style*="--cdg-cols: 3"] > .cdg-node:nth-child(n + 3) {
+    border-top: 0;
+    margin-top: 0;
+    padding-top: 0;
+  }
+
+  .cdg > .cdg-root-items[data-layout="grid"] > .cdg-node + .cdg-node,
+  .cdg > .cdg-cols:not([data-layout="stack"]) > .cdg-col + .cdg-col {
+    border-left: 0;
+    border-top: var(--cdg-separator-size) solid var(--cdg-separator-color);
+    margin-top: 18px;
+    padding-top: 18px;
+  }
+}
+
+@media (max-width: 720px) {
+  .cdg > .cdg-root--with-controls .cdg-root-controls {
+    right: auto;
+  }
+}
+
+/* =========================
+   Correctif séparateurs continus — v0.5.2
+   =========================
+
+   Le titre ne crée plus d'espace sous sa bordure : la zone H2 commence
+   immédiatement sous le trait du titre. L'aération visuelle est déplacée
+   dans les cellules H2, ce qui permet aux séparateurs verticaux de rester
+   continus du haut au bas du diagramme.
+*/
+
+.cdg > .cdg-root,
+.cdg > .cdg-root--with-controls {
+  margin: 2px calc(-1 * var(--cdg-outer-pad-x)) 0 calc(-1 * var(--cdg-outer-pad-x));
+  padding: 0 var(--cdg-outer-pad-x) 10px var(--cdg-outer-pad-x);
+}
+
+.cdg > .cdg-root-items[data-layout="stack"],
+.cdg > .cdg-root-items[data-layout="grid"],
+.cdg > .cdg-cols {
+  margin-top: 0;
+}
+
+.cdg > .cdg-root-items[data-layout="stack"] > .cdg-node,
+.cdg > .cdg-root-items[data-layout="grid"] > .cdg-node,
+.cdg > .cdg-cols > .cdg-col {
+  padding-top: 16px;
+}
+
+.cdg > .cdg-root-items[data-layout="grid"] {
+  align-items: stretch;
+}
+
+.cdg > .cdg-root-items[data-layout="grid"] > .cdg-node {
+  display: flex;
+  flex-direction: column;
+}
+
+.cdg > .cdg-root-items[data-layout="stack"] > .cdg-node + .cdg-node,
+.cdg > .cdg-root-items[data-layout="grid"] > .cdg-node:nth-child(n + 3),
+.cdg > .cdg-root-items[data-layout="grid"][data-columns="2"] > .cdg-node:nth-child(n + 3),
+.cdg > .cdg-root-items[data-layout="grid"][style*="--cdg-cols: 2"] > .cdg-node:nth-child(n + 3),
+.cdg > .cdg-root-items[data-layout="grid"][data-columns="3"] > .cdg-node:nth-child(n + 4),
+.cdg > .cdg-root-items[data-layout="grid"][style*="--cdg-cols: 3"] > .cdg-node:nth-child(n + 4),
+.cdg > .cdg-cols[data-layout="stack"] > .cdg-col + .cdg-col {
+  padding-top: 18px;
+}
+
+@media (max-width: 980px) {
+  .cdg > .cdg-root-items[data-layout="grid"] > .cdg-node + .cdg-node,
+  .cdg > .cdg-cols:not([data-layout="stack"]) > .cdg-col + .cdg-col {
+    padding-top: 18px;
+  }
+}
+
+/* =========================
+   Correctif React — séparateurs H2 continus v0.5.3
+   =========================
+
+   Important : cette correction cible aussi `.cdg-root.cdg-root--with-controls`,
+   car c'est cette zone de titre qui créait un espace bas avant la grille H2.
+   Le trait vertical commence donc immédiatement sous la bordure du titre.
+*/
+
+.cdg {
+  --cdg-outer-pad-x: 12px;
+  --cdg-separator-color: var(--cdg-line-color);
+  --cdg-separator-size: 1px;
+}
+
+/* Zone titre : aucune marge basse. L'espace visuel reste dans le padding interne,
+   et la séparation titre/H2 sert de point de départ aux traits verticaux. */
+.cdg .cdg-root,
+.cdg .cdg-root.cdg-root--with-controls,
+.cdg .cdg-root--with-controls {
+  margin: 2px calc(-1 * var(--cdg-outer-pad-x)) 0 calc(-1 * var(--cdg-outer-pad-x)) !important;
+  padding: 0 var(--cdg-outer-pad-x) 10px var(--cdg-outer-pad-x) !important;
+  border-bottom: var(--cdg-separator-size) solid var(--cdg-separator-color) !important;
+}
+
+.cdg .cdg-root.cdg-root--with-controls .cdg-root-controls,
+.cdg .cdg-root--with-controls .cdg-root-controls {
+  right: var(--cdg-outer-pad-x) !important;
+}
+
+/* La zone H2 démarre immédiatement sous le titre. L'aération des puces H2
+   est portée par les cellules H2, pas par la marge du titre. */
+.cdg .cdg-root + .cdg-root-items,
+.cdg .cdg-root.cdg-root--with-controls + .cdg-root-items,
+.cdg .cdg-root--with-controls + .cdg-root-items,
+.cdg .cdg-root + .cdg-cols,
+.cdg .cdg-root.cdg-root--with-controls + .cdg-cols,
+.cdg .cdg-root--with-controls + .cdg-cols,
+.cdg .cdg-root-items,
+.cdg .cdg-cols {
+  margin-top: 0 !important;
+}
+
+/* H2 empilés : séparation horizontale continue, de bord à bord. */
+.cdg .cdg-root-items[data-layout="stack"] {
+  gap: 0 !important;
+  margin-left: calc(-1 * var(--cdg-outer-pad-x)) !important;
+  margin-right: calc(-1 * var(--cdg-outer-pad-x)) !important;
+}
+
+.cdg .cdg-root-items[data-layout="stack"] > .cdg-node {
+  padding: 16px var(--cdg-outer-pad-x) 0 var(--cdg-outer-pad-x) !important;
+}
+
+.cdg .cdg-root-items[data-layout="stack"] > .cdg-node + .cdg-node {
+  border-top: var(--cdg-separator-size) solid var(--cdg-separator-color) !important;
+  margin-top: 18px !important;
+  padding-top: 18px !important;
+}
+
+/* H2 en colonnes : le pseudo-élément dessine les séparateurs depuis le haut
+   exact de la zone H2 jusqu'au bas du diagramme. */
+.cdg .cdg-root-items[data-layout="grid"] {
+  gap: 0 !important;
+  align-items: stretch !important;
+  position: relative !important;
+  margin-top: 0 !important;
+  margin-left: calc(-1 * var(--cdg-outer-pad-x)) !important;
+  margin-right: calc(-1 * var(--cdg-outer-pad-x)) !important;
+}
+
+.cdg .cdg-root-items[data-layout="grid"]::before {
+  content: "" !important;
+  position: absolute !important;
+  top: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  z-index: 0 !important;
+  pointer-events: none !important;
+  background-image: linear-gradient(
+    to right,
+    transparent calc(100% - var(--cdg-separator-size)),
+    var(--cdg-separator-color) calc(100% - var(--cdg-separator-size))
+  ) !important;
+  background-size: calc(100% / var(--cdg-cols, 2)) 100% !important;
+  background-repeat: repeat-x !important;
+}
+
+/* Masque uniquement la fausse ligne du bord droit générée par le repeat. */
+.cdg .cdg-root-items[data-layout="grid"]::after {
+  content: "" !important;
+  position: absolute !important;
+  top: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  z-index: 1 !important;
+  width: var(--cdg-separator-size) !important;
+  pointer-events: none !important;
+  background: var(--ifm-background-surface-color) !important;
+}
+
+.cdg .cdg-root-items[data-layout="grid"] > .cdg-node {
+  position: relative !important;
+  z-index: 2 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  padding: 16px var(--cdg-outer-pad-x) 0 var(--cdg-outer-pad-x) !important;
+  min-height: 100% !important;
+}
+
+/* Legacy gauche/droite, si utilisé par certains diagrammes. */
+.cdg .cdg-cols:not([data-layout="stack"]) {
+  gap: 0 !important;
+  align-items: stretch !important;
+  margin-top: 0 !important;
+  margin-left: calc(-1 * var(--cdg-outer-pad-x)) !important;
+  margin-right: calc(-1 * var(--cdg-outer-pad-x)) !important;
+}
+
+.cdg .cdg-cols:not([data-layout="stack"]) > .cdg-col {
+  padding: 16px var(--cdg-outer-pad-x) 0 var(--cdg-outer-pad-x) !important;
+}
+
+.cdg .cdg-cols:not([data-layout="stack"]) > .cdg-col + .cdg-col {
+  border-left: var(--cdg-separator-size) solid var(--cdg-separator-color) !important;
+}
+
+@media (max-width: 980px) {
+  .cdg .cdg-root-items[data-layout="grid"]::before,
+  .cdg .cdg-root-items[data-layout="grid"]::after {
+    display: none !important;
+    content: none !important;
+  }
+
+  .cdg .cdg-root-items[data-layout="grid"] {
+    gap: 0 !important;
+  }
+
+  .cdg .cdg-root-items[data-layout="grid"] > .cdg-node {
+    border-top: 0 !important;
+    margin-top: 0 !important;
+    padding-top: 16px !important;
+  }
+
+  .cdg .cdg-root-items[data-layout="grid"] > .cdg-node + .cdg-node,
+  .cdg .cdg-cols:not([data-layout="stack"]) > .cdg-col + .cdg-col {
+    border-left: 0 !important;
+    border-top: var(--cdg-separator-size) solid var(--cdg-separator-color) !important;
+    margin-top: 18px !important;
+    padding-top: 18px !important;
+  }
+}
+
+
+/* =========================
+   Correctif séparateurs verticaux jusqu'à la bordure basse — v0.5.4
+   =========================
+
+   Le padding bas du conteneur .cdg créait visuellement une zone morte :
+   les séparateurs verticaux s'arrêtaient à la fin de la zone de contenu,
+   avant la bordure externe du diagramme. On étend donc la zone H2 dans
+   le padding bas du conteneur, puis on remet l'aération à l'intérieur
+   des colonnes H2 pour conserver un espacement uniforme autour des puces.
+*/
+
+.cdg {
+  --cdg-outer-pad-y: 10px;
+  --cdg-h2-cell-pad-y: 16px;
+}
+
+/* H2 empilés : la dernière section va jusqu'à la bordure basse du diagramme,
+   mais garde une respiration interne sous son contenu. */
+.cdg .cdg-root-items[data-layout="stack"] {
+  margin-bottom: calc(-1 * var(--cdg-outer-pad-y)) !important;
+}
+
+.cdg .cdg-root-items[data-layout="stack"] > .cdg-node {
+  padding-top: var(--cdg-h2-cell-pad-y) !important;
+  padding-bottom: var(--cdg-h2-cell-pad-y) !important;
+}
+
+.cdg .cdg-root-items[data-layout="stack"] > .cdg-node + .cdg-node {
+  margin-top: 0 !important;
+  padding-top: var(--cdg-h2-cell-pad-y) !important;
+}
+
+/* H2 en grille : la grille elle-même descend dans le padding bas de .cdg,
+   donc le pseudo-élément vertical peut toucher la bordure basse. */
+.cdg .cdg-root-items[data-layout="grid"] {
+  margin-bottom: calc(-1 * var(--cdg-outer-pad-y)) !important;
+  padding-bottom: 0 !important;
+}
+
+.cdg .cdg-root-items[data-layout="grid"] > .cdg-node {
+  padding-top: var(--cdg-h2-cell-pad-y) !important;
+  padding-bottom: var(--cdg-h2-cell-pad-y) !important;
+}
+
+.cdg .cdg-root-items[data-layout="grid"] > .cdg-node.cdg-root-row-separated,
+.cdg .cdg-root-items[data-layout="grid"] > .cdg-node:nth-child(n + 3) {
+  margin-top: 0 !important;
+}
+
+/* Variante gauche/droite historique : même principe que la grille H2. */
+.cdg .cdg-cols {
+  margin-bottom: calc(-1 * var(--cdg-outer-pad-y)) !important;
+}
+
+.cdg .cdg-cols > .cdg-col {
+  padding-top: var(--cdg-h2-cell-pad-y) !important;
+  padding-bottom: var(--cdg-h2-cell-pad-y) !important;
+}
+
+.cdg .cdg-cols[data-layout="stack"] > .cdg-col + .cdg-col,
+.cdg .cdg-cols:not([data-layout="stack"]) > .cdg-col + .cdg-col {
+  margin-top: 0 !important;
+}
+
+@media (max-width: 980px) {
+  .cdg .cdg-root-items[data-layout="grid"] > .cdg-node + .cdg-node,
+  .cdg .cdg-cols:not([data-layout="stack"]) > .cdg-col + .cdg-col,
+  .cdg .cdg-cols[data-layout="cols"] > .cdg-col + .cdg-col {
+    margin-top: 0 !important;
+    padding-top: var(--cdg-h2-cell-pad-y) !important;
+    padding-bottom: var(--cdg-h2-cell-pad-y) !important;
+  }
+}
+
+/* =========================
+   Correctif padding bas cdg-col — v0.5.5
+   =========================
+
+   Les règles précédentes utilisaient des sélecteurs plus spécifiques sur
+   .cdg-cols:not([data-layout="stack"]) > .cdg-col avec padding-bottom: 0.
+   Ce bloc final reprend la même spécificité pour garantir une aération
+   uniforme en bas des colonnes, sans interrompre le séparateur vertical.
+*/
+
+.cdg .cdg-cols:not([data-layout="stack"]) > .cdg-col,
+.cdg > .cdg-cols:not([data-layout="stack"]) > .cdg-col,
+.cdg .cdg-cols[data-layout="cols"] > .cdg-col,
+.cdg > .cdg-cols[data-layout="cols"] > .cdg-col,
+.cdg .cdg-cols > .cdg-col,
+.cdg > .cdg-cols > .cdg-col {
+  padding-top: var(--cdg-h2-cell-pad-y, 16px) !important;
+  padding-right: var(--cdg-outer-pad-x, 12px) !important;
+  padding-bottom: var(--cdg-h2-cell-pad-y, 16px) !important;
+  padding-left: var(--cdg-outer-pad-x, 12px) !important;
+}
+
+@media (max-width: 980px) {
+  .cdg .cdg-cols:not([data-layout="stack"]) > .cdg-col,
+  .cdg > .cdg-cols:not([data-layout="stack"]) > .cdg-col,
+  .cdg .cdg-cols[data-layout="cols"] > .cdg-col,
+  .cdg > .cdg-cols[data-layout="cols"] > .cdg-col,
+  .cdg .cdg-cols > .cdg-col,
+  .cdg > .cdg-cols > .cdg-col {
+    padding-top: var(--cdg-h2-cell-pad-y, 16px) !important;
+    padding-right: var(--cdg-outer-pad-x, 12px) !important;
+    padding-bottom: var(--cdg-h2-cell-pad-y, 16px) !important;
+    padding-left: var(--cdg-outer-pad-x, 12px) !important;
+  }
+}
+
+
+/* =========================
+   React sync Obsidian diagram presets v0.8.9
+   ========================= */
+
+/* =========================
+   v0.7.3 — squelette géométrique unifié par SVG
+   =========================
+
+   Les presets actifs utilisent maintenant un overlay SVG calculé à partir
+   de la position réelle des puces. Cela évite les morceaux de traits
+   hérités des pseudo-éléments CSS et garde le même rendu dans l'aperçu,
+   le mode lecture et le mode édition. */
+
+.cdg.cdg-svg-skeletons .cdg-h3-skeleton-node[data-diagram-preset]:not([data-diagram-preset="standard"]) {
+  position: relative !important;
+  overflow: visible !important;
+}
+
+.cdg.cdg-svg-skeletons .cdg-h3-skeleton-node[data-diagram-preset]:not([data-diagram-preset="standard"])::before,
+.cdg.cdg-svg-skeletons .cdg-h3-skeleton-node[data-diagram-preset]:not([data-diagram-preset="standard"]) > :is(.cdg-h2,.cdg-h3,.cdg-h4,.cdg-h5)::before,
+.cdg.cdg-svg-skeletons .cdg-h3-skeleton-node[data-diagram-preset]:not([data-diagram-preset="standard"]) > .cdg-mixed-rows::before,
+.cdg.cdg-svg-skeletons .cdg-h3-skeleton-node[data-diagram-preset]:not([data-diagram-preset="standard"]) .cdg-h3-skeleton-row::before,
+.cdg.cdg-svg-skeletons .cdg-h3-skeleton-node[data-diagram-preset]:not([data-diagram-preset="standard"]) .cdg-h3-skeleton-row > .cdg-preview-dnd-cell::before,
+.cdg.cdg-svg-skeletons .cdg-h3-skeleton-node[data-diagram-preset]:not([data-diagram-preset="standard"]) .cdg-h3-skeleton-row > .cdg-node::before {
+  display: none !important;
+  content: none !important;
+}
+
+.cdg .cdg-skeleton-svg-overlay {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  overflow: visible !important;
+  pointer-events: none !important;
+  z-index: 0 !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset]:not([data-diagram-preset="standard"]) > *:not(.cdg-skeleton-svg-overlay) {
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+/* Base commune des presets : les cellules gardent leur largeur, mais la puce
+   directe est alignée selon l'arborescence choisie. */
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree"] > :is(.cdg-h2,.cdg-h3),
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > :is(.cdg-h2,.cdg-h3),
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > :is(.cdg-h2,.cdg-h3),
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="org"] > :is(.cdg-h2,.cdg-h3),
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="timeline"] > :is(.cdg-h2,.cdg-h3) {
+  display: flex !important;
+  justify-content: center !important;
+  text-align: center !important;
+  margin-bottom: 12px !important;
+}
+
+/* Un H3 déjà placé à gauche/droite par son parent ne bouge pas lorsqu'on lui
+   applique un arbre latéral du même côté. */
+.cdg [data-skeleton-side="left"] > .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-h3,
+.cdg .cdg-h3-skeleton-node[data-skeleton-side="left"][data-diagram-preset="tree-left"] > .cdg-h3 {
+  justify-content: flex-end !important;
+  text-align: right !important;
+}
+
+.cdg [data-skeleton-side="right"] > .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-h3,
+.cdg .cdg-h3-skeleton-node[data-skeleton-side="right"][data-diagram-preset="tree-right"] > .cdg-h3 {
+  justify-content: flex-start !important;
+  text-align: left !important;
+}
+
+/* Arbre simple : deux colonnes autour de l'axe. Les puces de gauche touchent
+   l'axe par leur bord droit, les puces de droite par leur bord gauche. */
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree"] .cdg-h3-skeleton-row {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  align-items: center !important;
+  overflow: visible !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree"] .cdg-h3-skeleton-row > [data-skeleton-side="left"] > :is(.cdg-h3,.cdg-h4,.cdg-h5),
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree"] .cdg-h3-skeleton-row > [data-skeleton-side="left"] > .cdg-node > :is(.cdg-h3,.cdg-h4,.cdg-h5) {
+  justify-content: flex-end !important;
+  text-align: right !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree"] .cdg-h3-skeleton-row > [data-skeleton-side="left"] .cdg-chip {
+  margin-left: auto !important;
+  margin-right: 0 !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree"] .cdg-h3-skeleton-row > [data-skeleton-side="right"] > :is(.cdg-h3,.cdg-h4,.cdg-h5),
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree"] .cdg-h3-skeleton-row > [data-skeleton-side="right"] > .cdg-node > :is(.cdg-h3,.cdg-h4,.cdg-h5) {
+  justify-content: flex-start !important;
+  text-align: left !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree"] .cdg-h3-skeleton-row > [data-skeleton-side="right"] .cdg-chip {
+  margin-right: auto !important;
+  margin-left: 0 !important;
+}
+
+/* Arbres gauche/droit : sujet au-dessus, enfants uniquement du côté choisi,
+   près de l'axe et non plaqués au bord externe du diagramme. */
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows {
+  display: grid !important;
+  gap: var(--cdg-gap-group, 12px) !important;
+  overflow: visible !important;
+  width: 100% !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] .cdg-h3-skeleton-row,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] .cdg-h3-skeleton-row {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  align-items: center !important;
+  gap: var(--cdg-gap-group, 12px) !important;
+  overflow: visible !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] .cdg-h3-skeleton-row > [data-skeleton-side="left"] {
+  grid-column: 1 !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] .cdg-h3-skeleton-row > [data-skeleton-side="right"] {
+  grid-column: 2 !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] .cdg-h3-skeleton-row > [data-skeleton-side="left"] > :is(.cdg-h3,.cdg-h4,.cdg-h5),
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] .cdg-h3-skeleton-row > [data-skeleton-side="left"] > .cdg-node > :is(.cdg-h3,.cdg-h4,.cdg-h5) {
+  justify-content: flex-end !important;
+  text-align: right !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] .cdg-h3-skeleton-row > [data-skeleton-side="left"] .cdg-chip {
+  margin-left: auto !important;
+  margin-right: 0 !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] .cdg-h3-skeleton-row > [data-skeleton-side="right"] > :is(.cdg-h3,.cdg-h4,.cdg-h5),
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] .cdg-h3-skeleton-row > [data-skeleton-side="right"] > .cdg-node > :is(.cdg-h3,.cdg-h4,.cdg-h5) {
+  justify-content: flex-start !important;
+  text-align: left !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] .cdg-h3-skeleton-row > [data-skeleton-side="right"] .cdg-chip {
+  margin-right: auto !important;
+  margin-left: 0 !important;
+}
+
+/* Logigrammes : le sujet est au centre vertical du groupe enfant ; la colonne
+   enfant absorbe l'espace disponible. */
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="flow-left"],
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="flow-right"] {
+  display: grid !important;
+  align-items: center !important;
+  column-gap: clamp(18px, 4vw, 44px) !important;
+  width: 100% !important;
+  overflow: visible !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="flow-left"] {
+  grid-template-columns: minmax(0, 1fr) max-content !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="flow-right"] {
+  grid-template-columns: max-content minmax(0, 1fr) !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="flow-left"] > :is(.cdg-h2,.cdg-h3),
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="flow-right"] > :is(.cdg-h2,.cdg-h3) {
+  margin-bottom: 0 !important;
+  align-self: center !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="flow-left"] > .cdg-mixed-rows,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="flow-right"] > .cdg-mixed-rows {
+  display: grid !important;
+  gap: var(--cdg-gap-group, 12px) !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  overflow: visible !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="flow-left"] .cdg-h3-skeleton-row {
+  justify-items: end !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="flow-right"] .cdg-h3-skeleton-row {
+  justify-items: start !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="flow-left"] .cdg-h3-skeleton-row .cdg-chip {
+  margin-left: auto !important;
+  margin-right: 0 !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="flow-right"] .cdg-h3-skeleton-row .cdg-chip {
+  margin-right: auto !important;
+  margin-left: 0 !important;
+}
+
+/* Organigramme : le SVG fournit traverse + stems, le CSS ne fait que garder
+   les subordonnés sur une grille régulière. */
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="org"] .cdg-h3-skeleton-row {
+  align-items: start !important;
+  padding-top: 18px !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="org"] .cdg-h3-skeleton-row .cdg-chip {
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+
+
+/* =========================
+   v0.7.4 — ajustements géométriques SVG et presets imbriqués
+   ========================= */
+
+/* Les traits SVG sont dessinés comme un seul tracé : les croisements ne
+   s'assombrissent plus par superposition de plusieurs traits transparents. */
+.cdg .cdg-skeleton-svg-overlay path {
+  shape-rendering: geometricPrecision !important;
+  paint-order: stroke !important;
+}
+
+/* Arbre gauche/droit appliqué à un H3 déjà placé par son parent : seul l'arbre
+   simple recentre le H3. Les arbres latéraux conservent l'ancrage de colonne. */
+.cdg [data-skeleton-side="left"] > .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-h3,
+.cdg .cdg-h3-skeleton-node[data-skeleton-side="left"][data-diagram-preset="tree-left"] > .cdg-h3,
+.cdg [data-skeleton-side="left"] > .cdg-h3-skeleton-node[data-diagram-preset="flow-left"] > .cdg-h3,
+.cdg .cdg-h3-skeleton-node[data-skeleton-side="left"][data-diagram-preset="flow-left"] > .cdg-h3 {
+  justify-content: flex-end !important;
+  text-align: right !important;
+}
+
+.cdg [data-skeleton-side="left"] > .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-h3 .cdg-chip,
+.cdg .cdg-h3-skeleton-node[data-skeleton-side="left"][data-diagram-preset="tree-left"] > .cdg-h3 .cdg-chip,
+.cdg [data-skeleton-side="left"] > .cdg-h3-skeleton-node[data-diagram-preset="flow-left"] > .cdg-h3 .cdg-chip,
+.cdg .cdg-h3-skeleton-node[data-skeleton-side="left"][data-diagram-preset="flow-left"] > .cdg-h3 .cdg-chip {
+  margin-left: auto !important;
+  margin-right: 0 !important;
+}
+
+.cdg [data-skeleton-side="right"] > .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-h3,
+.cdg .cdg-h3-skeleton-node[data-skeleton-side="right"][data-diagram-preset="tree-right"] > .cdg-h3,
+.cdg [data-skeleton-side="right"] > .cdg-h3-skeleton-node[data-diagram-preset="flow-right"] > .cdg-h3,
+.cdg .cdg-h3-skeleton-node[data-skeleton-side="right"][data-diagram-preset="flow-right"] > .cdg-h3 {
+  justify-content: flex-start !important;
+  text-align: left !important;
+}
+
+.cdg [data-skeleton-side="right"] > .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-h3 .cdg-chip,
+.cdg .cdg-h3-skeleton-node[data-skeleton-side="right"][data-diagram-preset="tree-right"] > .cdg-h3 .cdg-chip,
+.cdg [data-skeleton-side="right"] > .cdg-h3-skeleton-node[data-diagram-preset="flow-right"] > .cdg-h3 .cdg-chip,
+.cdg .cdg-h3-skeleton-node[data-skeleton-side="right"][data-diagram-preset="flow-right"] > .cdg-h3 .cdg-chip {
+  margin-right: auto !important;
+  margin-left: 0 !important;
+}
+
+/* Logigrammes : branche courte, priorité à la largeur utile des sous-puces. */
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="flow-left"],
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="flow-right"] {
+  column-gap: var(--cdg-flow-gap, 10px) !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="flow-left"] {
+  grid-template-columns: minmax(max-content, 1fr) max-content !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="flow-right"] {
+  grid-template-columns: max-content minmax(max-content, 1fr) !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="flow-left"] > .cdg-mixed-rows,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="flow-right"] > .cdg-mixed-rows {
+  min-width: max-content !important;
+  width: auto !important;
+  max-width: none !important;
+}
+
+/* En Live Preview / mode édition, certains wrappers Obsidian créent de
+   nouveaux contextes de pile. Le SVG doit rester visible derrière les puces. */
+.markdown-source-view .cdg .cdg-skeleton-svg-overlay,
+.markdown-rendered .cdg .cdg-skeleton-svg-overlay,
+.cdg-builder-preview .cdg .cdg-skeleton-svg-overlay {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  z-index: 0 !important;
+}
+
+.markdown-source-view .cdg.cdg-svg-skeletons .cdg-h3-skeleton-node[data-diagram-preset]:not([data-diagram-preset="standard"]),
+.markdown-rendered .cdg.cdg-svg-skeletons .cdg-h3-skeleton-node[data-diagram-preset]:not([data-diagram-preset="standard"]),
+.cdg-builder-preview .cdg.cdg-svg-skeletons .cdg-h3-skeleton-node[data-diagram-preset]:not([data-diagram-preset="standard"]) {
+  position: relative !important;
+  overflow: visible !important;
+}
+
+/* =========================
+   v0.7.5 — correction alignement presets H3 imbriqués
+   =========================
+
+   Dans un arbre H2, le parent aligne ses H3 à droite/gauche selon leur colonne.
+   Ces règles plus spécifiques rétablissent l'intention du preset appliqué au H3 :
+   - Arbre simple : le H3 se recentre dans sa colonne.
+   - Arbre gauche/droit et logigramme gauche/droit : le H3 garde l'ancrage latéral.
+*/
+
+/* Arbre simple appliqué à un H3 : toujours centré dans sa colonne pour laisser
+   de la place aux H4 de part et d'autre. */
+.cdg .cdg-h3-skeleton-node[data-diagram-preset] .cdg-h3-skeleton-row > [data-skeleton-side="left"] > .cdg-h3-skeleton-node[data-diagram-preset="tree"] > .cdg-h3,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset] .cdg-h3-skeleton-row > [data-skeleton-side="right"] > .cdg-h3-skeleton-node[data-diagram-preset="tree"] > .cdg-h3,
+.cdg [data-skeleton-side="left"] > .cdg-h3-skeleton-node[data-diagram-preset="tree"] > .cdg-h3,
+.cdg [data-skeleton-side="right"] > .cdg-h3-skeleton-node[data-diagram-preset="tree"] > .cdg-h3,
+.cdg .cdg-h3-skeleton-node[data-skeleton-side="left"][data-diagram-preset="tree"] > .cdg-h3,
+.cdg .cdg-h3-skeleton-node[data-skeleton-side="right"][data-diagram-preset="tree"] > .cdg-h3 {
+  justify-content: center !important;
+  text-align: center !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset] .cdg-h3-skeleton-row > [data-skeleton-side="left"] > .cdg-h3-skeleton-node[data-diagram-preset="tree"] > .cdg-h3 .cdg-chip,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset] .cdg-h3-skeleton-row > [data-skeleton-side="right"] > .cdg-h3-skeleton-node[data-diagram-preset="tree"] > .cdg-h3 .cdg-chip,
+.cdg [data-skeleton-side="left"] > .cdg-h3-skeleton-node[data-diagram-preset="tree"] > .cdg-h3 .cdg-chip,
+.cdg [data-skeleton-side="right"] > .cdg-h3-skeleton-node[data-diagram-preset="tree"] > .cdg-h3 .cdg-chip,
+.cdg .cdg-h3-skeleton-node[data-skeleton-side="left"][data-diagram-preset="tree"] > .cdg-h3 .cdg-chip,
+.cdg .cdg-h3-skeleton-node[data-skeleton-side="right"][data-diagram-preset="tree"] > .cdg-h3 .cdg-chip {
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+/* Arbre/logigramme gauche appliqué à un H3 situé dans la colonne gauche du parent :
+   le H3 reste collé à droite, c'est-à-dire contre l'axe de l'arbre parent. */
+.cdg .cdg-h3-skeleton-node[data-diagram-preset] .cdg-h3-skeleton-row > [data-skeleton-side="left"] > .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-h3,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset] .cdg-h3-skeleton-row > [data-skeleton-side="left"] > .cdg-h3-skeleton-node[data-diagram-preset="flow-left"] > .cdg-h3,
+.cdg [data-skeleton-side="left"] > .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-h3,
+.cdg [data-skeleton-side="left"] > .cdg-h3-skeleton-node[data-diagram-preset="flow-left"] > .cdg-h3,
+.cdg .cdg-h3-skeleton-node[data-skeleton-side="left"][data-diagram-preset="tree-left"] > .cdg-h3,
+.cdg .cdg-h3-skeleton-node[data-skeleton-side="left"][data-diagram-preset="flow-left"] > .cdg-h3 {
+  justify-content: flex-end !important;
+  text-align: right !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset] .cdg-h3-skeleton-row > [data-skeleton-side="left"] > .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-h3 .cdg-chip,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset] .cdg-h3-skeleton-row > [data-skeleton-side="left"] > .cdg-h3-skeleton-node[data-diagram-preset="flow-left"] > .cdg-h3 .cdg-chip,
+.cdg [data-skeleton-side="left"] > .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-h3 .cdg-chip,
+.cdg [data-skeleton-side="left"] > .cdg-h3-skeleton-node[data-diagram-preset="flow-left"] > .cdg-h3 .cdg-chip,
+.cdg .cdg-h3-skeleton-node[data-skeleton-side="left"][data-diagram-preset="tree-left"] > .cdg-h3 .cdg-chip,
+.cdg .cdg-h3-skeleton-node[data-skeleton-side="left"][data-diagram-preset="flow-left"] > .cdg-h3 .cdg-chip {
+  margin-left: auto !important;
+  margin-right: 0 !important;
+}
+
+/* Miroir pour la colonne droite. */
+.cdg .cdg-h3-skeleton-node[data-diagram-preset] .cdg-h3-skeleton-row > [data-skeleton-side="right"] > .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-h3,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset] .cdg-h3-skeleton-row > [data-skeleton-side="right"] > .cdg-h3-skeleton-node[data-diagram-preset="flow-right"] > .cdg-h3,
+.cdg [data-skeleton-side="right"] > .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-h3,
+.cdg [data-skeleton-side="right"] > .cdg-h3-skeleton-node[data-diagram-preset="flow-right"] > .cdg-h3,
+.cdg .cdg-h3-skeleton-node[data-skeleton-side="right"][data-diagram-preset="tree-right"] > .cdg-h3,
+.cdg .cdg-h3-skeleton-node[data-skeleton-side="right"][data-diagram-preset="flow-right"] > .cdg-h3 {
+  justify-content: flex-start !important;
+  text-align: left !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset] .cdg-h3-skeleton-row > [data-skeleton-side="right"] > .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-h3 .cdg-chip,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset] .cdg-h3-skeleton-row > [data-skeleton-side="right"] > .cdg-h3-skeleton-node[data-diagram-preset="flow-right"] > .cdg-h3 .cdg-chip,
+.cdg [data-skeleton-side="right"] > .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-h3 .cdg-chip,
+.cdg [data-skeleton-side="right"] > .cdg-h3-skeleton-node[data-diagram-preset="flow-right"] > .cdg-h3 .cdg-chip,
+.cdg .cdg-h3-skeleton-node[data-skeleton-side="right"][data-diagram-preset="tree-right"] > .cdg-h3 .cdg-chip,
+.cdg .cdg-h3-skeleton-node[data-skeleton-side="right"][data-diagram-preset="flow-right"] > .cdg-h3 .cdg-chip {
+  margin-right: auto !important;
+  margin-left: 0 !important;
+}
+
+/* =========================
+   v0.7.6 — correction finale alignement arbre/logigramme gauche-droite
+   =========================
+
+   Règle de base :
+   - arbre simple sur un H3 = H3 centré dans sa colonne ;
+   - arbre gauche / logigramme gauche sur un H3 = H3 collé à droite de sa zone ;
+   - arbre droit / logigramme droit sur un H3 = H3 collé à gauche de sa zone.
+
+   Les règles ci-dessous sont volontairement placées tout en bas pour annuler
+   les anciens correctifs accumulés sur les versions précédentes.
+*/
+
+/* Les nodes imbriqués ne doivent jamais déborder dans la colonne H2 voisine. */
+.cdg .cdg-h3-skeleton-row > .cdg-node,
+.cdg .cdg-h3-skeleton-row > .cdg-preview-dnd-cell,
+.cdg .cdg-h3-skeleton-row > .cdg-node > .cdg-h3-skeleton-node,
+.cdg .cdg-h3-skeleton-row > .cdg-preview-dnd-cell > .cdg-h3-skeleton-node {
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* Arbre simple : le sujet H3 est centré pour laisser de la place aux H4
+   à gauche et à droite. */
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree"] > .cdg-h3 {
+  justify-content: center !important;
+  text-align: center !important;
+  width: 100% !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree"] > .cdg-h3 > .cdg-chip {
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+/* Arbre gauche : le sujet H3 est à droite de sa zone, puis ses H4 partent
+   en dessous vers la gauche. */
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-h3 {
+  justify-content: flex-end !important;
+  text-align: right !important;
+  width: 100% !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-h3 > .cdg-chip {
+  margin-left: auto !important;
+  margin-right: 0 !important;
+}
+
+/* Arbre droit : miroir de l'arbre gauche. */
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-h3 {
+  justify-content: flex-start !important;
+  text-align: left !important;
+  width: 100% !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-h3 > .cdg-chip {
+  margin-left: 0 !important;
+  margin-right: auto !important;
+}
+
+/* Logigramme gauche/droit : même ancrage du sujet que les arbres latéraux,
+   mais la grille reste latérale. La colonne enfant absorbe l'espace restant
+   au lieu de pousser le sujet dans le H2 voisin. */
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="flow-left"],
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="flow-right"] {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  column-gap: var(--cdg-flow-gap, 10px) !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="flow-left"] {
+  grid-template-columns: minmax(0, 1fr) max-content !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="flow-right"] {
+  grid-template-columns: max-content minmax(0, 1fr) !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="flow-left"] > .cdg-h3 {
+  justify-content: flex-end !important;
+  text-align: right !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="flow-left"] > .cdg-h3 > .cdg-chip {
+  margin-left: auto !important;
+  margin-right: 0 !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="flow-right"] > .cdg-h3 {
+  justify-content: flex-start !important;
+  text-align: left !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="flow-right"] > .cdg-h3 > .cdg-chip {
+  margin-left: 0 !important;
+  margin-right: auto !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="flow-left"] > .cdg-mixed-rows,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="flow-right"] > .cdg-mixed-rows {
+  min-width: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="flow-left"] .cdg-h3-skeleton-row,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="flow-right"] .cdg-h3-skeleton-row {
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="flow-left"] .cdg-h3-skeleton-row .cdg-chip,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="flow-right"] .cdg-h3-skeleton-row .cdg-chip {
+  max-width: 100% !important;
+}
+
+/* =========================
+   v0.7.7 — largeur utile des enfants en arbres latéraux
+   =========================
+
+   Dans un arbre gauche/droit, le tronc descend depuis la puce principale.
+   Les enfants doivent utiliser presque toute la place disponible, avec une
+   réserve minimale pour le tronc et le petit trait de connexion. */
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"],
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] {
+  --cdg-tree-side-gap: 6px !important;
+  --cdg-tree-axis-reserve: clamp(28px, 12%, 46px) !important;
+}
+
+/* Arbre gauche : grande zone enfant à gauche, petite réserve d'axe à droite. */
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] .cdg-h3-skeleton-row {
+  grid-template-columns: minmax(0, 1fr) var(--cdg-tree-axis-reserve) !important;
+  column-gap: var(--cdg-tree-side-gap) !important;
+}
+
+/* Arbre droit : miroir. */
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] .cdg-h3-skeleton-row {
+  grid-template-columns: var(--cdg-tree-axis-reserve) minmax(0, 1fr) !important;
+  column-gap: var(--cdg-tree-side-gap) !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] .cdg-h3-skeleton-row > [data-skeleton-side="left"],
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] .cdg-h3-skeleton-row > [data-skeleton-side="right"] {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  width: 100% !important;
+}
+
+/* Les wrappers et les chips enfants peuvent s'étendre dans toute la zone utile. */
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] .cdg-h3-skeleton-row > [data-skeleton-side="left"] :is(.cdg-h3,.cdg-h4,.cdg-h5),
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] .cdg-h3-skeleton-row > [data-skeleton-side="left"] > .cdg-node :is(.cdg-h3,.cdg-h4,.cdg-h5),
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] .cdg-h3-skeleton-row > [data-skeleton-side="right"] :is(.cdg-h3,.cdg-h4,.cdg-h5),
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] .cdg-h3-skeleton-row > [data-skeleton-side="right"] > .cdg-node :is(.cdg-h3,.cdg-h4,.cdg-h5) {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] .cdg-h3-skeleton-row > [data-skeleton-side="left"] .cdg-chip,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] .cdg-h3-skeleton-row > [data-skeleton-side="right"] .cdg-chip {
+  max-width: 100% !important;
+}
+
+
+/* =========================
+   v0.7.8 — typographie et compaction H4
+   ========================= */
+
+.cdg .cdg-chip,
+.cdg-builder-preview .cdg .cdg-chip {
+  text-align: center !important;
+  justify-content: center !important;
+}
+
+.cdg .cdg-chip-h2,
+.cdg-builder-preview .cdg .cdg-chip-h2 {
+  font-size: 1.04rem !important;
+  font-weight: 800 !important;
+  line-height: 1.18 !important;
+  padding: 0.38rem 0.85rem !important;
+}
+
+.cdg .cdg-chip-h3,
+.cdg-builder-preview .cdg .cdg-chip-h3 {
+  font-size: 0.95rem !important;
+  font-weight: 700 !important;
+  line-height: 1.18 !important;
+  padding: 0.30rem 0.72rem !important;
+}
+
+.cdg .cdg-chip-h4,
+.cdg .cdg-chip-h5,
+.cdg .cdg-chip-h6,
+.cdg-builder-preview .cdg .cdg-chip-h4,
+.cdg-builder-preview .cdg .cdg-chip-h5,
+.cdg-builder-preview .cdg .cdg-chip-h6 {
+  text-align: center !important;
+  justify-content: center !important;
+}
+
+/* Réduire l'espace vertical entre les H4 / sous-puces. */
+.cdg .cdg-h4,
+.cdg .cdg-h5,
+.cdg-builder-preview .cdg .cdg-h4,
+.cdg-builder-preview .cdg .cdg-h5 {
+  margin-bottom: 4px !important;
+}
+
+.cdg .cdg-sublist[data-layout="stack"],
+.cdg-builder-preview .cdg .cdg-sublist[data-layout="stack"] {
+  gap: 5px !important;
+}
+
+.cdg .cdg-groups,
+.cdg .cdg-mixed-rows,
+.cdg .cdg-mixed-row,
+.cdg-builder-preview .cdg .cdg-groups,
+.cdg-builder-preview .cdg .cdg-mixed-rows,
+.cdg-builder-preview .cdg .cdg-mixed-row {
+  row-gap: 6px !important;
+}
+
+.cdg .cdg-h3-skeleton-node .cdg-h3-skeleton-row,
+.cdg-builder-preview .cdg .cdg-h3-skeleton-node .cdg-h3-skeleton-row {
+  row-gap: 6px !important;
+}
+
+
+/* =========================
+   v0.7.9 — force le rendu final Obsidian
+   =========================
+   Le diagramme final est rendu dans .markdown-rendered / .markdown-source-view.
+   Ces sélecteurs sont plus spécifiques que les anciennes règles de base.
+*/
+
+.markdown-rendered .cdg .cdg-chip,
+.markdown-source-view .cdg .cdg-chip,
+.markdown-preview-view .cdg .cdg-chip,
+.markdown-reading-view .cdg .cdg-chip,
+.markdown-rendered .cdg .cdg-chip:is(.cdg-chip-h2,.cdg-chip-h3,.cdg-chip-h4,.cdg-chip-h5,.cdg-chip-h6),
+.markdown-source-view .cdg .cdg-chip:is(.cdg-chip-h2,.cdg-chip-h3,.cdg-chip-h4,.cdg-chip-h5,.cdg-chip-h6),
+.cdg .cdg-chip {
+  text-align: center !important;
+  justify-content: center !important;
+}
+
+.markdown-rendered .cdg .cdg-chip-h2,
+.markdown-source-view .cdg .cdg-chip-h2,
+.markdown-preview-view .cdg .cdg-chip-h2,
+.markdown-reading-view .cdg .cdg-chip-h2,
+.cdg .cdg-chip-h2 {
+  font-size: 1.04rem !important;
+  font-weight: 800 !important;
+  line-height: 1.18 !important;
+  padding: 0.38rem 0.85rem !important;
+  text-align: center !important;
+  justify-content: center !important;
+}
+
+.markdown-rendered .cdg .cdg-chip-h3,
+.markdown-source-view .cdg .cdg-chip-h3,
+.markdown-preview-view .cdg .cdg-chip-h3,
+.markdown-reading-view .cdg .cdg-chip-h3,
+.cdg .cdg-chip-h3 {
+  font-size: 0.95rem !important;
+  font-weight: 700 !important;
+  line-height: 1.18 !important;
+  padding: 0.30rem 0.72rem !important;
+  text-align: center !important;
+  justify-content: center !important;
+}
+
+.markdown-rendered .cdg .cdg-chip-h4,
+.markdown-rendered .cdg .cdg-chip-h5,
+.markdown-rendered .cdg .cdg-chip-h6,
+.markdown-source-view .cdg .cdg-chip-h4,
+.markdown-source-view .cdg .cdg-chip-h5,
+.markdown-source-view .cdg .cdg-chip-h6,
+.markdown-preview-view .cdg .cdg-chip-h4,
+.markdown-preview-view .cdg .cdg-chip-h5,
+.markdown-preview-view .cdg .cdg-chip-h6,
+.markdown-reading-view .cdg .cdg-chip-h4,
+.markdown-reading-view .cdg .cdg-chip-h5,
+.markdown-reading-view .cdg .cdg-chip-h6,
+.cdg .cdg-chip-h4,
+.cdg .cdg-chip-h5,
+.cdg .cdg-chip-h6 {
+  text-align: center !important;
+  justify-content: center !important;
+}
+
+/* Compaction H4 / sous-puces dans le rendu final et dans l'aperçu. */
+.markdown-rendered .cdg .cdg-h4,
+.markdown-rendered .cdg .cdg-h5,
+.markdown-source-view .cdg .cdg-h4,
+.markdown-source-view .cdg .cdg-h5,
+.markdown-preview-view .cdg .cdg-h4,
+.markdown-preview-view .cdg .cdg-h5,
+.markdown-reading-view .cdg .cdg-h4,
+.markdown-reading-view .cdg .cdg-h5,
+.cdg .cdg-h4,
+.cdg .cdg-h5 {
+  margin-bottom: 3px !important;
+}
+
+.markdown-rendered .cdg .cdg-sublist[data-layout="stack"],
+.markdown-source-view .cdg .cdg-sublist[data-layout="stack"],
+.markdown-preview-view .cdg .cdg-sublist[data-layout="stack"],
+.markdown-reading-view .cdg .cdg-sublist[data-layout="stack"],
+.cdg .cdg-sublist[data-layout="stack"] {
+  gap: 4px !important;
+}
+
+.markdown-rendered .cdg .cdg-groups,
+.markdown-rendered .cdg .cdg-mixed-rows,
+.markdown-rendered .cdg .cdg-mixed-row,
+.markdown-source-view .cdg .cdg-groups,
+.markdown-source-view .cdg .cdg-mixed-rows,
+.markdown-source-view .cdg .cdg-mixed-row,
+.markdown-preview-view .cdg .cdg-groups,
+.markdown-preview-view .cdg .cdg-mixed-rows,
+.markdown-preview-view .cdg .cdg-mixed-row,
+.markdown-reading-view .cdg .cdg-groups,
+.markdown-reading-view .cdg .cdg-mixed-rows,
+.markdown-reading-view .cdg .cdg-mixed-row,
+.cdg .cdg-groups,
+.cdg .cdg-mixed-rows,
+.cdg .cdg-mixed-row {
+  row-gap: 5px !important;
+}
+
+.markdown-rendered .cdg .cdg-h3-skeleton-node .cdg-h3-skeleton-row,
+.markdown-source-view .cdg .cdg-h3-skeleton-node .cdg-h3-skeleton-row,
+.markdown-preview-view .cdg .cdg-h3-skeleton-node .cdg-h3-skeleton-row,
+.markdown-reading-view .cdg .cdg-h3-skeleton-node .cdg-h3-skeleton-row,
+.cdg .cdg-h3-skeleton-node .cdg-h3-skeleton-row {
+  row-gap: 5px !important;
+}
+
+
+/* =========================
+   v0.8.0 — typographie plus légère + compaction réelle H4
+   ========================= */
+
+/* Augmentation volontairement modérée : on garde la hiérarchie sans grossir
+   excessivement les puces. */
+.markdown-rendered .cdg .cdg-chip-h2,
+.markdown-source-view .cdg .cdg-chip-h2,
+.markdown-preview-view .cdg .cdg-chip-h2,
+.markdown-reading-view .cdg .cdg-chip-h2,
+.cdg-builder-preview .cdg .cdg-chip-h2,
+.cdg .cdg-chip-h2 {
+  font-size: 0.92rem !important;
+  font-weight: 740 !important;
+  line-height: 1.18 !important;
+  padding: 0.30rem 0.70rem !important;
+  text-align: center !important;
+  justify-content: center !important;
+}
+
+.markdown-rendered .cdg .cdg-chip-h3,
+.markdown-source-view .cdg .cdg-chip-h3,
+.markdown-preview-view .cdg .cdg-chip-h3,
+.markdown-reading-view .cdg .cdg-chip-h3,
+.cdg-builder-preview .cdg .cdg-chip-h3,
+.cdg .cdg-chip-h3 {
+  font-size: 0.88rem !important;
+  font-weight: 640 !important;
+  line-height: 1.18 !important;
+  padding: 0.26rem 0.62rem !important;
+  text-align: center !important;
+  justify-content: center !important;
+}
+
+.markdown-rendered .cdg .cdg-chip,
+.markdown-source-view .cdg .cdg-chip,
+.markdown-preview-view .cdg .cdg-chip,
+.markdown-reading-view .cdg .cdg-chip,
+.cdg-builder-preview .cdg .cdg-chip,
+.cdg .cdg-chip {
+  text-align: center !important;
+  justify-content: center !important;
+}
+
+/* Les gros gaps H4 venaient surtout des wrappers de presets qui avaient des
+   `gap: var(--cdg-gap-group)` très spécifiques. On cible donc les wrappers
+   réels des presets, pas seulement .cdg-h4. */
+.markdown-rendered .cdg .cdg-h3-skeleton-node[data-diagram-preset] > .cdg-mixed-rows,
+.markdown-source-view .cdg .cdg-h3-skeleton-node[data-diagram-preset] > .cdg-mixed-rows,
+.markdown-preview-view .cdg .cdg-h3-skeleton-node[data-diagram-preset] > .cdg-mixed-rows,
+.markdown-reading-view .cdg .cdg-h3-skeleton-node[data-diagram-preset] > .cdg-mixed-rows,
+.cdg-builder-preview .cdg .cdg-h3-skeleton-node[data-diagram-preset] > .cdg-mixed-rows,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset] > .cdg-mixed-rows {
+  gap: 3px !important;
+  row-gap: 3px !important;
+}
+
+.markdown-rendered .cdg .cdg-h3-skeleton-node[data-diagram-preset] .cdg-h3-skeleton-row,
+.markdown-source-view .cdg .cdg-h3-skeleton-node[data-diagram-preset] .cdg-h3-skeleton-row,
+.markdown-preview-view .cdg .cdg-h3-skeleton-node[data-diagram-preset] .cdg-h3-skeleton-row,
+.markdown-reading-view .cdg .cdg-h3-skeleton-node[data-diagram-preset] .cdg-h3-skeleton-row,
+.cdg-builder-preview .cdg .cdg-h3-skeleton-node[data-diagram-preset] .cdg-h3-skeleton-row,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset] .cdg-h3-skeleton-row {
+  gap: 3px !important;
+  row-gap: 3px !important;
+}
+
+.markdown-rendered .cdg .cdg-sublist[data-layout="stack"],
+.markdown-source-view .cdg .cdg-sublist[data-layout="stack"],
+.markdown-preview-view .cdg .cdg-sublist[data-layout="stack"],
+.markdown-reading-view .cdg .cdg-sublist[data-layout="stack"],
+.cdg-builder-preview .cdg .cdg-sublist[data-layout="stack"],
+.cdg .cdg-sublist[data-layout="stack"] {
+  gap: 3px !important;
+}
+
+.markdown-rendered .cdg .cdg-h4,
+.markdown-rendered .cdg .cdg-h5,
+.markdown-source-view .cdg .cdg-h4,
+.markdown-source-view .cdg .cdg-h5,
+.markdown-preview-view .cdg .cdg-h4,
+.markdown-preview-view .cdg .cdg-h5,
+.markdown-reading-view .cdg .cdg-h4,
+.markdown-reading-view .cdg .cdg-h5,
+.cdg-builder-preview .cdg .cdg-h4,
+.cdg-builder-preview .cdg .cdg-h5,
+.cdg .cdg-h4,
+.cdg .cdg-h5 {
+  margin-bottom: 1px !important;
+}
+
+/* Les puces H4 restent lisibles mais ne gonflent pas l'espacement vertical. */
+.markdown-rendered .cdg .cdg-chip-h4,
+.markdown-source-view .cdg .cdg-chip-h4,
+.markdown-preview-view .cdg .cdg-chip-h4,
+.markdown-reading-view .cdg .cdg-chip-h4,
+.cdg-builder-preview .cdg .cdg-chip-h4,
+.cdg .cdg-chip-h4 {
+  line-height: 1.15 !important;
+  padding-top: 0.22rem !important;
+  padding-bottom: 0.22rem !important;
+}
+
+/* =========================
+   v0.8.1 — respiration autour du squelette central
+   =========================
+   v0.8.0 avait réduit `gap`, ce qui compactait bien les H4 mais collait
+   certaines puces au tronc SVG. On garde donc le row-gap réduit, mais on
+   rétablit un petit espace horizontal pour laisser apparaître les branches. */
+
+.markdown-rendered .cdg .cdg-h3-skeleton-node[data-diagram-preset] .cdg-h3-skeleton-row,
+.markdown-source-view .cdg .cdg-h3-skeleton-node[data-diagram-preset] .cdg-h3-skeleton-row,
+.markdown-preview-view .cdg .cdg-h3-skeleton-node[data-diagram-preset] .cdg-h3-skeleton-row,
+.markdown-reading-view .cdg .cdg-h3-skeleton-node[data-diagram-preset] .cdg-h3-skeleton-row,
+.cdg-builder-preview .cdg .cdg-h3-skeleton-node[data-diagram-preset] .cdg-h3-skeleton-row,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset] .cdg-h3-skeleton-row {
+  column-gap: 9px !important;
+  row-gap: 3px !important;
+}
+
+/* Pour les arbres latéraux, on garde une réserve très courte pour le tronc,
+   mais on évite que la puce touche directement l'axe. */
+.markdown-rendered .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"],
+.markdown-source-view .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"],
+.markdown-preview-view .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"],
+.markdown-reading-view .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"],
+.cdg-builder-preview .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"],
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"],
+.markdown-rendered .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"],
+.markdown-source-view .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"],
+.markdown-preview-view .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"],
+.markdown-reading-view .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"],
+.cdg-builder-preview .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"],
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] {
+  --cdg-tree-side-gap: 9px !important;
+}
+
+.markdown-rendered .cdg .cdg-h3-skeleton-row > [data-skeleton-side="left"],
+.markdown-source-view .cdg .cdg-h3-skeleton-row > [data-skeleton-side="left"],
+.markdown-preview-view .cdg .cdg-h3-skeleton-row > [data-skeleton-side="left"],
+.markdown-reading-view .cdg .cdg-h3-skeleton-row > [data-skeleton-side="left"],
+.cdg-builder-preview .cdg .cdg-h3-skeleton-row > [data-skeleton-side="left"],
+.cdg .cdg-h3-skeleton-row > [data-skeleton-side="left"] {
+  padding-right: 6px !important;
+  box-sizing: border-box !important;
+}
+
+.markdown-rendered .cdg .cdg-h3-skeleton-row > [data-skeleton-side="right"],
+.markdown-source-view .cdg .cdg-h3-skeleton-row > [data-skeleton-side="right"],
+.markdown-preview-view .cdg .cdg-h3-skeleton-row > [data-skeleton-side="right"],
+.markdown-reading-view .cdg .cdg-h3-skeleton-row > [data-skeleton-side="right"],
+.cdg-builder-preview .cdg .cdg-h3-skeleton-row > [data-skeleton-side="right"],
+.cdg .cdg-h3-skeleton-row > [data-skeleton-side="right"] {
+  padding-left: 6px !important;
+  box-sizing: border-box !important;
+}
+
+/* =========================
+   v0.8.2 — isolation stricte des presets imbriqués
+   =========================
+   Les anciens sélecteurs de presets étaient descendants. Un H2 en "Arbre"
+   pouvait donc imposer ses règles aux lignes H4 d'un H3 imbriqué en
+   "Arbre gauche/droit". Les règles ci-dessous ne ciblent que les lignes
+   DIRECTES du node qui porte le preset.
+*/
+
+/* Base directe pour les rangées de preset, en rendu final comme dans le modal. */
+.markdown-rendered .cdg .cdg-h3-skeleton-node[data-diagram-preset] > .cdg-mixed-rows > .cdg-h3-skeleton-row,
+.markdown-source-view .cdg .cdg-h3-skeleton-node[data-diagram-preset] > .cdg-mixed-rows > .cdg-h3-skeleton-row,
+.markdown-preview-view .cdg .cdg-h3-skeleton-node[data-diagram-preset] > .cdg-mixed-rows > .cdg-h3-skeleton-row,
+.markdown-reading-view .cdg .cdg-h3-skeleton-node[data-diagram-preset] > .cdg-mixed-rows > .cdg-h3-skeleton-row,
+.cdg-builder-preview .cdg .cdg-h3-skeleton-node[data-diagram-preset] > .cdg-mixed-rows > .cdg-h3-skeleton-row,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset] > .cdg-mixed-rows > .cdg-h3-skeleton-row,
+.markdown-rendered .cdg .cdg-h3-skeleton-node[data-diagram-preset] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row,
+.markdown-source-view .cdg .cdg-h3-skeleton-node[data-diagram-preset] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row,
+.markdown-preview-view .cdg .cdg-h3-skeleton-node[data-diagram-preset] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row,
+.markdown-reading-view .cdg .cdg-h3-skeleton-node[data-diagram-preset] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row,
+.cdg-builder-preview .cdg .cdg-h3-skeleton-node[data-diagram-preset] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row {
+  display: grid !important;
+  align-items: center !important;
+  column-gap: 9px !important;
+  row-gap: 3px !important;
+  overflow: visible !important;
+}
+
+/* Arbre simple direct : gauche/droite autour de l'axe du node courant. */
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree"] > .cdg-mixed-rows > .cdg-h3-skeleton-row,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree"] > .cdg-mixed-rows > .cdg-h3-skeleton-row > [data-skeleton-side="left"],
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row > [data-skeleton-side="left"] {
+  grid-column: 1 !important;
+  justify-self: stretch !important;
+  padding-right: 6px !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree"] > .cdg-mixed-rows > .cdg-h3-skeleton-row > [data-skeleton-side="right"],
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row > [data-skeleton-side="right"] {
+  grid-column: 2 !important;
+  justify-self: stretch !important;
+  padding-left: 6px !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree"] > .cdg-mixed-rows > .cdg-h3-skeleton-row > [data-skeleton-side="left"] :is(.cdg-h3,.cdg-h4,.cdg-h5),
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row > [data-skeleton-side="left"] :is(.cdg-h3,.cdg-h4,.cdg-h5) {
+  justify-content: flex-end !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree"] > .cdg-mixed-rows > .cdg-h3-skeleton-row > [data-skeleton-side="left"] .cdg-chip,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row > [data-skeleton-side="left"] .cdg-chip {
+  margin-left: auto !important;
+  margin-right: 0 !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree"] > .cdg-mixed-rows > .cdg-h3-skeleton-row > [data-skeleton-side="right"] :is(.cdg-h3,.cdg-h4,.cdg-h5),
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row > [data-skeleton-side="right"] :is(.cdg-h3,.cdg-h4,.cdg-h5) {
+  justify-content: flex-start !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree"] > .cdg-mixed-rows > .cdg-h3-skeleton-row > [data-skeleton-side="right"] .cdg-chip,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row > [data-skeleton-side="right"] .cdg-chip {
+  margin-left: 0 !important;
+  margin-right: auto !important;
+}
+
+/* Arbres latéraux directs : une colonne utile + une réserve d'axe courte. */
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"],
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] {
+  --cdg-tree-axis-reserve: clamp(30px, 10%, 48px) !important;
+  --cdg-tree-side-gap: 9px !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows > .cdg-h3-skeleton-row,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row {
+  grid-template-columns: minmax(0, 1fr) var(--cdg-tree-axis-reserve) !important;
+  column-gap: var(--cdg-tree-side-gap) !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows > .cdg-h3-skeleton-row,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row {
+  grid-template-columns: var(--cdg-tree-axis-reserve) minmax(0, 1fr) !important;
+  column-gap: var(--cdg-tree-side-gap) !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows > .cdg-h3-skeleton-row > [data-skeleton-side="left"],
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row > [data-skeleton-side="left"] {
+  grid-column: 1 !important;
+  justify-self: stretch !important;
+  padding-right: 6px !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows > .cdg-h3-skeleton-row > [data-skeleton-side="axis"],
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row > [data-skeleton-side="axis"] {
+  grid-column: 2 !important;
+  min-width: 0 !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows > .cdg-h3-skeleton-row > [data-skeleton-side="axis"],
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row > [data-skeleton-side="axis"] {
+  grid-column: 1 !important;
+  min-width: 0 !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows > .cdg-h3-skeleton-row > [data-skeleton-side="right"],
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row > [data-skeleton-side="right"] {
+  grid-column: 2 !important;
+  justify-self: stretch !important;
+  padding-left: 6px !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows > .cdg-h3-skeleton-row > [data-skeleton-side="left"] :is(.cdg-h3,.cdg-h4,.cdg-h5),
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row > [data-skeleton-side="left"] :is(.cdg-h3,.cdg-h4,.cdg-h5) {
+  width: 100% !important;
+  justify-content: flex-end !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows > .cdg-h3-skeleton-row > [data-skeleton-side="left"] .cdg-chip,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row > [data-skeleton-side="left"] .cdg-chip {
+  max-width: 100% !important;
+  margin-left: auto !important;
+  margin-right: 0 !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows > .cdg-h3-skeleton-row > [data-skeleton-side="right"] :is(.cdg-h3,.cdg-h4,.cdg-h5),
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row > [data-skeleton-side="right"] :is(.cdg-h3,.cdg-h4,.cdg-h5) {
+  width: 100% !important;
+  justify-content: flex-start !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows > .cdg-h3-skeleton-row > [data-skeleton-side="right"] .cdg-chip,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row > [data-skeleton-side="right"] .cdg-chip {
+  max-width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: auto !important;
+}
+
+/* Logigrammes directs : le sujet reste dans sa cellule, les enfants absorbent
+   la largeur disponible ; aucune règle d'un parent ne doit redéfinir les rows. */
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="flow-left"],
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="flow-right"] {
+  display: grid !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  align-items: center !important;
+  column-gap: var(--cdg-flow-gap, 10px) !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="flow-left"] {
+  grid-template-columns: minmax(0, 1fr) max-content !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="flow-right"] {
+  grid-template-columns: max-content minmax(0, 1fr) !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="flow-left"] > .cdg-mixed-rows,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="flow-right"] > .cdg-mixed-rows {
+  min-width: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="flow-left"] > .cdg-mixed-rows > .cdg-h3-skeleton-row,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="flow-left"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="flow-right"] > .cdg-mixed-rows > .cdg-h3-skeleton-row,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="flow-right"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+
+/* =========================
+   v0.8.3 — arbres latéraux imbriqués en vraie grille sujet / enfants
+   =========================
+   Arbre gauche/droit ne doit pas être une chronologie verticale décalée.
+   Le sujet garde une colonne d'axe dédiée ; les enfants occupent toute la
+   colonne utile opposée. Les cases d'axe vides du JSON sont masquées : elles
+   restent utiles pour le sens logique, mais ne consomment plus une ligne visuelle.
+*/
+
+.markdown-rendered .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"],
+.markdown-source-view .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"],
+.markdown-preview-view .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"],
+.markdown-reading-view .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"],
+.cdg-builder-preview .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"],
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) max-content !important;
+  grid-template-rows: auto auto !important;
+  column-gap: 10px !important;
+  row-gap: 3px !important;
+  align-items: start !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+.markdown-rendered .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"],
+.markdown-source-view .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"],
+.markdown-preview-view .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"],
+.markdown-reading-view .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"],
+.cdg-builder-preview .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"],
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] {
+  display: grid !important;
+  grid-template-columns: max-content minmax(0, 1fr) !important;
+  grid-template-rows: auto auto !important;
+  column-gap: 10px !important;
+  row-gap: 3px !important;
+  align-items: start !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+/* Sujet : colonne d'axe. */
+.markdown-rendered .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > :is(.cdg-h2,.cdg-h3,.cdg-h4,.cdg-h5),
+.markdown-source-view .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > :is(.cdg-h2,.cdg-h3,.cdg-h4,.cdg-h5),
+.markdown-preview-view .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > :is(.cdg-h2,.cdg-h3,.cdg-h4,.cdg-h5),
+.markdown-reading-view .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > :is(.cdg-h2,.cdg-h3,.cdg-h4,.cdg-h5),
+.cdg-builder-preview .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > :is(.cdg-h2,.cdg-h3,.cdg-h4,.cdg-h5),
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > :is(.cdg-h2,.cdg-h3,.cdg-h4,.cdg-h5) {
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  justify-content: flex-end !important;
+  width: 100% !important;
+}
+
+.markdown-rendered .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > :is(.cdg-h2,.cdg-h3,.cdg-h4,.cdg-h5),
+.markdown-source-view .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > :is(.cdg-h2,.cdg-h3,.cdg-h4,.cdg-h5),
+.markdown-preview-view .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > :is(.cdg-h2,.cdg-h3,.cdg-h4,.cdg-h5),
+.markdown-reading-view .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > :is(.cdg-h2,.cdg-h3,.cdg-h4,.cdg-h5),
+.cdg-builder-preview .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > :is(.cdg-h2,.cdg-h3,.cdg-h4,.cdg-h5),
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > :is(.cdg-h2,.cdg-h3,.cdg-h4,.cdg-h5) {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  justify-content: flex-start !important;
+  width: 100% !important;
+}
+
+/* Enfants : colonne utile opposée au sujet. */
+.markdown-rendered .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows,
+.markdown-source-view .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows,
+.markdown-preview-view .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows,
+.markdown-reading-view .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows,
+.cdg-builder-preview .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows {
+  grid-column: 1 !important;
+  grid-row: 2 !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+.markdown-rendered .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows,
+.markdown-source-view .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows,
+.markdown-preview-view .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows,
+.markdown-reading-view .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows,
+.cdg-builder-preview .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows {
+  grid-column: 2 !important;
+  grid-row: 2 !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+/* Dans cette grille structurelle, chaque ligne enfant ne contient plus qu'une
+   vraie colonne de contenu ; la case axe/null est masquée. */
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows > .cdg-h3-skeleton-row,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows > .cdg-h3-skeleton-row,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row {
+  grid-template-columns: minmax(0, 1fr) !important;
+  column-gap: 0 !important;
+  row-gap: 3px !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows > .cdg-h3-skeleton-row > [data-skeleton-side="axis"],
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row > [data-skeleton-side="axis"],
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows > .cdg-h3-skeleton-row > [data-skeleton-side="axis"],
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row > [data-skeleton-side="axis"] {
+  display: none !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows > .cdg-h3-skeleton-row > [data-skeleton-side="left"],
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row > [data-skeleton-side="left"],
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows > .cdg-h3-skeleton-row > [data-skeleton-side="right"],
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row > [data-skeleton-side="right"] {
+  grid-column: 1 !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  justify-self: stretch !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows > .cdg-h3-skeleton-row > [data-skeleton-side="left"] :is(.cdg-h3,.cdg-h4,.cdg-h5),
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row > [data-skeleton-side="left"] :is(.cdg-h3,.cdg-h4,.cdg-h5),
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows > .cdg-h3-skeleton-row > [data-skeleton-side="right"] :is(.cdg-h3,.cdg-h4,.cdg-h5),
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row > [data-skeleton-side="right"] :is(.cdg-h3,.cdg-h4,.cdg-h5) {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows > .cdg-h3-skeleton-row > [data-skeleton-side="left"] .cdg-chip,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row > [data-skeleton-side="left"] .cdg-chip,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows > .cdg-h3-skeleton-row > [data-skeleton-side="right"] .cdg-chip,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row > [data-skeleton-side="right"] .cdg-chip {
+  max-width: 100% !important;
+}
+
+
+/* =========================
+   v0.8.4 — arbres latéraux : moindre trait
+   =========================
+   Les enfants H4 se placent au plus près de l'axe, puis s'étendent dans
+   l'espace restant. Les traits horizontaux SVG deviennent donc courts.
+*/
+
+.markdown-rendered .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows,
+.markdown-source-view .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows,
+.markdown-preview-view .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows,
+.markdown-reading-view .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows,
+.cdg-builder-preview .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows {
+  justify-self: end !important;
+  width: max-content !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+}
+
+.markdown-rendered .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows,
+.markdown-source-view .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows,
+.markdown-preview-view .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows,
+.markdown-reading-view .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows,
+.cdg-builder-preview .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows {
+  justify-self: start !important;
+  width: max-content !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows > .cdg-h3-skeleton-row,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows > .cdg-h3-skeleton-row,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row {
+  width: max-content !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+}
+
+/* Les cellules enfants ne s'étirent plus artificiellement : elles collent à l'axe. */
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows > .cdg-h3-skeleton-row > [data-skeleton-side="left"],
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row > [data-skeleton-side="left"],
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows > .cdg-h3-skeleton-row > [data-skeleton-side="right"],
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row > [data-skeleton-side="right"] {
+  width: max-content !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+}
+
+/* Arbre gauche : les H4 s'étendent vers la gauche, bord droit près de l'axe. */
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows > .cdg-h3-skeleton-row > [data-skeleton-side="left"],
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row > [data-skeleton-side="left"] {
+  justify-self: end !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows > .cdg-h3-skeleton-row > [data-skeleton-side="left"] :is(.cdg-h3,.cdg-h4,.cdg-h5),
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row > [data-skeleton-side="left"] :is(.cdg-h3,.cdg-h4,.cdg-h5) {
+  width: max-content !important;
+  max-width: min(100%, 42rem) !important;
+  margin-left: auto !important;
+  justify-content: flex-end !important;
+}
+
+/* Arbre droit : les H4 s'étendent vers la droite, bord gauche près de l'axe. */
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows > .cdg-h3-skeleton-row > [data-skeleton-side="right"],
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row > [data-skeleton-side="right"] {
+  justify-self: start !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows > .cdg-h3-skeleton-row > [data-skeleton-side="right"] :is(.cdg-h3,.cdg-h4,.cdg-h5),
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row > [data-skeleton-side="right"] :is(.cdg-h3,.cdg-h4,.cdg-h5) {
+  width: max-content !important;
+  max-width: min(100%, 42rem) !important;
+  margin-right: auto !important;
+  justify-content: flex-start !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows > .cdg-h3-skeleton-row > [data-skeleton-side="left"] .cdg-chip,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row > [data-skeleton-side="left"] .cdg-chip,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows > .cdg-h3-skeleton-row > [data-skeleton-side="right"] .cdg-chip,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row > [data-skeleton-side="right"] .cdg-chip {
+  width: auto !important;
+  max-width: 100% !important;
+}
+
+
+/* =========================
+   v0.8.5 — arbres latéraux : correction géométrique moindre trait
+   =========================
+   Le décalage est calculé en JS à partir de la largeur réelle du sujet.
+   Pour arbre droit : la colonne enfants recule vers l'axe.
+   Pour arbre gauche : la colonne enfants s'étend vers l'axe.
+*/
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"],
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] {
+  --cdg-side-tree-branch-gap: 8px;
+}
+
+/* Arbre droit : l'enfant commence juste à droite de l'axe au lieu d'après toute la largeur du sujet. */
+.markdown-rendered .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows,
+.markdown-source-view .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows,
+.markdown-preview-view .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows,
+.markdown-reading-view .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows,
+.cdg-builder-preview .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows {
+  margin-left: calc(-1 * var(--cdg-side-tree-shift, 0px)) !important;
+  width: calc(100% + var(--cdg-side-tree-shift, 0px)) !important;
+  max-width: calc(100% + var(--cdg-side-tree-shift, 0px)) !important;
+  justify-self: start !important;
+  min-width: 0 !important;
+}
+
+/* Arbre gauche : l'enfant garde son bord droit près de l'axe, sans perdre la largeur disponible à gauche. */
+.markdown-rendered .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows,
+.markdown-source-view .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows,
+.markdown-preview-view .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows,
+.markdown-reading-view .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows,
+.cdg-builder-preview .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows {
+  width: calc(100% + var(--cdg-side-tree-shift, 0px)) !important;
+  max-width: calc(100% + var(--cdg-side-tree-shift, 0px)) !important;
+  justify-self: end !important;
+  min-width: 0 !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows > .cdg-h3-skeleton-row,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows > .cdg-h3-skeleton-row,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows > .cdg-h3-skeleton-row > [data-skeleton-side="left"],
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row > [data-skeleton-side="left"],
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows > .cdg-h3-skeleton-row > [data-skeleton-side="right"],
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row > [data-skeleton-side="right"] {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+}
+
+/* Arbre gauche : puces collées côté axe, mais capables de s'étendre vers la gauche. */
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows > .cdg-h3-skeleton-row > [data-skeleton-side="left"] :is(.cdg-h3,.cdg-h4,.cdg-h5),
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row > [data-skeleton-side="left"] :is(.cdg-h3,.cdg-h4,.cdg-h5) {
+  width: fit-content !important;
+  max-width: 100% !important;
+  margin-left: auto !important;
+  margin-right: 0 !important;
+  justify-content: flex-end !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows > .cdg-h3-skeleton-row > [data-skeleton-side="left"] .cdg-chip,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row > [data-skeleton-side="left"] .cdg-chip {
+  width: auto !important;
+  max-width: 100% !important;
+}
+
+/* Arbre droit : puces collées côté axe, mais capables de s'étendre vers la droite. */
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows > .cdg-h3-skeleton-row > [data-skeleton-side="right"] :is(.cdg-h3,.cdg-h4,.cdg-h5),
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row > [data-skeleton-side="right"] :is(.cdg-h3,.cdg-h4,.cdg-h5) {
+  width: fit-content !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: auto !important;
+  justify-content: flex-start !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows > .cdg-h3-skeleton-row > [data-skeleton-side="right"] .cdg-chip,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-right"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row > [data-skeleton-side="right"] .cdg-chip {
+  width: auto !important;
+  max-width: 100% !important;
+}
+
+/* =========================
+   v0.8.6 — miroir arbre gauche : moindre trait
+   =========================
+   v0.8.5 corrigeait correctement tree-right, mais tree-left étendait la
+   colonne enfants du mauvais côté. Ici, la colonne H4 de tree-left déborde
+   vers la droite, donc vers l'axe, puis les puces s'alignent sur ce bord.
+*/
+
+.markdown-rendered .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows,
+.markdown-source-view .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows,
+.markdown-preview-view .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows,
+.markdown-reading-view .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows,
+.cdg-builder-preview .cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows {
+  justify-self: start !important;
+  margin-left: 0 !important;
+  margin-right: calc(-1 * var(--cdg-side-tree-shift, 0px)) !important;
+  width: calc(100% + var(--cdg-side-tree-shift, 0px)) !important;
+  max-width: calc(100% + var(--cdg-side-tree-shift, 0px)) !important;
+  min-width: 0 !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows > .cdg-h3-skeleton-row,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows > .cdg-h3-skeleton-row > [data-skeleton-side="left"],
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row > [data-skeleton-side="left"] {
+  justify-self: stretch !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows > .cdg-h3-skeleton-row > [data-skeleton-side="left"] :is(.cdg-h3,.cdg-h4,.cdg-h5),
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row > [data-skeleton-side="left"] :is(.cdg-h3,.cdg-h4,.cdg-h5) {
+  width: fit-content !important;
+  max-width: 100% !important;
+  margin-left: auto !important;
+  margin-right: 0 !important;
+  justify-content: flex-end !important;
+}
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows > .cdg-h3-skeleton-row > [data-skeleton-side="left"] .cdg-chip,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="tree-left"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row > [data-skeleton-side="left"] .cdg-chip {
+  width: auto !important;
+  max-width: 100% !important;
+}
+
+
+/* =========================
+   v0.8.7 — Affichage : squelettes par niveau
+   =========================
+   Squelette I   : H2 → H3
+   Squelette II  : H3 → H4
+   Squelette III : H4 → H5
+*/
+
+/* SVG des presets. */
+.cdg.cdg-no-skeleton-primary .cdg-node[data-cdg-level="2"] > .cdg-skeleton-svg-overlay,
+.cdg.cdg-no-skeleton-secondary .cdg-node[data-cdg-level="3"] > .cdg-skeleton-svg-overlay,
+.cdg.cdg-no-skeleton-tertiary .cdg-node[data-cdg-level="4"] > .cdg-skeleton-svg-overlay {
+  display: none !important;
+}
+
+/* Squelettes de listes empilées standard. */
+.cdg.cdg-no-skeleton-primary .cdg-node[data-cdg-level="2"] > .cdg-list[data-layout="stack"]::before,
+.cdg.cdg-no-skeleton-secondary .cdg-node[data-cdg-level="3"] > .cdg-list[data-layout="stack"]::before,
+.cdg.cdg-no-skeleton-tertiary .cdg-node[data-cdg-level="4"] > .cdg-list[data-layout="stack"]::before {
+  display: none !important;
+  content: none !important;
+}
+
+.cdg.cdg-no-skeleton-primary .cdg-node[data-cdg-level="2"] > .cdg-list[data-layout="stack"] .cdg-stack-branch,
+.cdg.cdg-no-skeleton-secondary .cdg-node[data-cdg-level="3"] > .cdg-list[data-layout="stack"] .cdg-stack-branch,
+.cdg.cdg-no-skeleton-tertiary .cdg-node[data-cdg-level="4"] > .cdg-list[data-layout="stack"] .cdg-stack-branch {
+  display: none !important;
+}
+
+/* Anciens pseudo-éléments de rangée, au cas où un rendu standard les utilise encore. */
+.cdg.cdg-no-skeleton-primary .cdg-node[data-cdg-level="2"] > .cdg-mixed-rows .cdg-h3-skeleton-row::before,
+.cdg.cdg-no-skeleton-primary .cdg-node[data-cdg-level="2"] > .cdg-mixed-rows .cdg-h3-skeleton-row > *::before,
+.cdg.cdg-no-skeleton-secondary .cdg-node[data-cdg-level="3"] > .cdg-mixed-rows .cdg-h3-skeleton-row::before,
+.cdg.cdg-no-skeleton-secondary .cdg-node[data-cdg-level="3"] > .cdg-mixed-rows .cdg-h3-skeleton-row > *::before,
+.cdg.cdg-no-skeleton-tertiary .cdg-node[data-cdg-level="4"] > .cdg-mixed-rows .cdg-h3-skeleton-row::before,
+.cdg.cdg-no-skeleton-tertiary .cdg-node[data-cdg-level="4"] > .cdg-mixed-rows .cdg-h3-skeleton-row > *::before {
+  display: none !important;
+  content: none !important;
+}
+
+
+/* =========================
+   v0.8.8 — groupement H3 en chronologie verticale
+   ========================= */
+
+.cdg-timeline-group-node {
+  min-width: 0 !important;
+}
+
+.cdg-timeline-group {
+  position: relative !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  align-items: center !important;
+  min-width: 0 !important;
+  --cdg-timeline-top: 0px;
+  --cdg-timeline-height: 0px;
+}
+
+.cdg:not(.cdg-no-skeleton) .cdg-timeline-group::before {
+  content: "" !important;
+  position: absolute !important;
+  left: 50% !important;
+  top: var(--cdg-timeline-top, 0px) !important;
+  height: var(--cdg-timeline-height, 0px) !important;
+  width: var(--cdg-skeleton-major-width, 3px) !important;
+  transform: translateX(-50%) !important;
+  border-radius: var(--cdg-skeleton-radius, 999px) !important;
+  background: var(--cdg-line-color) !important;
+  pointer-events: none !important;
+  z-index: 0 !important;
+}
+
+.cdg.cdg-no-skeleton-primary .cdg-node[data-cdg-level="2"] .cdg-timeline-group::before {
+  display: none !important;
+  content: none !important;
+}
+
+.cdg-timeline-group-item {
+  position: relative !important;
+  z-index: 2 !important;
+  min-width: 0 !important;
+}
+
+.cdg-timeline-group-item > .cdg-node > :is(.cdg-h2,.cdg-h3,.cdg-h4,.cdg-h5) {
+  margin-bottom: 0 !important;
+}
+
+.cdg-toolbar-group-row {
+  margin-top: 6px !important;
+}
+
+
+/* =========================
+   v0.8.9 — organigramme : H3 plaqués en haut
+   =========================
+   Les colonnes restent sur le chemin de l'organigramme, mais les puces H3
+   commencent au plus haut possible pour minimiser les stems verticaux.
+*/
+
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="org"] {
+  --cdg-org-stem-gap: 8px !important;
+  --cdg-org-stem-visual-gap: 6px !important;
+}
+
+/* Les lignes directes de l'organigramme ne centrent plus verticalement les blocs. */
+.markdown-rendered .cdg .cdg-h3-skeleton-node[data-diagram-preset="org"] > .cdg-mixed-rows > .cdg-h3-skeleton-row,
+.markdown-source-view .cdg .cdg-h3-skeleton-node[data-diagram-preset="org"] > .cdg-mixed-rows > .cdg-h3-skeleton-row,
+.markdown-preview-view .cdg .cdg-h3-skeleton-node[data-diagram-preset="org"] > .cdg-mixed-rows > .cdg-h3-skeleton-row,
+.markdown-reading-view .cdg .cdg-h3-skeleton-node[data-diagram-preset="org"] > .cdg-mixed-rows > .cdg-h3-skeleton-row,
+.cdg-builder-preview .cdg .cdg-h3-skeleton-node[data-diagram-preset="org"] > .cdg-mixed-rows > .cdg-h3-skeleton-row,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="org"] > .cdg-mixed-rows > .cdg-h3-skeleton-row,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="org"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row {
+  align-items: start !important;
+  padding-top: var(--cdg-org-stem-gap) !important;
+}
+
+/* Chaque colonne H3 de l'organigramme est plaquée en haut. */
+.markdown-rendered .cdg .cdg-h3-skeleton-node[data-diagram-preset="org"] > .cdg-mixed-rows > .cdg-h3-skeleton-row > .cdg-node,
+.markdown-source-view .cdg .cdg-h3-skeleton-node[data-diagram-preset="org"] > .cdg-mixed-rows > .cdg-h3-skeleton-row > .cdg-node,
+.markdown-preview-view .cdg .cdg-h3-skeleton-node[data-diagram-preset="org"] > .cdg-mixed-rows > .cdg-h3-skeleton-row > .cdg-node,
+.markdown-reading-view .cdg .cdg-h3-skeleton-node[data-diagram-preset="org"] > .cdg-mixed-rows > .cdg-h3-skeleton-row > .cdg-node,
+.cdg-builder-preview .cdg .cdg-h3-skeleton-node[data-diagram-preset="org"] > .cdg-mixed-rows > .cdg-h3-skeleton-row > .cdg-node,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="org"] > .cdg-mixed-rows > .cdg-h3-skeleton-row > .cdg-node,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="org"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row > .cdg-preview-dnd-cell {
+  align-self: start !important;
+  justify-self: stretch !important;
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+/* La puce directe H3 / le groupe timeline placé dans la colonne commence en haut. */
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="org"] > .cdg-mixed-rows > .cdg-h3-skeleton-row > .cdg-node > :is(.cdg-h3,.cdg-h4,.cdg-h5),
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="org"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row > .cdg-preview-dnd-cell > .cdg-node > :is(.cdg-h3,.cdg-h4,.cdg-h5),
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="org"] > .cdg-mixed-rows > .cdg-h3-skeleton-row > .cdg-node > .cdg-h3-skeleton-node,
+.cdg .cdg-h3-skeleton-node[data-diagram-preset="org"] > .cdg-mixed-rows > .cdg-preview-row-wrap > .cdg-h3-skeleton-row > .cdg-preview-dnd-cell > .cdg-node > .cdg-h3-skeleton-node {
+  margin-top: 0 !important;
+  align-self: start !important;
+}
+
+/* Le stem CSS résiduel, quand il existe encore, suit le nouveau gap court. */
+.cdg:not(.cdg-no-skeleton) .cdg-h3-skeleton-node[data-diagram-preset="org"] .cdg-h3-skeleton-row > .cdg-preview-dnd-cell:not(.is-empty)::before,
+.cdg:not(.cdg-no-skeleton) .cdg-h3-skeleton-node[data-diagram-preset="org"] .cdg-h3-skeleton-row > .cdg-node:not(.is-empty)::before {
+  height: var(--cdg-org-stem-gap) !important;
+  min-height: var(--cdg-org-stem-gap) !important;
+}
+
+
+/* React: le stack utilise .cdg-spine-target::before plutôt que .cdg-stack-branch. */
+.cdg.cdg-no-skeleton-primary .cdg-node[data-cdg-level="2"] > .cdg-list[data-layout="stack"] .cdg-spine-target::before,
+.cdg.cdg-no-skeleton-secondary .cdg-node[data-cdg-level="3"] > .cdg-list[data-layout="stack"] .cdg-spine-target::before,
+.cdg.cdg-no-skeleton-tertiary .cdg-node[data-cdg-level="4"] > .cdg-list[data-layout="stack"] .cdg-spine-target::before {
+  display: none !important;
+  content: none !important;
+}
+
+/* React: option Bordures issue du JSON Obsidian. */
+.cdg.cdg-no-borders {
+  border-color: transparent !important;
+}
+
+.cdg.cdg-no-borders > .cdg-root,
+.cdg.cdg-no-borders > .cdg-root--with-controls,
+.cdg.cdg-no-borders .cdg-root-items[data-layout="stack"] > .cdg-node + .cdg-node,
+.cdg.cdg-no-borders .cdg-root-items[data-layout="grid"] > .cdg-node,
+.cdg.cdg-no-borders .cdg-cols > .cdg-col + .cdg-col {
+  border-color: transparent !important;
+}
+
+.cdg.cdg-no-borders .cdg-root-items[data-layout="grid"]::before,
+.cdg.cdg-no-borders .cdg-root-items[data-layout="grid"]::after {
+  display: none !important;
+  content: none !important;
+}
+
+/* React: cellules vides conservées pour les grilles de presets. */
+.cdg .cdg-h3-skeleton-row > .cdg-node.is-empty {
+  min-height: 1px;
+  pointer-events: none;
+}
