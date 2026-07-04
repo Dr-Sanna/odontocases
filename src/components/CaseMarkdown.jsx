@@ -273,7 +273,7 @@ function applyCaptionWidth(img, imgWpx, ratio, cols, rootEl) {
    ========================= */
 function layoutRow(row, rootEl) {
   const imgs = Array.from(
-    row.querySelectorAll("td figure.image img, td figure.cd-figure img, td > img")
+    row.querySelectorAll("td img")
   );
   if (imgs.length < 1) return;
 

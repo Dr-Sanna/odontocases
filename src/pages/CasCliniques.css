@@ -374,18 +374,6 @@
   border-radius: 0;
 }
 
-/* séparateur léger entre les 2 groupes (desktop) */
-@media (min-width: 561px) {
-  .cc-atlas-control + .cc-atlas-control {
-    padding-left: 14px;
-    border-left: 1px solid rgba(0, 0, 0, 0.08);
-  }
-
-  [data-theme='dark'] .cc-atlas-control + .cc-atlas-control {
-    border-left-color: rgba(255, 255, 255, 0.10);
-  }
-}
-
 /* Option : tailles un peu plus compactes uniquement dans l’Atlas */
 .cc-atlas-controls .cc-sortbtn {
   padding: 6px 10px;
@@ -419,4 +407,23 @@
   .cc-viewtoggle {
     align-self: flex-end; /* mets flex-start si tu le veux à gauche */
   }
+}
+
+
+/* =========================================================
+   Atlas : groupage sobre, sans barre horizontale ni gras
+   ========================================================= */
+
+.cc-group-header {
+  gap: 0;
+  margin: 0.25rem 0 0.75rem;
+}
+
+.cc-group-title {
+  font-weight: 400;
+  opacity: 0.85;
+}
+
+.cc-group-rule {
+  display: none;
 }

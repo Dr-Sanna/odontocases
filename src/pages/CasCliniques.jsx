@@ -28,7 +28,7 @@ const STRAPI_QUIZ_TYPE = 'quiz';
 // "Tous" = mix Q/R + Quiz (pas un type Strapi)
 const MIXED_KEY = 'mixed';
 
-const PAGE_SIZE = 48;
+const PAGE_SIZE = 100;
 const FALLBACK_PAGE_SIZE = 300;
 
 const CASES_ENDPOINT = import.meta.env.VITE_CASES_ENDPOINT || '/cases';
@@ -274,42 +274,19 @@ function ViewToggle({ view, setView }) {
    Contrôles Atlas
    ========================= */
 
-function AtlasControls({ atlasShow, setAtlasShow, atlasGroup, setAtlasGroup }) {
+function AtlasControls({ atlasGroup, setAtlasGroup }) {
   return (
     <div className="cc-atlas-controls" role="group" aria-label="Contrôles Atlas">
       <div className="cc-atlas-control" role="group" aria-label="Afficher">
         <span className="cc-sortlabel">Afficher :</span>
 
-        <button
-          type="button"
-          className={`cc-sortbtn ${atlasShow === 'all' ? 'active' : ''}`}
-          onClick={() => setAtlasShow('all')}
-          aria-pressed={atlasShow === 'all'}
-        >
+        <button type="button" className="cc-sortbtn active" aria-pressed="true">
           Tous
-        </button>
-
-        <button
-          type="button"
-          className={`cc-sortbtn ${atlasShow === 'opmd' ? 'active' : ''}`}
-          onClick={() => setAtlasShow('opmd')}
-          aria-pressed={atlasShow === 'opmd'}
-        >
-          OPMD
         </button>
       </div>
 
       <div className="cc-atlas-control" role="group" aria-label="Grouper par">
         <span className="cc-sortlabel">Grouper par :</span>
-
-        <button
-          type="button"
-          className={`cc-sortbtn ${atlasGroup === 'none' ? 'active' : ''}`}
-          onClick={() => setAtlasGroup('none')}
-          aria-pressed={atlasGroup === 'none'}
-        >
-          Aucun
-        </button>
 
         <button
           type="button"
@@ -322,11 +299,11 @@ function AtlasControls({ atlasShow, setAtlasShow, atlasGroup, setAtlasGroup }) {
 
         <button
           type="button"
-          className={`cc-sortbtn ${atlasGroup === 'type' ? 'active' : ''}`}
-          onClick={() => setAtlasGroup('type')}
-          aria-pressed={atlasGroup === 'type'}
+          className={`cc-sortbtn ${atlasGroup === 'none' ? 'active' : ''}`}
+          onClick={() => setAtlasGroup('none')}
+          aria-pressed={atlasGroup === 'none'}
         >
-          Type
+          Aucun
         </button>
       </div>
     </div>
@@ -346,23 +323,22 @@ export default function CasCliniques() {
   // toggle Cartes / Liste (persisté)
   const [view, setView] = useState(() => {
     const saved = localStorage.getItem('cc:view');
-    return saved === 'list' ? 'list' : 'cards';
+    return saved === 'cards' ? 'cards' : 'list';
   });
 
   useEffect(() => {
     localStorage.setItem('cc:view', view);
   }, [view]);
 
-  // Atlas: Afficher (Tous/OPMD) + Grouper
-  const [atlasShow, setAtlasShow] = useState(() => localStorage.getItem('atlas:show') || 'all'); // 'all' | 'opmd'
-  const [atlasGroup, setAtlasGroup] = useState(() => localStorage.getItem('atlas:group') || 'none'); // 'none' | 'letter' | 'type'
-
-  useEffect(() => {
-    localStorage.setItem('atlas:show', atlasShow);
-  }, [atlasShow]);
+  // Atlas : grouper par lettre par défaut, puis respecter la préférence utilisateur.
+  const [atlasGroup, setAtlasGroup] = useState(() => {
+    const saved = localStorage.getItem('atlas:group');
+    return saved === 'none' ? 'none' : 'letter';
+  }); // 'letter' | 'none'
 
   useEffect(() => {
     localStorage.setItem('atlas:group', atlasGroup);
+    localStorage.setItem('atlas:show', 'all');
   }, [atlasGroup]);
 
   const q = searchParams.get('q') || '';
@@ -573,16 +549,11 @@ export default function CasCliniques() {
     return arr;
   }, [items, isAtlasHub, isQrQuizHub, tab]);
 
-  // Filtre Atlas "Afficher: OPMD" (client-side)
+  // Atlas : Afficher = Tous.
   const atlasVisibleItems = useMemo(() => {
     if (!(isAtlasHub && tab === STRAPI_ATLAS_TYPE)) return sortedItems;
-
-    let arr = [...sortedItems];
-    if (atlasShow === 'opmd') {
-      arr = arr.filter((it) => hasBadgeLabel(it?.badges, 'OPMD'));
-    }
-    return arr;
-  }, [sortedItems, isAtlasHub, tab, atlasShow]);
+    return [...sortedItems];
+  }, [sortedItems, isAtlasHub, tab]);
 
   // Sections Atlas (groupement)
   const atlasSections = useMemo(() => {
@@ -597,7 +568,7 @@ export default function CasCliniques() {
     const map = new Map();
 
     for (const it of list) {
-      const label = atlasGroup === 'letter' ? getFirstLetter(it?.title) : getGroupTypeLabel(it?.badges);
+      const label = getFirstLetter(it?.title);
       if (!map.has(label)) map.set(label, []);
       map.get(label).push(it);
     }
@@ -646,17 +617,112 @@ export default function CasCliniques() {
     }
 
     const isPathology = entity === 'pathology';
+    const isListView = view === 'list';
     const itemType = isPathology ? STRAPI_ATLAS_TYPE : attrs?.type || STRAPI_QA_TYPE;
 
-    // ✅ Badges (pathologies: multi / cases: 1)
+    // Badges : Atlas = badges de pathologie ; Q/R & Quiz = badge de type de cas.
     const pathoBadges = isPathology ? normalizeBadges(attrs?.badges) : [];
     const badgesToRender = isPathology
       ? (pathoBadges.length ? pathoBadges : [{ label: 'Atlas', variant: 'info' }])
       : [{ label: typeLabel(itemType), variant: badgeVariant(itemType) }];
 
-    // ✅ On garde un "primary" pour le breadcrumb/prefetch (évite flash dans le détail)
+    // On garde un badge primaire pour le breadcrumb/prefetch.
     const primaryBadge = isPathology ? pickPrimaryBadge(attrs?.badges) : null;
 
+    const key = `${entity}:${slug || idx}`;
+
+    const linkState =
+      entity === 'pathology'
+        ? {
+            breadcrumb: {
+              mode: 'atlas',
+              pathology: {
+                slug,
+                title: titleText,
+                badge: primaryBadge,
+                badges: badgesToRender,
+              },
+              case: null,
+            },
+            prefetch: {
+              slug,
+              title: titleText,
+              type: 'presentation',
+              badges: attrs?.badges ?? null,
+            },
+          }
+        : {
+            breadcrumb: { mode: 'qr-quiz', case: { slug, title: titleText } },
+            prefetch: { slug, title: titleText, type: attrs?.type || null },
+          };
+
+    // Atlas : on utilise le même modèle de carte que Documentation.
+    if (isPathology) {
+      const cardClass = `doc-card ui-card ${isListView ? 'doc-card--list' : ''}`;
+
+      const Inner = (
+        <>
+          <div
+            className={coverUrl ? 'doc-thumb' : 'doc-thumb is-empty'}
+            style={coverUrl ? { backgroundImage: `url(${coverUrl})` } : undefined}
+            aria-hidden="true"
+          >
+            {!isListView && (
+              <div className="doc-thumb-overlay">
+                <div className="doc-thumb-badges">
+                  {badgesToRender.map((b) => (
+                    <span
+                      key={`${b.variant}:${b.label}`}
+                      className={`doc-thumb-badge badge badge-soft badge-${b.variant}`}
+                    >
+                      {b.label}
+                    </span>
+                  ))}
+                </div>
+                <h3 className="doc-thumb-title">{titleText}</h3>
+              </div>
+            )}
+          </div>
+
+          {isListView ? (
+            <div className="doc-body">
+              <h3 className="doc-title">
+                <span className="doc-title-text">{titleText}</span>
+              </h3>
+
+              <div className="doc-title-badges">
+                {badgesToRender.map((b) => (
+                  <span
+                    key={`${b.variant}:${b.label}`}
+                    className={`doc-title-badge badge badge-soft-outline badge-${b.variant}`}
+                  >
+                    {b.label}
+                  </span>
+                ))}
+              </div>
+
+              {excerpt ? <p className="doc-excerpt">{excerpt}</p> : null}
+            </div>
+          ) : excerpt ? (
+            <div className="doc-body">
+              <p className="doc-excerpt">{excerpt}</p>
+            </div>
+          ) : null}
+        </>
+      );
+
+      return toHref ? (
+        <Link key={key} to={toHref} className={cardClass} state={linkState}>
+          {Inner}
+        </Link>
+      ) : (
+        <div key={key} className={`${cardClass} doc-card--disabled`} title="Slug manquant">
+          {Inner}
+        </div>
+      );
+    }
+
+    // Q/R & Quiz : on conserve le style historique des cas cliniques.
     const Inner = (
       <>
         <div
@@ -664,7 +730,6 @@ export default function CasCliniques() {
           style={{ backgroundImage: coverUrl ? `url(${coverUrl})` : undefined }}
           aria-hidden="true"
         >
-          {/* Badges sur l'image uniquement en mode cartes */}
           {view !== 'list' && (
             <div className="cc-thumb-badges">
               {badgesToRender.map((b) => (
@@ -684,7 +749,6 @@ export default function CasCliniques() {
             <span className="cc-title-text">{titleText}</span>
           </h3>
 
-          {/* Badges sous le titre uniquement en mode liste */}
           {view === 'list' && (
             <div className="cc-title-badges">
               {badgesToRender.map((b) => (
@@ -703,33 +767,7 @@ export default function CasCliniques() {
       </>
     );
 
-    const key = `${entity}:${slug || idx}`;
     const cardClass = `cc-card ui-card ${view === 'list' ? 'cc-card--list' : ''}`;
-
-    const linkState =
-      entity === 'pathology'
-        ? {
-            breadcrumb: {
-              mode: 'atlas',
-              pathology: {
-                slug,
-                title: titleText,
-                badge: primaryBadge, // {text, variant} (compat)
-                badges: badgesToRender, // bonus si tu veux l'utiliser plus tard
-              },
-              case: null,
-            },
-            prefetch: {
-              slug,
-              title: titleText,
-              type: 'presentation',
-              badges: attrs?.badges ?? null, // données brutes Strapi
-            },
-          }
-        : {
-            breadcrumb: { mode: 'qr-quiz', case: { slug, title: titleText } },
-            prefetch: { slug, title: titleText, type: attrs?.type || null },
-          };
 
     return toHref ? (
       <Link key={key} to={toHref} className={cardClass} state={linkState}>
@@ -797,12 +835,7 @@ export default function CasCliniques() {
         {!showTypePicker && !showChips && (
           <section className="cc-toolbar cc-toolbar--views">
             {isAtlasHub && tab === STRAPI_ATLAS_TYPE ? (
-              <AtlasControls
-                atlasShow={atlasShow}
-                setAtlasShow={setAtlasShow}
-                atlasGroup={atlasGroup}
-                setAtlasGroup={setAtlasGroup}
-              />
+              <AtlasControls atlasGroup={atlasGroup} setAtlasGroup={setAtlasGroup} />
             ) : (
               <span />
             )}
@@ -822,18 +855,18 @@ export default function CasCliniques() {
             {!loading && !error && listForEmptyCheck.length > 0 && (
               <>
                 {isAtlasList && atlasSections && atlasGroup !== 'none' ? (
-                  <div className="cc-groups" aria-label="Ressources">
+                  <div className="resource-groups cc-groups" aria-label="Ressources">
                     {atlasSections.map((section) => (
-                      <div key={section.key} className="cc-group">
+                      <div key={section.key} className="resource-group cc-group">
                         {section.label && (
-                          <div className="cc-group-header" aria-hidden="true">
-                            <span className="cc-group-title">{section.label}</span>
-                            <div className="cc-group-rule" />
+                          <div className="resource-group-header cc-group-header" aria-hidden="true">
+                            <span className="resource-group-title cc-group-title">{section.label}</span>
+                            <div className="resource-group-rule cc-group-rule" />
                           </div>
                         )}
 
                         <section
-                          className={`cc-grid ${view === 'list' ? 'cc-grid--list' : ''}`}
+                          className={`resource-grid doc-grid ${view === 'list' ? 'doc-grid--list' : ''}`}
                           aria-label={section.label ? `Groupe ${section.label}` : 'Ressources'}
                         >
                           {section.items.map(renderItem)}
@@ -842,7 +875,14 @@ export default function CasCliniques() {
                     ))}
                   </div>
                 ) : (
-                  <section className={`cc-grid ${view === 'list' ? 'cc-grid--list' : ''}`} aria-label="Ressources">
+                  <section
+                    className={
+                      isAtlasList
+                        ? `resource-grid doc-grid ${view === 'list' ? 'doc-grid--list' : ''}`
+                        : `resource-grid cc-grid ${view === 'list' ? 'cc-grid--list' : ''}`
+                    }
+                    aria-label="Ressources"
+                  >
                     {(isAtlasList ? atlasVisibleItems : sortedItems).map(renderItem)}
                   </section>
                 )}

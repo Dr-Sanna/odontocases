@@ -367,8 +367,13 @@ li > ol {
 
 /* =========================
    IMAGES (hors tableaux)
-   ========================= */
-.cd-content p img:not(table img) {
+   =========================
+   Important :
+   - CKEditor enrobe souvent les images dans <p><img></p>.
+   - Le contenu envoyé par API peut contenir un <img> direct dans .cd-content.
+   On cible donc toutes les images hors tableaux, pas seulement p > img.
+*/
+.cd-content img:not(table img) {
   display: block;
   margin: 12px auto;
   cursor: zoom-in;
@@ -378,6 +383,16 @@ li > ol {
   height: auto;
   max-height: 60vh;
   object-fit: contain;
+}
+
+/* Image HTML directe, sans paragraphe parent */
+.cd-content > img:not(table img) {
+  margin-bottom: var(--ifm-paragraph-margin-bottom);
+}
+
+/* Paragraphe contenant seulement une image : garde le même rythme visuel */
+.cd-content p:has(> img:only-child) {
+  margin-bottom: var(--ifm-paragraph-margin-bottom);
 }
 
 /* =========================
@@ -503,7 +518,8 @@ figcaption {
    AJOUT IMPORTANT (compat)
    si images directes dans td sans figure
    ========================= */
-.cd-content table td > img {
+.cd-content table td > img,
+.cd-content table td > p > img {
   display: block !important;
   margin: 0 auto !important;
 
@@ -518,6 +534,11 @@ figcaption {
 
   border-radius: 0 !important;
   cursor: pointer;
+}
+
+/* Compat Obsidian/API : si une image de tableau arrive dans <p>, le paragraphe ne doit pas créer d'espacement parasite */
+.cd-content table td > p:has(> img:only-child) {
+  margin: 0 !important;
 }
 
 /* captions tables: base wrap propre */
@@ -570,7 +591,8 @@ figcaption {
 
 .cd-content table figure.image img:hover,
 .cd-content table figure.cd-figure img:hover,
-.cd-content table td > img:hover {
+.cd-content table td > img:hover,
+.cd-content table td > p > img:hover {
   cursor: zoom-in;
 }
 
@@ -681,7 +703,8 @@ figcaption {
   /* Images : hauteur uniforme */
   .cd-content table.cd-imgtable td figure.image > img,
   .cd-content table.cd-imgtable td figure.cd-figure > img,
-  .cd-content table.cd-imgtable td > img {
+  .cd-content table.cd-imgtable td > img,
+  .cd-content table.cd-imgtable td > p > img {
     width: 100% !important;
     height: clamp(140px, 22vw, 210px) !important;
 
@@ -709,7 +732,8 @@ figcaption {
   /* Un peu plus haut sur très petit écran */
   .cd-content table.cd-imgtable td figure.image > img,
   .cd-content table.cd-imgtable td figure.cd-figure > img,
-  .cd-content table.cd-imgtable td > img {
+  .cd-content table.cd-imgtable td > img,
+  .cd-content table.cd-imgtable td > p > img {
     height: clamp(150px, 35vw, 260px) !important;
   }
 }

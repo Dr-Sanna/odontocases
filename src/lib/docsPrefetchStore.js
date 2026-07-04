@@ -15,6 +15,16 @@ function normalizeEntity(node) {
   return node;
 }
 
+function normalizeRelationList(value) {
+  const list = Array.isArray(value)
+    ? value
+    : Array.isArray(value?.data)
+      ? value.data
+      : [];
+
+  return list.map(normalizeEntity).filter(Boolean);
+}
+
 function parentSlugOf(n) {
   const p = n?.parent;
   if (!p) return null;
@@ -33,6 +43,18 @@ function cookCoverUrl(n) {
     imgUrl(coverAttr) ||
     ''
   );
+}
+
+function cookDocThemes(n) {
+  return normalizeRelationList(n?.doc_themes)
+    .map((theme) => ({
+      id: theme?.id ?? null,
+      title: String(theme?.title || '').trim(),
+      slug: String(theme?.slug || '').trim(),
+      order: Number.isFinite(theme?.order) ? theme.order : Number.POSITIVE_INFINITY,
+    }))
+    .filter((theme) => theme.title || theme.slug)
+    .sort(compareByOrderThenTitle);
 }
 
 function ensureBucket(publicationState) {
@@ -79,6 +101,32 @@ function upsertIndex(bucket, node) {
   arr.sort(compareByOrderThenTitle);
 }
 
+function cookDocNode(n) {
+  return {
+    ...n,
+    coverUrl: cookCoverUrl(n),
+    doc_themes: cookDocThemes(n),
+  };
+}
+
+function docsEssentialParams(publicationState) {
+  return {
+    locale: 'all',
+    publicationState,
+    filters: {
+      level: { $in: ['subject', 'chapter', 'item'] },
+    },
+    fields: ['title', 'slug', 'level', 'order', 'updatedAt', 'excerpt'],
+    populate: {
+      cover: { fields: ['url', 'formats'] },
+      parent: { fields: ['slug', 'level'] },
+      doc_themes: { fields: ['title', 'slug', 'order'] },
+    },
+    sort: ['level:asc', 'order:asc', 'title:asc'],
+    pagination: { page: 1, pageSize: 2000 },
+  };
+}
+
 export function getPrefetchedChildren(level, parentSlug, { publicationState = 'live' } = {}) {
   const bucket = ensureBucket(publicationState);
   const k = keyOf(level, parentSlug);
@@ -99,9 +147,10 @@ export function isDocsPrimed({ publicationState = 'live' } = {}) {
 /**
  * Fetch “essentiel” en 1 appel :
  * - level in [subject, chapter, item]
- * - fields: title, slug, level, order, updatedAt
+ * - fields: title, slug, level, order, updatedAt, excerpt
  * - parent.slug (pour indexer chapters/items)
  * - cover url
+ * - doc_themes (pour regrouper les items par thème)
  */
 export async function primeDocsEssentials({ publicationState = 'live', signal } = {}) {
   const bucket = ensureBucket(publicationState);
@@ -112,20 +161,7 @@ export async function primeDocsEssentials({ publicationState = 'live', signal } 
 
   const p = (async () => {
     const res = await strapiFetch(DOCS_ENDPOINT, {
-      params: {
-        locale: 'all',
-        publicationState,
-        filters: {
-          level: { $in: ['subject', 'chapter', 'item'] },
-        },
-        fields: ['title', 'slug', 'level', 'order', 'updatedAt'],
-        populate: {
-          cover: { fields: ['url', 'formats'] },
-          parent: { fields: ['slug', 'level'] },
-        },
-        sort: ['level:asc', 'order:asc', 'title:asc'],
-        pagination: { page: 1, pageSize: 2000 },
-      },
+      params: docsEssentialParams(publicationState),
       options: { signal },
     });
 
@@ -140,8 +176,7 @@ export async function primeDocsEssentials({ publicationState = 'live', signal } 
     bucket.bySlug = new Map();
 
     for (const n of normalized) {
-      const cooked = { ...n, coverUrl: cookCoverUrl(n) };
-      upsertIndex(bucket, cooked);
+      upsertIndex(bucket, cookDocNode(n));
     }
 
     bucket.primed = true;
@@ -167,18 +202,7 @@ export async function revalidateDocsEssentials({ publicationState = 'live', sign
   const bucket = ensureBucket(publicationState);
 
   const res = await strapiFetch(DOCS_ENDPOINT, {
-    params: {
-      locale: 'all',
-      publicationState,
-      filters: { level: { $in: ['subject', 'chapter', 'item'] } },
-      fields: ['title', 'slug', 'level', 'order', 'updatedAt'],
-      populate: {
-        cover: { fields: ['url', 'formats'] },
-        parent: { fields: ['slug', 'level'] },
-      },
-      sort: ['level:asc', 'order:asc', 'title:asc'],
-      pagination: { page: 1, pageSize: 2000 },
-    },
+    params: docsEssentialParams(publicationState),
     options: { signal },
   });
 
@@ -192,8 +216,7 @@ export async function revalidateDocsEssentials({ publicationState = 'live', sign
   bucket.bySlug = new Map();
 
   for (const n of normalized) {
-    const cooked = { ...n, coverUrl: cookCoverUrl(n) };
-    upsertIndex(bucket, cooked);
+    upsertIndex(bucket, cookDocNode(n));
   }
 
   bucket.primed = true;

@@ -38,6 +38,61 @@
   }
 }
 
+
+/* =========================================================
+   GRILLES RÉUTILISABLES : espacement commun Atlas / Documentation
+   ========================================================= */
+
+.resource-grid {
+  margin-top: 8px;
+  padding-top: 8px !important;
+  padding-bottom: 32px !important;
+}
+
+
+/* =========================================================
+   GROUPES RÉUTILISABLES : séparateurs Atlas / Documentation
+   ========================================================= */
+
+.resource-groups {
+  display: grid;
+  gap: 0;
+}
+
+.resource-group {
+  min-width: 0;
+}
+
+.resource-group-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.25rem 0 0.75rem;
+}
+
+.resource-group-title {
+  font-size: 1rem;
+  font-weight: 800;
+  opacity: 0.92;
+  white-space: nowrap;
+}
+
+.resource-group-rule {
+  height: 1px;
+  flex: 1;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme='dark'] .resource-group-rule {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+@media (max-width: 560px) {
+  .resource-group-title {
+    white-space: normal;
+  }
+}
+
 /* =========================================================
    CAS CLINIQUES : GRILLE (mode cartes)
    ========================================================= */
@@ -345,6 +400,14 @@
   }
 }
 
+
+/* Compatibilité si une grille n'a pas encore la classe resource-grid */
+.doc-grid {
+  margin-top: 8px;
+  padding-top: 8px !important;
+  padding-bottom: 32px !important;
+}
+
 /* =========================================================
    DOCUMENTATION : GRILLE
    (séparée de CC, ne touche pas aux thumbs CC)
@@ -468,4 +531,162 @@
   align-self: end;
   width: fit-content;
   max-width: 100%;
+}
+
+
+/* Badges multiples dans les cartes Documentation/Atlas */
+.doc-thumb-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-self: start;
+  align-self: end;
+  max-width: 100%;
+}
+
+.doc-thumb-badge {
+  width: fit-content;
+  max-width: 100%;
+}
+
+/* =========================================================
+   DOCUMENTATION : MODE LISTE
+   - structure proche de l'Atlas : image à gauche, titre + badge à droite
+   ========================================================= */
+
+.doc-grid.doc-grid--list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 980px) {
+  .doc-grid.doc-grid--list {
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 10px;
+  }
+}
+
+@media (max-width: 560px) {
+  .doc-grid.doc-grid--list {
+    grid-template-columns: 1fr;
+  }
+}
+
+.doc-card.doc-card--list {
+  display: grid;
+  grid-template-rows: none;
+  grid-template-columns: 120px minmax(0, 1fr);
+  align-items: stretch;
+  min-height: 92px;
+  height: auto;
+}
+
+.doc-card--list .doc-thumb {
+  width: 120px;
+  height: 100%;
+  min-height: 92px;
+  flex: initial;
+
+  border-radius: 0;
+  overflow: hidden;
+  box-shadow: none;
+
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.doc-card--list .doc-thumb.is-empty {
+  display: grid;
+  place-items: center;
+}
+
+.doc-card--list .doc-thumb.is-empty::after {
+  width: 42%;
+  height: 42%;
+}
+
+/* En mode liste, le titre et la puce ne sont plus dans l'image. */
+.doc-card--list .doc-thumb-overlay {
+  display: none;
+}
+
+.doc-card--list .doc-body {
+  padding: 0 12px !important;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0;
+
+  min-width: 0;
+}
+
+.doc-card--list .doc-title {
+  margin: 0;
+  min-height: calc(2 * 1.25em);
+
+  display: flex;
+  align-items: center;
+
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.doc-card--list .doc-title-text {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+
+  font-size: 1.02rem;
+  line-height: 1.25;
+  font-weight: 700;
+}
+
+.doc-card--list .doc-title-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+
+  align-self: flex-start;
+  margin-top: 4px;
+}
+
+.doc-card--list .doc-title-badge {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+
+  align-self: flex-start;
+  margin-top: 0;
+
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.1;
+}
+
+/* Même logique que l'Atlas : en liste, on garde une ligne compacte. */
+.doc-card--list .doc-excerpt {
+  display: none;
+}
+
+@media (max-width: 560px) {
+  .doc-card.doc-card--list {
+    grid-template-columns: 110px minmax(0, 1fr);
+  }
+
+  .doc-card--list .doc-thumb {
+    width: 110px;
+    min-height: 84px;
+  }
+
+  .doc-card--list .doc-body {
+    padding: 10px 12px !important;
+  }
+
+  .doc-card--list .doc-title {
+    min-height: calc(2 * 1.25em);
+  }
 }

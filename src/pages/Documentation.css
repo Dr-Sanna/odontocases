@@ -22,10 +22,6 @@
   border-color: rgba(255, 80, 80, 0.18);
 }
 
-/* Réserve la hauteur de la description quand on n’est pas sur /documentation */
-.doc-header-spacer {
-  height: 1.5rem;
-}
 
 /* Skeleton titre (si le cache titre n'est pas encore hydraté) */
 .doc-title-skel {
@@ -52,4 +48,293 @@
 
 .doc-sk-w90 {
   width: 90%;
+}
+
+
+/* Lien dans la description de page : même logique que les liens Markdown */
+.page-header .doc-description-link {
+  color: var(--ifm-color-primary);
+  text-decoration: none;
+}
+
+.page-header .doc-description-link:hover {
+  text-decoration: underline;
+}
+
+.page-header .doc-description-link:focus-visible {
+  outline: 2px solid var(--ifm-color-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* =========================================================
+   Toolbar Documentation + toggle Cartes / Liste
+   ========================================================= */
+
+.doc-gridwrap {
+  position: relative;
+}
+
+.doc-toolbar {
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.doc-viewtoggle {
+  display: inline-grid;
+  grid-auto-flow: column;
+  gap: 0;
+  padding: 0;
+
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: none;
+
+  flex-shrink: 0;
+}
+
+.doc-viewbtn {
+  border: 0;
+  background: transparent;
+  color: inherit;
+
+  width: 40px;
+  height: 34px;
+
+  display: grid;
+  place-items: center;
+
+  opacity: 0.75;
+  cursor: pointer;
+
+  border-radius: 0;
+}
+
+.doc-viewbtn:first-child {
+  border-top-left-radius: 999px;
+  border-bottom-left-radius: 999px;
+}
+
+.doc-viewbtn:last-child {
+  border-top-right-radius: 999px;
+  border-bottom-right-radius: 999px;
+}
+
+.doc-viewbtn + .doc-viewbtn {
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.doc-viewbtn:hover {
+  opacity: 0.95;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.doc-viewbtn.active {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.doc-viewbtn:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.35);
+  outline-offset: -2px;
+}
+
+.doc-ico {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+[data-theme='light'] .doc-viewtoggle {
+  background: rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+[data-theme='light'] .doc-viewbtn + .doc-viewbtn {
+  border-left: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+[data-theme='light'] .doc-viewbtn:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme='light'] .doc-viewbtn.active {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+[data-theme='light'] .doc-viewbtn:focus-visible {
+  outline: 2px solid rgba(0, 0, 0, 0.25);
+}
+
+.doc-viewbtn:first-child .doc-ico {
+  transform: translateX(1px);
+}
+
+.doc-viewbtn:last-child .doc-ico {
+  transform: translateX(-2px);
+}
+
+/* =========================================================
+   Contrôles Documentation : Afficher / Grouper par
+   ========================================================= */
+
+.doc-atlas-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+}
+
+.doc-atlas-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  padding: 0;
+  border: 0;
+  background: transparent;
+  border-radius: 0;
+}
+
+.doc-sortlabel {
+  font-size: 0.9rem;
+  opacity: 0.85;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.doc-sortbtn {
+  appearance: none;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: rgba(0, 0, 0, 0.02);
+  color: inherit;
+
+  padding: 6px 10px;
+  border-radius: 999px;
+
+  font-size: 0.92rem;
+  font-weight: 650;
+  line-height: 1;
+
+  cursor: pointer;
+  user-select: none;
+
+  transition: background 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+}
+
+.doc-sortbtn:hover {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.14);
+}
+
+.doc-sortbtn.active {
+  background: #eef4ff;
+  border-color: #dce8ff;
+}
+
+[data-theme='dark'] .doc-sortbtn {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+[data-theme='dark'] .doc-sortbtn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+[data-theme='dark'] .doc-sortbtn.active {
+  background: #1f2940;
+  border-color: #2a3a5a;
+}
+
+/* =========================================================
+   Groupes par thème
+   ========================================================= */
+
+.doc-groups {
+  display: grid;
+  gap: 0;
+}
+
+.doc-group {
+  min-width: 0;
+}
+
+.doc-group-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.25rem 0 0.75rem;
+}
+
+.doc-group-title {
+  font-size: 1rem;
+  font-weight: 800;
+  opacity: 0.92;
+  white-space: nowrap;
+}
+
+.doc-group-rule {
+  height: 1px;
+  flex: 1;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme='dark'] .doc-group-rule {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.doc-loading {
+  display: flex;
+  justify-content: flex-end;
+  margin: -0.25rem 0 0.75rem;
+}
+
+.doc-loading-pill {
+  width: fit-content;
+  padding: 0.35rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 650;
+  opacity: 0.75;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+[data-theme='light'] .doc-loading-pill {
+  background: rgba(0, 0, 0, 0.03);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+@media (max-width: 560px) {
+  .doc-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .doc-atlas-controls {
+    width: 100%;
+    gap: 10px;
+  }
+
+  .doc-atlas-control {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+
+  .doc-viewtoggle {
+    align-self: flex-end;
+  }
+
+  .doc-group-title {
+    white-space: normal;
+  }
 }
