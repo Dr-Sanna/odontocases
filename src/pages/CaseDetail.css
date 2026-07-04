@@ -941,3 +941,13 @@
 [data-theme="dark"] .cd-copyright h3 {
   color: color-mix(in srgb, var(--ifm-font-color-base) 88%, transparent);
 }
+
+/* =========================
+   Badges d'entête multi-badges
+   ========================= */
+.cd-type-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}

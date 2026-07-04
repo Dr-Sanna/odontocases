@@ -113,6 +113,16 @@ function ensureBadge(b) {
   const variant = typeof b.variant === 'string' ? b.variant : 'info';
   return { text, variant };
 }
+function normalizeBadgesList(badgesRel) {
+  const list = normalizeRelationArray(badgesRel)
+    .map(ensureBadge)
+    .filter(Boolean);
+
+  return list.length ? list : [];
+}
+function firstBadgeFromList(list) {
+  return Array.isArray(list) && list.length ? list[0] : null;
+}
 
 /* ===== DOC session helpers (perf only) ===== */
 function getDocNodeFromSession(slug) {
@@ -775,26 +785,38 @@ export default function CaseDetail(props) {
   const indexPatho = cdIndex?.pathoIndex || {};
   const indexCase = cdIndex?.caseIndex || {};
 
-  // ✅ badge instant (évite le flash "Atlas" quand on a déjà l’info via state/index/cache)
-  const instantBadge = useMemo(() => {
-    if (!isPresentationNamespace) return null;
+  // ✅ badges instantanés (évite le flash "Atlas" quand on a déjà l’info via state/index/cache)
+  const instantBadges = useMemo(() => {
+    if (!isPresentationNamespace) return [];
 
-    const fromState = ensureBadge(navCrumb?.pathology?.badge);
-    if (fromState) return fromState;
+    const sources = [
+      navCrumb?.pathology?.badges,
+      indexPatho?.[pathologySlug]?.badges,
+      indexCase?.[caseSlug]?.pathologyBadges,
+      parentPathology?.badges,
+      displayItem?.badges,
+      provisional?.badges,
+    ];
 
-    const fromIndexPatho = ensureBadge(indexPatho?.[pathologySlug]?.badge);
-    if (fromIndexPatho) return fromIndexPatho;
+    for (const source of sources) {
+      const list = normalizeBadgesList(source);
+      if (list.length) return list;
+    }
 
-    const fromIndexCase = ensureBadge(indexCase?.[caseSlug]?.pathologyBadge);
-    if (fromIndexCase) return fromIndexCase;
+    const singleSources = [
+      navCrumb?.pathology?.badge,
+      indexPatho?.[pathologySlug]?.badge,
+      indexCase?.[caseSlug]?.pathologyBadge,
+      pickPrimaryBadge(parentPathology?.badges),
+      pickPrimaryBadge(displayItem?.badges),
+    ];
 
-    const fromParent = pickPrimaryBadge(parentPathology?.badges);
-    if (fromParent) return fromParent;
+    for (const source of singleSources) {
+      const badge = ensureBadge(source);
+      if (badge) return [badge];
+    }
 
-    const fromDisplay = pickPrimaryBadge(displayItem?.badges);
-    if (fromDisplay) return fromDisplay;
-
-    return null;
+    return [];
   }, [
     isPresentationNamespace,
     navCrumb,
@@ -804,12 +826,15 @@ export default function CaseDetail(props) {
     caseSlug,
     parentPathology?.badges,
     displayItem?.badges,
+    provisional?.badges,
   ]);
 
-  const pathologyBadge = useMemo(() => {
-    if (!isPresentationNamespace) return null;
-    return instantBadge || { text: 'Atlas', variant: 'info' };
-  }, [isPresentationNamespace, instantBadge]);
+  const pathologyBadges = useMemo(() => {
+    if (!isPresentationNamespace) return [];
+    return instantBadges.length ? instantBadges : [{ text: 'Atlas', variant: 'info' }];
+  }, [isPresentationNamespace, instantBadges]);
+
+  const pathologyBadge = useMemo(() => firstBadgeFromList(pathologyBadges), [pathologyBadges]);
 
   const displayTitle = useMemo(() => {
     if (isDocNamespace) return displayItem?.title || displayItem?.slug || 'Documentation';
@@ -1088,9 +1113,16 @@ export default function CaseDetail(props) {
 
           <div className="cd-type-badge">
             {isPresentationNamespace ? (
-              <span className={`badge badge-soft-outline badge-${pathologyBadge?.variant || 'info'}`}>
-                {pathologyBadge?.text || 'Atlas'}
-              </span>
+              <div className="cd-type-badges" aria-label="Badges de pathologie">
+                {pathologyBadges.map((badge, index) => (
+                  <span
+                    key={`${badge.variant || 'info'}:${badge.text || 'Atlas'}:${index}`}
+                    className={`badge badge-soft-outline badge-${badge.variant || 'info'}`}
+                  >
+                    {badge.text || 'Atlas'}
+                  </span>
+                ))}
+              </div>
             ) : (
               <span className={`badge badge-soft-outline badge-${badgeVariantFromKey(effectiveType || 'qa')}`}>
                 {typeLabel}
@@ -1163,7 +1195,8 @@ export default function CaseDetail(props) {
                         pathology: {
                           slug: pathologySlug,
                           title: instantPathologyTitle || pathologySlug,
-                          badge: pathologyBadge, // ✅ passe le badge pour éviter le flash si navigation interne
+                          badge: pathologyBadge, // ✅ compat : premier badge
+                          badges: pathologyBadges, // ✅ liste complète pour l'entête
                         },
                         case: { slug: c.slug, title: c.title || c.slug },
                       },
@@ -1690,11 +1723,13 @@ function Aside({
           for (const p of cooked) {
             if (!p?.slug) continue;
 
-            const badge = pickPrimaryBadge(p?.badges);
+            const badges = normalizeBadgesList(p?.badges);
+            const badge = firstBadgeFromList(badges);
 
             pathoIndex[p.slug] = {
               title: p.title || p.slug,
               badge: badge || null,
+              badges,
             };
 
             const kids = Array.isArray(p._children) ? p._children : [];
@@ -1705,6 +1740,7 @@ function Aside({
                 pathologySlug: p.slug,
                 pathologyTitle: p.title || p.slug,
                 pathologyBadge: badge || null,
+                pathologyBadges: badges,
               };
             }
           }
@@ -2047,7 +2083,8 @@ function Aside({
                     });
                   };
 
-                  const badge = pickPrimaryBadge(p?.badges);
+                  const badges = normalizeBadgesList(p?.badges);
+                  const badge = firstBadgeFromList(badges);
 
                   return (
                     <li key={p.slug}>
@@ -2075,10 +2112,10 @@ function Aside({
                             state={{
                               breadcrumb: {
                                 mode: 'atlas',
-                                pathology: { slug: p.slug, title: p.title || p.slug, badge: badge || null },
+                                pathology: { slug: p.slug, title: p.title || p.slug, badge: badge || null, badges },
                                 case: null,
                               },
-                              prefetch: { slug: p.slug, title: p.title || p.slug, type: 'presentation' },
+                              prefetch: { slug: p.slug, title: p.title || p.slug, type: 'presentation', badges: p?.badges ?? null },
                             }}
                             onClick={() => {
                               if (hasKids) {
@@ -2134,7 +2171,7 @@ function Aside({
                                         state={{
                                           breadcrumb: {
                                             mode: 'atlas',
-                                            pathology: { slug: p.slug, title: p.title || p.slug, badge: badge || null },
+                                            pathology: { slug: p.slug, title: p.title || p.slug, badge: badge || null, badges },
                                             case: { slug: ch.slug, title: ch.title || ch.slug },
                                           },
                                           prefetch: {

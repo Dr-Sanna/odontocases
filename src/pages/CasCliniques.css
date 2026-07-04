@@ -414,16 +414,19 @@
    Atlas : groupage sobre, sans barre horizontale ni gras
    ========================================================= */
 
-.cc-group-header {
+.cc-groups .cc-group-header,
+.cc-groups .resource-group-header.cc-group-header {
   gap: 0;
   margin: 0.25rem 0 0.75rem;
 }
 
-.cc-group-title {
-  font-weight: 400;
+.cc-groups .cc-group-title,
+.cc-groups .resource-group-title.cc-group-title {
+  font-weight: 400 !important;
   opacity: 0.85;
 }
 
-.cc-group-rule {
-  display: none;
+.cc-groups .cc-group-rule,
+.cc-groups .resource-group-rule.cc-group-rule {
+  display: none !important;
 }
