@@ -247,9 +247,27 @@ function hasMeaningfulContentLike(obj) {
   if (typeof obj?.excerpt === 'string' && obj.excerpt.trim().length > 0) return true;
   if (Array.isArray(obj?.qa_blocks) && obj.qa_blocks.length) return true;
   if (Array.isArray(obj?.quiz_blocks) && obj.quiz_blocks.length) return true;
+  if (typeof obj?.credits === 'string' && obj.credits.trim().length > 0) return true;
   if (typeof obj?.references === 'string' && obj.references.trim().length > 0) return true;
   if (typeof obj?.copyright === 'string' && obj.copyright.trim().length > 0) return true;
   return false;
+}
+
+function getCreditsMarkdown(item) {
+  if (!item) return '';
+
+  const credits = typeof item?.credits === 'string' ? item.credits.trim() : '';
+  if (credits) return credits;
+
+  const references = typeof item?.references === 'string' ? item.references.trim() : '';
+  const copyright = typeof item?.copyright === 'string' ? item.copyright.trim() : '';
+
+  if (!references && !copyright) return '';
+
+  return [
+    references ? `#### Références\n${references}` : '',
+    copyright ? `#### Copyright\n${copyright}` : '',
+  ].filter(Boolean).join('\n\n');
 }
 
 /* =========================
@@ -465,7 +483,7 @@ export default function CaseDetail(props) {
             ...(withQa ? { qa_blocks: { populate: '*' } } : {}),
             ...(withQuiz ? { quiz_blocks: { populate: { propositions: true } } } : {}),
           },
-          fields: ['title', 'slug', 'type', 'excerpt', 'content', 'updatedAt', 'references', 'copyright'],
+          fields: ['title', 'slug', 'type', 'excerpt', 'content', 'updatedAt', 'credits', 'references', 'copyright'],
           pagination: { page: 1, pageSize: 1 },
         },
       });
@@ -517,7 +535,7 @@ export default function CaseDetail(props) {
                 }
               : {}),
           },
-          fields: ['title', 'slug', 'excerpt', 'content', 'updatedAt', 'references', 'copyright'],
+          fields: ['title', 'slug', 'excerpt', 'content', 'updatedAt', 'credits', 'references', 'copyright'],
           pagination: { page: 1, pageSize: 1 },
         },
       });
@@ -568,7 +586,7 @@ export default function CaseDetail(props) {
           cover: { fields: ['url', 'formats'] },
           parent: { populate: { parent: { populate: { parent: true } } } },
         },
-        fields: ['title', 'slug', 'level', 'excerpt', 'content', 'updatedAt', 'references', 'copyright'],
+        fields: ['title', 'slug', 'level', 'excerpt', 'content', 'updatedAt', 'credits', 'references', 'copyright'],
         pagination: { page: 1, pageSize: 1 },
       },
     });
@@ -1062,7 +1080,8 @@ export default function CaseDetail(props) {
     return Array.isArray(docCurrentItemSections) ? docCurrentItemSections : [];
   }, [isDocItemPage, docCurrentItemSections]);
 
-  const showExtras = Boolean(displayItem?.references || displayItem?.copyright);
+  const creditsMarkdown = getCreditsMarkdown(displayItem);
+  const showExtras = Boolean(creditsMarkdown);
 
   const markdownScopeKey = String(displayItem?.slug || displayItem?.id || 'x');
 
@@ -1269,19 +1288,10 @@ export default function CaseDetail(props) {
           {/* EXTRAS */}
           {displayMatchesRoute && showExtras && (
             <section className="cd-extras">
-              {displayItem?.references && (
-                <div className="cd-references">
-                  <h3>Références</h3>
-                  <CaseMarkdown>{displayItem.references}</CaseMarkdown>
-                </div>
-              )}
-
-              {displayItem?.copyright && (
-                <div className="cd-copyright">
-                  <h3>Copyright</h3>
-                  <CaseMarkdown>{displayItem.copyright}</CaseMarkdown>
-                </div>
-              )}
+              <div className="cd-references cd-credits">
+                <h3>Références et copyright</h3>
+                <CaseMarkdown>{creditsMarkdown}</CaseMarkdown>
+              </div>
             </section>
           )}
         </article>
