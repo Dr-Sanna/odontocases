@@ -769,3 +769,60 @@ figcaption {
 [data-theme="dark"] .cd-figure > table.cd-imgtable + figcaption.cd-figcaption {
     border-color: rgba(255, 255, 255, 0.14);
 }
+
+/* =========================
+   CALLOUTS — tableaux plus lisibles
+   - garde les tailles et espacements existants
+   - pas d'alternance de lignes
+   - cellules de contenu neutralisées
+   - cellules d'en-tête teintées avec la couleur du callout
+   ========================= */
+.cd-callout .cd-callout-content {
+  --cd-callout-table-border: color-mix(in srgb, var(--cd-callout-border) 32%, rgba(15, 23, 42, 0.16));
+  --cd-callout-table-bg: color-mix(in srgb, var(--cd-callout-bg) 22%, #ffffff 78%);
+  --cd-callout-table-bg-head: color-mix(in srgb, var(--cd-callout-border) 18%, #ffffff 82%);
+  --cd-callout-table-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+[data-theme="dark"] .cd-callout .cd-callout-content {
+  --cd-callout-table-border: color-mix(in srgb, var(--cd-callout-border) 42%, rgba(255, 255, 255, 0.18));
+  --cd-callout-table-bg: color-mix(in srgb, var(--cd-callout-bg) 30%, rgba(8, 13, 24, 0.72) 70%);
+  --cd-callout-table-bg-head: color-mix(in srgb, var(--cd-callout-border) 22%, rgba(255, 255, 255, 0.07) 78%);
+  --cd-callout-table-shadow: 0 1px 2px rgba(0, 0, 0, 0.22);
+}
+
+/* Fallback si color-mix n'est pas disponible */
+@supports not (background: color-mix(in srgb, red 10%, white)) {
+  .cd-callout .cd-callout-content {
+    --cd-callout-table-border: rgba(15, 23, 42, 0.16);
+    --cd-callout-table-bg: rgba(255, 255, 255, 0.74);
+    --cd-callout-table-bg-head: rgba(255, 255, 255, 0.92);
+  }
+
+  [data-theme="dark"] .cd-callout .cd-callout-content {
+    --cd-callout-table-border: rgba(255, 255, 255, 0.18);
+    --cd-callout-table-bg: rgba(8, 13, 24, 0.46);
+    --cd-callout-table-bg-head: rgba(255, 255, 255, 0.08);
+  }
+}
+
+.cd-callout .cd-callout-content table:not(.cd-imgtable) {
+  background: var(--cd-callout-table-bg) !important;
+  border-color: var(--cd-callout-table-border) !important;
+  box-shadow: var(--cd-callout-table-shadow);
+}
+
+.cd-callout .cd-callout-content table:not(.cd-imgtable) th,
+.cd-callout .cd-callout-content table:not(.cd-imgtable) td {
+  border-color: var(--cd-callout-table-border) !important;
+  background: var(--cd-callout-table-bg) !important;
+}
+
+.cd-callout .cd-callout-content table:not(.cd-imgtable) th,
+.cd-callout .cd-callout-content table:not(.cd-imgtable) :is(td, th):has(h4) {
+  background: var(--cd-callout-table-bg-head) !important;
+}
+
+.cd-callout .cd-callout-content table:not(.cd-imgtable) :is(td, th) :is(ul, ol) {
+  color: inherit;
+}

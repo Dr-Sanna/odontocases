@@ -22,12 +22,11 @@ function getInitialThemeMode() {
   try {
     const savedMode = localStorage.getItem(THEME_MODE_KEY);
     if (savedMode === 'auto' || savedMode === 'dark' || savedMode === 'light') return savedMode;
-
-    // Compat avec l'ancien fonctionnement qui ne stockait que "dark" ou "light" dans "theme".
-    const legacyTheme = localStorage.getItem(THEME_KEY);
-    if (legacyTheme === 'dark' || legacyTheme === 'light') return legacyTheme;
   } catch {}
 
+  // Par défaut, aucun choix utilisateur explicite = mode automatique.
+  // On n'utilise pas l'ancien champ "theme" comme préférence, car il stocke seulement
+  // le thème actif appliqué sur la page, pas forcément un choix utilisateur.
   return 'auto';
 }
 
