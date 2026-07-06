@@ -264,10 +264,7 @@ function getCreditsMarkdown(item) {
 
   if (!references && !copyright) return '';
 
-  return [
-    references ? `#### Références\n${references}` : '',
-    copyright ? `#### Copyright\n${copyright}` : '',
-  ].filter(Boolean).join('\n\n');
+  return [references, copyright].filter(Boolean).join('\n\n');
 }
 
 /* =========================
@@ -1289,7 +1286,7 @@ export default function CaseDetail(props) {
           {displayMatchesRoute && showExtras && (
             <section className="cd-extras">
               <div className="cd-references cd-credits">
-                <h3>Références et copyright</h3>
+                <h3>Sources et crédits</h3>
                 <CaseMarkdown>{creditsMarkdown}</CaseMarkdown>
               </div>
             </section>
