@@ -82,8 +82,13 @@ function paragraphRemainderAfterMarker(firstParagraph, marker) {
     children.push({ ...originalChildren[0], value: String(marker.title) });
   }
 
-  // Texte situé sur la ligne suivante du même paragraphe MDAST :
-  // [!col|46]\nTexte conservé
+  // CommonMark peut conserver le saut de ligne souple et le texte suivant dans
+  // le même nœud texte : "[!col|46]\nTexte conservé".
+  if (marker?.remainder) {
+    children.push({ ...originalChildren[0], value: String(marker.remainder) });
+  }
+
+  // Autres nœuds inline éventuels du paragraphe (liens, emphase, break, etc.).
   children.push(...originalChildren.slice(1));
 
   // Nettoyage du début : CommonMark insère souvent un break puis du texte.
@@ -173,7 +178,19 @@ const CALLOUT_MARKER_RE = /^\s*\[!([a-z][\w-]*)(?:\|([^\]]+))?\]([+-])?\s*(.*?)\
 
 function parseCalloutMarker(value) {
   if (typeof value !== 'string') return null;
-  const m = value.match(CALLOUT_MARKER_RE);
+
+  // Un saut de ligne Markdown simple peut rester dans le premier nœud texte.
+  // On analyse uniquement la première ligne comme marqueur et on conserve le
+  // reste afin de le réinjecter dans le contenu de la colonne/callout.
+  const raw = String(value);
+  const newlineMatch = raw.match(/\r?\n/);
+  const newlineIndex = newlineMatch?.index ?? -1;
+  const markerLine = newlineIndex === -1 ? raw : raw.slice(0, newlineIndex);
+  const remainder = newlineIndex === -1
+    ? ''
+    : raw.slice(newlineIndex + newlineMatch[0].length).replace(/^\s+/, '');
+
+  const m = markerLine.match(CALLOUT_MARKER_RE);
   if (!m) return null;
 
   const rawType = String(m[1] || '').toLowerCase();
@@ -190,6 +207,7 @@ function parseCalloutMarker(value) {
     options,
     fold: m[3] || '', // '' | '-' | '+'
     title: String(m[4] || '').trim(),
+    remainder,
   };
 }
 

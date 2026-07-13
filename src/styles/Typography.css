@@ -826,3 +826,19 @@ figcaption {
 .cd-callout .cd-callout-content table:not(.cd-imgtable) :is(td, th) :is(ul, ol) {
   color: inherit;
 }
+
+/* =========================
+   CELLULES — alignement centré renforcé
+   Classe HTML : text-center
+   ========================= */
+.cd-content table :is(td, th).text-center {
+  text-align: center !important;
+  vertical-align: middle !important;
+  font-weight: 600 !important;
+}
+
+/* Les wrappers internes héritent explicitement du centrage. */
+.cd-content table :is(td, th).text-center > :where(p, div) {
+  text-align: inherit !important;
+  font-weight: inherit !important;
+}
