@@ -11,7 +11,11 @@ import { ckeditorSchema } from "../lib/markdown/ckeditorSchema";
 import { remarkObsidianCallouts } from "../lib/markdown/remarkObsidianCallouts";
 import { remarkFigureCaptions } from "../lib/markdown/remarkFigureCaptions";
 
-import ClassificationDiagram from "./ClassificationDiagram";
+import ClassificationDiagram, {
+  isHeadingDrivenClassificationDiagramSpec,
+  parseClassificationDiagramHeadingTree,
+  resolveHeadingDrivenClassificationDiagramSpec,
+} from "./ClassificationDiagram";
 
 /* =========================
    Normalisation spécifique CKEditor
@@ -438,14 +442,29 @@ function isClassificationDiagramBlock(className, rawText) {
   return lang === "classificationdiagram" || raw.startsWith("@classificationDiagram");
 }
 
-function renderClassificationDiagramFromCode(className, codeChildren, scopeKey) {
+function renderClassificationDiagramFromCode(
+  className,
+  codeChildren,
+  scopeKey,
+  headingTree,
+  specCache
+) {
   const raw = textFromReactChildren(codeChildren).replace(/\n$/, "");
   if (!isClassificationDiagramBlock(className, raw)) return null;
 
-  const spec = parseClassificationDiagramBlock(raw);
-  if (!spec) return null;
+  let resolved = specCache?.get(raw);
+  if (!resolved) {
+    const spec = parseClassificationDiagramBlock(raw);
+    if (!spec) return null;
 
-  return <ClassificationDiagram {...spec} scopeKey={scopeKey} />;
+    resolved = isHeadingDrivenClassificationDiagramSpec(spec)
+      ? resolveHeadingDrivenClassificationDiagramSpec(spec, headingTree)
+      : spec;
+
+    specCache?.set(raw, resolved);
+  }
+
+  return <ClassificationDiagram {...resolved} scopeKey={scopeKey} />;
 }
 
 /* =========================
@@ -459,6 +478,15 @@ const CaseMarkdown = memo(function CaseMarkdown({ children, scopeKey = "" }) {
     [children]
   );
 
+  const diagramHeadingTree = useMemo(() => {
+    const usesHeadingDrivenDiagram =
+      /["']source["']\s*:\s*["']headings["']/.test(source) &&
+      (source.includes("@classificationDiagram") || /```\s*classificationdiagram\b/i.test(source));
+    return usesHeadingDrivenDiagram ? parseClassificationDiagramHeadingTree(source) : [];
+  }, [source]);
+
+  const diagramSpecCache = useMemo(() => new Map(), [source, diagramHeadingTree]);
+
   const mdComponents = useMemo(
     () => ({
       pre({ children: preChildren, ...props }) {
@@ -469,7 +497,9 @@ const CaseMarkdown = memo(function CaseMarkdown({ children, scopeKey = "" }) {
             const diagram = renderClassificationDiagramFromCode(
               onlyChild.props?.className,
               onlyChild.props?.children,
-              scopeKey
+              scopeKey,
+              diagramHeadingTree,
+              diagramSpecCache
             );
             if (diagram) return diagram;
           } catch (e) {
@@ -487,7 +517,13 @@ const CaseMarkdown = memo(function CaseMarkdown({ children, scopeKey = "" }) {
       code({ inline, className, children: codeChildren, node, ...props }) {
         if (!inline) {
           try {
-            const diagram = renderClassificationDiagramFromCode(className, codeChildren, scopeKey);
+            const diagram = renderClassificationDiagramFromCode(
+              className,
+              codeChildren,
+              scopeKey,
+              diagramHeadingTree,
+              diagramSpecCache
+            );
             if (diagram) return diagram;
           } catch (e) {
             return (
@@ -505,7 +541,7 @@ const CaseMarkdown = memo(function CaseMarkdown({ children, scopeKey = "" }) {
         );
       },
     }),
-    [scopeKey]
+    [scopeKey, diagramHeadingTree, diagramSpecCache]
   );
 
   const mdRemarkPlugins = useMemo(

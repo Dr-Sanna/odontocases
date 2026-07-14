@@ -107,15 +107,47 @@ button.cdg-chip {
 
 /* Root items en grille */
 .cdg-root-items[data-layout="grid"] {
-  display: grid;
-  grid-template-columns: repeat(var(--cdg-cols, 2), minmax(0, 1fr));
-  gap: var(--cdg-gap-col);
-  align-items: start;
+  display: block;
+  column-count: var(--cdg-cols, 2);
+  column-gap: var(--cdg-gap-col);
+  column-fill: balance;
+}
+
+.cdg-root-items[data-layout="grid"] > .cdg-node {
+  display: inline-block;
+  width: 100%;
+  margin: 0 0 var(--cdg-gap-col);
+  break-inside: avoid-column;
+  page-break-inside: avoid;
+  vertical-align: top;
 }
 
 @media (max-width: 980px) {
   .cdg-root-items[data-layout="grid"] {
-    grid-template-columns: 1fr;
+    column-count: 1;
+  }
+}
+
+.cdg-balanced-columns {
+  display: block;
+  column-count: var(--cdg-balanced-cols, 2);
+  column-gap: var(--cdg-gap-group);
+  column-fill: balance;
+  min-width: 0;
+}
+
+.cdg-balanced-column-item {
+  display: inline-block;
+  width: 100%;
+  margin: 0 0 var(--cdg-gap-group);
+  break-inside: avoid-column;
+  page-break-inside: avoid;
+  vertical-align: top;
+}
+
+@media (max-width: 720px) {
+  .cdg-balanced-columns {
+    column-count: 1;
   }
 }
 
@@ -146,7 +178,7 @@ button.cdg-chip {
 .cdg-h4,
 .cdg-h5 {
   display: flex;
-  justify-content: flex-start;
+  justify-content: center;
   margin-bottom: 8px;
 }
 
@@ -159,15 +191,24 @@ button.cdg-chip {
 }
 
 .cdg-groups {
-  display: grid;
-  gap: var(--cdg-gap-group);
-  grid-template-columns: repeat(var(--cdg-groups-cols, 1), minmax(0, 1fr));
-  align-items: start;
+  display: block;
+  column-count: var(--cdg-groups-cols, 1);
+  column-gap: var(--cdg-gap-group);
+  column-fill: balance;
+}
+
+.cdg-groups > .cdg-node {
+  display: inline-block;
+  width: 100%;
+  margin: 0 0 var(--cdg-gap-group);
+  break-inside: avoid-column;
+  page-break-inside: avoid;
+  vertical-align: top;
 }
 
 @media (max-width: 720px) {
   .cdg-groups {
-    grid-template-columns: 1fr;
+    column-count: 1;
   }
 }
 
@@ -273,6 +314,23 @@ button.cdg-chip {
   border-color: rgba(59, 130, 246, 0.22);
 }
 
+/* Alignement horizontal global des puces. Les règles spécifiques des arbres,
+   définies plus bas, gardent la priorité dans les dispositions ciblées. */
+.cdg .cdg-chip.cdg-align-left {
+  margin-left: 0 !important;
+  margin-right: auto !important;
+}
+
+.cdg .cdg-chip.cdg-align-center {
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+.cdg .cdg-chip.cdg-align-right {
+  margin-left: auto !important;
+  margin-right: 0 !important;
+}
+
 /* =========================
    Listes : stack (squelette) / grid
    ========================= */
@@ -346,10 +404,19 @@ button.cdg-chip {
 
 /* Sous-liste en GRID */
 .cdg-sublist[data-layout="grid"] {
-  display: grid;
-  grid-template-columns: repeat(var(--cdg-cols, 2), minmax(0, 1fr));
-  gap: var(--cdg-gap-list);
-  align-items: start;
+  display: block;
+  column-count: var(--cdg-cols, 2);
+  column-gap: var(--cdg-gap-list);
+  column-fill: balance;
+}
+
+.cdg-sublist[data-layout="grid"] > .cdg-chip {
+  display: flex !important;
+  width: fit-content;
+  max-width: 100%;
+  margin-bottom: var(--cdg-gap-list) !important;
+  break-inside: avoid-column;
+  page-break-inside: avoid;
 }
 
 /* Sous-liste en STACK */
@@ -361,18 +428,27 @@ button.cdg-chip {
 
 @media (max-width: 720px) {
   .cdg-sublist[data-layout="grid"] {
-    grid-template-columns: 1fr;
+    column-count: 1;
   }
 }
 
 /* GRID (items simples) */
 .cdg-list[data-layout="grid"] {
-  display: grid;
-  grid-template-columns: repeat(var(--cdg-cols, 2), minmax(0, 1fr));
-  gap: var(--cdg-gap-list);
-  align-items: start;
+  display: block;
+  column-count: var(--cdg-cols, 2);
+  column-gap: var(--cdg-gap-list);
+  column-fill: balance;
   padding-left: 0;
   position: static;
+}
+
+.cdg-list[data-layout="grid"] > .cdg-chip {
+  display: flex !important;
+  width: fit-content;
+  max-width: 100%;
+  margin-bottom: var(--cdg-gap-list) !important;
+  break-inside: avoid-column;
+  page-break-inside: avoid;
 }
 
 .cdg-list[data-layout="grid"]::before {
@@ -382,7 +458,7 @@ button.cdg-chip {
 
 @media (max-width: 720px) {
   .cdg-list[data-layout="grid"] {
-    grid-template-columns: 1fr;
+    column-count: 1;
   }
 }
 
@@ -990,6 +1066,24 @@ button.cdg-chip {
 .cdg.cdg-svg-skeletons .cdg-h3-skeleton-node[data-diagram-preset]:not([data-diagram-preset="standard"]) .cdg-h3-skeleton-row > .cdg-node::before {
   display: none !important;
   content: none !important;
+}
+
+
+/* Le mode standard équilibré utilise lui aussi le tracé SVG : on neutralise
+   l'ancien tronc CSS, incompatible avec des colonnes de hauteurs indépendantes. */
+.cdg.cdg-svg-skeletons .cdg-h3-skeleton-node[data-diagram-preset="standard"] {
+  position: relative !important;
+  overflow: visible !important;
+}
+
+.cdg.cdg-svg-skeletons .cdg-h3-skeleton-node[data-diagram-preset="standard"]::before {
+  display: none !important;
+  content: none !important;
+}
+
+.cdg.cdg-svg-skeletons .cdg-h3-skeleton-node[data-diagram-preset="standard"] > *:not(.cdg-skeleton-svg-overlay) {
+  position: relative !important;
+  z-index: 1 !important;
 }
 
 .cdg .cdg-skeleton-svg-overlay {
@@ -2571,4 +2665,90 @@ button.cdg-chip {
 .cdg .cdg-h3-skeleton-row > .cdg-node.is-empty {
   min-height: 1px;
   pointer-events: none;
+}
+
+/* Les listes empilées adaptent aussi leur squelette à l'alignement choisi. */
+.cdg-list[data-layout="stack"]:has(> .cdg-stack-row > .cdg-align-center) {
+  padding-left: 0;
+}
+
+.cdg-list[data-layout="stack"]:has(> .cdg-stack-row > .cdg-align-center)::before {
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.cdg-list[data-layout="stack"] .cdg-spine-target.cdg-align-center::before {
+  display: none;
+  content: none;
+}
+
+.cdg-list[data-layout="stack"]:has(> .cdg-stack-row > .cdg-align-right) {
+  padding-left: 0;
+  padding-right: var(--cdg-indent);
+}
+
+.cdg-list[data-layout="stack"]:has(> .cdg-stack-row > .cdg-align-right)::before {
+  left: auto;
+  right: var(--cdg-spine-x);
+}
+
+.cdg-list[data-layout="stack"] .cdg-spine-target.cdg-align-right::before {
+  left: auto;
+  right: calc(-1 * var(--cdg-branch));
+}
+
+/* =========================
+   v0.12.1 React — règles locales v4 + H4 pleine largeur
+   ========================= */
+
+/* Les H4 occupent toute la largeur de leur colonne, comme dans Obsidian 0.12.0. */
+.cdg .cdg-node[data-cdg-level="4"] {
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+.cdg .cdg-h4 {
+  display: flex !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  justify-content: stretch !important;
+}
+
+.cdg .cdg-chip-h4 {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+.cdg .cdg-chip-h4.cdg-align-left {
+  text-align: left !important;
+  justify-content: flex-start !important;
+}
+
+.cdg .cdg-chip-h4.cdg-align-center {
+  text-align: center !important;
+  justify-content: center !important;
+}
+
+.cdg .cdg-chip-h4.cdg-align-right {
+  text-align: right !important;
+  justify-content: flex-end !important;
+}
+
+/* Compaction des H4 standards en colonnes équilibrées ou en pile. */
+.cdg .cdg-node[data-cdg-level="3"] > .cdg-balanced-columns {
+  column-gap: 8px !important;
+}
+
+.cdg .cdg-node[data-cdg-level="3"] > .cdg-balanced-columns > .cdg-balanced-column-item {
+  margin-bottom: 3px !important;
+}
+
+.cdg .cdg-node[data-cdg-level="3"] > .cdg-subwrap > .cdg-sublist[data-layout="stack"],
+.cdg .cdg-node[data-cdg-level="3"] > .cdg-list[data-layout="stack"] {
+  gap: 2px !important;
 }

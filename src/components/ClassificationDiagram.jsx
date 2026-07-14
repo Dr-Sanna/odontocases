@@ -137,6 +137,473 @@ function normalizeDiagramPreset(value) {
   return "standard";
 }
 
+const HEADING_DRIVEN_FORMAT = "headings-v2";
+const LEGACY_HEADING_DRIVEN_FORMAT = "headings-v1";
+const CDG_DEFAULT_LEVEL_STYLES = { h2: "stack", h3: "stack", h4: "stack", h5: "auto" };
+const CDG_DEFAULT_LEVEL_ALIGNMENTS = { h2: "center", h3: "center", h4: "center", h5: "center", h6: "center" };
+const CDG_DEFAULT_AUTOMATIC_PRESETS = { h3: "tree", h4: "tree" };
+const CDG_DEFAULT_GLOBAL_PRESETS = { h3: "standard", h4: "standard" };
+
+export function isHeadingDrivenClassificationDiagramSpec(value) {
+  return Boolean(
+    value &&
+    typeof value === "object" &&
+    value.source === "headings" &&
+    (value.format === HEADING_DRIVEN_FORMAT || value.format === LEGACY_HEADING_DRIVEN_FORMAT || Number(value.version) >= 2)
+  );
+}
+
+function cdgNormalizeLayoutMode(value) {
+  return String(value || "").toLowerCase() === "automatic" ? "automatic" : "manual";
+}
+
+function cdgNormalizeAlignment(value) {
+  const wanted = String(value || "center").toLowerCase();
+  return wanted === "left" || wanted === "right" ? wanted : "center";
+}
+
+function cdgNormalizePresetRecord(value) {
+  const output = {};
+  if (!value || typeof value !== "object") return output;
+  Object.entries(value).forEach(([key, preset]) => {
+    const normalized = normalizeDiagramPreset(preset);
+    if (key && normalized !== "standard") output[String(key)] = normalized;
+  });
+  return output;
+}
+
+const CDG_LOCAL_LEVEL_STYLES = new Set(["stack", "grid2", "grid3", "grid4"]);
+
+function cdgNormalizeLevelStyle(value, fallback = null) {
+  const wanted = String(value || "");
+  return CDG_LOCAL_LEVEL_STYLES.has(wanted) ? wanted : fallback;
+}
+
+function cdgNormalizeLocalRule(rule, scope = "h2") {
+  if (!rule || typeof rule !== "object") return null;
+  const output = {};
+  const preset = normalizeDiagramPreset(rule.preset);
+  if (preset !== "standard") output.preset = preset;
+
+  if (scope === "h2") {
+    if (rule.h2Align != null) output.h2Align = cdgNormalizeAlignment(rule.h2Align);
+    const h3Style = cdgNormalizeLevelStyle(rule.h3Style);
+    const h4Style = cdgNormalizeLevelStyle(rule.h4Style);
+    if (h3Style) output.h3Style = h3Style;
+    if (h4Style) output.h4Style = h4Style;
+    if (rule.h3Align != null) output.h3Align = cdgNormalizeAlignment(rule.h3Align);
+    if (rule.h4Align != null) output.h4Align = cdgNormalizeAlignment(rule.h4Align);
+  } else {
+    const h4Style = cdgNormalizeLevelStyle(rule.h4Style);
+    if (h4Style) output.h4Style = h4Style;
+    if (rule.h3Align != null) output.h3Align = cdgNormalizeAlignment(rule.h3Align);
+    if (rule.h4Align != null) output.h4Align = cdgNormalizeAlignment(rule.h4Align);
+  }
+
+  return Object.keys(output).length ? output : null;
+}
+
+function cdgNormalizeLocalRuleRecord(value, scope) {
+  const output = {};
+  if (!value || typeof value !== "object") return output;
+  Object.entries(value).forEach(([key, rule]) => {
+    const normalized = cdgNormalizeLocalRule(rule, scope);
+    if (key && normalized) output[String(key)] = normalized;
+  });
+  return output;
+}
+
+function cdgNormalizeHeadingConfig(value = {}) {
+  const sourceVersion = Number(value?.version) || 2;
+  const levelStyles = value?.levelStyles && typeof value.levelStyles === "object" ? value.levelStyles : {};
+  const levelAlignments = value?.levelAlignments && typeof value.levelAlignments === "object" ? value.levelAlignments : {};
+  const automaticPresets = value?.automaticPresets && typeof value.automaticPresets === "object" ? value.automaticPresets : {};
+  const globalPresets = value?.globalPresets && typeof value.globalPresets === "object" ? value.globalPresets : {};
+  const localPresets = value?.localPresets && typeof value.localPresets === "object" ? value.localPresets : {};
+  const localRules = value?.localRules && typeof value.localRules === "object" ? value.localRules : {};
+  const legacyAutomatic = sourceVersion < 3 && cdgNormalizeLayoutMode(value?.layoutMode) === "automatic";
+  const normalizedLocalPresets = {
+    h2: cdgNormalizePresetRecord(localPresets.h2),
+    h3: cdgNormalizePresetRecord(localPresets.h3),
+  };
+  const normalizedLocalRules = {
+    h2: cdgNormalizeLocalRuleRecord(localRules.h2, "h2"),
+    h3: cdgNormalizeLocalRuleRecord(localRules.h3, "h3"),
+  };
+  Object.entries(normalizedLocalPresets.h2).forEach(([key, preset]) => {
+    normalizedLocalRules.h2[key] = { ...(normalizedLocalRules.h2[key] || {}), preset };
+  });
+  Object.entries(normalizedLocalPresets.h3).forEach(([key, preset]) => {
+    normalizedLocalRules.h3[key] = { ...(normalizedLocalRules.h3[key] || {}), preset };
+  });
+  return {
+    title: String(value?.title || "Diagramme de classification"),
+    visibleLevels: value?.visibleLevels && typeof value.visibleLevels === "object" ? value.visibleLevels : null,
+    showSkeleton: value?.showSkeleton !== false,
+    showSkeletonPrimary: value?.showSkeletonPrimary !== false,
+    showSkeletonSecondary: value?.showSkeletonSecondary !== false,
+    showSkeletonTertiary: value?.showSkeletonTertiary !== false,
+    showBorders: value?.showBorders !== false,
+    levelStyles: { ...CDG_DEFAULT_LEVEL_STYLES, ...levelStyles },
+    levelAlignments: {
+      h2: cdgNormalizeAlignment(levelAlignments.h2),
+      h3: cdgNormalizeAlignment(levelAlignments.h3),
+      h4: cdgNormalizeAlignment(levelAlignments.h4),
+      h5: cdgNormalizeAlignment(levelAlignments.h5),
+      h6: cdgNormalizeAlignment(levelAlignments.h6),
+    },
+    globalPresets: {
+      h3: normalizeDiagramPreset(globalPresets.h3 || (legacyAutomatic ? automaticPresets.h3 : CDG_DEFAULT_GLOBAL_PRESETS.h3)),
+      h4: normalizeDiagramPreset(globalPresets.h4 || (legacyAutomatic ? automaticPresets.h4 : CDG_DEFAULT_GLOBAL_PRESETS.h4)),
+    },
+    localPresets: normalizedLocalPresets,
+    localRules: normalizedLocalRules,
+  };
+}
+
+function cdgStableHeadingSegment(nodes, index) {
+  const list = Array.isArray(nodes) ? nodes : [];
+  const node = list[index];
+  const label = norm(node?.text || "heading") || "heading";
+  let occurrence = 0;
+  for (let i = 0; i < index; i += 1) {
+    if (norm(list[i]?.text || "") === label) occurrence += 1;
+  }
+  return `${encodeURIComponent(label)}~${occurrence}`;
+}
+
+function cdgStableHeadingHash(value) {
+  let hash = 2166136261;
+  const input = String(value || "");
+  for (let i = 0; i < input.length; i += 1) {
+    hash ^= input.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(36);
+}
+
+function cdgStableHeadingKey(roots, rootIndex, childIndex = null) {
+  const rootList = Array.isArray(roots) ? roots : [];
+  if (!Number.isInteger(rootIndex) || !rootList[rootIndex]) return "";
+  const rootNode = rootList[rootIndex];
+  const rootRaw = cdgStableHeadingSegment(rootList, rootIndex);
+  const rootKey = rootNode.__cdgStableKey || `h2:${cdgStableHeadingHash(rootRaw)}`;
+  if (!Number.isInteger(childIndex)) return rootKey;
+  const children = Array.isArray(rootNode?.children) ? rootNode.children : [];
+  if (!children[childIndex]) return "";
+  const childRaw = `${rootRaw}/${cdgStableHeadingSegment(children, childIndex)}`;
+  return children[childIndex].__cdgStableKey || `h3:${cdgStableHeadingHash(childRaw)}`;
+}
+
+function cdgAnnotateStableHeadingKeys(roots) {
+  const rootList = Array.isArray(roots) ? roots : [];
+  rootList.forEach((root, rootIndex) => {
+    const rootRaw = cdgStableHeadingSegment(rootList, rootIndex);
+    const rootKey = `h2:${cdgStableHeadingHash(rootRaw)}`;
+    root.__cdgStableKey = rootKey;
+    root.__cdgParentH2Key = rootKey;
+    const children = Array.isArray(root?.children) ? root.children : [];
+    children.forEach((child, childIndex) => {
+      const childRaw = `${rootRaw}/${cdgStableHeadingSegment(children, childIndex)}`;
+      const childKey = `h3:${cdgStableHeadingHash(childRaw)}`;
+      child.__cdgStableKey = childKey;
+      child.__cdgParentH2Key = rootKey;
+      child.__cdgParentH3Key = childKey;
+      const annotateDescendants = (nodes) => {
+        (Array.isArray(nodes) ? nodes : []).forEach((descendant) => {
+          descendant.__cdgParentH2Key = rootKey;
+          descendant.__cdgParentH3Key = childKey;
+          annotateDescendants(descendant.children);
+        });
+      };
+      annotateDescendants(child.children);
+    });
+  });
+  return rootList;
+}
+
+function cdgAlignmentForLevel(alignments, level) {
+  const n = Number(level) || 2;
+  const key = n <= 2 ? "h2" : n === 3 ? "h3" : n === 4 ? "h4" : n === 5 ? "h5" : "h6";
+  return cdgNormalizeAlignment(alignments?.[key]);
+}
+
+function cdgAlignmentForNode(node, config = {}) {
+  const level = Number(node?.level || 0) || 2;
+  const alignments = config?.levelAlignments || CDG_DEFAULT_LEVEL_ALIGNMENTS;
+  const localRules = config?.localRules || { h2: {}, h3: {} };
+  const h2Key = node?.__cdgParentH2Key || (level === 2 ? node?.__cdgStableKey : "");
+  const h3Key = node?.__cdgParentH3Key || (level === 3 ? node?.__cdgStableKey : "");
+  const h2Rule = h2Key ? localRules?.h2?.[h2Key] : null;
+  const h3Rule = h3Key ? localRules?.h3?.[h3Key] : null;
+
+  if (level <= 2 && h2Rule?.h2Align) return cdgNormalizeAlignment(h2Rule.h2Align);
+  if (level === 3) return cdgNormalizeAlignment(h3Rule?.h3Align || h2Rule?.h3Align || alignments.h3);
+  if (level === 4) return cdgNormalizeAlignment(h3Rule?.h4Align || h2Rule?.h4Align || alignments.h4);
+  return cdgAlignmentForLevel(alignments, level);
+}
+
+function cdgAlignmentClass(value) {
+  return `cdg-align-${cdgNormalizeAlignment(value)}`;
+}
+
+function cdgDecodeBasicHtmlEntities(value) {
+  return String(value || "")
+    .replace(/&nbsp;|&#160;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'");
+}
+
+function cdgStripInlineMarkdown(value) {
+  return cdgDecodeBasicHtmlEntities(value)
+    .replace(/\s+#+\s*$/g, "")
+    .replace(/!\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+    .replace(/[*_`~]/g, "")
+    .replace(/<[^>]+>/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function cdgParseMarkdownHeadings(text, minLevel = 2, maxLevel = 6) {
+  const lines = String(text || "").split(/\r?\n/);
+  const headings = [];
+  let inFence = false;
+  let fenceMarker = null;
+  let htmlTableDepth = 0;
+
+  for (let lineNo = 0; lineNo < lines.length; lineNo += 1) {
+    const line = lines[lineNo];
+    const tableContext = htmlTableDepth > 0 || /<(?:table|thead|tbody|tfoot|tr|td|th)\b/i.test(line);
+    const fence = line.match(/^\s*(```+|~~~+)/);
+    if (fence) {
+      const markerChar = fence[1][0];
+      if (!inFence) {
+        inFence = true;
+        fenceMarker = markerChar;
+      } else if (markerChar === fenceMarker) {
+        inFence = false;
+        fenceMarker = null;
+      }
+      continue;
+    }
+    if (inFence) continue;
+
+    const foundOnLine = [];
+    const md = line.match(/^(#{1,6})\s+(.+?)\s*$/);
+    if (md) {
+      const level = md[1].length;
+      if (level >= minLevel && level <= maxLevel) {
+        const headingText = cdgStripInlineMarkdown(md[2]);
+        if (headingText) foundOnLine.push({ level, text: headingText, line: lineNo, column: line.indexOf(md[0]), source: "markdown" });
+      }
+    }
+
+    const htmlRe = /<h([1-6])(?:\s[^>]*)?>([\s\S]*?)<\/h\1>/gi;
+    let match;
+    while ((match = htmlRe.exec(line)) !== null) {
+      const level = Number(match[1]);
+      if (level < minLevel || level > maxLevel) continue;
+      const headingText = cdgStripInlineMarkdown(match[2]);
+      if (!headingText) continue;
+      foundOnLine.push({ level, text: headingText, line: lineNo, column: match.index, source: "html", inHtmlTable: tableContext });
+    }
+
+    const openCount = (line.match(/<table\b/gi) || []).length;
+    const closeCount = (line.match(/<\/table>/gi) || []).length;
+    htmlTableDepth = Math.max(0, htmlTableDepth + openCount - closeCount);
+
+    foundOnLine
+      .sort((a, b) => (a.column || 0) - (b.column || 0))
+      .forEach((heading) => headings.push({ ...heading, children: [] }));
+  }
+
+  return headings;
+}
+
+function cdgBuildHeadingTree(headings) {
+  const roots = [];
+  const stack = [];
+  for (const heading of headings || []) {
+    const node = { ...heading, children: [] };
+    while (stack.length && stack[stack.length - 1].level >= node.level) stack.pop();
+    if (stack.length) stack[stack.length - 1].children.push(node);
+    else roots.push(node);
+    stack.push(node);
+  }
+  return roots;
+}
+
+export function parseClassificationDiagramHeadingTree(markdownSource) {
+  return cdgBuildHeadingTree(cdgParseMarkdownHeadings(markdownSource, 2, 6));
+}
+
+function cdgFilterVisibleLevels(nodes, visibleLevels) {
+  const output = [];
+  for (const node of nodes || []) {
+    if (!node) continue;
+    const children = cdgFilterVisibleLevels(node.children || [], visibleLevels);
+    const visible = visibleLevels?.[String(node.level)] !== false;
+    if (visible) output.push({ ...node, children });
+    else output.push(...children);
+  }
+  return output;
+}
+
+function cdgColumnsForStyle(style, fallback = 2) {
+  if (style === "grid4") return 4;
+  if (style === "grid3") return 3;
+  if (style === "grid2") return 2;
+  return fallback;
+}
+
+function cdgLayoutForStyle(style, count = 0) {
+  if (style === "grid2" || style === "grid3" || style === "grid4") return "grid";
+  if (style === "auto") return count >= 6 ? "grid" : "stack";
+  return "stack";
+}
+
+function cdgLevelKey(level) {
+  const n = clampInt(level, 2, 6, 5);
+  if (n <= 2) return "h2";
+  if (n === 3) return "h3";
+  if (n === 4) return "h4";
+  return "h5";
+}
+
+function cdgStyleForLevel(styles, level) {
+  return styles[cdgLevelKey(level)] || CDG_DEFAULT_LEVEL_STYLES[cdgLevelKey(level)] || "stack";
+}
+
+function cdgApplyStyle(target, style, count) {
+  const layout = cdgLayoutForStyle(style, count);
+  target.layout = layout;
+  if (layout === "grid") target.columns = cdgColumnsForStyle(style, 2);
+}
+
+function cdgChunkIndexes(count, columns) {
+  const cols = Math.max(1, Math.min(4, Number(columns) || 1));
+  const output = [];
+  for (let index = 0; index < count; index += cols) {
+    const items = Array.from({ length: cols }, (_, offset) => (index + offset < count ? index + offset : null));
+    output.push({ columns: cols, items });
+  }
+  return output;
+}
+
+function cdgMakePresetRows(count, preset, fallbackColumns = 1) {
+  const n = Math.max(0, Number(count) || 0);
+  const wanted = normalizeDiagramPreset(preset);
+  if (!n) return [{ columns: 1, items: [null] }];
+  if (wanted === "standard") return cdgChunkIndexes(n, Math.max(1, Math.min(4, Number(fallbackColumns) || 1, n)));
+  if (wanted === "timeline") return Array.from({ length: n }, (_, index) => ({ columns: 1, items: [index] }));
+  if (wanted === "mind" || wanted === "tree") return cdgChunkIndexes(n, n === 1 ? 1 : 2);
+  if (wanted === "tree-left") return Array.from({ length: n }, (_, index) => ({ columns: 2, items: [index, null] }));
+  if (wanted === "tree-right") return Array.from({ length: n }, (_, index) => ({ columns: 2, items: [null, index] }));
+  if (wanted === "flow-right" || wanted === "flow-left") return Array.from({ length: n }, (_, index) => ({ columns: 1, items: [index] }));
+  if (wanted === "org") return cdgChunkIndexes(n, Math.max(1, Math.min(4, n)));
+  return cdgChunkIndexes(n, Math.max(1, Math.min(4, Number(fallbackColumns) || 1, n)));
+}
+
+function cdgToItem(node, config, context = {}) {
+  const item = { label: node.text, anchor: node.text, level: node.level, align: cdgAlignmentForNode(node, config) };
+  const children = Array.isArray(node.children) ? node.children : [];
+  if (children.length) {
+    const child = { items: children.map((entry) => cdgToItem(entry, config, context)) };
+    const style = cdgStyleForLevel(config.levelStyles, children[0]?.level || Math.min((node.level || 4) + 1, 6));
+    cdgApplyStyle(child, style, child.items.length);
+    item.children = child;
+  }
+  return item;
+}
+
+function cdgToNode(node, config, context = {}) {
+  const output = { label: node.text, anchor: node.text, level: node.level, align: cdgAlignmentForNode(node, config) };
+  const children = Array.isArray(node.children) ? node.children : [];
+  const level = Number(node.level);
+  const isConfiguredLevel = level === 2 || level === 3;
+
+  if (isConfiguredLevel && children.length) {
+    const childKey = level === 2 ? "h3" : "h4";
+    const h2Key = node?.__cdgParentH2Key || (level === 2 ? node?.__cdgStableKey : "");
+    const h3Key = node?.__cdgParentH3Key || (level === 3 ? node?.__cdgStableKey : "");
+    const h2Rule = h2Key ? config.localRules?.h2?.[h2Key] || {} : {};
+    const h3Rule = h3Key ? config.localRules?.h3?.[h3Key] || {} : {};
+    const inheritedH4Style = cdgNormalizeLevelStyle(h2Rule.h4Style, config.levelStyles.h4 || "stack");
+    const manualStyle = level === 2
+      ? cdgNormalizeLevelStyle(h2Rule.h3Style, config.levelStyles.h3 || "stack")
+      : cdgNormalizeLevelStyle(h3Rule.h4Style, inheritedH4Style);
+    const stableKey = level === 2
+      ? (node?.__cdgStableKey || cdgStableHeadingKey(context.roots, context.rootIndex))
+      : (node?.__cdgStableKey || cdgStableHeadingKey(context.roots, context.rootIndex, context.childIndex));
+    const localBucket = level === 2 ? config.localPresets.h2 : config.localPresets.h3;
+    const localRule = level === 2 ? h2Rule : h3Rule;
+    const preset = normalizeDiagramPreset(localRule.preset || localBucket?.[stableKey] || config.globalPresets[childKey] || "standard");
+    const columns = cdgColumnsForStyle(manualStyle, 1);
+    output.mixedItems = "customRows";
+    output.diagramPreset = preset;
+    output.skeletonStyle = preset;
+    output.mixedRows = cdgMakePresetRows(children.length, preset, columns)
+      .map((row) => ({
+        columns: row.columns,
+        childStyle: preset === "standard" ? (level === 2 ? inheritedH4Style : config.levelStyles.h5) : "stack",
+        nodes: row.items.map((index) => {
+          if (index == null) return null;
+          const childContext = level === 2
+            ? { ...context, childIndex: index }
+            : context;
+          return cdgToNode(children[index], config, childContext);
+        }),
+      }))
+      .filter((row) => row.nodes.some(Boolean));
+    return output;
+  }
+
+  const groups = [];
+  const items = [];
+  children.forEach((child) => {
+    if (Array.isArray(child.children) && child.children.length) groups.push(child);
+    else items.push(child);
+  });
+
+  if (groups.length) {
+    const style = cdgStyleForLevel(config.levelStyles, groups[0]?.level || Math.min((node.level || 2) + 1, 6));
+    output.groupColumns = cdgLayoutForStyle(style, groups.length) === "grid" ? cdgColumnsForStyle(style, 2) : 1;
+    output.groups = groups.map((group) => cdgToNode(group, config, context));
+  }
+  if (items.length) {
+    output.items = items.map((item) => cdgToItem(item, config, context));
+    const style = cdgStyleForLevel(config.levelStyles, items[0]?.level || Math.min((node.level || 2) + 1, 6));
+    cdgApplyStyle(output, style, output.items.length);
+  }
+  if (groups.length && items.length) output.mixedItems = "integrated";
+  return output;
+}
+
+export function resolveHeadingDrivenClassificationDiagramSpec(spec, headingTree) {
+  if (!isHeadingDrivenClassificationDiagramSpec(spec)) return spec;
+  const config = cdgNormalizeHeadingConfig(spec);
+  const sourceRoots = cdgAnnotateStableHeadingKeys(Array.isArray(headingTree) ? headingTree : []);
+  const roots = cdgFilterVisibleLevels(sourceRoots, config.visibleLevels);
+  const h2Style = config.levelStyles.h2 || "stack";
+  const diagram = {
+    title: config.title,
+    showSkeleton: config.showSkeleton,
+    showSkeletonPrimary: config.showSkeletonPrimary,
+    showSkeletonSecondary: config.showSkeletonSecondary,
+    showSkeletonTertiary: config.showSkeletonTertiary,
+    showBorders: config.showBorders,
+    visibleLevels: config.visibleLevels || undefined,
+    layout: h2Style === "grid2" || h2Style === "grid3" || h2Style === "grid4" ? "grid" : "stack",
+    rootColumns: cdgColumnsForStyle(h2Style, 2),
+    items: roots.map((root, rootIndex) => cdgToNode(root, config, { roots, rootIndex })),
+  };
+  return diagram;
+}
+
 function skeletonSideForPresetSlot(presetValue, slotIndex, columns = 1) {
   const preset = normalizeDiagramPreset(presetValue);
   const cols = Math.max(1, Number(columns) || 1);
@@ -244,6 +711,18 @@ function collectDirectSkeletonChips(node) {
     });
   });
 
+  if (!out.length) {
+    const balanced = node.querySelector(":scope > .cdg-balanced-columns");
+    const columnItems = balanced ? Array.from(balanced.children).filter((child) => child.classList?.contains("cdg-balanced-column-item")) : [];
+    columnItems.forEach((slot, slotIndex) => {
+      const childNode = slot.querySelector(":scope > .cdg-node");
+      const chip = firstDirectHeadingChip(childNode);
+      if (!chip) return;
+      const chipRect = rectRelativeTo(chip.getBoundingClientRect(), parentRect);
+      out.push({ row: balanced, slot, chip, rowIndex: 0, slotIndex, side: null, chipRect });
+    });
+  }
+
   out.sort((a, b) => a.chipRect.cy - b.chipRect.cy || a.chipRect.cx - b.chipRect.cx);
   return out;
 }
@@ -267,7 +746,7 @@ function skeletonEnabledForNode(rootEl, node) {
 
 function renderPresetSkeletonSvg(rootEl, node) {
   const preset = normalizeDiagramPreset(node?.dataset?.diagramPreset || node?.dataset?.skeletonStyle || "standard");
-  if (!node || preset === "standard") return;
+  if (!node) return;
   if (!skeletonEnabledForNode(rootEl, node)) return;
 
   const doc = node.ownerDocument;
@@ -299,13 +778,14 @@ function renderPresetSkeletonSvg(rootEl, node) {
   const axisX = heading.cx;
   const gap = Math.max(10, cssPx(node, "--cdg-gap-group", 12));
 
-  if (preset === "tree" || preset === "tree-left" || preset === "tree-right" || preset === "timeline") {
+  if (preset === "standard" || preset === "tree" || preset === "tree-left" || preset === "tree-right" || preset === "timeline") {
     const axisStartY = heading.bottom;
     const axisEndY = Math.max(axisStartY, last.chipRect.cy);
     addSvgLine(svg, axisX, axisStartY, axisX, axisEndY, width, color);
 
     if (preset !== "timeline") {
       chips.forEach((entry) => {
+        const deltaX = entry.chipRect.cx - axisX;
         const side =
           preset === "tree-left"
             ? "left"
@@ -313,10 +793,12 @@ function renderPresetSkeletonSvg(rootEl, node) {
               ? "right"
               : entry.side === "left" || entry.side === "right"
                 ? entry.side
-                : entry.chipRect.cx < axisX
-                  ? "left"
-                  : "right";
-        drawBranchToAxis(svg, entry.chipRect, axisX, side, entry.chipRect.cy, width, color);
+                : Math.abs(deltaX) < 2
+                  ? "center"
+                  : deltaX < 0
+                    ? "left"
+                    : "right";
+        if (side !== "center") drawBranchToAxis(svg, entry.chipRect, axisX, side, entry.chipRect.cy, width, color);
       });
     }
   } else if (preset === "flow-left" || preset === "flow-right") {
@@ -691,9 +1173,9 @@ function ChildBlock({ child, depth, path, trainingOn, hidden, reveal }) {
             const isHidden = trainingOn && hidden.has(id);
 
             return isHidden ? (
-              <MaskedChip key={id} className={childChip} onReveal={() => reveal(id)} />
+              <MaskedChip key={id} className={`${childChip} ${cdgAlignmentClass(c.align)}`} onReveal={() => reveal(id)} />
             ) : (
-              <Item key={id} label={c.label} anchor={c.anchor} to={c.to} className={childChip} />
+              <Item key={id} label={c.label} anchor={c.anchor} to={c.to} className={`${childChip} ${cdgAlignmentClass(c.align)}`} />
             );
           })}
         </div>
@@ -752,7 +1234,7 @@ function NodeBlock({ node, depth = 2, path = "root", trainingOn, hidden, reveal,
   }
 
   const headingWrap = headingWrapClass(headingLevel);
-  const headingChip = headingChipClass(headingLevel);
+  const headingChip = `${headingChipClass(headingLevel)} ${cdgAlignmentClass(node.align)}`;
   const layout = resolveLayout(node);
   const cols = resolveCols(node, 2);
   const groupCols = resolveGroupCols(node, 1);
@@ -761,6 +1243,20 @@ function NodeBlock({ node, depth = 2, path = "root", trainingOn, hidden, reveal,
   const groups = Array.isArray(node?.groups) ? node.groups : [];
   const customRowMode = node.mixedItems === "customRows" && Array.isArray(node.mixedRows);
   const diagramPreset = normalizeDiagramPreset(node.diagramPreset || node.skeletonStyle || "standard");
+  const standardColumnMode = customRowMode && diagramPreset === "standard";
+  const standardColumnCount = standardColumnMode
+    ? Math.max(
+        1,
+        ...node.mixedRows.map((row) => Math.max(1, Number(row?.columns) || (Array.isArray(row?.nodes) ? row.nodes.length : 1)))
+      )
+    : 1;
+  const standardColumnNodes = standardColumnMode
+    ? node.mixedRows.flatMap((row, rowIndex) =>
+        (Array.isArray(row?.nodes) ? row.nodes : [])
+          .map((childNode, childIndex) => ({ childNode, rowIndex, childIndex }))
+          .filter((entry) => Boolean(entry.childNode))
+      )
+    : [];
 
   const itemChip = itemChipClass(headingLevel);
 
@@ -790,44 +1286,64 @@ function NodeBlock({ node, depth = 2, path = "root", trainingOn, hidden, reveal,
       ) : null}
 
       {customRowMode ? (
-        <div
-          className="cdg-mixed-rows cdg-mixed-rows-custom cdg-h3-skeleton"
-          data-diagram-preset={diagramPreset}
-          data-skeleton-style={diagramPreset}
-        >
-          {node.mixedRows.map((row, rowIndex) => {
-            const rowNodes = Array.isArray(row?.nodes) ? row.nodes : [];
-            const rowCols = clampInt(row?.columns, 1, 4, rowNodes.length || 1);
-            const visibleSlots = Math.max(rowCols, rowNodes.length || 0);
-            const slots = Array.from({ length: visibleSlots }, (_, i) => rowNodes[i] ?? null);
-            return (
-              <div
-                key={`${path}/row/${rowIndex}`}
-                className={`cdg-mixed-row cdg-mixed-row-${rowIndex + 1} cdg-h3-skeleton-row`}
-                data-skeleton-cols={String(rowCols)}
-                data-skeleton-style={diagramPreset}
-                data-diagram-preset={diagramPreset}
-                style={{ "--cdg-row-cols": String(rowCols) }}
-              >
-                {slots.map((childNode, childIndex) => {
-                  const side = skeletonSideForPresetSlot(diagramPreset, childIndex, rowCols);
-                  return (
-                    <NodeBlock
-                      key={`${path}/row/${rowIndex}/node/${childIndex}`}
-                      node={childNode}
-                      depth={childNode?.level || Math.min(headingLevel + 1, 6)}
-                      path={`${path}/row/${rowIndex}/node/${childIndex}`}
-                      trainingOn={trainingOn}
-                      hidden={hidden}
-                      reveal={reveal}
-                      skeletonSide={side}
-                    />
-                  );
-                })}
+        standardColumnMode ? (
+          <div
+            className="cdg-balanced-columns cdg-standard-columns"
+            style={{ "--cdg-balanced-cols": String(Math.min(4, standardColumnCount)) }}
+          >
+            {standardColumnNodes.map(({ childNode, rowIndex, childIndex }, flatIndex) => (
+              <div key={`${path}/balanced/${flatIndex}`} className="cdg-balanced-column-item">
+                <NodeBlock
+                  node={childNode}
+                  depth={childNode?.level || Math.min(headingLevel + 1, 6)}
+                  path={`${path}/row/${rowIndex}/node/${childIndex}`}
+                  trainingOn={trainingOn}
+                  hidden={hidden}
+                  reveal={reveal}
+                />
               </div>
-            );
-          })}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div
+            className="cdg-mixed-rows cdg-mixed-rows-custom cdg-h3-skeleton"
+            data-diagram-preset={diagramPreset}
+            data-skeleton-style={diagramPreset}
+          >
+            {node.mixedRows.map((row, rowIndex) => {
+              const rowNodes = Array.isArray(row?.nodes) ? row.nodes : [];
+              const rowCols = clampInt(row?.columns, 1, 4, rowNodes.length || 1);
+              const visibleSlots = Math.max(rowCols, rowNodes.length || 0);
+              const slots = Array.from({ length: visibleSlots }, (_, i) => rowNodes[i] ?? null);
+              return (
+                <div
+                  key={`${path}/row/${rowIndex}`}
+                  className={`cdg-mixed-row cdg-mixed-row-${rowIndex + 1} cdg-h3-skeleton-row`}
+                  data-skeleton-cols={String(rowCols)}
+                  data-skeleton-style={diagramPreset}
+                  data-diagram-preset={diagramPreset}
+                  style={{ "--cdg-row-cols": String(rowCols) }}
+                >
+                  {slots.map((childNode, childIndex) => {
+                    const side = skeletonSideForPresetSlot(diagramPreset, childIndex, rowCols);
+                    return (
+                      <NodeBlock
+                        key={`${path}/row/${rowIndex}/node/${childIndex}`}
+                        node={childNode}
+                        depth={childNode?.level || Math.min(headingLevel + 1, 6)}
+                        path={`${path}/row/${rowIndex}/node/${childIndex}`}
+                        trainingOn={trainingOn}
+                        hidden={hidden}
+                        reveal={reveal}
+                        skeletonSide={side}
+                      />
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+        )
       ) : null}
 
       {!customRowMode && items.length ? (
@@ -838,9 +1354,9 @@ function NodeBlock({ node, depth = 2, path = "root", trainingOn, hidden, reveal,
               const isHidden = trainingOn && hidden.has(id);
 
               return isHidden ? (
-                <MaskedChip key={id} className={itemChip} onReveal={() => reveal(id)} />
+                <MaskedChip key={id} className={`${itemChip} ${cdgAlignmentClass(it.align)}`} onReveal={() => reveal(id)} />
               ) : (
-                <Item key={id} label={it.label} anchor={it.anchor} to={it.to} className={itemChip} />
+                <Item key={id} label={it.label} anchor={it.anchor} to={it.to} className={`${itemChip} ${cdgAlignmentClass(it.align)}`} />
               );
             })}
           </div>
@@ -853,13 +1369,13 @@ function NodeBlock({ node, depth = 2, path = "root", trainingOn, hidden, reveal,
               return (
                 <div key={id} className="cdg-stack-row">
                   {isHidden ? (
-                    <MaskedChip className={`${itemChip} cdg-spine-target`} onReveal={() => reveal(id)} />
+                    <MaskedChip className={`${itemChip} ${cdgAlignmentClass(it.align)} cdg-spine-target`} onReveal={() => reveal(id)} />
                   ) : (
                     <Item
                       label={it.label}
                       anchor={it.anchor}
                       to={it.to}
-                      className={`${itemChip} cdg-spine-target`}
+                      className={`${itemChip} ${cdgAlignmentClass(it.align)} cdg-spine-target`}
                     />
                   )}
 
