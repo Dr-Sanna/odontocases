@@ -16,7 +16,11 @@ function isCalloutStart(blockquoteNode) {
   const firstChild = firstParagraph?.children?.[0];
   if (!firstParagraph || firstParagraph.type !== "paragraph") return false;
   if (!firstChild || firstChild.type !== "text") return false;
-  return /^\s*\[!([a-z][\w-]*)(?:\|([^\]]+))?\]([+-])?\s*(.*?)\s*$/i.test(firstChild.value);
+
+  // Sans ligne vide, CommonMark peut conserver le corps du callout dans le même
+  // nœud texte. Seule la première ligne doit être analysée comme marqueur.
+  const firstLine = String(firstChild.value || "").split(/\r?\n/, 1)[0];
+  return /^\s*\[!([a-z][\w-]*)(?:\|([^\]]+))?\]([+-])?\s*(.*?)\s*$/i.test(firstLine);
 }
 
 // Extraction texte "simple" (on ignore la mise en forme Markdown dans la caption)

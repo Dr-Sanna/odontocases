@@ -7,9 +7,14 @@ import Breadcrumbs from '../components/Breadcrumbs';
 import QuizBlock from '../components/QuizBlock';
 import CaseMarkdown from '../components/CaseMarkdown';
 
-import { strapiFetch, imgUrl } from '../lib/strapi';
-import { getCaseFromCache, setCaseToCache, prefetchCase } from '../lib/caseCache';
-import { getPathologyFromCache, setPathologyToCache, prefetchPathology } from '../lib/pathologyCache';
+import { strapiFetch, imgUrl, isAbortError } from '../lib/strapi';
+import { getCaseFromCache, setCaseToCache, deleteCaseFromCache, prefetchCase } from '../lib/caseCache';
+import {
+  getPathologyFromCache,
+  setPathologyToCache,
+  deletePathologyFromCache,
+  prefetchPathology,
+} from '../lib/pathologyCache';
 
 import { BottomExpandIcon, BottomCollapseIcon } from '../components/Icons';
 import { useCaseDetailSidebar } from '../ui/CaseDetailSidebarContext';
@@ -124,73 +129,121 @@ function firstBadgeFromList(list) {
   return Array.isArray(list) && list.length ? list[0] : null;
 }
 
-/* ===== DOC session helpers (perf only) ===== */
-function getDocNodeFromSession(slug) {
-  if (!slug) return null;
+/* ===== Session cache helpers ===== */
+const SESSION_CACHE_VERSION = 2;
+const DOC_LIST_STALE_MS = 60_000;
+const SESSION_MAX_AGE_MS = 30 * 60_000;
+const SIDEBAR_LIST_STALE_MS = 45_000;
+const SIDEBAR_LIST_MAX_AGE_MS = 10 * 60_000;
+
+function readSessionEntry(key, { maxAgeMs = SESSION_MAX_AGE_MS } = {}) {
   try {
-    const raw = sessionStorage.getItem(`docnode:${slug}`);
+    const raw = sessionStorage.getItem(key);
     if (!raw) return null;
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    const isEnvelope = parsed?.__cacheVersion === SESSION_CACHE_VERSION && 'data' in parsed;
+    const data = isEnvelope ? parsed.data : parsed;
+    const fetchedAt = isEnvelope ? Number(parsed.fetchedAt) || 0 : 0;
+
+    if (fetchedAt && Date.now() - fetchedAt > maxAgeMs) {
+      sessionStorage.removeItem(key);
+      return null;
+    }
+    return { data, fetchedAt };
   } catch {
     return null;
   }
 }
-function setDocNodeToSession(slug, data) {
-  if (!slug || !data) return;
+
+function writeSessionEntry(key, data) {
+  if (!key || data === undefined || data === null) return;
   try {
-    sessionStorage.setItem(`docnode:${slug}`, JSON.stringify(data));
+    sessionStorage.setItem(
+      key,
+      JSON.stringify({ __cacheVersion: SESSION_CACHE_VERSION, fetchedAt: Date.now(), data })
+    );
   } catch {}
+}
+
+function isSessionEntryFresh(key, staleMs, maxAgeMs = SESSION_MAX_AGE_MS) {
+  const entry = readSessionEntry(key, { maxAgeMs });
+  return Boolean(entry?.fetchedAt && Date.now() - entry.fetchedAt <= staleMs);
+}
+
+function removeSessionEntry(key) {
+  try {
+    sessionStorage.removeItem(key);
+  } catch {}
+}
+
+function docNodeKey(slug) {
+  return `docnode:${PUB_STATE}:${slug}`;
+}
+function docItemsKey(chapterSlug) {
+  return `doc-items:${PUB_STATE}:${chapterSlug}`;
+}
+function docSectionsKey(itemSlug) {
+  return `doc-sections:${PUB_STATE}:${itemSlug}`;
+}
+function docSectionsByChapterKey(chapterSlug) {
+  return `doc-sectionsByChapter:${PUB_STATE}:${chapterSlug}`;
+}
+function sidebarListKey(name) {
+  return `cd-list:v${SESSION_CACHE_VERSION}:${PUB_STATE}:${name}`;
+}
+
+function getDocNodeFromSession(slug) {
+  if (!slug) return null;
+  return readSessionEntry(docNodeKey(slug))?.data || null;
+}
+function setDocNodeToSession(slug, data) {
+  if (slug && data) writeSessionEntry(docNodeKey(slug), data);
+}
+function removeDocNodeFromSession(slug) {
+  if (slug) removeSessionEntry(docNodeKey(slug));
 }
 function getDocItemsFromSession(chapterSlug) {
   if (!chapterSlug) return null;
-  try {
-    const raw = sessionStorage.getItem(`doc-items:${chapterSlug}`);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : null;
-  } catch {
-    return null;
-  }
+  const data = readSessionEntry(docItemsKey(chapterSlug))?.data;
+  return Array.isArray(data) ? data : null;
+}
+function isDocItemsSessionFresh(chapterSlug) {
+  return Boolean(chapterSlug && isSessionEntryFresh(docItemsKey(chapterSlug), DOC_LIST_STALE_MS));
 }
 function setDocItemsToSession(chapterSlug, list) {
-  if (!chapterSlug || !Array.isArray(list)) return;
-  try {
-    sessionStorage.setItem(`doc-items:${chapterSlug}`, JSON.stringify(list));
-  } catch {}
+  if (chapterSlug && Array.isArray(list)) writeSessionEntry(docItemsKey(chapterSlug), list);
 }
 function getDocSectionsForItemFromSession(itemSlug) {
   if (!itemSlug) return null;
-  try {
-    const raw = sessionStorage.getItem(`doc-sections:${itemSlug}`);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : null;
-  } catch {
-    return null;
-  }
+  const data = readSessionEntry(docSectionsKey(itemSlug))?.data;
+  return Array.isArray(data) ? data : null;
+}
+function isDocSectionsSessionFresh(itemSlug) {
+  return Boolean(itemSlug && isSessionEntryFresh(docSectionsKey(itemSlug), DOC_LIST_STALE_MS));
 }
 function setDocSectionsForItemToSession(itemSlug, list) {
-  if (!itemSlug || !Array.isArray(list)) return;
-  try {
-    sessionStorage.setItem(`doc-sections:${itemSlug}`, JSON.stringify(list));
-  } catch {}
+  if (itemSlug && Array.isArray(list)) writeSessionEntry(docSectionsKey(itemSlug), list);
 }
 function getDocSectionsByChapterFromSession(chapterSlug) {
   if (!chapterSlug) return null;
-  try {
-    const raw = sessionStorage.getItem(`doc-sectionsByChapter:${chapterSlug}`);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === 'object' ? parsed : null;
-  } catch {
-    return null;
-  }
+  const data = readSessionEntry(docSectionsByChapterKey(chapterSlug))?.data;
+  return data && typeof data === 'object' ? data : null;
+}
+function isDocSectionsByChapterSessionFresh(chapterSlug) {
+  return Boolean(chapterSlug && isSessionEntryFresh(docSectionsByChapterKey(chapterSlug), DOC_LIST_STALE_MS));
 }
 function setDocSectionsByChapterToSession(chapterSlug, map) {
-  if (!chapterSlug || !map) return;
-  try {
-    sessionStorage.setItem(`doc-sectionsByChapter:${chapterSlug}`, JSON.stringify(map));
-  } catch {}
+  if (chapterSlug && map) writeSessionEntry(docSectionsByChapterKey(chapterSlug), map);
+}
+function getSidebarListFromSession(name) {
+  const data = readSessionEntry(sidebarListKey(name), { maxAgeMs: SIDEBAR_LIST_MAX_AGE_MS })?.data;
+  return Array.isArray(data) ? data : null;
+}
+function isSidebarListFresh(name) {
+  return isSessionEntryFresh(sidebarListKey(name), SIDEBAR_LIST_STALE_MS, SIDEBAR_LIST_MAX_AGE_MS);
+}
+function setSidebarListToSession(name, list) {
+  if (Array.isArray(list)) writeSessionEntry(sidebarListKey(name), list);
 }
 
 function safeGetSessionJson(key) {
@@ -329,6 +382,26 @@ export default function CaseDetail(props) {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [refreshToken, setRefreshToken] = useState(0);
+  const lastVisibilityRefreshRef = useRef(Date.now());
+
+  // Quand on revient du back-office Strapi (autre onglet), revalide la fiche.
+  useEffect(() => {
+    const requestRefresh = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+      const now = Date.now();
+      if (now - lastVisibilityRefreshRef.current < 10_000) return;
+      lastVisibilityRefreshRef.current = now;
+      setRefreshToken((v) => v + 1);
+    };
+
+    window.addEventListener('focus', requestRefresh);
+    document.addEventListener('visibilitychange', requestRefresh);
+    return () => {
+      window.removeEventListener('focus', requestRefresh);
+      document.removeEventListener('visibilitychange', requestRefresh);
+    };
+  }, []);
 
   // item = dernier résultat (cache/provisional/fetch) pour le slug attendu
   const [item, setItem] = useState(() => {
@@ -337,8 +410,8 @@ export default function CaseDetail(props) {
 
     if (isDocNamespace) return getDocNodeFromSession(key) || (hasMeaningfulContentLike(provisional) ? provisional : null);
     if (isPathologyPage)
-      return getPathologyFromCache(key) || (hasMeaningfulContentLike(provisional) ? provisional : null);
-    return getCaseFromCache(key) || (hasMeaningfulContentLike(provisional) ? provisional : null);
+      return getPathologyFromCache(key, { publicationState: PUB_STATE }) || (hasMeaningfulContentLike(provisional) ? provisional : null);
+    return getCaseFromCache(key, { publicationState: PUB_STATE }) || (hasMeaningfulContentLike(provisional) ? provisional : null);
   });
 
   // displayItem = ce qui reste affiché tant que le nouveau n’est pas prêt (stale-while-revalidate)
@@ -357,13 +430,13 @@ export default function CaseDetail(props) {
   // parent pathology (utile sur /atlas/:patho/:case) - pour l’affichage courant
   const [parentPathology, setParentPathology] = useState(() => {
     if (!isCaseInPathology || !pathologySlug) return null;
-    return getPathologyFromCache(pathologySlug) || null;
+    return getPathologyFromCache(pathologySlug, { publicationState: PUB_STATE }) || null;
   });
 
   // stableType seulement pour les cas classiques (affichage)
   const [stableType, setStableType] = useState(() => {
     if (!isPlainCase) return null;
-    return getCaseFromCache(caseSlug)?.type || provisional?.type || null;
+    return getCaseFromCache(caseSlug, { publicationState: PUB_STATE })?.type || provisional?.type || null;
   });
 
   useEffect(() => {
@@ -468,7 +541,7 @@ export default function CaseDetail(props) {
   };
 
   // ---------- loaders ----------
-  async function loadCaseBySlug(slugToLoad) {
+  async function loadCaseBySlug(slugToLoad, { signal } = {}) {
     const loadOnce = ({ withQa, withQuiz }) =>
       strapiFetch(CASES_ENDPOINT, {
         params: {
@@ -483,6 +556,7 @@ export default function CaseDetail(props) {
           fields: ['title', 'slug', 'type', 'excerpt', 'content', 'updatedAt', 'credits', 'references', 'copyright'],
           pagination: { page: 1, pageSize: 1 },
         },
+        options: signal ? { signal } : undefined,
       });
 
     let res;
@@ -510,7 +584,7 @@ export default function CaseDetail(props) {
     return { ...attrs, coverUrl: coverUrl || null };
   }
 
-  async function loadPathologyBySlug(slugToLoad, { withCases } = { withCases: true }) {
+  async function loadPathologyBySlug(slugToLoad, { withCases = true, signal } = {}) {
     const loadOnce = ({ withQa, withQuiz, withCases: withCasesInner }) =>
       strapiFetch(PATHO_ENDPOINT, {
         params: {
@@ -535,6 +609,7 @@ export default function CaseDetail(props) {
           fields: ['title', 'slug', 'excerpt', 'content', 'updatedAt', 'credits', 'references', 'copyright'],
           pagination: { page: 1, pageSize: 1 },
         },
+        options: signal ? { signal } : undefined,
       });
 
     let res;
@@ -573,7 +648,7 @@ export default function CaseDetail(props) {
     return { ...attrs, coverUrl: coverUrl || null, cases: rel };
   }
 
-  async function loadDocNodeBySlug(slugToLoad) {
+  async function loadDocNodeBySlug(slugToLoad, { signal } = {}) {
     const res = await strapiFetch(DOCS_ENDPOINT, {
       params: {
         filters: { slug: { $eq: slugToLoad } },
@@ -586,6 +661,7 @@ export default function CaseDetail(props) {
         fields: ['title', 'slug', 'level', 'excerpt', 'content', 'updatedAt', 'credits', 'references', 'copyright'],
         pagination: { page: 1, pageSize: 1 },
       },
+      options: signal ? { signal } : undefined,
     });
 
     const node = Array.isArray(res?.data) ? res.data[0] : null;
@@ -598,11 +674,11 @@ export default function CaseDetail(props) {
     return { ...attrs, coverUrl: coverUrl || null };
   }
 
-  async function loadDocSectionsForItem(itemSlugToLoad) {
+  async function loadDocSectionsForItem(itemSlugToLoad, { signal, force = false } = {}) {
     if (!itemSlugToLoad) return [];
 
     const cached = getDocSectionsForItemFromSession(itemSlugToLoad);
-    if (cached) return sortListSafe(cached);
+    if (!force && cached && isDocSectionsSessionFresh(itemSlugToLoad)) return sortListSafe(cached);
 
     const res = await strapiFetch(DOCS_ENDPOINT, {
       params: {
@@ -614,6 +690,7 @@ export default function CaseDetail(props) {
         sort: ['order:asc', 'title:asc'],
         pagination: { page: 1, pageSize: 500 },
       },
+      options: signal ? { signal } : undefined,
     });
 
     const rows = Array.isArray(res?.data) ? res.data : [];
@@ -630,49 +707,67 @@ export default function CaseDetail(props) {
     return sorted;
   }
 
-  // ---------- main load (ne vide jamais displayItem) ----------
+  // ---------- main load : affichage instantané + revalidation annulable ----------
   useEffect(() => {
     let ignore = false;
+    const controller = new AbortController();
 
     const slugToLoad = expectedSlug;
     if (!slugToLoad) {
+      setItem(null);
+      setDisplayItem(null);
       setError('Slug manquant.');
       setLoading(false);
-      return () => {};
+      setIsReplacing(false);
+      return () => controller.abort();
     }
 
     setError('');
 
-    // cache instant
     const cached = isDocNamespace
       ? getDocNodeFromSession(slugToLoad)
       : isPathologyPage
-        ? getPathologyFromCache(slugToLoad)
-        : getCaseFromCache(slugToLoad);
+        ? getPathologyFromCache(slugToLoad, { publicationState: PUB_STATE })
+        : getCaseFromCache(slugToLoad, { publicationState: PUB_STATE });
 
-    // Si on a le cache complet, on commit immédiatement (pas de trou)
+    // Paint instantané depuis le cache, mais une requête réseau reste lancée.
     if (cached?.slug === slugToLoad) {
       setItem(cached);
-      setLoading(false);
       setDisplayItem(cached);
       setIsReplacing(false);
+      setLoading(false);
     } else {
-      if (provisional?.slug === slugToLoad && hasMeaningfulContentLike(provisional)) {
-        setItem(provisional);
-      } else {
-        setItem((prev) => (prev?.slug === slugToLoad ? prev : prev));
-      }
+      setItem(provisional?.slug === slugToLoad && hasMeaningfulContentLike(provisional) ? provisional : null);
       setLoading(true);
     }
+
+    const markMissing = (message) => {
+      if (isDocNamespace) {
+        removeDocNodeFromSession(slugToLoad);
+        if (docItemSlug) {
+          removeSessionEntry(docSectionsKey(docItemSlug));
+          setDocCurrentItemSections([]);
+        }
+      } else if (isPathologyPage) {
+        deletePathologyFromCache(slugToLoad, { publicationState: PUB_STATE });
+        setParentPathology(null);
+      } else {
+        deleteCaseFromCache(slugToLoad, { publicationState: PUB_STATE });
+      }
+
+      setItem(null);
+      setDisplayItem(null);
+      setIsReplacing(false);
+      setError(message);
+    };
 
     async function load() {
       try {
         if (isDocNamespace) {
-          const fullDoc = await loadDocNodeBySlug(slugToLoad);
+          const fullDoc = await loadDocNodeBySlug(slugToLoad, { signal: controller.signal });
           if (ignore) return;
-
           if (!fullDoc) {
-            setError('Document introuvable ou non publié.');
+            markMissing('Document introuvable ou non publié.');
             return;
           }
 
@@ -680,68 +775,66 @@ export default function CaseDetail(props) {
           setDocNodeToSession(slugToLoad, fullDoc);
 
           if (isDocItemPage && docItemSlug) {
-            const secs = await loadDocSectionsForItem(docItemSlug);
-            if (ignore) return;
-            setDocCurrentItemSections(secs);
+            const secs = await loadDocSectionsForItem(docItemSlug, { signal: controller.signal, force: true });
+            if (!ignore) setDocCurrentItemSections(secs);
           }
-
           return;
         }
 
         if (isPathologyPage) {
-          const fullPatho = await loadPathologyBySlug(pathologySlug, { withCases: true });
+          const fullPatho = await loadPathologyBySlug(pathologySlug, {
+            withCases: true,
+            signal: controller.signal,
+          });
           if (ignore) return;
-
           if (!fullPatho) {
-            setError('Pathologie introuvable ou non publiée.');
+            markMissing('Pathologie introuvable ou non publiée.');
             return;
           }
 
           setItem(fullPatho);
-          setPathologyToCache(pathologySlug, fullPatho);
+          setPathologyToCache(pathologySlug, fullPatho, { publicationState: PUB_STATE });
           return;
         }
 
         if (isCaseInPathology) {
-          // on tente un prefetch (peut déjà avoir badges selon ton helper)
           const parentPromise = pathologySlug
             ? prefetchPathology(pathologySlug, { publicationState: PUB_STATE }).catch(() => null)
             : Promise.resolve(null);
 
-          const fullCase = await loadCaseBySlug(caseSlug);
-          const parent = await parentPromise;
-
+          const fullCase = await loadCaseBySlug(caseSlug, { signal: controller.signal });
           if (ignore) return;
-
           if (!fullCase) {
-            setError('Cas introuvable ou non publié.');
+            markMissing('Cas introuvable ou non publié.');
             return;
           }
 
+          // Le cas s'affiche sans attendre le chargement de la pathologie parente.
           setItem(fullCase);
-          setCaseToCache(caseSlug, fullCase);
+          setCaseToCache(caseSlug, fullCase, { publicationState: PUB_STATE });
 
-          if (parent) setParentPathology(parent);
-          else if (pathologySlug) {
-            const p = getPathologyFromCache(pathologySlug);
-            if (p) setParentPathology(p);
-          }
-
+          parentPromise.then((parent) => {
+            if (ignore) return;
+            if (parent) setParentPathology(parent);
+            else if (pathologySlug) {
+              const fromCache = getPathologyFromCache(pathologySlug, { publicationState: PUB_STATE });
+              if (fromCache) setParentPathology(fromCache);
+            }
+          });
           return;
         }
 
-        const full = await loadCaseBySlug(caseSlug);
+        const full = await loadCaseBySlug(caseSlug, { signal: controller.signal });
         if (ignore) return;
-
         if (!full) {
-          setError('Cas introuvable ou non publié.');
+          markMissing('Cas introuvable ou non publié.');
           return;
         }
 
         setItem(full);
-        setCaseToCache(caseSlug, full);
+        setCaseToCache(caseSlug, full, { publicationState: PUB_STATE });
       } catch (e) {
-        if (!ignore) setError(e?.message || 'Erreur de chargement');
+        if (!ignore && !isAbortError(e)) setError(e?.message || 'Erreur de chargement');
       } finally {
         if (!ignore) setLoading(false);
       }
@@ -750,16 +843,16 @@ export default function CaseDetail(props) {
     load();
     return () => {
       ignore = true;
+      controller.abort();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     expectedSlug,
-
+    refreshToken,
     isDocNamespace,
     isDocItemPage,
     docItemSlug,
     docSectionSlug,
-
     pathologySlug,
     caseSlug,
     isPathologyPage,
@@ -805,11 +898,12 @@ export default function CaseDetail(props) {
     if (!isPresentationNamespace) return [];
 
     const sources = [
+      // Les données fraîchement revalidées doivent primer sur les index de navigation.
+      parentPathology?.badges,
+      displayItem?.badges,
       navCrumb?.pathology?.badges,
       indexPatho?.[pathologySlug]?.badges,
       indexCase?.[caseSlug]?.pathologyBadges,
-      parentPathology?.badges,
-      displayItem?.badges,
       provisional?.badges,
     ];
 
@@ -819,11 +913,11 @@ export default function CaseDetail(props) {
     }
 
     const singleSources = [
+      pickPrimaryBadge(parentPathology?.badges),
+      pickPrimaryBadge(displayItem?.badges),
       navCrumb?.pathology?.badge,
       indexPatho?.[pathologySlug]?.badge,
       indexCase?.[caseSlug]?.pathologyBadge,
-      pickPrimaryBadge(parentPathology?.badges),
-      pickPrimaryBadge(displayItem?.badges),
     ];
 
     for (const source of singleSources) {
@@ -868,17 +962,17 @@ export default function CaseDetail(props) {
     }
 
     if (isPathologyPage) {
+      if (itemMatchesRoute && item?.title) return item.title;
       if (navCrumb?.pathology?.title) return navCrumb.pathology.title;
       if (indexPatho?.[pathologySlug]?.title) return indexPatho[pathologySlug].title;
-      if (itemMatchesRoute && item?.title) return item.title;
       if (provisional?.title) return provisional.title;
       return pathologySlug || expectedSlug;
     }
 
     if (isCaseInPathology) {
+      if (itemMatchesRoute && item?.title) return item.title;
       if (navCrumb?.case?.title) return navCrumb.case.title;
       if (indexCase?.[caseSlug]?.title) return indexCase[caseSlug].title;
-      if (itemMatchesRoute && item?.title) return item.title;
       if (provisional?.title) return provisional.title;
       return caseSlug || expectedSlug;
     }
@@ -905,9 +999,9 @@ export default function CaseDetail(props) {
   const instantPathologyTitle = useMemo(() => {
     if (!isPresentationNamespace) return null;
 
+    if (parentPathology?.slug === pathologySlug && parentPathology?.title) return parentPathology.title;
     if (navCrumb?.pathology?.title) return navCrumb.pathology.title;
     if (indexPatho?.[pathologySlug]?.title) return indexPatho[pathologySlug].title;
-    if (parentPathology?.slug === pathologySlug && parentPathology?.title) return parentPathology.title;
     return pathologySlug || 'Pathologie';
   }, [isPresentationNamespace, navCrumb, indexPatho, pathologySlug, parentPathology?.slug, parentPathology?.title]);
 
@@ -1108,6 +1202,7 @@ export default function CaseDetail(props) {
         currentDocSections={docCurrentItemSections}
         setCurrentDocSections={setDocCurrentItemSections}
         pubState={PUB_STATE}
+        refreshToken={refreshToken}
       />
 
       {drawerOpen && (
@@ -1339,6 +1434,7 @@ function Aside({
   currentDocSections,
   setCurrentDocSections,
   pubState,
+  refreshToken,
 }) {
   const [loadingList, setLoadingList] = useState(false);
   const [errList, setErrList] = useState('');
@@ -1365,6 +1461,7 @@ function Aside({
   const caseListRef = useRef([]);
   const pathoListRef = useRef([]);
   const docItemsRef = useRef([]);
+  const handledSidebarRefreshRef = useRef(refreshToken);
   useEffect(() => {
     caseListRef.current = caseList;
   }, [caseList]);
@@ -1454,6 +1551,9 @@ function Aside({
 
     if (kind === 'pathology') return; // no-op (pas de throw)
 
+    const connection = typeof navigator !== 'undefined' ? navigator.connection : null;
+    if (connection?.saveData || connection?.effectiveType === '2g' || connection?.effectiveType === 'slow-2g') return;
+
     const run = () => prefetchCase(slug, { publicationState: pubState }).catch(() => {});
     if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
       window.requestIdleCallback(run, { timeout: 600 });
@@ -1463,14 +1563,14 @@ function Aside({
   };
 
   // ---- DOC loaders ----
-  async function loadDocItems() {
+  async function loadDocItems({ signal, force = false } = {}) {
     if (!docChapterSlug) {
       setDocItems([]);
       return [];
     }
 
     const cached = getDocItemsFromSession(docChapterSlug);
-    if (cached && cached.length) {
+    if (!force && cached && isDocItemsSessionFresh(docChapterSlug)) {
       const sorted = sortListSafe(cached);
       setDocItems(sorted);
       return sorted;
@@ -1486,6 +1586,7 @@ function Aside({
         sort: ['order:asc', 'title:asc'],
         pagination: { page: 1, pageSize: 500 },
       },
+      options: signal ? { signal } : undefined,
     });
 
     const rows = Array.isArray(res?.data) ? res.data : [];
@@ -1503,11 +1604,11 @@ function Aside({
     return sorted;
   }
 
-  async function loadDocSectionsForChapter(chapterSlugToLoad) {
+  async function loadDocSectionsForChapter(chapterSlugToLoad, { signal, force = false } = {}) {
     if (!chapterSlugToLoad) return {};
 
     const cached = getDocSectionsByChapterFromSession(chapterSlugToLoad);
-    if (cached && typeof cached === 'object') {
+    if (!force && cached && typeof cached === 'object' && isDocSectionsByChapterSessionFresh(chapterSlugToLoad)) {
       const nextMap = {};
       for (const [k, v] of Object.entries(cached)) nextMap[k] = sortListSafe(v);
       return nextMap;
@@ -1529,6 +1630,7 @@ function Aside({
         sort: ['order:asc', 'title:asc'],
         pagination: { page: 1, pageSize: 1200 },
       },
+      options: signal ? { signal } : undefined,
     });
 
     const rows = Array.isArray(res?.data) ? res.data : [];
@@ -1569,17 +1671,12 @@ function Aside({
     }
 
     if (!booted && currentType) {
-      try {
-        const raw = sessionStorage.getItem(`cd-prefetch-${currentType}`);
-        if (raw) {
-          const arr = JSON.parse(raw);
-          if (Array.isArray(arr) && arr.length) {
-            const list = arr.filter((it) => it?.slug).sort(compareBySlugNumberAsc);
-            setCaseList(list);
-            booted = true;
-          }
-        }
-      } catch {}
+      const cached = getSidebarListFromSession(`cases:${currentType}`) || safeGetSessionJson(`cd-prefetch-${currentType}`);
+      if (Array.isArray(cached) && cached.length) {
+        const list = cached.filter((it) => it?.slug).sort(compareBySlugNumberAsc);
+        setCaseList(list);
+        booted = true;
+      }
     }
 
     setLoadingList(!booted);
@@ -1591,16 +1688,11 @@ function Aside({
     if (mode !== 'presentation') return;
 
     let booted = false;
-    try {
-      const boot = sessionStorage.getItem('cd-prefetch-pathologies');
-      if (boot) {
-        const parsed = JSON.parse(boot);
-        if (Array.isArray(parsed) && parsed.length) {
-          setPathoList(parsed);
-          booted = true;
-        }
-      }
-    } catch {}
+    const cached = getSidebarListFromSession('pathologies') || safeGetSessionJson('cd-prefetch-pathologies');
+    if (Array.isArray(cached) && cached.length) {
+      setPathoList(cached);
+      booted = true;
+    }
 
     setLoadingList(!booted);
     setErrList('');
@@ -1646,6 +1738,9 @@ function Aside({
   // ---- load sidebar lists (always refresh) ----
   useEffect(() => {
     let ignore = false;
+    const controller = new AbortController();
+    const forceRefresh = handledSidebarRefreshRef.current !== refreshToken;
+    handledSidebarRefreshRef.current = refreshToken;
 
     async function loadCases() {
       if (!currentType) {
@@ -1657,6 +1752,13 @@ function Aside({
 
       setErrList('');
 
+      const cached = getSidebarListFromSession(`cases:${currentType}`);
+      if (!forceRefresh && cached && isSidebarListFresh(`cases:${currentType}`)) {
+        setCaseList(cached.filter((it) => it?.slug).sort(compareBySlugNumberAsc));
+        setLoadingList(false);
+        return;
+      }
+
       try {
         const res = await strapiFetch(CASES_ENDPOINT, {
           params: {
@@ -1667,6 +1769,7 @@ function Aside({
             sort: 'slug:asc',
             pagination: { page: 1, pageSize: 500 },
           },
+          options: { signal: controller.signal },
         });
 
         if (ignore) return;
@@ -1677,11 +1780,10 @@ function Aside({
         normalized.sort(compareBySlugNumberAsc);
         setCaseList(normalized);
 
-        try {
-          sessionStorage.setItem(`cd-prefetch-${currentType}`, JSON.stringify(normalized));
-        } catch {}
+        setSidebarListToSession(`cases:${currentType}`, normalized);
+        removeSessionEntry(`cd-prefetch-${currentType}`);
       } catch (e) {
-        if (!ignore) setErrList(e?.message || 'Erreur de chargement');
+        if (!ignore && !isAbortError(e)) setErrList(e?.message || 'Erreur de chargement');
       } finally {
         if (!ignore) setLoadingList(false);
       }
@@ -1689,6 +1791,13 @@ function Aside({
 
     async function loadPathologies() {
       setErrList('');
+
+      const cached = getSidebarListFromSession('pathologies');
+      if (!forceRefresh && cached && isSidebarListFresh('pathologies')) {
+        setPathoList(cached);
+        setLoadingList(false);
+        return;
+      }
 
       try {
         const res = await strapiFetch(PATHO_ENDPOINT, {
@@ -1703,6 +1812,7 @@ function Aside({
             sort: 'title:asc',
             pagination: { page: 1, pageSize: 400 },
           },
+          options: { signal: controller.signal },
         });
 
         if (ignore) return;
@@ -1754,11 +1864,10 @@ function Aside({
           sessionStorage.setItem('cd-patho-index', JSON.stringify({ pathoIndex, caseIndex }));
         } catch {}
 
-        try {
-          sessionStorage.setItem('cd-prefetch-pathologies', JSON.stringify(cooked));
-        } catch {}
+        setSidebarListToSession('pathologies', cooked);
+        removeSessionEntry('cd-prefetch-pathologies');
       } catch (e) {
-        if (!ignore) setErrList(e?.message || 'Erreur de chargement');
+        if (!ignore && !isAbortError(e)) setErrList(e?.message || 'Erreur de chargement');
       } finally {
         if (!ignore) setLoadingList(false);
       }
@@ -1775,26 +1884,21 @@ function Aside({
       setErrList('');
 
       try {
-        const items = await loadDocItems();
-        const chapterMap = await loadDocSectionsForChapter(docChapterSlug);
+        const [items, chapterMap] = await Promise.all([
+          loadDocItems({ signal: controller.signal, force: forceRefresh }),
+          loadDocSectionsForChapter(docChapterSlug, { signal: controller.signal, force: forceRefresh }),
+        ]);
 
         if (ignore) return;
 
-        setDocSectionsByItem((prev) => ({ ...prev, ...chapterMap }));
+        // Le résultat réseau est autoritaire : les sections supprimées doivent disparaître.
+        setDocSectionsByItem(chapterMap);
 
         const fresh = sortListSafe(items).map((it) => ({
           ...it,
           __hasSections: Array.isArray(chapterMap?.[it.slug]) && chapterMap[it.slug].length > 0,
         }));
-
-        setDocItems((prev) => {
-          const prevBySlug = new Map((Array.isArray(prev) ? prev : []).map((x) => [x.slug, x]));
-          return fresh.map((it) => {
-            const old = prevBySlug.get(it.slug);
-            const keepTrue = Boolean(old?.__hasSections);
-            return { ...it, __hasSections: keepTrue || Boolean(it.__hasSections) };
-          });
-        });
+        setDocItems(fresh);
 
         if (docItemSlug) {
           const secs = chapterMap?.[docItemSlug] || [];
@@ -1803,7 +1907,7 @@ function Aside({
           if (Array.isArray(sortedSecs)) setDocSectionsForItemToSession(docItemSlug, sortedSecs);
         }
       } catch (e) {
-        if (!ignore) setErrList(e?.message || 'Erreur de chargement');
+        if (!ignore && !isAbortError(e)) setErrList(e?.message || 'Erreur de chargement');
       } finally {
         if (!ignore) setLoadingList(false);
       }
@@ -1824,9 +1928,10 @@ function Aside({
 
     return () => {
       ignore = true;
+      controller.abort();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, currentType, docChapterSlug, docItemSlug, pubState]);
+  }, [mode, currentType, docChapterSlug, docItemSlug, pubState, refreshToken]);
 
   const label =
     mode === 'presentation'

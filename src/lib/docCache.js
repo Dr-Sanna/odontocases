@@ -1,7 +1,10 @@
 // src/lib/docCache.js
+// Cache mémoire léger pour les listes d'enfants documentaires.
 import { strapiFetch, imgUrl } from './strapi';
 
 const DOCS_ENDPOINT = import.meta.env.VITE_DOCS_ENDPOINT || '/doc-nodes';
+const FRESH_MS = Number(import.meta.env.VITE_DOC_LIST_CACHE_STALE_MS) || 60_000;
+const MAX_AGE_MS = Number(import.meta.env.VITE_DOC_LIST_CACHE_MAX_AGE_MS) || 10 * 60_000;
 
 const mem = new Map(); // key -> { list, at }
 const inflight = new Map(); // key -> Promise
@@ -22,16 +25,29 @@ function cookList(raw) {
 
   return list.map((n) => {
     const coverAttr = n?.cover?.data?.attributes || n?.cover || null;
-    const coverUrl =
-      imgUrl(coverAttr, 'medium') || imgUrl(coverAttr, 'thumbnail') || imgUrl(coverAttr) || '';
+    const coverUrl = imgUrl(coverAttr, 'medium') || imgUrl(coverAttr, 'thumbnail') || imgUrl(coverAttr) || '';
     return { ...n, coverUrl };
   });
 }
 
-export function getCachedChildren(parentSlug, level, { publicationState = 'live' } = {}) {
+function getEntry(parentSlug, level, publicationState) {
   const k = keyOf(parentSlug, level, publicationState);
   const entry = mem.get(k);
-  return entry?.list || null;
+  if (!entry) return null;
+  if (Date.now() - entry.at > MAX_AGE_MS) {
+    mem.delete(k);
+    return null;
+  }
+  return entry;
+}
+
+export function getCachedChildren(parentSlug, level, { publicationState = 'live' } = {}) {
+  return getEntry(parentSlug, level, publicationState)?.list || null;
+}
+
+export function isCachedChildrenFresh(parentSlug, level, { publicationState = 'live' } = {}) {
+  const entry = getEntry(parentSlug, level, publicationState);
+  return Boolean(entry && Date.now() - entry.at <= FRESH_MS);
 }
 
 export function setCachedChildren(parentSlug, level, list, { publicationState = 'live' } = {}) {
@@ -39,17 +55,26 @@ export function setCachedChildren(parentSlug, level, list, { publicationState = 
   mem.set(k, { list: Array.isArray(list) ? list : [], at: Date.now() });
 }
 
+export function invalidateCachedChildren(parentSlug, level, { publicationState = 'live' } = {}) {
+  mem.delete(keyOf(parentSlug, level, publicationState));
+}
+
+export function clearDocChildrenCache() {
+  mem.clear();
+  inflight.clear();
+}
+
 export async function fetchChildren(
   parentSlug,
   level,
-  { signal, publicationState = 'live', pageSize = 500 } = {}
+  { signal, publicationState = 'live', pageSize = 500, force = false } = {}
 ) {
   const k = keyOf(parentSlug, level, publicationState);
-
-  // dédoublonnage si plusieurs composants demandent pareil
+  const cached = getCachedChildren(parentSlug, level, { publicationState });
+  if (!force && cached && isCachedChildrenFresh(parentSlug, level, { publicationState })) return cached;
   if (inflight.has(k)) return inflight.get(k);
 
-  const p = (async () => {
+  const promise = (async () => {
     const filters =
       level === 'subject'
         ? { level: { $eq: 'subject' }, parent: { $null: true } }
@@ -58,7 +83,6 @@ export async function fetchChildren(
     const res = await strapiFetch(DOCS_ENDPOINT, {
       params: {
         filters,
-        // tri Strapi + fallback tri front dans Documentation.jsx si besoin
         sort: ['order:asc', 'title:asc'],
         fields: ['title', 'slug', 'excerpt', 'level', 'updatedAt', 'order'],
         populate: { cover: { fields: ['url', 'formats'] } },
@@ -66,26 +90,24 @@ export async function fetchChildren(
         publicationState,
         locale: 'all',
       },
-      options: { signal },
+      options: signal ? { signal } : undefined,
     });
 
     const listRaw = Array.isArray(res?.data) ? res.data : [];
     const cooked = cookList(listRaw);
-
     setCachedChildren(parentSlug, level, cooked, { publicationState });
     return cooked;
   })();
 
-  inflight.set(k, p);
-
+  inflight.set(k, promise);
   try {
-    return await p;
+    return await promise;
   } finally {
     inflight.delete(k);
   }
 }
 
 export function prefetchChildren(parentSlug, level, { publicationState = 'live' } = {}) {
-  // ne force rien côté UI, juste warm du cache
+  if (isCachedChildrenFresh(parentSlug, level, { publicationState })) return;
   fetchChildren(parentSlug, level, { publicationState }).catch(() => {});
 }

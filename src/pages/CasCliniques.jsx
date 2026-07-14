@@ -1,8 +1,8 @@
 // src/pages/CasCliniques.jsx
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import PageTitle from '../components/PageTitle';
-import { strapiFetch, imgUrl } from '../lib/strapi';
+import { strapiFetch, imgUrl, isAbortError } from '../lib/strapi';
 import './CasCliniques.css';
 
 /**
@@ -33,6 +33,26 @@ const FALLBACK_PAGE_SIZE = 300;
 
 const CASES_ENDPOINT = import.meta.env.VITE_CASES_ENDPOINT || '/cases';
 const PATHO_ENDPOINT = import.meta.env.VITE_PATHO_ENDPOINT || '/pathologies';
+
+
+const LIST_CACHE = new Map();
+const LIST_STALE_MS = Number(import.meta.env.VITE_LIST_CACHE_STALE_MS) || 20_000;
+const LIST_MAX_AGE_MS = Number(import.meta.env.VITE_LIST_CACHE_MAX_AGE_MS) || 5 * 60_000;
+
+function readListCache(key) {
+  const entry = LIST_CACHE.get(key);
+  if (!entry) return null;
+  const age = Date.now() - entry.at;
+  if (age > LIST_MAX_AGE_MS) {
+    LIST_CACHE.delete(key);
+    return null;
+  }
+  return { ...entry, isFresh: age <= LIST_STALE_MS };
+}
+
+function writeListCache(key, items, total) {
+  LIST_CACHE.set(key, { items: Array.isArray(items) ? items : [], total: Number(total) || 0, at: Date.now() });
+}
 
 function normalizeNode(node) {
   return node?.attributes ? node.attributes : node;
@@ -319,6 +339,25 @@ export default function CasCliniques() {
   const [error, setError] = useState('');
   const [items, setItems] = useState([]);
   const [total, setTotal] = useState(0);
+  const [refreshToken, setRefreshToken] = useState(0);
+  const lastFocusAtRef = useRef(Date.now());
+  const handledRefreshRef = useRef(0);
+
+  useEffect(() => {
+    const refreshAfterFocus = () => {
+      if (document.visibilityState === 'hidden') return;
+      const now = Date.now();
+      if (now - lastFocusAtRef.current < 10_000) return;
+      lastFocusAtRef.current = now;
+      setRefreshToken((v) => v + 1);
+    };
+    window.addEventListener('focus', refreshAfterFocus);
+    document.addEventListener('visibilitychange', refreshAfterFocus);
+    return () => {
+      window.removeEventListener('focus', refreshAfterFocus);
+      document.removeEventListener('visibilitychange', refreshAfterFocus);
+    };
+  }, []);
 
   // toggle Cartes / Liste (persisté)
   const [view, setView] = useState(() => {
@@ -395,13 +434,26 @@ export default function CasCliniques() {
 
   useEffect(() => {
     let ignore = false;
+    const controller = new AbortController();
+    const forceRefresh = handledRefreshRef.current !== refreshToken;
+    handledRefreshRef.current = refreshToken;
 
     if (showTypePicker) {
       setItems([]);
       setTotal(0);
       setLoading(false);
       setError('');
-      return () => {};
+      return () => controller.abort();
+    }
+
+    const cacheKey = `${isAtlasHub ? 'atlas' : 'cases'}:${tab}:${page}:${q}`;
+    const cached = readListCache(cacheKey);
+    if (cached) {
+      setItems(cached.items);
+      setTotal(cached.total);
+      setLoading(false);
+      setError('');
+      if (cached.isFresh && !forceRefresh) return () => controller.abort();
     }
 
     async function load() {
@@ -425,6 +477,7 @@ export default function CasCliniques() {
               fields: ['title', 'slug', 'excerpt', 'updatedAt'],
               publicationState: 'live',
             },
+            options: { signal: controller.signal },
           });
 
           if (ignore) return;
@@ -446,8 +499,10 @@ export default function CasCliniques() {
                 fields: ['title', 'slug', 'excerpt', 'updatedAt'],
                 publicationState: 'live',
               },
+              options: { signal: controller.signal },
             });
 
+            if (ignore) return;
             const all = Array.isArray(fallback?.data) ? fallback.data : [];
             normalized = all
               .map(normalizeNode)
@@ -455,8 +510,11 @@ export default function CasCliniques() {
               .filter((it) => itemMatchesQuery(it, q));
           }
 
-          setItems(normalized.map((it) => ({ ...it, __entity: 'pathology' })));
-          setTotal(data?.meta?.pagination?.total ?? normalized.length ?? 0);
+          const nextItems = normalized.map((it) => ({ ...it, __entity: 'pathology' }));
+          const nextTotal = data?.meta?.pagination?.total ?? normalized.length ?? 0;
+          setItems(nextItems);
+          setTotal(nextTotal);
+          writeListCache(cacheKey, nextItems, nextTotal);
           return;
         }
 
@@ -473,6 +531,7 @@ export default function CasCliniques() {
               fields: ['title', 'slug', 'type', 'excerpt', 'updatedAt'],
               publicationState: 'live',
             },
+            options: { signal: controller.signal },
           });
 
           if (ignore) return;
@@ -491,8 +550,10 @@ export default function CasCliniques() {
                 fields: ['title', 'slug', 'type', 'excerpt', 'updatedAt'],
                 publicationState: 'live',
               },
+              options: { signal: controller.signal },
             });
 
+            if (ignore) return;
             const all = Array.isArray(fallback?.data) ? fallback.data : [];
             normalized = all
               .map(normalizeNode)
@@ -500,15 +561,18 @@ export default function CasCliniques() {
               .filter((it) => itemMatchesQuery(it, q));
           }
 
-          setItems(normalized.map((it) => ({ ...it, __entity: 'case' })));
-          setTotal(data?.meta?.pagination?.total ?? normalized.length ?? 0);
+          const nextItems = normalized.map((it) => ({ ...it, __entity: 'case' }));
+          const nextTotal = data?.meta?.pagination?.total ?? normalized.length ?? 0;
+          setItems(nextItems);
+          setTotal(nextTotal);
+          writeListCache(cacheKey, nextItems, nextTotal);
           return;
         }
 
         setItems([]);
         setTotal(0);
       } catch (e) {
-        if (!ignore) setError(e?.message || 'Erreur de chargement');
+        if (!ignore && !isAbortError(e)) setError(e?.message || 'Erreur de chargement');
       } finally {
         if (!ignore) setLoading(false);
       }
@@ -517,8 +581,9 @@ export default function CasCliniques() {
     load();
     return () => {
       ignore = true;
+      controller.abort();
     };
-  }, [showTypePicker, isAtlasHub, isQrQuizHub, tab, page, q, variants, caseFilters, pathoFilters, caseTypeFilterOnly]);
+  }, [showTypePicker, isAtlasHub, isQrQuizHub, tab, page, q, variants, caseFilters, pathoFilters, caseTypeFilterOnly, refreshToken]);
 
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 

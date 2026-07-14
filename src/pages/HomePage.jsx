@@ -1,7 +1,7 @@
 // src/pages/HomePage.jsx
 import { Link, useNavigate } from 'react-router-dom';
 import { useEffect, useRef, useState } from 'react';
-import { isDocsPrimed, primeDocsEssentials } from '../lib/docsPrefetchStore';
+import { isDocsFresh, primeDocsEssentials } from '../lib/docsPrefetchStore';
 import './HomePage.css';
 
 const PUB_STATE = import.meta.env.DEV ? 'preview' : 'live';
@@ -20,42 +20,38 @@ export default function HomePage() {
     else navigate('/atlas');
   }
 
-  const primeDocs = () => {
+  const primeDocs = ({ userInitiated = false } = {}) => {
     if (primingRef.current) return;
-    if (isDocsPrimed({ publicationState: PUB_STATE })) return;
+    if (isDocsFresh({ publicationState: PUB_STATE })) return;
+
+    const connection = typeof navigator !== 'undefined' ? navigator.connection : null;
+    const constrained =
+      connection?.saveData || connection?.effectiveType === '2g' || connection?.effectiveType === 'slow-2g';
+    const desktopLike =
+      typeof window === 'undefined' || !window.matchMedia || window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+    // Sur mobile, ne pas télécharger automatiquement tout l'index documentaire.
+    if (!userInitiated && (constrained || !desktopLike)) return;
 
     primingRef.current = true;
-    const ctrl = new AbortController();
-
-    primeDocsEssentials({ publicationState: PUB_STATE, signal: ctrl.signal })
+    // Pas d'AbortController ici : un clic sur Documentation ne doit pas annuler
+    // le préchargement exactement au moment où la page en a besoin.
+    primeDocsEssentials({ publicationState: PUB_STATE })
       .catch(() => {})
       .finally(() => {
         primingRef.current = false;
       });
-
-    return () => ctrl.abort();
   };
 
   useEffect(() => {
-    let cleanup = null;
-
-    const run = () => {
-      cleanup = primeDocs() || null;
-    };
+    const run = () => primeDocs({ userInitiated: false });
 
     if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
-      const id = window.requestIdleCallback(run, { timeout: 900 });
-      return () => {
-        window.cancelIdleCallback?.(id);
-        cleanup?.();
-      };
+      const id = window.requestIdleCallback(run, { timeout: 1200 });
+      return () => window.cancelIdleCallback?.(id);
     }
 
-    const t = setTimeout(run, 250);
-    return () => {
-      clearTimeout(t);
-      cleanup?.();
-    };
+    const t = setTimeout(run, 400);
+    return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -84,7 +80,11 @@ export default function HomePage() {
             <HomeCard title="Atlas" to="/atlas" />
             <HomeCard title="Q/R & Quiz" to="/qr-quiz" />
             <HomeCard title="Randomisation" to="/randomisation" />
-            <HomeCard title="Documentation" to="/documentation" onPrefetch={primeDocs} />
+            <HomeCard
+              title="Documentation"
+              to="/documentation"
+              onPrefetch={() => primeDocs({ userInitiated: true })}
+            />
             {/* Liens utiles retiré de la Home (reste dans la navbar) */}
           </nav>
         </section>

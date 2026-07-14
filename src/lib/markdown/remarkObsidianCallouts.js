@@ -175,6 +175,97 @@ function renderInlineNodesToHtml(nodes) {
  * - [!info]- Titre
  */
 const CALLOUT_MARKER_RE = /^\s*\[!([a-z][\w-]*)(?:\|([^\]]+))?\]([+-])?\s*(.*?)\s*$/i;
+const CALLOUT_PREFIX_RE = /^\s*\[!([a-z][\w-]*)(?:\|([^\]]+))?\]([+-])?\s*/i;
+
+function inlineText(nodes) {
+  if (!Array.isArray(nodes)) return '';
+
+  const read = (node) => {
+    if (!node) return '';
+    if (node.type === 'text' || node.type === 'inlineCode') return String(node.value || '');
+    if (node.type === 'break') return '\n';
+    if (Array.isArray(node.children)) return node.children.map(read).join('');
+    return '';
+  };
+
+  return nodes.map(read).join('');
+}
+
+function splitInlineNodesAtFirstLineBreak(nodes) {
+  const before = [];
+  const after = [];
+  let found = false;
+
+  for (const original of Array.isArray(nodes) ? nodes : []) {
+    if (found) {
+      after.push(original);
+      continue;
+    }
+
+    if (original?.type === 'break') {
+      found = true;
+      continue;
+    }
+
+    if (original?.type === 'text') {
+      const raw = String(original.value || '');
+      const match = raw.match(/\r?\n/);
+      if (match) {
+        const index = match.index ?? -1;
+        const left = index >= 0 ? raw.slice(0, index) : raw;
+        const right = index >= 0 ? raw.slice(index + match[0].length) : '';
+
+        if (left) before.push({ ...original, value: left });
+        if (right) after.push({ ...original, value: right.replace(/^\s+/, '') });
+        found = true;
+        continue;
+      }
+    }
+
+    before.push(original);
+  }
+
+  return { before, after, found };
+}
+
+function stripCalloutPrefix(nodes) {
+  const cloned = (Array.isArray(nodes) ? nodes : []).map((node) => ({ ...node }));
+  let stripped = false;
+
+  for (const node of cloned) {
+    if (stripped) break;
+    if (node?.type !== 'text') continue;
+
+    const raw = String(node.value || '');
+    const next = raw.replace(CALLOUT_PREFIX_RE, '');
+    if (next !== raw) {
+      node.value = next;
+      stripped = true;
+    }
+  }
+
+  while (cloned[0]?.type === 'text' && !String(cloned[0].value || '').trim()) cloned.shift();
+  while (cloned.at(-1)?.type === 'text' && !String(cloned.at(-1).value || '').trim()) cloned.pop();
+
+  return cloned;
+}
+
+function paragraphFromInlineNodes(template, inlineNodes) {
+  const children = Array.isArray(inlineNodes) ? [...inlineNodes] : [];
+  while (children[0]?.type === 'text') {
+    const value = String(children[0].value || '').replace(/^\s+/, '');
+    if (!value) {
+      children.shift();
+      continue;
+    }
+    children[0] = { ...children[0], value };
+    break;
+  }
+
+  if (children.length === 0) return [];
+  const paragraph = { ...template, children };
+  return isEmptyParagraph(paragraph) ? [] : [paragraph];
+}
 
 function parseCalloutMarker(value) {
   if (typeof value !== 'string') return null;
@@ -218,9 +309,17 @@ function getCalloutStart(blockquoteNode) {
   if (!firstParagraph || firstParagraph.type !== 'paragraph') return null;
   if (!firstChild || firstChild.type !== 'text') return null;
 
-  const marker = parseCalloutMarker(firstChild.value);
+  const split = splitInlineNodesAtFirstLineBreak(firstParagraph.children);
+  const marker = parseCalloutMarker(inlineText(split.before));
   if (!marker) return null;
-  return { marker, firstParagraph, firstChild };
+
+  return {
+    marker,
+    firstParagraph,
+    firstChild,
+    headerNodes: split.before,
+    bodyInlineNodes: split.after,
+  };
 }
 
 /** Callout start = blockquote dont 1ère ligne commence par [!type] */
@@ -269,8 +368,14 @@ function prepareHProperties(node) {
 }
 
 function transformMultiColumnCallout(node, parsed) {
-  const { marker, firstParagraph } = parsed;
-  const firstParagraphRemainder = paragraphRemainderAfterMarker(firstParagraph, marker);
+  const { marker, firstParagraph, headerNodes, bodyInlineNodes } = parsed;
+  const headerContent = stripCalloutPrefix(headerNodes);
+  const sameParagraphContent = [
+    ...headerContent,
+    ...(headerContent.length && bodyInlineNodes.length ? [{ type: 'break' }] : []),
+    ...bodyInlineNodes,
+  ];
+  const firstParagraphRemainder = paragraphFromInlineNodes(firstParagraph, sameParagraphContent);
   node.children.shift();
   const innerChildren = stripEmptyParagraphs([...firstParagraphRemainder, ...node.children]);
 
@@ -290,8 +395,14 @@ function transformMultiColumnCallout(node, parsed) {
 }
 
 function transformColumnCallout(node, parsed) {
-  const { marker, firstParagraph } = parsed;
-  const firstParagraphRemainder = paragraphRemainderAfterMarker(firstParagraph, marker);
+  const { marker, firstParagraph, headerNodes, bodyInlineNodes } = parsed;
+  const headerContent = stripCalloutPrefix(headerNodes);
+  const sameParagraphContent = [
+    ...headerContent,
+    ...(headerContent.length && bodyInlineNodes.length ? [{ type: 'break' }] : []),
+    ...bodyInlineNodes,
+  ];
+  const firstParagraphRemainder = paragraphFromInlineNodes(firstParagraph, sameParagraphContent);
   node.children.shift();
   const innerChildren = stripEmptyParagraphs([...firstParagraphRemainder, ...node.children]);
   const weight = parseColumnWeight(marker.options);
@@ -334,7 +445,7 @@ export function remarkObsidianCallouts() {
       const parsed = getCalloutStart(node);
       if (!parsed) return;
 
-      const { marker, firstParagraph, firstChild } = parsed;
+      const { marker, firstParagraph, headerNodes, bodyInlineNodes } = parsed;
       const rawType = marker.rawType;
 
       // Callout spécial : grille multicolonnes. Pas de titre, pas d'icône.
@@ -354,18 +465,9 @@ export function remarkObsidianCallouts() {
       const calloutType = KNOWN.has(rawType) ? rawType : 'info';
       const icon = ICON[calloutType] || 'ℹ️';
 
-      // ---- titre : on rend les inline nodes du 1er paragraphe (liens, bold, etc.)
-      // on enlève le préfixe "[!type][+-]" du tout premier text node
-      firstChild.value = marker.title;
-
-      // on récupère tous les inline nodes (texte + link...) qui restent dans le 1er paragraphe
-      let titleNodes = Array.isArray(firstParagraph.children) ? [...firstParagraph.children] : [];
-
-      // si le premier texte est vide après replace, on l’enlève
-      if (titleNodes[0]?.type === 'text' && !String(titleNodes[0].value || '').trim()) {
-        titleNodes.shift();
-      }
-
+      // ---- titre : uniquement la première ligne du blockquote.
+      // Le corps peut rester dans le même paragraphe MDAST sous forme de saut de ligne souple.
+      const titleNodes = stripCalloutPrefix(headerNodes);
       const titleHtmlRaw = renderInlineNodesToHtml(titleNodes);
       const fallbackTitle =
         calloutType === 'info' ? 'Info' : calloutType.charAt(0).toUpperCase() + calloutType.slice(1);
@@ -373,9 +475,11 @@ export function remarkObsidianCallouts() {
         ? titleHtmlRaw
         : escapeHtml(fallbackTitle);
 
-      // ---- remove header line (le 1er paragraphe)
+      // ---- retire le paragraphe d’en-tête, mais réinjecte la partie située
+      // après le premier saut de ligne comme premier paragraphe du corps.
+      const sameParagraphBody = paragraphFromInlineNodes(firstParagraph, bodyInlineNodes);
       node.children.shift();
-      const innerChildren = node.children;
+      const innerChildren = stripEmptyParagraphs([...sameParagraphBody, ...node.children]);
 
       // pull next HTML table / blockquotes
       if (parent && Array.isArray(parent.children) && typeof index === 'number') {

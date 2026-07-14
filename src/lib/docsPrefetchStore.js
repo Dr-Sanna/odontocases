@@ -2,11 +2,13 @@
 import { strapiFetch, imgUrl } from './strapi';
 
 const DOCS_ENDPOINT = import.meta.env.VITE_DOCS_ENDPOINT || '/doc-nodes';
+const FRESH_MS = Number(import.meta.env.VITE_DOCS_INDEX_STALE_MS) || 2 * 60_000;
+const MAX_AGE_MS = Number(import.meta.env.VITE_DOCS_INDEX_MAX_AGE_MS) || 30 * 60_000;
 
 const store = {
-  // publicationState -> { primed: boolean, index: Map<string, array>, bySlug: Map<string, node>, at: number }
+  // publicationState -> { primed, index, bySlug, at }
   byPub: new Map(),
-  inflight: new Map(), // publicationState -> Promise
+  inflight: new Map(),
 };
 
 function normalizeEntity(node) {
@@ -16,12 +18,7 @@ function normalizeEntity(node) {
 }
 
 function normalizeRelationList(value) {
-  const list = Array.isArray(value)
-    ? value
-    : Array.isArray(value?.data)
-      ? value.data
-      : [];
-
+  const list = Array.isArray(value) ? value : Array.isArray(value?.data) ? value.data : [];
   return list.map(normalizeEntity).filter(Boolean);
 }
 
@@ -37,12 +34,14 @@ function parentSlugOf(n) {
 
 function cookCoverUrl(n) {
   const coverAttr = n?.cover?.data?.attributes || n?.cover || null;
-  return (
-    imgUrl(coverAttr, 'medium') ||
-    imgUrl(coverAttr, 'thumbnail') ||
-    imgUrl(coverAttr) ||
-    ''
-  );
+  return imgUrl(coverAttr, 'medium') || imgUrl(coverAttr, 'thumbnail') || imgUrl(coverAttr) || '';
+}
+
+function compareByOrderThenTitle(a, b) {
+  const ao = Number.isFinite(a?.order) ? a.order : Number.POSITIVE_INFINITY;
+  const bo = Number.isFinite(b?.order) ? b.order : Number.POSITIVE_INFINITY;
+  if (ao !== bo) return ao - bo;
+  return String(a?.title || '').localeCompare(String(b?.title || ''), 'fr', { sensitivity: 'base' });
 }
 
 function cookDocThemes(n) {
@@ -73,49 +72,30 @@ function keyOf(level, parentSlug) {
   return `${level}:${parentSlug || '__root__'}`;
 }
 
-function compareByOrderThenTitle(a, b) {
-  const ao = Number.isFinite(a?.order) ? a.order : Number.POSITIVE_INFINITY;
-  const bo = Number.isFinite(b?.order) ? b.order : Number.POSITIVE_INFINITY;
-  if (ao !== bo) return ao - bo;
-
-  const at = String(a?.title || '');
-  const bt = String(b?.title || '');
-  return at.localeCompare(bt, 'fr', { sensitivity: 'base' });
-}
-
 function upsertIndex(bucket, node) {
   if (!node?.slug || !node?.level) return;
-
   bucket.bySlug.set(node.slug, node);
 
   const pSlug = node.level === 'subject' ? null : parentSlugOf(node);
   const k = keyOf(node.level, pSlug);
-
   if (!bucket.index.has(k)) bucket.index.set(k, []);
-  const arr = bucket.index.get(k);
 
+  const arr = bucket.index.get(k);
   const i = arr.findIndex((x) => x?.slug === node.slug);
   if (i === -1) arr.push(node);
   else arr[i] = node;
-
   arr.sort(compareByOrderThenTitle);
 }
 
 function cookDocNode(n) {
-  return {
-    ...n,
-    coverUrl: cookCoverUrl(n),
-    doc_themes: cookDocThemes(n),
-  };
+  return { ...n, coverUrl: cookCoverUrl(n), doc_themes: cookDocThemes(n) };
 }
 
 function docsEssentialParams(publicationState) {
   return {
     locale: 'all',
     publicationState,
-    filters: {
-      level: { $in: ['subject', 'chapter', 'item'] },
-    },
+    filters: { level: { $in: ['subject', 'chapter', 'item'] } },
     fields: ['title', 'slug', 'level', 'order', 'updatedAt', 'excerpt'],
     populate: {
       cover: { fields: ['url', 'formats'] },
@@ -127,100 +107,82 @@ function docsEssentialParams(publicationState) {
   };
 }
 
-export function getPrefetchedChildren(level, parentSlug, { publicationState = 'live' } = {}) {
-  const bucket = ensureBucket(publicationState);
-  const k = keyOf(level, parentSlug);
-  const arr = bucket.index.get(k);
-  return Array.isArray(arr) ? arr : null;
-}
-
-export function getPrefetchedBySlug(slug, { publicationState = 'live' } = {}) {
-  const bucket = ensureBucket(publicationState);
-  return bucket.bySlug.get(slug) || null;
-}
-
-export function isDocsPrimed({ publicationState = 'live' } = {}) {
-  const bucket = ensureBucket(publicationState);
-  return Boolean(bucket.primed);
-}
-
-/**
- * Fetch “essentiel” en 1 appel :
- * - level in [subject, chapter, item]
- * - fields: title, slug, level, order, updatedAt, excerpt
- * - parent.slug (pour indexer chapters/items)
- * - cover url
- * - doc_themes (pour regrouper les items par thème)
- */
-export async function primeDocsEssentials({ publicationState = 'live', signal } = {}) {
-  const bucket = ensureBucket(publicationState);
-
-  if (bucket.primed) return bucket;
-
-  if (store.inflight.has(publicationState)) return store.inflight.get(publicationState);
-
-  const p = (async () => {
-    const res = await strapiFetch(DOCS_ENDPOINT, {
-      params: docsEssentialParams(publicationState),
-      options: { signal },
-    });
-
-    const rows = Array.isArray(res?.data) ? res.data : [];
-    const normalized = rows
-      .map(normalizeEntity)
-      .filter(Boolean)
-      .filter((n) => n?.slug && n?.level);
-
-    // rebuild propre (important si rename / move / suppression)
-    bucket.index = new Map();
-    bucket.bySlug = new Map();
-
-    for (const n of normalized) {
-      upsertIndex(bucket, cookDocNode(n));
-    }
-
-    bucket.primed = true;
-    bucket.at = Date.now();
-
-    return bucket;
-  })();
-
-  store.inflight.set(publicationState, p);
-
-  try {
-    return await p;
-  } finally {
-    store.inflight.delete(publicationState);
-  }
-}
-
-/**
- * Revalidate : on refetch, on reconstruit l’index,
- * mais l’UI peut continuer à afficher le store pendant ce temps.
- */
-export async function revalidateDocsEssentials({ publicationState = 'live', signal } = {}) {
-  const bucket = ensureBucket(publicationState);
-
-  const res = await strapiFetch(DOCS_ENDPOINT, {
-    params: docsEssentialParams(publicationState),
-    options: { signal },
-  });
-
-  const rows = Array.isArray(res?.data) ? res.data : [];
+function rebuildBucket(bucket, rows) {
   const normalized = rows
     .map(normalizeEntity)
     .filter(Boolean)
     .filter((n) => n?.slug && n?.level);
 
+  // Reconstruction complète : les suppressions/renommages disparaissent réellement.
   bucket.index = new Map();
   bucket.bySlug = new Map();
-
-  for (const n of normalized) {
-    upsertIndex(bucket, cookDocNode(n));
-  }
-
+  for (const n of normalized) upsertIndex(bucket, cookDocNode(n));
   bucket.primed = true;
   bucket.at = Date.now();
-
   return bucket;
+}
+
+function bucketAge(bucket) {
+  return bucket?.at ? Date.now() - bucket.at : Number.POSITIVE_INFINITY;
+}
+
+export function getPrefetchedChildren(level, parentSlug, { publicationState = 'live' } = {}) {
+  const bucket = ensureBucket(publicationState);
+  const arr = bucket.index.get(keyOf(level, parentSlug));
+  return Array.isArray(arr) ? arr : null;
+}
+
+export function getPrefetchedBySlug(slug, { publicationState = 'live' } = {}) {
+  return ensureBucket(publicationState).bySlug.get(slug) || null;
+}
+
+export function isDocsPrimed({ publicationState = 'live' } = {}) {
+  const bucket = ensureBucket(publicationState);
+  return Boolean(bucket.primed && bucketAge(bucket) <= MAX_AGE_MS);
+}
+
+export function isDocsFresh({ publicationState = 'live', maxAgeMs = FRESH_MS } = {}) {
+  const bucket = ensureBucket(publicationState);
+  return Boolean(bucket.primed && bucketAge(bucket) <= maxAgeMs);
+}
+
+export function invalidateDocsEssentials({ publicationState = 'live', clear = false } = {}) {
+  const bucket = ensureBucket(publicationState);
+  bucket.at = 0;
+  if (clear) {
+    bucket.primed = false;
+    bucket.index = new Map();
+    bucket.bySlug = new Map();
+  }
+}
+
+async function refreshDocsEssentials({ publicationState = 'live', signal, force = false, maxAgeMs = FRESH_MS } = {}) {
+  const bucket = ensureBucket(publicationState);
+  if (!force && bucket.primed && bucketAge(bucket) <= maxAgeMs) return bucket;
+  if (store.inflight.has(publicationState)) return store.inflight.get(publicationState);
+
+  const promise = (async () => {
+    const res = await strapiFetch(DOCS_ENDPOINT, {
+      params: docsEssentialParams(publicationState),
+      options: signal ? { signal } : undefined,
+    });
+    return rebuildBucket(bucket, Array.isArray(res?.data) ? res.data : []);
+  })();
+
+  store.inflight.set(publicationState, promise);
+  try {
+    return await promise;
+  } finally {
+    store.inflight.delete(publicationState);
+  }
+}
+
+/** Premier chargement ou revalidation si le store n'est plus frais. */
+export function primeDocsEssentials(opts = {}) {
+  return refreshDocsEssentials(opts);
+}
+
+/** Revalidation explicite ; force=false évite les gros refetchs répétés pendant la navigation. */
+export function revalidateDocsEssentials(opts = {}) {
+  return refreshDocsEssentials(opts);
 }

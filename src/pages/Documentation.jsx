@@ -1,11 +1,11 @@
 // src/pages/Documentation.jsx
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import PageTitle from '../components/PageTitle';
 import {
   getPrefetchedBySlug,
   getPrefetchedChildren,
-  isDocsPrimed,
+  isDocsFresh,
   primeDocsEssentials,
   revalidateDocsEssentials,
 } from '../lib/docsPrefetchStore';
@@ -237,6 +237,25 @@ export default function Documentation({ basePath = '/documentation', subjectSlug
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [refreshToken, setRefreshToken] = useState(0);
+  const lastFocusAtRef = useRef(Date.now());
+  const handledRefreshRef = useRef(0);
+
+  useEffect(() => {
+    const refreshAfterFocus = () => {
+      if (document.visibilityState === 'hidden') return;
+      const now = Date.now();
+      if (now - lastFocusAtRef.current < 10_000) return;
+      lastFocusAtRef.current = now;
+      setRefreshToken((v) => v + 1);
+    };
+    window.addEventListener('focus', refreshAfterFocus);
+    document.addEventListener('visibilitychange', refreshAfterFocus);
+    return () => {
+      window.removeEventListener('focus', refreshAfterFocus);
+      document.removeEventListener('visibilitychange', refreshAfterFocus);
+    };
+  }, []);
 
   const [view, setView] = useState(() => {
     const saved = localStorage.getItem('doc:view');
@@ -303,21 +322,31 @@ export default function Documentation({ basePath = '/documentation', subjectSlug
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDocumentationLanding, level, parentSlug]);
 
-  // Prime si besoin (accès direct sans passer par HomePage)
+  // Un seul flux de chargement : le store décide s'il est encore frais.
   useEffect(() => {
-    if (isDocsPrimed({ publicationState: PUB_STATE })) return;
-
     let ignore = false;
-    const ctrl = new AbortController();
+    const controller = new AbortController();
+    const forceRefresh = handledRefreshRef.current !== refreshToken;
+    handledRefreshRef.current = refreshToken;
 
-    setLoading(true);
-    primeDocsEssentials({ publicationState: PUB_STATE, signal: ctrl.signal })
+    const instant = getCurrentListFromStore();
+    setList(instant);
+    setError('');
+
+    if (!forceRefresh && isDocsFresh({ publicationState: PUB_STATE })) {
+      setLoading(false);
+      return () => controller.abort();
+    }
+
+    if (!instant.length) setLoading(true);
+
+    const action = forceRefresh ? revalidateDocsEssentials : primeDocsEssentials;
+    action({ publicationState: PUB_STATE, signal: controller.signal, force: forceRefresh })
       .then(() => {
-        if (ignore) return;
-        setList(getCurrentListFromStore());
+        if (!ignore) setList(getCurrentListFromStore());
       })
       .catch((e) => {
-        if (!ignore) setError(e?.message || 'Erreur de chargement');
+        if (!ignore && e?.name !== 'AbortError') setError(e?.message || 'Erreur de chargement');
       })
       .finally(() => {
         if (!ignore) setLoading(false);
@@ -325,37 +354,10 @@ export default function Documentation({ basePath = '/documentation', subjectSlug
 
     return () => {
       ignore = true;
-      ctrl.abort();
+      controller.abort();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Revalidate en arrière-plan à chaque changement de niveau/parent
-  useEffect(() => {
-    let ignore = false;
-    const ctrl = new AbortController();
-
-    const hasInstant = list.length > 0;
-    if (!hasInstant) setLoading(true);
-
-    revalidateDocsEssentials({ publicationState: PUB_STATE, signal: ctrl.signal })
-      .then(() => {
-        if (ignore) return;
-        setList(getCurrentListFromStore());
-      })
-      .catch((e) => {
-        if (!ignore) setError(e?.message || 'Erreur de chargement');
-      })
-      .finally(() => {
-        if (!ignore) setLoading(false);
-      });
-
-    return () => {
-      ignore = true;
-      ctrl.abort();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [level, parentSlug]);
+  }, [isDocumentationLanding, level, parentSlug, refreshToken]);
 
   function toDocLink(slug) {
     if (!slug) return buildPath(basePath, []);
