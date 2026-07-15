@@ -803,3 +803,502 @@ hr {
   }
 }
 
+/* ==========================================================================
+   POINTS CLÉS — OVERRIDE REACT BLEU
+   --------------------------------------------------------------------------
+   À placer à la fin de Callouts.css.
+
+   - identité bleue du callout info ;
+   - liseré latéral conservé ;
+   - en-tête séparé du contenu ;
+   - intertitres Markdown en petites capitales ;
+   - séparateurs fins ;
+   - coches bleues renforcées ;
+   - compatibilité clair / sombre / mobile.
+   ========================================================================== */
+
+
+/* ==========================================================================
+   CONTENEUR
+   ========================================================================== */
+
+.cd-callout:is(
+  [data-callout-metadata~="points-cles"],
+  .cd-callout--points-cles
+) {
+  --cd-pc-accent: var(--ifm-color-info-dark);
+
+  --cd-callout-border: var(--cd-pc-accent);
+  --ifm-alert-foreground-color:
+    var(--ifm-color-info-contrast-foreground);
+
+  --cd-pc-panel-bg:
+    var(--ifm-color-info-contrast-background);
+
+  --cd-pc-outer-border: color-mix(
+    in srgb,
+    var(--cd-pc-accent) 22%,
+    transparent
+  );
+
+  --cd-pc-divider: color-mix(
+    in srgb,
+    var(--cd-pc-accent) 24%,
+    transparent
+  );
+
+  --cd-pc-check-bg: color-mix(
+    in srgb,
+    var(--cd-pc-panel-bg) 70%,
+    var(--cd-pc-accent) 30%
+  );
+
+  --cd-pc-check-border: var(--cd-pc-accent);
+
+  box-sizing: border-box;
+  overflow: hidden;
+
+  margin: 1rem 0;
+  padding: 1.1rem 1.25rem 1.2rem;
+
+  border: 1px solid var(--cd-pc-outer-border);
+  border-left: 4px solid var(--cd-pc-accent);
+  border-radius: 0.75rem;
+
+  background: var(--cd-pc-panel-bg);
+  color: var(--ifm-color-info-contrast-foreground);
+
+  box-shadow: 0 2px 8px rgb(0 0 0 / 6%);
+}
+
+
+/* ==========================================================================
+   MODE SOMBRE
+   ========================================================================== */
+
+[data-theme="dark"]
+.cd-callout:is(
+  [data-callout-metadata~="points-cles"],
+  .cd-callout--points-cles
+) {
+  --cd-pc-outer-border: color-mix(
+    in srgb,
+    var(--cd-pc-accent) 30%,
+    transparent
+  );
+
+  --cd-pc-divider: color-mix(
+    in srgb,
+    var(--cd-pc-accent) 34%,
+    transparent
+  );
+
+  --cd-pc-check-bg: color-mix(
+    in srgb,
+    var(--cd-pc-panel-bg) 62%,
+    var(--cd-pc-accent) 38%
+  );
+
+  --cd-pc-check-border: var(--cd-pc-accent);
+
+  box-shadow: 0 2px 9px rgb(0 0 0 / 18%);
+}
+
+
+/* ==========================================================================
+   EN-TÊTE
+   ========================================================================== */
+
+.cd-callout:is(
+  [data-callout-metadata~="points-cles"],
+  .cd-callout--points-cles
+) > .cd-callout-heading,
+
+.cd-callout:is(
+  [data-callout-metadata~="points-cles"],
+  .cd-callout--points-cles
+) > .cd-callout-details > summary.cd-callout-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+
+  margin: 0 0 1rem;
+  padding: 0 0 0.85rem;
+
+  border-bottom: 1px solid var(--cd-pc-divider);
+
+  color: var(--cd-pc-accent);
+
+  font-size: 1.08em;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+
+/* L’emoji d’origine est remplacé par une icône monochrome. */
+
+.cd-callout:is(
+  [data-callout-metadata~="points-cles"],
+  .cd-callout--points-cles
+) .cd-callout-icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+
+  width: 1.35rem;
+  height: 1.35rem;
+
+  margin: 0;
+  padding: 0;
+
+  color: var(--cd-pc-accent);
+
+  font-size: 0;
+  line-height: 1;
+}
+
+.cd-callout:is(
+  [data-callout-metadata~="points-cles"],
+  .cd-callout--points-cles
+) .cd-callout-icon::before {
+  content: "ⓘ";
+
+  display: block;
+
+  color: currentColor;
+
+  font-family: Arial, sans-serif;
+  font-size: 1.3rem;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.cd-callout:is(
+  [data-callout-metadata~="points-cles"],
+  .cd-callout--points-cles
+) .cd-callout-title {
+  color: var(--cd-pc-accent);
+  font-weight: 700;
+}
+
+
+/* Aucun séparateur pour un callout ne contenant qu’un titre. */
+
+.cd-callout:is(
+  [data-callout-metadata~="points-cles"],
+  .cd-callout--points-cles
+).cd-callout--title-only > .cd-callout-heading {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+
+/* Callout repliable fermé. */
+
+.cd-callout:is(
+  [data-callout-metadata~="points-cles"],
+  .cd-callout--points-cles
+) > .cd-callout-details:not([open])
+  > summary.cd-callout-heading {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+
+/* ==========================================================================
+   CONTENU
+   ========================================================================== */
+
+.cd-callout:is(
+  [data-callout-metadata~="points-cles"],
+  .cd-callout--points-cles
+) .cd-callout-content {
+  color: var(--ifm-color-info-contrast-foreground);
+}
+
+.cd-callout:is(
+  [data-callout-metadata~="points-cles"],
+  .cd-callout--points-cles
+) .cd-callout-content > :first-child {
+  margin-top: 0;
+}
+
+.cd-callout:is(
+  [data-callout-metadata~="points-cles"],
+  .cd-callout--points-cles
+) .cd-callout-content > :last-child {
+  margin-bottom: 0;
+}
+
+
+/* ==========================================================================
+   INTERTITRES MARKDOWN
+   --------------------------------------------------------------------------
+   Exemple :
+     > **ORIGINE ET DIAGNOSTIC**
+   ========================================================================== */
+
+.cd-callout:is(
+  [data-callout-metadata~="points-cles"],
+  .cd-callout--points-cles
+) .cd-callout-content > p:has(> strong:only-child) {
+  margin: 1rem 0 0.55rem;
+  padding: 0;
+
+  color: var(--cd-pc-accent);
+
+  font-size: 0.78rem;
+  font-weight: 750;
+  line-height: 1.25;
+  letter-spacing: 0.075em;
+  text-transform: uppercase;
+}
+
+.cd-callout:is(
+  [data-callout-metadata~="points-cles"],
+  .cd-callout--points-cles
+) .cd-callout-content
+  > p:has(> strong:only-child)
+  > strong {
+  color: inherit;
+
+  font: inherit;
+  letter-spacing: inherit;
+}
+
+.cd-callout:is(
+  [data-callout-metadata~="points-cles"],
+  .cd-callout--points-cles
+) .cd-callout-content
+  > p:first-child:has(> strong:only-child) {
+  margin-top: 0;
+}
+
+
+/* ==========================================================================
+   SÉPARATEURS ENTRE LES GROUPES
+   ========================================================================== */
+
+.cd-callout:is(
+  [data-callout-metadata~="points-cles"],
+  .cd-callout--points-cles
+) .cd-callout-content :is(hr, .callout-divider) {
+  display: block;
+
+  box-sizing: border-box;
+
+  width: 100%;
+  height: 1px;
+  min-height: 1px;
+
+  margin: 1rem 0 0.9rem;
+  padding: 0;
+
+  border: 0;
+  border-radius: 0;
+
+  background: var(--cd-pc-divider);
+
+  box-shadow: none;
+  opacity: 1;
+}
+
+
+/* ==========================================================================
+   LISTES
+   ========================================================================== */
+
+.cd-callout:is(
+  [data-callout-metadata~="points-cles"],
+  .cd-callout--points-cles
+) .cd-callout-content > ul {
+  margin: 0;
+  padding: 0;
+
+  list-style: none;
+  list-style-type: none;
+}
+
+.cd-callout:is(
+  [data-callout-metadata~="points-cles"],
+  .cd-callout--points-cles
+) .cd-callout-content > ul > li {
+  position: relative;
+
+  margin: 0.52rem 0;
+  padding: 0 0 0 2rem;
+
+  color: var(--ifm-color-info-contrast-foreground);
+  line-height: 1.55;
+
+  list-style: none;
+  list-style-type: none;
+}
+
+.cd-callout:is(
+  [data-callout-metadata~="points-cles"],
+  .cd-callout--points-cles
+) .cd-callout-content > ul > li::marker {
+  content: "";
+
+  color: transparent;
+  font-size: 0;
+}
+
+
+/* ==========================================================================
+   COCHES
+   ========================================================================== */
+
+.cd-callout:is(
+  [data-callout-metadata~="points-cles"],
+  .cd-callout--points-cles
+) .cd-callout-content > ul > li::before {
+  content: "✓";
+
+  position: absolute;
+  top: 0.14em;
+  left: 0;
+
+  display: grid;
+  place-items: center;
+
+  box-sizing: border-box;
+
+  width: 1.28rem;
+  height: 1.28rem;
+
+  margin: 0;
+  padding: 0;
+
+  border: 1.7px solid var(--cd-pc-check-border);
+  border-radius: 50%;
+
+  background: var(--cd-pc-check-bg);
+
+  box-shadow: none;
+
+  color: var(--cd-pc-accent);
+
+  font-family: Arial, sans-serif;
+  font-size: 0.8rem;
+  font-weight: 900;
+  line-height: 1;
+  text-align: center;
+}
+
+
+/* ==========================================================================
+   PETITES LARGEURS
+   ========================================================================== */
+
+@media (max-width: 620px) {
+  .cd-callout:is(
+    [data-callout-metadata~="points-cles"],
+    .cd-callout--points-cles
+  ) {
+    padding: 1rem 1rem 1.05rem;
+  }
+
+  .cd-callout:is(
+    [data-callout-metadata~="points-cles"],
+    .cd-callout--points-cles
+  ) > .cd-callout-heading,
+
+  .cd-callout:is(
+    [data-callout-metadata~="points-cles"],
+    .cd-callout--points-cles
+  ) > .cd-callout-details > summary.cd-callout-heading {
+    margin-bottom: 0.85rem;
+    padding-bottom: 0.75rem;
+  }
+
+  .cd-callout:is(
+    [data-callout-metadata~="points-cles"],
+    .cd-callout--points-cles
+  ) .cd-callout-content > ul > li {
+    padding-left: 1.85rem;
+  }
+}
+
+/* ==========================================================================
+   POINTS CLÉS — COCHES STYLE OBSIDIAN
+   ========================================================================== */
+
+.cd-callout:is(
+  [data-callout-metadata~="points-cles"],
+  .cd-callout--points-cles
+) {
+  /* Fond très légèrement bleuté. */
+  --cd-pc-check-bg: color-mix(
+    in srgb,
+    var(--cd-pc-panel-bg) 90%,
+    var(--cd-pc-accent) 10%
+  );
+
+  /* Contour bleu visible, mais légèrement adouci. */
+  --cd-pc-check-border: color-mix(
+    in srgb,
+    var(--cd-pc-accent) 78%,
+    transparent
+  );
+}
+
+[data-theme="dark"]
+.cd-callout:is(
+  [data-callout-metadata~="points-cles"],
+  .cd-callout--points-cles
+) {
+  --cd-pc-check-bg: color-mix(
+    in srgb,
+    var(--cd-pc-panel-bg) 84%,
+    var(--cd-pc-accent) 16%
+  );
+
+  --cd-pc-check-border: color-mix(
+    in srgb,
+    var(--cd-pc-accent) 88%,
+    transparent
+  );
+}
+
+.cd-callout:is(
+  [data-callout-metadata~="points-cles"],
+  .cd-callout--points-cles
+) .cd-callout-content > ul > li::before {
+  content: "✓" !important;
+
+  position: absolute !important;
+  top: 0.16em !important;
+  left: 0 !important;
+
+  display: grid !important;
+  place-items: center !important;
+
+  box-sizing: border-box !important;
+
+  width: 1.24rem !important;
+  height: 1.24rem !important;
+
+  margin: 0 !important;
+  padding: 0 !important;
+
+  border: 1.5px solid var(--cd-pc-check-border) !important;
+  border-radius: 50% !important;
+
+  background: var(--cd-pc-check-bg) !important;
+
+  box-shadow: none !important;
+  text-shadow: none !important;
+
+  color: var(--cd-pc-accent) !important;
+
+  font-family: Arial, sans-serif !important;
+  font-size: 0.76rem !important;
+  font-weight: 800 !important;
+  line-height: 1 !important;
+  text-align: center !important;
+}

@@ -1257,34 +1257,62 @@ export default function CaseDetail(props) {
 
           {/* DOC children */}
           {isDocNamespace && displayMatchesRoute && isDocItemPage && docChildSections.length > 0 && (
-            <section className="cd-children">
-              <h2 className="cd-children-title">Sections</h2>
+            <section className="cd-children cd-doc-sections" aria-labelledby="cd-doc-sections-title">
+              <div className="cd-doc-sections-heading">
+                <h2 id="cd-doc-sections-title" className="cd-children-title">
+                  Sections
+                </h2>
+              </div>
 
-              <div className="cd-children-grid">
-                {docChildSections.map((s) => {
+              <ol className="cd-children-grid cd-doc-sections-grid">
+                {docChildSections.map((s, index) => {
                   const to = buildPath(docBasePath, [subjectSlug, chapterSlug, docItemSlug, s.slug]);
+                  const sectionNumber = String(index + 1).padStart(2, '0');
                   return (
-                    <Link
-                      key={s.slug}
-                      to={to}
-                      className="cd-child-card ui-card"
-                      state={{ prefetch: { slug: s.slug, title: s.title || s.slug, type: 'doc' } }}
-                    >
-                      {s.coverUrl && (
-                        <img
-                          className="cd-child-cover"
-                          src={s.coverUrl}
-                          alt={s.title || s.slug}
-                          loading="lazy"
-                          data-no-lightbox="1"
-                        />
-                      )}
-                      <div className="cd-child-title">{s.title || s.slug}</div>
-                      {s.excerpt && <div className="cd-child-excerpt">{s.excerpt}</div>}
-                    </Link>
+                    <li key={s.slug} className="cd-doc-section-item">
+                      <Link
+                        to={to}
+                        className="cd-child-card ui-card cd-doc-section-card"
+                        state={{ prefetch: { slug: s.slug, title: s.title || s.slug, type: 'doc' } }}
+                        aria-label={`Section ${index + 1} : ${s.title || s.slug}`}
+                      >
+                        <div className="cd-doc-section-card-top" aria-hidden="true">
+                          <span className="cd-doc-section-number">{sectionNumber}</span>
+
+                          <span className="cd-doc-section-visual">
+                            {s.coverUrl ? (
+                              <img
+                                className="cd-doc-section-cover"
+                                src={s.coverUrl}
+                                alt=""
+                                loading="lazy"
+                                data-no-lightbox="1"
+                              />
+                            ) : (
+                              <svg className="cd-doc-section-icon" viewBox="0 0 24 24">
+                                <path d="M7 3.75h7.35L18 7.4v12.85H7V3.75Z" />
+                                <path d="M14 3.75V7.8h4" />
+                                <path d="M9.75 11h5.5M9.75 14h5.5M9.75 17h3.4" />
+                              </svg>
+                            )}
+                          </span>
+                        </div>
+
+                        <div className="cd-doc-section-content">
+                          <div className="cd-child-title cd-doc-section-title">{s.title || s.slug}</div>
+                          {s.excerpt && <div className="cd-child-excerpt cd-doc-section-excerpt">{s.excerpt}</div>}
+                        </div>
+
+                        <span className="cd-doc-section-arrow" aria-hidden="true">
+                          <svg viewBox="0 0 24 24">
+                            <path d="M5 12h13M13 7l5 5-5 5" />
+                          </svg>
+                        </span>
+                      </Link>
+                    </li>
                   );
                 })}
-              </div>
+              </ol>
             </section>
           )}
 
