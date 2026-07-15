@@ -268,3 +268,538 @@
     border-top: 1px solid var(--ifm-color-emphasis-300, rgba(127, 127, 127, 0.28));
   }
 }
+
+/* ==========================================================================
+   CALLOUT « POINTS CLÉS »
+   --------------------------------------------------------------------------
+   Syntaxe :
+     > [!info|points-cles] Points clés
+
+   Le plugin Remark ajoute :
+   - data-callout-metadata="points-cles"
+   - la classe cd-callout--points-cles
+   ========================================================================== */
+
+.cd-callout:is(
+  [data-callout-metadata~="points-cles"],
+  .cd-callout--points-cles
+) {
+  --cd-pc-page-bg: var(--ifm-background-color, #ffffff);
+
+  --cd-pc-border: color-mix(
+    in srgb,
+    var(--cd-callout-border) 20%,
+    transparent
+  );
+  --cd-pc-border-strong: color-mix(
+    in srgb,
+    var(--cd-callout-border) 31%,
+    transparent
+  );
+
+  /* Teinte validée : 3 % de la couleur du callout. */
+  --cd-pc-cell-bg: color-mix(
+    in srgb,
+    var(--cd-pc-page-bg) 97%,
+    var(--cd-callout-border) 3%
+  );
+
+  --cd-pc-head-bg: color-mix(
+    in srgb,
+    var(--cd-pc-page-bg) 82%,
+    var(--cd-callout-border) 18%
+  );
+
+  --cd-pc-check-bg: var(--cd-callout-border);
+  --cd-pc-table-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+}
+
+[data-theme="dark"]
+.cd-callout:is(
+  [data-callout-metadata~="points-cles"],
+  .cd-callout--points-cles
+) {
+  --cd-pc-page-bg: var(--ifm-background-color, #191919);
+
+  --cd-pc-border: color-mix(
+    in srgb,
+    var(--cd-callout-border) 27%,
+    transparent
+  );
+  --cd-pc-border-strong: color-mix(
+    in srgb,
+    var(--cd-callout-border) 39%,
+    transparent
+  );
+
+  --cd-pc-cell-bg: color-mix(
+    in srgb,
+    var(--cd-pc-page-bg) 97%,
+    var(--cd-callout-border) 3%
+  );
+
+  --cd-pc-head-bg: color-mix(
+    in srgb,
+    var(--cd-pc-page-bg) 84%,
+    var(--cd-callout-border) 16%
+  );
+
+  --cd-pc-table-shadow: 0 1px 3px rgba(0, 0, 0, 0.16);
+}
+
+
+/* ==========================================================================
+   TABLEAU
+   ========================================================================== */
+
+.cd-callout:is(
+  [data-callout-metadata~="points-cles"],
+  .cd-callout--points-cles
+)
+.cd-callout-content
+table:not(.cd-imgtable) {
+  width: 100% !important;
+  max-width: 100% !important;
+  table-layout: fixed !important;
+
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+
+  margin: 0.8rem 0 1rem !important;
+  overflow: hidden !important;
+
+  border: 1px solid var(--cd-pc-border-strong) !important;
+  border-radius: 11px !important;
+
+  background: var(--cd-pc-cell-bg) !important;
+  box-shadow: var(--cd-pc-table-shadow) !important;
+}
+
+/* Largeur initiale des deux colonnes. */
+.cd-callout:is(
+  [data-callout-metadata~="points-cles"],
+  .cd-callout--points-cles
+)
+.cd-callout-content
+table:not(.cd-imgtable)
+:is(th, td):first-child {
+  width: 31% !important;
+}
+
+.cd-callout:is(
+  [data-callout-metadata~="points-cles"],
+  .cd-callout--points-cles
+)
+.cd-callout-content
+table:not(.cd-imgtable)
+:is(thead, thead tr, tbody tr) {
+  background: transparent !important;
+}
+
+/* Le THEAD reste le seul grand niveau d'en-tête coloré. */
+.cd-callout:is(
+  [data-callout-metadata~="points-cles"],
+  .cd-callout--points-cles
+)
+.cd-callout-content
+table:not(.cd-imgtable)
+thead th {
+  box-sizing: border-box !important;
+  padding: 0.72rem 0.95rem !important;
+
+  border: 0 !important;
+  border-bottom: 1px solid var(--cd-pc-border-strong) !important;
+
+  background: var(--cd-pc-head-bg) !important;
+  color: inherit !important;
+
+  font-size: var(--cd-table-font-size, 0.9em) !important;
+  font-weight: 650 !important;
+  line-height: 1.35 !important;
+  letter-spacing: 0.01em !important;
+  text-align: center !important;
+  text-transform: none !important;
+  vertical-align: middle !important;
+}
+
+.cd-callout:is(
+  [data-callout-metadata~="points-cles"],
+  .cd-callout--points-cles
+)
+.cd-callout-content
+table:not(.cd-imgtable)
+thead th + th {
+  border-left: 1px solid var(--cd-pc-border) !important;
+}
+
+/* Cellules normales : fond légèrement teinté à 3 %. */
+.cd-callout:is(
+  [data-callout-metadata~="points-cles"],
+  .cd-callout--points-cles
+)
+.cd-callout-content
+table:not(.cd-imgtable)
+tbody td {
+  box-sizing: border-box !important;
+  padding: 0.82rem 0.95rem !important;
+
+  border: 0 !important;
+  border-bottom: 1px solid var(--cd-pc-border) !important;
+
+  background: var(--cd-pc-cell-bg) !important;
+  color: inherit !important;
+
+  font-size: var(--cd-table-font-size, 0.9em) !important;
+  line-height: 1.55 !important;
+  text-align: left !important;
+  vertical-align: middle !important;
+}
+
+.cd-callout:is(
+  [data-callout-metadata~="points-cles"],
+  .cd-callout--points-cles
+)
+.cd-callout-content
+table:not(.cd-imgtable)
+tbody td + td {
+  border-left: 1px solid var(--cd-pc-border) !important;
+}
+
+.cd-callout:is(
+  [data-callout-metadata~="points-cles"],
+  .cd-callout--points-cles
+)
+.cd-callout-content
+table:not(.cd-imgtable)
+tbody tr:last-child > td {
+  border-bottom: 0 !important;
+}
+
+/* Un H4 dans le TBODY reste un simple libellé :
+   il ne recolore jamais la cellule comme un TH. */
+.cd-callout:is(
+  [data-callout-metadata~="points-cles"],
+  .cd-callout--points-cles
+)
+.cd-callout-content
+table:not(.cd-imgtable)
+tbody td:has(h4) {
+  background: var(--cd-pc-cell-bg) !important;
+  border-color: var(--cd-pc-border) !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+}
+
+.cd-callout:is(
+  [data-callout-metadata~="points-cles"],
+  .cd-callout--points-cles
+)
+.cd-callout-content
+table:not(.cd-imgtable)
+tbody td h4 {
+  display: block !important;
+  width: auto !important;
+  height: auto !important;
+
+  margin: 0 !important;
+  padding: 0 !important;
+
+  background: transparent !important;
+  color: inherit !important;
+
+  font-family: inherit !important;
+  font-size: 0.98em !important;
+  font-weight: 650 !important;
+  line-height: 1.4 !important;
+
+  text-align: center !important;
+  text-transform: none !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  word-break: break-word !important;
+}
+
+/* Même aération pour les blocs internes des cellules. */
+.cd-callout:is(
+  [data-callout-metadata~="points-cles"],
+  .cd-callout--points-cles
+)
+.cd-callout-content
+table:not(.cd-imgtable)
+:is(td, th)
+:is(p, ul, ol) {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+
+  line-height: 1.55 !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  word-break: break-word !important;
+}
+
+.cd-callout:is(
+  [data-callout-metadata~="points-cles"],
+  .cd-callout--points-cles
+)
+.cd-callout-content
+table:not(.cd-imgtable)
+:is(td, th)
+:is(p, ul, ol):not(:last-child) {
+  margin-bottom: 0.5em !important;
+}
+
+
+/* ==========================================================================
+   SÉPARATEUR
+   ========================================================================== */
+
+.cd-callout:is(
+  [data-callout-metadata~="points-cles"],
+  .cd-callout--points-cles
+)
+.cd-callout-content
+.callout-divider {
+  display: block !important;
+
+  width: 100% !important;
+  height: 1px !important;
+  min-height: 1px !important;
+
+  margin: 0.95rem 0 0.9rem !important;
+  padding: 0 !important;
+
+  border: 0 !important;
+  border-radius: 0 !important;
+
+  background: var(--cd-pc-border-strong) !important;
+  box-shadow: none !important;
+  opacity: 1 !important;
+}
+
+/* Compatibilité avec un séparateur Markdown --- déjà présent. */
+.cd-callout:is(
+  [data-callout-metadata~="points-cles"],
+  .cd-callout--points-cles
+)
+.cd-callout-content
+hr {
+  display: block !important;
+  box-sizing: border-box !important;
+
+  width: 100% !important;
+  height: 0 !important;
+
+  margin: 0.95rem 0 0.9rem !important;
+  padding: 0 !important;
+
+  border: 0 !important;
+  border-top: 1px solid var(--cd-pc-border-strong) !important;
+
+  background: transparent !important;
+  box-shadow: none !important;
+  opacity: 1 !important;
+}
+
+
+/* ==========================================================================
+   CONCLUSIONS AVEC COCHES BLEUES
+   ========================================================================== */
+
+.cd-callout:is(
+  [data-callout-metadata~="points-cles"],
+  .cd-callout--points-cles
+)
+.cd-callout-content > ul {
+  margin: 0 !important;
+  padding: 0 !important;
+
+  list-style: none !important;
+  list-style-type: none !important;
+}
+
+.cd-callout:is(
+  [data-callout-metadata~="points-cles"],
+  .cd-callout--points-cles
+)
+.cd-callout-content > ul > li {
+  position: relative !important;
+
+  margin: 0.62rem 0 !important;
+  padding: 0 0 0 1.9rem !important;
+
+  line-height: 1.55 !important;
+
+  list-style: none !important;
+  list-style-type: none !important;
+}
+
+.cd-callout:is(
+  [data-callout-metadata~="points-cles"],
+  .cd-callout--points-cles
+)
+.cd-callout-content > ul > li::marker {
+  content: "" !important;
+  color: transparent !important;
+  font-size: 0 !important;
+}
+
+.cd-callout:is(
+  [data-callout-metadata~="points-cles"],
+  .cd-callout--points-cles
+)
+.cd-callout-content > ul > li::before {
+  content: "✓" !important;
+
+  position: absolute !important;
+  left: 0 !important;
+  top: 0.18em !important;
+
+  display: grid !important;
+  place-items: center !important;
+
+  width: 1.12rem !important;
+  height: 1.12rem !important;
+
+  margin: 0 !important;
+  padding: 0 !important;
+
+  border: 0 !important;
+  border-radius: 50% !important;
+
+  background: var(--cd-pc-check-bg) !important;
+  box-shadow:
+    0 0 0 1px color-mix(
+      in srgb,
+      var(--cd-callout-border) 8%,
+      transparent
+    ),
+    0 1px 2px rgba(15, 23, 42, 0.1) !important;
+
+  color: #ffffff !important;
+
+  font-family: Arial, sans-serif !important;
+  font-size: 0.72rem !important;
+  font-weight: 800 !important;
+  line-height: 1 !important;
+  text-align: center !important;
+}
+
+
+/* ==========================================================================
+   AFFICHAGE ÉTROIT
+   ========================================================================== */
+
+@media (max-width: 620px) {
+  .cd-callout:is(
+    [data-callout-metadata~="points-cles"],
+    .cd-callout--points-cles
+  )
+  .cd-callout-content
+  table:not(.cd-imgtable) {
+    table-layout: auto !important;
+  }
+
+  .cd-callout:is(
+    [data-callout-metadata~="points-cles"],
+    .cd-callout--points-cles
+  )
+  .cd-callout-content
+  table:not(.cd-imgtable)
+  thead {
+    display: none !important;
+  }
+
+  .cd-callout:is(
+    [data-callout-metadata~="points-cles"],
+    .cd-callout--points-cles
+  )
+  .cd-callout-content
+  table:not(.cd-imgtable),
+  .cd-callout:is(
+    [data-callout-metadata~="points-cles"],
+    .cd-callout--points-cles
+  )
+  .cd-callout-content
+  table:not(.cd-imgtable)
+  tbody,
+  .cd-callout:is(
+    [data-callout-metadata~="points-cles"],
+    .cd-callout--points-cles
+  )
+  .cd-callout-content
+  table:not(.cd-imgtable)
+  tr,
+  .cd-callout:is(
+    [data-callout-metadata~="points-cles"],
+    .cd-callout--points-cles
+  )
+  .cd-callout-content
+  table:not(.cd-imgtable)
+  td {
+    display: block !important;
+    width: 100% !important;
+  }
+
+  .cd-callout:is(
+    [data-callout-metadata~="points-cles"],
+    .cd-callout--points-cles
+  )
+  .cd-callout-content
+  table:not(.cd-imgtable)
+  tbody tr {
+    border-bottom: 1px solid var(--cd-pc-border) !important;
+  }
+
+  .cd-callout:is(
+    [data-callout-metadata~="points-cles"],
+    .cd-callout--points-cles
+  )
+  .cd-callout-content
+  table:not(.cd-imgtable)
+  tbody tr:last-child {
+    border-bottom: 0 !important;
+  }
+
+  .cd-callout:is(
+    [data-callout-metadata~="points-cles"],
+    .cd-callout--points-cles
+  )
+  .cd-callout-content
+  table:not(.cd-imgtable)
+  tbody td {
+    border: 0 !important;
+  }
+
+  .cd-callout:is(
+    [data-callout-metadata~="points-cles"],
+    .cd-callout--points-cles
+  )
+  .cd-callout-content
+  table:not(.cd-imgtable)
+  tbody td:first-child {
+    padding-bottom: 0.55rem !important;
+    text-align: left !important;
+  }
+
+  .cd-callout:is(
+    [data-callout-metadata~="points-cles"],
+    .cd-callout--points-cles
+  )
+  .cd-callout-content
+  table:not(.cd-imgtable)
+  tbody td:first-child h4 {
+    text-align: left !important;
+  }
+
+  .cd-callout:is(
+    [data-callout-metadata~="points-cles"],
+    .cd-callout--points-cles
+  )
+  .cd-callout-content
+  table:not(.cd-imgtable)
+  tbody td + td {
+    padding-top: 0.7rem !important;
+    border-top: 1px solid var(--cd-pc-border) !important;
+  }
+}
+

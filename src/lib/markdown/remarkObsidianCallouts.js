@@ -339,6 +339,18 @@ function normalizeOption(option) {
   return String(option || '').trim().toLowerCase();
 }
 
+function optionToClassToken(option) {
+  return normalizeOption(option)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9_-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+function getMetadataTokens(options) {
+  return (options || []).map(optionToClassToken).filter(Boolean);
+}
+
 function hasOption(options, wanted) {
   const key = normalizeOption(wanted);
   return (options || []).some((option) => normalizeOption(option) === key);
@@ -512,8 +524,18 @@ export function remarkObsidianCallouts() {
 
       const h = prepareHProperties(node);
 
-      h.className = appendClasses(h.className, ['cd-callout', `cd-callout-${calloutType}`]);
+      const metadataTokens = getMetadataTokens(marker.options);
+
+      h.className = appendClasses(h.className, [
+        'cd-callout',
+        `cd-callout-${calloutType}`,
+        ...metadataTokens.map((token) => `cd-callout--${token}`),
+      ]);
       h['data-callout'] = calloutType;
+
+      if (metadataTokens.length) {
+        h['data-callout-metadata'] = metadataTokens.join(' ');
+      }
 
       if (!contentExists) h.className.push('cd-callout--title-only');
 

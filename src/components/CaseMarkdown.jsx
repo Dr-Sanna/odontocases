@@ -17,6 +17,45 @@ import ClassificationDiagram, {
   resolveHeadingDrivenClassificationDiagramSpec,
 } from "./ClassificationDiagram";
 
+
+function appendSanitizeAttributes(schema, tagName, attributes) {
+  const current = Array.isArray(schema?.attributes?.[tagName])
+    ? schema.attributes[tagName]
+    : [];
+  const currentStrings = new Set(
+    current.filter((entry) => typeof entry === "string")
+  );
+  const additions = attributes.filter(
+    (attribute) => !currentStrings.has(attribute)
+  );
+
+  return {
+    ...schema,
+    attributes: {
+      ...(schema?.attributes || {}),
+      [tagName]: [...current, ...additions],
+    },
+  };
+}
+
+/*
+ * Les callouts sont construits par Remark puis passent par rehype-sanitize.
+ * Ces attributs permettent de conserver :
+ * - la variante [!info|points-cles] ;
+ * - la classe du séparateur <div class="callout-divider"></div>.
+ */
+const caseMarkdownSanitizeSchema = appendSanitizeAttributes(
+  ckeditorSchema,
+  "div",
+  [
+    "className",
+    "dataCallout",
+    "dataCalloutMetadata",
+    "data-callout",
+    "data-callout-metadata",
+  ]
+);
+
 /* =========================
    Normalisation spécifique CKEditor
    ========================= */
@@ -553,7 +592,7 @@ const CaseMarkdown = memo(function CaseMarkdown({ children, scopeKey = "" }) {
     () => [
       rehypeRaw,
       rehypePHash5ToH5,
-      [rehypeSanitize, ckeditorSchema],
+      [rehypeSanitize, caseMarkdownSanitizeSchema],
       rehypeSlug,
     ],
     []
