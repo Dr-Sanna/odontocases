@@ -1276,9 +1276,23 @@ padding: 1.05rem 1.15rem;
 }
 
 /* =========================
-   override cartes numéro et flèche
+   overrides
    ========================= */
 .cd-doc-section-visual,
 .cd-doc-section-arrow {
   display: none !important;
+}
+
+/* Lorsqu'une liste de sections suit le contenu,
+   le dernier bloc Markdown ne conserve pas sa marge basse. */
+.casedetail
+  > .cd-content:has(+ .cd-doc-sections)
+  > :last-child
+  > :where(p, ul, ol, blockquote, figure, table, pre):last-child {
+  margin-bottom: 0;
+}
+
+/* Le rythme avant le titre est alors entièrement géré par le H2. */
+.cd-doc-sections {
+  margin-top: 0;
 }

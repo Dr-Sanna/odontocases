@@ -861,14 +861,13 @@ hr {
   margin: 1rem 0;
   padding: 1.1rem 1.25rem 1.2rem;
 
-  border: 1px solid var(--cd-pc-outer-border);
   border-left: 4px solid var(--cd-pc-accent);
   border-radius: 0.75rem;
 
   background: var(--cd-pc-panel-bg);
   color: var(--ifm-color-info-contrast-foreground);
 
-  box-shadow: 0 2px 8px rgb(0 0 0 / 6%);
+
 }
 
 
