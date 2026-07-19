@@ -459,17 +459,57 @@ figcaption {
 .cd-content table.cd-imgtable td {
   display: table-cell;
   border: 1px solid var(--cd-table-border) !important;
-  padding: 0.35rem;
+  padding: var(--cd-table-padding);
   vertical-align: top;
-  text-align: center;
+  text-align: left;
+  font-size: var(--cd-table-font-size);
+  line-height: 1.5;
 }
 
+/*
+ * Les tableaux contenant des images gardent une typographie de tableau
+ * normale. Seules les cellules qui contiennent effectivement une image
+ * sont centrées par la règle dédiée située juste après.
+ */
 
-/* centre le contenu des cellules avec image */
-.cd-content table td:has(img) {
+
+/* centre uniquement les cellules qui contiennent une image */
+.cd-content table.cd-imgtable td:has(img) {
   text-align: center;
   padding-top: 0.35rem;
   padding-bottom: 0.35rem;
+}
+
+/* H4 utilisés comme en-têtes dans les tableaux d’images */
+.cd-content table.cd-imgtable :is(td, th):has(> h4) {
+  background: var(--cd-table-bg-head) !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+  font-weight: 600 !important;
+  text-transform: none !important;
+}
+
+.cd-content table.cd-imgtable :is(td, th) > h4 {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  color: inherit !important;
+  background: transparent !important;
+  font-family: inherit !important;
+  font-size: inherit !important;
+  line-height: inherit !important;
+  font-weight: 600 !important;
+  text-align: center !important;
+  text-transform: none !important;
+}
+
+/* Pas de marge résiduelle sous le dernier paragraphe d’une cellule */
+.cd-content table.cd-imgtable td > p:last-child,
+.cd-content table.cd-imgtable th > p:last-child {
+  margin-bottom: 0;
 }
 
 /* figure shrink-to-fit par défaut (important pour 1 colonne) */
