@@ -32,6 +32,18 @@ function stableShuffle(arr, seedStr) {
   return a;
 }
 
+function getOptionLetter(i) {
+  return String.fromCharCode(65 + i);
+}
+
+function StatusIcon({ type = 'ok' }) {
+  return (
+    <span className={[ 'quiz-status-icon', type === 'ko' ? 'is-ko' : 'is-ok' ].join(' ')} aria-hidden="true">
+      {type === 'ko' ? '✕' : '✓'}
+    </span>
+  );
+}
+
 export default function QuizBlock({
   block,
   index = 0,
@@ -108,6 +120,7 @@ export default function QuizBlock({
         {propositions.map((p, i) => {
           const isSelected = selectedId === p._id;
           const showState = checkedOnce && result != null;
+          const letter = getOptionLetter(i);
 
           const optionClass = [
             'quiz-option',
@@ -148,6 +161,14 @@ export default function QuizBlock({
                   onChange={() => onSelect(p._id)}
                 />
 
+                <span className="quiz-control" aria-hidden="true">
+                  <span className="quiz-control-dot" />
+                </span>
+
+                <span className="quiz-choice-badge" aria-hidden="true">
+                  {letter}
+                </span>
+
                 <label
                   className="quiz-label-text"
                   htmlFor={inputId}
@@ -155,6 +176,7 @@ export default function QuizBlock({
                 >
                   {p.label}
                 </label>
+
               </div>
 
               {showState && isSelected && p.feedback && (
@@ -185,9 +207,10 @@ export default function QuizBlock({
       </div>
 
       {checkedOnce && (
-        <div className="quiz-answer">
+        <div className={['quiz-answer', result?.ok ? 'is-ok' : 'is-ko'].join(' ')}>
           <h4 className={['quiz-answer-title', result?.ok ? 'is-ok' : 'is-ko'].join(' ')}>
-            {answerTitle}
+            <StatusIcon type={result?.ok ? 'ok' : 'ko'} />
+            <span>{answerTitle}</span>
           </h4>
 
           {explanation && (
