@@ -103,6 +103,11 @@ function normalizeRelationArray(rel) {
   if (Array.isArray(rel?.results)) return rel.results.map(normalizeEntity).filter(Boolean);
   return [];
 }
+function normalizeRelationEntity(rel) {
+  if (!rel) return null;
+  if (rel?.data) return normalizeEntity(rel.data);
+  return normalizeEntity(rel);
+}
 
 /** Badge helpers (pathologies.badges) */
 function pickPrimaryBadge(badgesRel) {
@@ -318,6 +323,24 @@ function getCreditsMarkdown(item) {
   if (!references && !copyright) return '';
 
   return [references, copyright].filter(Boolean).join('\n\n');
+}
+
+function mergeCreditsMarkdown(...items) {
+  const seen = new Set();
+  const blocks = [];
+
+  items.forEach((creditItem) => {
+    const markdown = getCreditsMarkdown(creditItem);
+    if (!markdown) return;
+
+    const dedupeKey = markdown.replace(/\s+/g, ' ').trim();
+    if (seen.has(dedupeKey)) return;
+
+    seen.add(dedupeKey);
+    blocks.push(markdown);
+  });
+
+  return blocks.join('\n\n');
 }
 
 /* =========================
@@ -656,7 +679,17 @@ export default function CaseDetail(props) {
         publicationState: PUB_STATE,
         populate: {
           cover: { fields: ['url', 'formats'] },
-          parent: { populate: { parent: { populate: { parent: true } } } },
+          parent: {
+            fields: ['title', 'slug', 'level', 'credits', 'references', 'copyright'],
+            populate: {
+              parent: {
+                fields: ['title', 'slug', 'level'],
+                populate: {
+                  parent: { fields: ['title', 'slug', 'level'] },
+                },
+              },
+            },
+          },
         },
         fields: ['title', 'slug', 'level', 'excerpt', 'content', 'updatedAt', 'credits', 'references', 'copyright'],
         pagination: { page: 1, pageSize: 1 },
@@ -1171,7 +1204,17 @@ export default function CaseDetail(props) {
     return Array.isArray(docCurrentItemSections) ? docCurrentItemSections : [];
   }, [isDocItemPage, docCurrentItemSections]);
 
-  const creditsMarkdown = getCreditsMarkdown(displayItem);
+  const docParentItem = useMemo(() => {
+    if (!isDocNamespace || displayItem?.level !== 'section') return null;
+
+    const parent = normalizeRelationEntity(displayItem?.parent);
+    return parent?.level === 'item' ? parent : null;
+  }, [isDocNamespace, displayItem]);
+
+  const creditsMarkdown =
+    isDocNamespace && displayItem?.level === 'section'
+      ? mergeCreditsMarkdown(docParentItem, displayItem)
+      : getCreditsMarkdown(displayItem);
   const showExtras = Boolean(creditsMarkdown);
 
   const markdownScopeKey = String(displayItem?.slug || displayItem?.id || 'x');
