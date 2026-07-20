@@ -167,7 +167,20 @@ li > ol {
    ========================= */
 .cd-content {
   --cd-table-border: rgba(0, 0, 0, 0.12);
-  --cd-table-bg-head: rgba(0, 0, 0, 0.03);
+
+  /* Teintes issues de la palette primaire du site. */
+  --cd-table-bg-head: color-mix(
+    in srgb,
+    var(--ifm-color-primary) 8%,
+    var(--ifm-background-surface-color)
+  );
+  --cd-table-bg-title: color-mix(
+    in srgb,
+    var(--ifm-color-primary) 4%,
+    var(--ifm-background-surface-color)
+  );
+  --cd-table-heading-color: var(--ifm-color-primary-darkest);
+
   --cd-table-code-bg: #f6f8fa;
   --cd-table-font-size: 0.9em;
   --cd-table-padding: 0.5em 0.5em;
@@ -175,7 +188,17 @@ li > ol {
 
 [data-theme="dark"] .cd-content {
   --cd-table-border: rgba(255, 255, 255, 0.14);
-  --cd-table-bg-head: rgba(255, 255, 255, 0.06);
+  --cd-table-bg-head: color-mix(
+    in srgb,
+    var(--ifm-color-primary) 14%,
+    var(--ifm-background-surface-color)
+  );
+  --cd-table-bg-title: color-mix(
+    in srgb,
+    var(--ifm-color-primary) 7%,
+    var(--ifm-background-surface-color)
+  );
+  --cd-table-heading-color: var(--ifm-color-primary-lightest);
   --cd-table-code-bg: rgba(255, 255, 255, 0.08);
 }
 
@@ -226,9 +249,12 @@ li > ol {
 
 .cd-content table:not(.cd-imgtable) th {
   background: var(--cd-table-bg-head);
+  color: var(--cd-table-heading-color);
+  padding: 0.65em 0.75em;
   font-weight: 600;
   text-align: center;
   vertical-align: middle;
+  letter-spacing: 0.025em;
 }
 
 .cd-content table:not(.cd-imgtable) strong,
@@ -262,14 +288,18 @@ li > ol {
    ========================= */
 .cd-content table:not(.cd-imgtable) th {
   background: var(--cd-table-bg-head) !important;
+  color: var(--cd-table-heading-color) !important;
+  padding: 0.65em 0.75em !important;
   font-weight: 600 !important;
   text-align: center !important;
   vertical-align: middle !important;
+  letter-spacing: 0.025em !important;
   text-transform: uppercase !important;
 }
 
 .cd-content table:not(.cd-imgtable) :is(td, th):has(h4) {
-  background: var(--cd-table-bg-head) !important;
+  background: var(--cd-table-bg-title) !important;
+  padding: 0.6em 0.7em !important;
   font-weight: 600 !important;
   text-align: center !important;
   vertical-align: middle !important;
@@ -314,6 +344,7 @@ li > ol {
   line-height: inherit !important;
   font-weight: 600 !important;
   text-align: center !important;
+  letter-spacing: 0.01em !important;
   text-transform: none !important;
 }
 
@@ -481,8 +512,20 @@ figcaption {
 }
 
 /* H4 utilisés comme en-têtes dans les tableaux d’images */
-.cd-content table.cd-imgtable :is(td, th):has(> h4) {
+.cd-content table.cd-imgtable th {
   background: var(--cd-table-bg-head) !important;
+  color: var(--cd-table-heading-color) !important;
+  padding: 0.65em 0.75em !important;
+  font-weight: 600 !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+  letter-spacing: 0.025em !important;
+  text-transform: uppercase !important;
+}
+
+.cd-content table.cd-imgtable :is(td, th):has(> h4) {
+  background: var(--cd-table-bg-title) !important;
+  padding: 0.6em 0.7em !important;
   text-align: center !important;
   vertical-align: middle !important;
   font-weight: 600 !important;
@@ -503,6 +546,7 @@ figcaption {
   line-height: inherit !important;
   font-weight: 600 !important;
   text-align: center !important;
+  letter-spacing: 0.01em !important;
   text-transform: none !important;
 }
 
