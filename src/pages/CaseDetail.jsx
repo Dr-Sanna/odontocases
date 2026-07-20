@@ -6,6 +6,7 @@ import PageTitle from '../components/PageTitle';
 import Breadcrumbs from '../components/Breadcrumbs';
 import QuizBlock from '../components/QuizBlock';
 import CaseMarkdown from '../components/CaseMarkdown';
+import CaseDetailOutline, { useCaseDetailOutline } from '../components/CaseDetailOutline';
 
 import { strapiFetch, imgUrl, isAbortError } from '../lib/strapi';
 import { getCaseFromCache, setCaseToCache, deleteCaseFromCache, prefetchCase } from '../lib/caseCache';
@@ -27,6 +28,7 @@ const DOCS_ENDPOINT = import.meta.env.VITE_DOCS_ENDPOINT || '/doc-nodes';
 const PUB_STATE = import.meta.env.DEV ? 'preview' : 'live';
 
 const LS_KEY_COLLAPSE = 'cd-sidebar-collapsed';
+const LS_KEY_SIDEBAR_VIEW = 'cd-sidebar-view';
 const LS_KEY_EXPANDED_PATHOLOGY = 'cd-expanded-pathology';
 const LS_KEY_EXPANDED_DOC_ITEM = 'cd-expanded-doc-item';
 
@@ -1160,9 +1162,16 @@ export default function CaseDetail(props) {
     qrHubTo,
   ]);
 
-  // Lightbox
+  // Lightbox + plan de l'article
   const [lightbox, setLightbox] = useState(null);
   const contentRef = useRef(null);
+  const outlineRootRef = useRef(null);
+  const markdownScopeKey = String(displayItem?.slug || displayItem?.id || expectedSlug || 'x');
+  const {
+    items: outlineItems,
+    activeId: activeOutlineId,
+    scrollToHeading: scrollToOutlineHeading,
+  } = useCaseDetailOutline(outlineRootRef, markdownScopeKey);
 
   useEffect(() => {
     const el = contentRef.current;
@@ -1217,8 +1226,6 @@ export default function CaseDetail(props) {
       : getCreditsMarkdown(displayItem);
   const showExtras = Boolean(creditsMarkdown);
 
-  const markdownScopeKey = String(displayItem?.slug || displayItem?.id || 'x');
-
   return (
     <div className={['cd-shell', collapsed ? 'is-collapsed' : '', drawerOpen ? 'is-drawer-open' : ''].join(' ')}>
       <Aside
@@ -1246,6 +1253,9 @@ export default function CaseDetail(props) {
         setCurrentDocSections={setDocCurrentItemSections}
         pubState={PUB_STATE}
         refreshToken={refreshToken}
+        outlineItems={outlineItems}
+        activeOutlineId={activeOutlineId}
+        onOutlineNavigate={scrollToOutlineHeading}
       />
 
       {drawerOpen && (
@@ -1288,7 +1298,7 @@ export default function CaseDetail(props) {
         {error && <div className="cd-state error">{error}</div>}
 
         <article className="casedetail" ref={contentRef}>
-          <div className="cd-content">
+          <div className="cd-content" ref={outlineRootRef}>
             <PageTitle description={displayItem?.excerpt || ''}>{displayTitle}</PageTitle>
 
             {displayItem?.content ? (
@@ -1506,9 +1516,28 @@ function Aside({
   setCurrentDocSections,
   pubState,
   refreshToken,
+  outlineItems,
+  activeOutlineId,
+  onOutlineNavigate,
 }) {
   const [loadingList, setLoadingList] = useState(false);
   const [errList, setErrList] = useState('');
+  const [sidebarView, setSidebarView] = useState(() => {
+    try {
+      return localStorage.getItem(LS_KEY_SIDEBAR_VIEW) === 'outline' ? 'outline' : 'list';
+    } catch {
+      return 'list';
+    }
+  });
+
+  const selectSidebarView = (nextView) => {
+    const normalizedView = nextView === 'outline' ? 'outline' : 'list';
+    setSidebarView(normalizedView);
+
+    try {
+      localStorage.setItem(LS_KEY_SIDEBAR_VIEW, normalizedView);
+    } catch {}
+  };
 
   const [caseList, setCaseList] = useState([]);
   const [pathoList, setPathoList] = useState([]);
@@ -2004,17 +2033,6 @@ function Aside({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, currentType, docChapterSlug, docItemSlug, pubState, refreshToken]);
 
-  const label =
-    mode === 'presentation'
-      ? 'Atlas'
-      : mode === 'docs'
-        ? 'Items'
-        : currentType === 'qa'
-          ? 'Cas Q/R'
-          : currentType === 'quiz'
-            ? 'Quiz'
-            : 'Cas';
-
   const showNavInsteadOfCases = isNarrow && drawerView === 'nav';
 
   const onAsideTransitionEnd = (e) => {
@@ -2038,7 +2056,13 @@ function Aside({
 
             <ul className="cd-side-list">
               <li>
-                <button type="button" className="cd-side-back" onClick={() => setDrawerView('cases')}>
+                <button
+                  type="button"
+                  className="cd-side-back"
+                  onClick={() => {
+                    setDrawerView('cases');
+                  }}
+                >
                   ← Liste
                 </button>
               </li>
@@ -2084,13 +2108,43 @@ function Aside({
               </div>
             )}
 
-            <div className="cd-side-header">{label}</div>
+            <div className="cd-side-view-switch" role="group" aria-label="Affichage de la barre latérale">
+              <button
+                type="button"
+                aria-pressed={sidebarView === 'list'}
+                className={sidebarView === 'list' ? 'is-active' : ''}
+                onClick={() => selectSidebarView('list')}
+              >
+                Liste
+              </button>
+              <button
+                type="button"
+                aria-pressed={sidebarView === 'outline'}
+                className={sidebarView === 'outline' ? 'is-active' : ''}
+                onClick={() => selectSidebarView('outline')}
+              >
+                Plan
+              </button>
+            </div>
 
-            {loadingList && !hasList && <div className="cd-side-state">Chargement…</div>}
-            {errList && !loadingList && <div className="cd-side-state error">{errList}</div>}
+            {sidebarView === 'outline' && (
+              <CaseDetailOutline
+                items={outlineItems}
+                activeId={activeOutlineId}
+                onSelect={(headingId) => {
+                  if (typeof onOutlineNavigate === 'function') onOutlineNavigate(headingId);
+                  if (isNarrow) closeMobile();
+                }}
+              />
+            )}
+
+            {sidebarView === 'list' && loadingList && !hasList && <div className="cd-side-state">Chargement…</div>}
+            {sidebarView === 'list' && errList && !loadingList && (
+              <div className="cd-side-state error">{errList}</div>
+            )}
 
             {/* DOCS */}
-            {!errList && mode === 'docs' && docSubjectSlug && docChapterSlug && (
+            {sidebarView === 'list' && !errList && mode === 'docs' && docSubjectSlug && docChapterSlug && (
               <ul className="cd-side-list">
                 {docItems.map((it) => {
                   const isInItem = it.slug === docItemSlug;
@@ -2210,7 +2264,7 @@ function Aside({
             )}
 
             {/* CASES (qa/quiz) */}
-            {!errList && mode === 'cases' && (
+            {sidebarView === 'list' && !errList && mode === 'cases' && (
               <ul className="cd-side-list">
                 {caseList.map((it) => {
                   const isCurrent = it.slug === currentCaseSlug;
@@ -2246,7 +2300,7 @@ function Aside({
             )}
 
             {/* PRESENTATION (atlas) */}
-            {!errList && mode === 'presentation' && (
+            {sidebarView === 'list' && !errList && mode === 'presentation' && (
               <ul className="cd-side-list">
                 {pathoList.map((p) => {
                   const isCurrentPatho = p.slug === currentPathologySlug && !currentCaseSlug;
