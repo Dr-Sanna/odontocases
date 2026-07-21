@@ -94,12 +94,15 @@ a.breadcrumbs__link:any-link:hover {
 
 /* =========================
    Desktop : une seule ligne
-   - les éléments précédents gardent leur largeur naturelle
-   - le dernier élément absorbe l'espace restant
-   - s'il est trop long, il est tronqué avec une ellipse
+   - l'accueil et les séparateurs gardent toujours leur largeur
+   - les puces courtes restent à leur largeur naturelle
+   - seules les puces réellement longues reçoivent une largeur maximale
+     calculée par Breadcrumbs.jsx
    ========================= */
 @media (min-width: 781px) {
   .breadcrumbsContainer_Wvrh {
+    width: 100%;
+    max-width: 100%;
     min-width: 0;
     overflow: hidden;
   }
@@ -109,33 +112,43 @@ a.breadcrumbs__link:any-link:hover {
     align-items: center;
     flex-wrap: nowrap;
     width: 100%;
+    max-width: 100%;
     min-width: 0;
+    margin: 0;
     overflow: hidden;
     white-space: nowrap;
   }
 
   .breadcrumbs__item {
     display: flex;
-    align-items: center;
     flex: 0 0 auto;
+    align-items: center;
     min-width: 0;
+  }
+
+  .breadcrumbs__item:first-child {
+    flex: 0 0 auto;
   }
 
   .breadcrumbs__item:not(:last-child)::after {
     flex: 0 0 auto;
   }
 
-  .breadcrumbs__item:last-child {
-    flex: 1 1 auto;
+  .breadcrumbs__item:not(:first-child) .breadcrumbs__link {
+    display: inline-flex;
+    flex: 0 1 auto;
+    width: auto;
+    max-width: var(--breadcrumb-max-width, none);
     min-width: 0;
+    box-sizing: border-box;
     overflow: hidden;
   }
 
-  .breadcrumbs__item:last-child .breadcrumbs__link,
-  .breadcrumbs__item:last-child .breadcrumbs__link > span {
+  .breadcrumbs__item:not(:first-child) .breadcrumbs__link > span {
     display: block;
-    min-width: 0;
+    width: auto;
     max-width: 100%;
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

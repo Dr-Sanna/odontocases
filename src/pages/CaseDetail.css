@@ -9,9 +9,12 @@
   --cd-side-w: var(--cd-side-open-w);
 
   display: grid;
-  grid-template-columns: var(--cd-side-w) 1fr;
+  grid-template-columns: var(--cd-side-w) minmax(0, 1fr);
   gap: 0;
+  width: 100%;
+  max-width: 100%;
   min-height: calc(100vh - var(--ifm-navbar-height));
+  overflow-x: clip;
 
   transition: grid-template-columns 260ms ease;
 }
@@ -424,7 +427,11 @@
    Right column content
    ========================= */
 .cd-main {
+  width: 100%;
+  max-width: 100%;
   min-width: 0;
+  box-sizing: border-box;
+  overflow-x: hidden;
   padding-block: 1rem 2rem;
 
   /* menu ouvert */
@@ -443,8 +450,82 @@
 
 .casedetail {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   padding-right: 0;
 }
+
+/*
+ * Verrouille toute la chaîne de largeur du contenu. Sans ces contraintes,
+ * un enfant à forte largeur intrinsèque (par exemple un diagramme) peut
+ * agrandir la piste de grille et faire dépasser toute la page.
+ */
+.cd-content,
+.cd-page-header,
+.cd-entry-top,
+.cd-entry-heading-copy,
+.cd-entry-hero-copy,
+.cd-entry-hero,
+.cd-entry-body,
+.cd-entry-body > div {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.cd-content h1 {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+/*
+ * Les diagrammes doivent se dimensionner sur la largeur disponible de
+ * CaseDetail, jamais imposer leur largeur intrinsèque à la page entière.
+ * Si un cas extrême reste réellement trop large, le défilement demeure
+ * local au diagramme au lieu de créer un scroll horizontal global.
+ */
+.cd-content .cdg {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-inline: contain;
+}
+
+.cd-content .cdg,
+.cd-content .cdg * {
+  box-sizing: border-box;
+}
+
+.cd-content .cdg :is(
+  .cdg-root,
+  .cdg-root-items,
+  .cdg-cols,
+  .cdg-col,
+  .cdg-node,
+  .cdg-groups,
+  .cdg-list,
+  .cdg-subwrap,
+  .cdg-sublist,
+  .cdg-mixed-rows,
+  .cdg-mixed-row,
+  .cdg-balanced-columns,
+  .cdg-balanced-column-item
+) {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.cd-content .cdg .cdg-chip {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
 
 /* =========================
    Haut de fiche + couverture
