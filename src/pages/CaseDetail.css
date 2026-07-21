@@ -11,7 +11,7 @@
   display: grid;
   grid-template-columns: var(--cd-side-w) 1fr;
   gap: 0;
-  min-height: 100vh;
+  min-height: calc(100vh - var(--ifm-navbar-height));
 
   transition: grid-template-columns 260ms ease;
 }
@@ -447,6 +447,109 @@
 }
 
 /* =========================
+   Haut de fiche + couverture
+   - la couverture commence au niveau des breadcrumbs
+   - le breadcrumb, les badges et le titre la contournent
+   - dès que le bas de l’image est dépassé, le titre reprend toute la largeur
+   ========================= */
+.cd-entry-top,
+.cd-entry-heading-copy,
+.cd-entry-hero-copy,
+.cd-entry-hero,
+.cd-entry-body {
+  min-width: 0;
+}
+
+.cd-entry-top {
+  display: flow-root;
+  width: 100%;
+  margin-bottom: clamp(0.9rem, 1.4vw, 1.2rem);
+}
+
+.cd-entry-top .cd-page-header {
+  margin-bottom: 0.5rem;
+}
+
+.cd-entry-heading-copy {
+  display: block;
+}
+
+.cd-entry-heading-copy .cd-type-badge {
+  margin-bottom: clamp(0.7rem, 1vw, 1rem);
+}
+
+.cd-entry-hero-copy {
+  display: block;
+  width: auto;
+}
+
+.cd-entry-hero {
+  margin-bottom: 0.35rem;
+}
+
+/* =========================
+   Alias de pathologie Atlas
+   - bandeau informatif plus léger qu’un callout
+   - aucune répétition du style des badges d’entête
+   ========================= */
+.cd-aliases {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.25em;
+
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 0.35rem;
+  padding: 0.48rem 0.75rem;
+
+  border-left: 3px solid color-mix(in srgb, var(--ifm-color-primary) 68%, transparent);
+  border-radius: 0 0.5rem 0.5rem 0;
+  background: color-mix(in srgb, var(--ifm-color-primary) 7%, transparent);
+
+  font-size: 0.94rem;
+  line-height: 1.45;
+}
+
+.cd-aliases-label {
+  flex: 0 0 auto;
+  font-weight: 650;
+  color: color-mix(in srgb, var(--ifm-font-color-base) 78%, var(--ifm-color-primary));
+}
+
+.cd-aliases-list {
+  display: inline-flex;
+  flex-wrap: wrap;
+  min-width: 0;
+  gap: 0.18rem 0;
+}
+
+.cd-alias {
+  font-style: italic;
+  color: color-mix(in srgb, var(--ifm-font-color-base) 86%, transparent);
+}
+
+.cd-alias:not(:last-child)::after {
+  content: "/";
+  display: inline-block;
+  margin: 0 0.45rem;
+  opacity: 0.72;
+  font-style: normal;
+}
+
+@media (max-width: 560px) {
+  .cd-aliases {
+    display: block;
+    width: 100%;
+  }
+
+  .cd-aliases-label {
+    display: block;
+    margin-bottom: 0.18rem;
+  }
+}
+
+/* =========================
    Lightbox
    ========================= */
 .lb-backdrop {
@@ -740,80 +843,123 @@
   }
 }
 
+/* =========================
+   Galerie Atlas
+   ========================= */
+.cd-pathology-gallery {
+  margin-top: calc(-1 * var(--ifm-paragraph-margin-bottom));
+  margin-bottom: var(--ifm-paragraph-margin-bottom);
+}
+
+.cd-pathology-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 250px));
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+  justify-content: start;
+}
+
+.cd-gallery-item {
+  min-width: 0;
+  margin: 0;
+  border: 1px solid var(--ifm-toc-border-color);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--ifm-background-surface-color);
+}
+
+.cd-gallery-image-button {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  appearance: none;
+  border: 0;
+  background: transparent;
+  cursor: zoom-in;
+}
+
+.cd-gallery-image-button:focus-visible {
+  outline: 2px solid var(--ifm-color-primary);
+  outline-offset: -2px;
+}
+
+.cd-gallery-image {
+  display: block;
+  width: 100%;
+  height: 190px;
+  margin: 0;
+  object-fit: contain;
+  background: color-mix(in srgb, var(--ifm-background-color) 92%, var(--ifm-font-color-base));
+}
+
+.cd-gallery-caption {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0.65rem 0.75rem 0.75rem;
+  text-align: left;
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+
+.cd-gallery-title {
+  display: block;
+  font-weight: 650;
+}
+
+.cd-gallery-credit {
+  display: block;
+  opacity: 0.78;
+  font-size: 0.82rem;
+}
+
+.cd-gallery-credit a {
+  font-weight: 500;
+}
+
+@media (max-width: 980px) {
+  .cd-pathology-gallery-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    justify-content: stretch;
+  }
+
+  .cd-gallery-image {
+    height: clamp(150px, 22vw, 210px);
+  }
+}
+
+@media (max-width: 560px) {
+  .cd-pathology-gallery-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.6rem;
+  }
+
+  .cd-gallery-image {
+    height: clamp(135px, 38vw, 190px);
+  }
+
+  .cd-gallery-caption {
+    padding: 0.55rem 0.6rem 0.65rem;
+  }
+}
+
 /* ===============================
    Cas associés (pathologie)
-   - H2 inchangé (marges/rhythm conservés)
-   - bouton petit, custom, en absolu en haut à droite
-   - bouton aligné verticalement avec le margin-top du H2
    =============================== */
 
 .cd-related {
   position: relative;
 }
 
-/* Conteneur du header : on ne touche pas au H2 */
 .cd-related-head {
   position: relative;
 }
 
-/* Le H2 reste inchangé (pas de margin override).
-   On réserve juste de la place à droite pour le bouton */
+/* Le bouton anciennement placé à droite du titre n’est plus rendu.
+   Le H2 peut donc utiliser toute la largeur disponible. */
 .cd-related-head .cd-children-title {
-  padding-right: 190px; /* ajuste si le bouton est plus long */
-}
-
-/* Bouton : petit, sobre, fond bleu clair, texte légèrement coloré */
-.cd-related-spoil-btn {
-  position: absolute;
-  right: 0;
-
-  /* s'aligne sur le margin-top du H2 :
-     on se place en haut du header, puis on descend de la même valeur */
-  top: 1.5rem;
-
-  appearance: none;
-  border-radius: 8px;
-  padding: 4px 6px;
-
-  background: #e7f1ff;
-  border: 1px solid rgba(31, 95, 191, 0.22);
-  color: #1f5fbf;
-
-  font-size: 0.82rem;
-  font-weight: 600;
-  line-height: 1.1;
-
-  cursor: pointer;
-}
-
-.cd-related-spoil-btn:hover {
-  background: #dbeaff;
-  border-color: rgba(31, 95, 191, 0.32);
-}
-
-/* Dark mode (si data-theme='dark') */
-[data-theme='dark'] .cd-related-spoil-btn {
-  background: rgba(59, 130, 246, 0.18);
-  border-color: rgba(59, 130, 246, 0.35);
-  color: rgba(191, 219, 254, 0.95);
-}
-
-[data-theme='dark'] .cd-related-spoil-btn:hover {
-  background: rgba(59, 130, 246, 0.24);
-  border-color: rgba(59, 130, 246, 0.45);
-}
-
-/* Mobile : évite chevauchement si nécessaire */
-@media (max-width: 560px) {
-  .cd-related-head .cd-children-title {
-    padding-right: 0;
-  }
-
-  .cd-related-spoil-btn {
-    position: static;
-    margin-top: 8px;
-    display: inline-block;
-  }
+  padding-right: 0;
 }
 
 /* =========================
@@ -954,14 +1100,18 @@
 
 /* =========================
    Sélecteur Liste / Plan
+   - aucun cadre ni padding autour du groupe
+   - onglets affleurants
+   - indicateur discret pour l’onglet actif
    ========================= */
 .cd-side-view-switch {
   flex: 0 0 auto;
   width: 100%;
   box-sizing: border-box;
-  padding: 8px 10px;
+  padding: 0;
+  border: 0;
   border-bottom: 1px solid var(--ifm-toc-border-color);
-  background: var(--ifm-background-color);
+  background: transparent;
 
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -969,15 +1119,17 @@
 }
 
 .cd-side-view-switch button {
+  position: relative;
   appearance: none;
   min-width: 0;
-  min-height: 34px;
+  min-height: 42px;
   margin: 0;
-  padding: 6px 10px;
+  padding: 9px 8px 10px;
 
-  border: 1px solid var(--ifm-toc-border-color);
-  background: var(--ifm-background-surface-color);
-  color: var(--ifm-menu-color);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: color-mix(in srgb, var(--ifm-menu-color) 78%, transparent);
 
   font: inherit;
   font-size: 0.9rem;
@@ -986,35 +1138,41 @@
   text-align: center;
 
   cursor: pointer;
-  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+  transition: background-color 120ms ease, color 120ms ease;
 }
 
-.cd-side-view-switch button:first-child {
-  border-radius: 7px 0 0 7px;
-}
-
-.cd-side-view-switch button:last-child {
-  margin-left: -1px;
-  border-radius: 0 7px 7px 0;
+.cd-side-view-switch button::after {
+  content: "";
+  position: absolute;
+  right: 22%;
+  bottom: 0;
+  left: 22%;
+  height: 2px;
+  border-radius: 999px 999px 0 0;
+  background: transparent;
+  transform: scaleX(0.55);
+  transition: background-color 120ms ease, transform 120ms ease;
 }
 
 .cd-side-view-switch button:hover:not(.is-active) {
   background: var(--ifm-menu-color-background-hover);
+  color: var(--ifm-menu-color);
 }
 
 .cd-side-view-switch button.is-active {
-  position: relative;
-  z-index: 1;
-  border-color: color-mix(in srgb, var(--ifm-color-primary) 48%, var(--ifm-toc-border-color));
-  background: var(--ifm-menu-color-background-active);
+  background: color-mix(in srgb, var(--ifm-menu-color-background-active) 62%, transparent);
   color: var(--ifm-menu-color-active);
 }
 
+.cd-side-view-switch button.is-active::after {
+  background: var(--ifm-color-primary);
+  transform: scaleX(1);
+}
+
 .cd-side-view-switch button:focus-visible {
-  position: relative;
-  z-index: 2;
+  z-index: 1;
   outline: 2px solid var(--ifm-color-primary);
-  outline-offset: 1px;
+  outline-offset: -2px;
 }
 
 .cd-side.is-collapsed .cd-side-view-switch,

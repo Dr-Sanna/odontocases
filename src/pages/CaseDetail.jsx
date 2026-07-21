@@ -26,6 +26,8 @@ const CASES_ENDPOINT = import.meta.env.VITE_CASES_ENDPOINT || '/cases';
 const PATHO_ENDPOINT = import.meta.env.VITE_PATHO_ENDPOINT || '/pathologies';
 const DOCS_ENDPOINT = import.meta.env.VITE_DOCS_ENDPOINT || '/doc-nodes';
 const PUB_STATE = import.meta.env.DEV ? 'preview' : 'live';
+const DOCS_DEFAULT_SUBJECT_SLUG = import.meta.env.VITE_DOCS_DEFAULT_SUBJECT_SLUG || 'moco';
+const DOCS_DEFAULT_CHAPTER_SLUG = import.meta.env.VITE_DOCS_DEFAULT_CHAPTER_SLUG || 'medecine-orale';
 
 const LS_KEY_COLLAPSE = 'cd-sidebar-collapsed';
 const LS_KEY_SIDEBAR_VIEW = 'cd-sidebar-view';
@@ -134,6 +136,60 @@ function normalizeBadgesList(badgesRel) {
 }
 function firstBadgeFromList(list) {
   return Array.isArray(list) && list.length ? list[0] : null;
+}
+
+/** Autres appellations des pathologies Atlas */
+function normalizeAliasesList(aliasesRel, pathologyTitle = '') {
+  const titleKey = String(pathologyTitle || '').trim().toLocaleLowerCase('fr');
+  const seen = new Set();
+
+  return normalizeRelationArray(aliasesRel)
+    .map((entry) => {
+      if (typeof entry === 'string') return entry.trim();
+      if (!entry || typeof entry !== 'object') return '';
+
+      const value = entry.name ?? entry.alias ?? entry.title ?? entry.label ?? entry.value ?? entry.text;
+      return typeof value === 'string' ? value.trim() : '';
+    })
+    .filter((name) => {
+      if (!name) return false;
+      const key = name.toLocaleLowerCase('fr');
+      if (key === titleKey || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+}
+
+/** Galerie structurée des pathologies Atlas */
+function normalizeGalleryList(galleryRel, pathologyTitle = '') {
+  return normalizeRelationArray(galleryRel)
+    .map((entry, index) => {
+      const image = normalizeRelationEntity(entry?.image);
+      if (!image) return null;
+
+      // imgUrl() utilise "thumbnail" par défaut : demander explicitement
+      // un format inexistant permet de retomber sur media.url, donc l’original.
+      const fullImageUrl = imgUrl(image, 'original') || null;
+      const imageUrl = imgUrl(image, 'large') || imgUrl(image, 'medium') || fullImageUrl;
+      if (!imageUrl) return null;
+
+      const fallbackAlt = pathologyTitle
+        ? `${pathologyTitle} — image ${index + 1}`
+        : `Image ${index + 1}`;
+
+      return {
+        ...entry,
+        image,
+        imageUrl,
+        fullImageUrl,
+        alt: entry?.alt || image?.alternativeText || entry?.title || fallbackAlt,
+        title: typeof entry?.title === 'string' ? entry.title.trim() : '',
+        caption: typeof entry?.caption === 'string' ? entry.caption.trim() : '',
+        credit: typeof entry?.credit === 'string' ? entry.credit.trim() : '',
+        sourceUrl: typeof entry?.sourceUrl === 'string' ? entry.sourceUrl.trim() : '',
+      };
+    })
+    .filter(Boolean);
 }
 
 /* ===== Session cache helpers ===== */
@@ -301,12 +357,28 @@ function buildPath(basePath, segments) {
   return '/' + joined.replace(/^\/+/, '');
 }
 
+function isDefaultDocsChapter(subjectSlug, chapterSlug) {
+  return subjectSlug === DOCS_DEFAULT_SUBJECT_SLUG && chapterSlug === DOCS_DEFAULT_CHAPTER_SLUG;
+}
+
+function buildDocPublicPath(
+  basePath,
+  { subjectSlug, chapterSlug, itemSlug = null, sectionSlug = null }
+) {
+  const segments = isDefaultDocsChapter(subjectSlug, chapterSlug)
+    ? [chapterSlug, itemSlug, sectionSlug]
+    : [subjectSlug, chapterSlug, itemSlug, sectionSlug];
+
+  return buildPath(basePath, segments);
+}
+
 function hasMeaningfulContentLike(obj) {
   if (!obj) return false;
   if (typeof obj?.content === 'string' && obj.content.trim().length > 0) return true;
   if (typeof obj?.excerpt === 'string' && obj.excerpt.trim().length > 0) return true;
   if (Array.isArray(obj?.qa_blocks) && obj.qa_blocks.length) return true;
   if (Array.isArray(obj?.quiz_blocks) && obj.quiz_blocks.length) return true;
+  if (Array.isArray(obj?.gallery) && obj.gallery.length) return true;
   if (typeof obj?.credits === 'string' && obj.credits.trim().length > 0) return true;
   if (typeof obj?.references === 'string' && obj.references.trim().length > 0) return true;
   if (typeof obj?.copyright === 'string' && obj.copyright.trim().length > 0) return true;
@@ -574,7 +646,7 @@ export default function CaseDetail(props) {
           locale: 'all',
           publicationState: PUB_STATE,
           populate: {
-            cover: { fields: ['url', 'formats'] },
+            cover: { fields: ['url', 'formats', 'alternativeText', 'name'] },
             ...(withQa ? { qa_blocks: { populate: '*' } } : {}),
             ...(withQuiz ? { quiz_blocks: { populate: { propositions: true } } } : {}),
           },
@@ -604,21 +676,41 @@ export default function CaseDetail(props) {
     if (!attrs) return null;
 
     const coverAttr = attrs?.cover?.data?.attributes || attrs?.cover || null;
-    const coverUrl = imgUrl(coverAttr, 'large') || imgUrl(coverAttr, 'medium') || imgUrl(coverAttr) || null;
+    const coverFullUrl = imgUrl(coverAttr, 'original') || null;
+    const coverUrl = imgUrl(coverAttr, 'large') || imgUrl(coverAttr, 'medium') || coverFullUrl;
+    const coverAlt = coverAttr?.alternativeText || attrs?.title || coverAttr?.name || '';
 
-    return { ...attrs, coverUrl: coverUrl || null };
+    return {
+      ...attrs,
+      coverUrl: coverUrl || null,
+      coverFullUrl: coverFullUrl || coverUrl || null,
+      coverAlt,
+    };
   }
 
   async function loadPathologyBySlug(slugToLoad, { withCases = true, signal } = {}) {
-    const loadOnce = ({ withQa, withQuiz, withCases: withCasesInner }) =>
+    const loadOnce = ({ withQa, withQuiz, withCases: withCasesInner, withGallery, withAliases }) =>
       strapiFetch(PATHO_ENDPOINT, {
         params: {
           filters: { slug: { $eq: slugToLoad } },
           locale: 'all',
           publicationState: PUB_STATE,
           populate: {
-            cover: { fields: ['url', 'formats'] },
+            cover: { fields: ['url', 'formats', 'alternativeText', 'name'] },
             badges: { fields: ['label', 'variant'] }, // ✅ badges
+            ...(withAliases ? { aliases: { fields: ['name'] } } : {}),
+            ...(withGallery
+              ? {
+                  gallery: {
+                    fields: ['alt', 'caption', 'credit', 'sourceUrl', 'title'],
+                    populate: {
+                      image: {
+                        fields: ['url', 'formats', 'alternativeText', 'caption', 'name'],
+                      },
+                    },
+                  },
+                }
+              : {}),
             ...(withQa ? { qa_blocks: { populate: '*' } } : {}),
             ...(withQuiz ? { quiz_blocks: { populate: { propositions: true } } } : {}),
             ...(withCasesInner
@@ -639,18 +731,22 @@ export default function CaseDetail(props) {
 
     let res;
     try {
-      res = await loadOnce({ withQa: true, withQuiz: true, withCases });
+      res = await loadOnce({ withQa: true, withQuiz: true, withCases, withGallery: true, withAliases: true });
     } catch (err) {
       const msg = err?.message || '';
       const qaInvalid = /Invalid key qa_blocks/i.test(msg);
       const quizInvalid = /Invalid key quiz_blocks/i.test(msg);
       const casesInvalid = /Invalid key cases/i.test(msg);
+      const galleryInvalid = /Invalid key gallery/i.test(msg);
+      const aliasesInvalid = /Invalid key aliases/i.test(msg);
 
-      if (qaInvalid || quizInvalid || casesInvalid) {
+      if (qaInvalid || quizInvalid || casesInvalid || galleryInvalid || aliasesInvalid) {
         res = await loadOnce({
           withQa: !qaInvalid,
           withQuiz: !quizInvalid,
           withCases: withCases && !casesInvalid,
+          withGallery: !galleryInvalid,
+          withAliases: !aliasesInvalid,
         });
       } else {
         throw err;
@@ -662,7 +758,9 @@ export default function CaseDetail(props) {
     if (!attrs) return null;
 
     const coverAttr = attrs?.cover?.data?.attributes || attrs?.cover || null;
-    const coverUrl = imgUrl(coverAttr, 'large') || imgUrl(coverAttr, 'medium') || imgUrl(coverAttr) || null;
+    const coverFullUrl = imgUrl(coverAttr, 'original') || null;
+    const coverUrl = imgUrl(coverAttr, 'large') || imgUrl(coverAttr, 'medium') || coverFullUrl;
+    const coverAlt = coverAttr?.alternativeText || attrs?.title || coverAttr?.name || '';
 
     const rel = normalizeRelationArray(attrs?.cases).map((c) => {
       const cCoverAttr = c?.cover?.data?.attributes || c?.cover || null;
@@ -670,7 +768,18 @@ export default function CaseDetail(props) {
       return { ...c, coverUrl: cCoverUrl || null };
     });
 
-    return { ...attrs, coverUrl: coverUrl || null, cases: rel };
+    const gallery = normalizeGalleryList(attrs?.gallery, attrs?.title || slugToLoad);
+    const aliases = normalizeAliasesList(attrs?.aliases, attrs?.title || slugToLoad);
+
+    return {
+      ...attrs,
+      coverUrl: coverUrl || null,
+      coverFullUrl: coverFullUrl || coverUrl || null,
+      coverAlt,
+      cases: rel,
+      gallery,
+      aliases,
+    };
   }
 
   async function loadDocNodeBySlug(slugToLoad, { signal } = {}) {
@@ -680,7 +789,7 @@ export default function CaseDetail(props) {
         locale: 'all',
         publicationState: PUB_STATE,
         populate: {
-          cover: { fields: ['url', 'formats'] },
+          cover: { fields: ['url', 'formats', 'alternativeText', 'name'] },
           parent: {
             fields: ['title', 'slug', 'level', 'credits', 'references', 'copyright'],
             populate: {
@@ -693,7 +802,7 @@ export default function CaseDetail(props) {
             },
           },
         },
-        fields: ['title', 'slug', 'level', 'excerpt', 'content', 'updatedAt', 'credits', 'references', 'copyright'],
+        fields: ['title', 'slug', 'level', 'excerpt', 'content', 'updatedAt', 'credits', 'references', 'copyright', 'sectionsHeading'],
         pagination: { page: 1, pageSize: 1 },
       },
       options: signal ? { signal } : undefined,
@@ -704,9 +813,16 @@ export default function CaseDetail(props) {
     if (!attrs) return null;
 
     const coverAttr = attrs?.cover?.data?.attributes || attrs?.cover || null;
-    const coverUrl = imgUrl(coverAttr, 'large') || imgUrl(coverAttr, 'medium') || imgUrl(coverAttr) || null;
+    const coverFullUrl = imgUrl(coverAttr, 'original') || null;
+    const coverUrl = imgUrl(coverAttr, 'large') || imgUrl(coverAttr, 'medium') || coverFullUrl;
+    const coverAlt = coverAttr?.alternativeText || attrs?.title || coverAttr?.name || '';
 
-    return { ...attrs, coverUrl: coverUrl || null };
+    return {
+      ...attrs,
+      coverUrl: coverUrl || null,
+      coverFullUrl: coverFullUrl || coverUrl || null,
+      coverAlt,
+    };
   }
 
   async function loadDocSectionsForItem(itemSlugToLoad, { signal, force = false } = {}) {
@@ -911,6 +1027,16 @@ export default function CaseDetail(props) {
   const qaList = !isDocNamespace && Array.isArray(displayItem?.qa_blocks) ? displayItem.qa_blocks : [];
   const quizList = !isDocNamespace && Array.isArray(displayItem?.quiz_blocks) ? displayItem.quiz_blocks : [];
 
+  const pathologyGallery = useMemo(() => {
+    if (!isPathologyPage) return [];
+    return Array.isArray(displayItem?.gallery) ? displayItem.gallery : [];
+  }, [isPathologyPage, displayItem?.gallery]);
+
+  const pathologyAliases = useMemo(() => {
+    if (!isPathologyPage) return [];
+    return normalizeAliasesList(displayItem?.aliases, displayItem?.title || displayItem?.slug || '');
+  }, [isPathologyPage, displayItem?.aliases, displayItem?.title, displayItem?.slug]);
+
   const relatedCases = useMemo(() => {
     if (!isPathologyPage) return [];
     return Array.isArray(displayItem?.cases) ? displayItem.cases : [];
@@ -986,6 +1112,8 @@ export default function CaseDetail(props) {
     if (isPresentationNamespace && isCaseInPathology) return displayItem?.title || displayItem?.slug || 'Cas clinique';
     return displayItem?.title || displayItem?.slug || 'Cas clinique';
   }, [isDocNamespace, isPathologyPage, isPresentationNamespace, isCaseInPathology, displayItem?.title, displayItem?.slug]);
+
+
 
   const targetTitle = useMemo(() => {
     if (!expectedSlug) return null;
@@ -1085,7 +1213,9 @@ export default function CaseDetail(props) {
         { label: 'Documentation', to: '/documentation' },
       ];
 
-      if (docCrumb?.subject) {
+      const isDefaultMedicineOral = isDefaultDocsChapter(subjectSlug, chapterSlug);
+
+      if (docCrumb?.subject && !isDefaultMedicineOral) {
         base.push({
           label: docCrumb.subject.title,
           to: buildPath(docBasePath, [docCrumb.subject.slug]),
@@ -1095,14 +1225,23 @@ export default function CaseDetail(props) {
       if (docCrumb?.chapter && subjectSlug) {
         base.push({
           label: docCrumb.chapter.title,
-          to: buildPath(docBasePath, [subjectSlug, docCrumb.chapter.slug]),
+          to: buildDocPublicPath(docBasePath, {
+            subjectSlug,
+            chapterSlug: docCrumb.chapter.slug,
+          }),
         });
       }
 
       if (docCrumb?.theItem && subjectSlug && chapterSlug) {
         base.push({
           label: docCrumb.theItem.title,
-          to: docSectionSlug ? buildPath(docBasePath, [subjectSlug, chapterSlug, docCrumb.theItem.slug]) : null,
+          to: docSectionSlug
+            ? buildDocPublicPath(docBasePath, {
+                subjectSlug,
+                chapterSlug,
+                itemSlug: docCrumb.theItem.slug,
+              })
+            : null,
         });
       }
 
@@ -1184,7 +1323,7 @@ export default function CaseDetail(props) {
       if (t.closest?.('.cd-child-card')) return;
 
       e.preventDefault();
-      setLightbox({ src: t.src, alt: t.alt || '' });
+      setLightbox({ src: t.dataset?.lightboxSrc || t.src, alt: t.alt || '' });
     };
 
     el.addEventListener('click', onClick);
@@ -1193,6 +1332,7 @@ export default function CaseDetail(props) {
     displayItem?.content,
     qaList?.length,
     quizList?.length,
+    pathologyGallery?.length,
     visibleRelatedCases?.length,
     docCurrentItemSections?.length,
   ]);
@@ -1212,6 +1352,12 @@ export default function CaseDetail(props) {
     if (!isDocItemPage) return [];
     return Array.isArray(docCurrentItemSections) ? docCurrentItemSections : [];
   }, [isDocItemPage, docCurrentItemSections]);
+
+  const docSectionsHeading = useMemo(() => {
+    if (!isDocItemPage) return 'Sections';
+    const value = typeof displayItem?.sectionsHeading === 'string' ? displayItem.sectionsHeading.trim() : '';
+    return value || 'Sections';
+  }, [isDocItemPage, displayItem?.sectionsHeading]);
 
   const docParentItem = useMemo(() => {
     if (!isDocNamespace || displayItem?.level !== 'section') return null;
@@ -1272,40 +1418,63 @@ export default function CaseDetail(props) {
       )}
 
       <main className="cd-main" aria-hidden={drawerOpen}>
-        <div className="cd-page-header">
-          <Breadcrumbs items={breadcrumbItems} />
-
-          <div className="cd-type-badge">
-            {isPresentationNamespace ? (
-              <div className="cd-type-badges" aria-label="Badges de pathologie">
-                {pathologyBadges.map((badge, index) => (
-                  <span
-                    key={`${badge.variant || 'info'}:${badge.text || 'Atlas'}:${index}`}
-                    className={`badge badge-soft-outline badge-${badge.variant || 'info'}`}
-                  >
-                    {badge.text || 'Atlas'}
-                  </span>
-                ))}
-              </div>
-            ) : (
-              <span className={`badge badge-soft-outline badge-${badgeVariantFromKey(effectiveType || 'qa')}`}>
-                {typeLabel}
-              </span>
-            )}
-          </div>
-        </div>
-
-        {error && <div className="cd-state error">{error}</div>}
-
         <article className="casedetail" ref={contentRef}>
           <div className="cd-content" ref={outlineRootRef}>
-            <PageTitle description={displayItem?.excerpt || ''}>{displayTitle}</PageTitle>
+            <div className="cd-entry-top">
+              <div className="cd-page-header">
+                <Breadcrumbs items={breadcrumbItems} />
+              </div>
 
-            {displayItem?.content ? (
-              <CaseMarkdown scopeKey={markdownScopeKey}>{displayItem.content}</CaseMarkdown>
-            ) : (
-              !displayItem && !error && <div className="cd-state">Chargement…</div>
-            )}
+              <div className="cd-entry-heading-copy">
+                <div className="cd-type-badge">
+                  {isPresentationNamespace ? (
+                    <div className="cd-type-badges" aria-label="Badges de pathologie">
+                      {pathologyBadges.map((badge, index) => (
+                        <span
+                          key={`${badge.variant || 'info'}:${badge.text || 'Atlas'}:${index}`}
+                          className={`badge badge-soft-outline badge-${badge.variant || 'info'}`}
+                        >
+                          {badge.text || 'Atlas'}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className={`badge badge-soft-outline badge-${badgeVariantFromKey(effectiveType || 'qa')}`}>
+                      {typeLabel}
+                    </span>
+                  )}
+                </div>
+
+                <div className="cd-entry-hero-copy">
+                  <PageTitle description={displayItem?.excerpt || ''}>{displayTitle}</PageTitle>
+
+                  {isPathologyPage && pathologyAliases.length > 0 && (
+                    <div className="cd-aliases" aria-label="Autres appellations de la pathologie">
+                      <span className="cd-aliases-label">
+                        {pathologyAliases.length > 1 ? 'Autres appellations :' : 'Autre appellation :'}
+                      </span>
+                      <span className="cd-aliases-list">
+                        {pathologyAliases.map((alias) => (
+                          <span key={alias} className="cd-alias">{alias}</span>
+                        ))}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {error && <div className="cd-state error">{error}</div>}
+
+            <div className="cd-entry-hero">
+              <div className="cd-entry-body">
+                {displayItem?.content ? (
+                  <CaseMarkdown scopeKey={markdownScopeKey}>{displayItem.content}</CaseMarkdown>
+                ) : (
+                  !displayItem && !error && <div className="cd-state">Chargement…</div>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* DOC children */}
@@ -1313,13 +1482,18 @@ export default function CaseDetail(props) {
             <section className="cd-children cd-doc-sections" aria-labelledby="cd-doc-sections-title">
               <div className="cd-doc-sections-heading">
                 <h2 id="cd-doc-sections-title" className="cd-children-title">
-                  Sections
+                  {docSectionsHeading}
                 </h2>
               </div>
 
               <ol className="cd-children-grid cd-doc-sections-grid">
                 {docChildSections.map((s, index) => {
-                  const to = buildPath(docBasePath, [subjectSlug, chapterSlug, docItemSlug, s.slug]);
+                  const to = buildDocPublicPath(docBasePath, {
+                    subjectSlug,
+                    chapterSlug,
+                    itemSlug: docItemSlug,
+                    sectionSlug: s.slug,
+                  });
                   const sectionNumber = String(index + 1).padStart(2, '0');
                   return (
                     <li key={s.slug} className="cd-doc-section-item">
@@ -1369,11 +1543,72 @@ export default function CaseDetail(props) {
             </section>
           )}
 
+          {/* PATHO gallery */}
+          {!isDocNamespace && isPathologyPage && displayMatchesRoute && pathologyGallery.length > 0 && (
+            <section className="cd-pathology-gallery" aria-labelledby="cd-pathology-gallery-title">
+              <h2 id="cd-pathology-gallery-title" className="cd-children-title">
+                Galerie
+              </h2>
+
+              <div className="cd-pathology-gallery-grid">
+                {pathologyGallery.map((galleryItem, index) => {
+                  const captionId = `cd-gallery-caption-${markdownScopeKey}-${index}`;
+                  const hasCaption = Boolean(
+                    galleryItem.title || galleryItem.caption || galleryItem.credit || galleryItem.sourceUrl
+                  );
+
+                  return (
+                    <figure key={galleryItem.id ?? `${galleryItem.imageUrl}-${index}`} className="cd-gallery-item">
+                      <button
+                        type="button"
+                        className="cd-gallery-image-button"
+                        onClick={() =>
+                          setLightbox({
+                            src: galleryItem.fullImageUrl || galleryItem.imageUrl,
+                            alt: galleryItem.alt || '',
+                          })
+                        }
+                        aria-label={`Agrandir ${galleryItem.alt || `l’image ${index + 1}`}`}
+                        aria-describedby={hasCaption ? captionId : undefined}
+                      >
+                        <img
+                          className="cd-gallery-image"
+                          src={galleryItem.imageUrl}
+                          alt={galleryItem.alt || ''}
+                          loading="lazy"
+                          data-no-lightbox="1"
+                        />
+                      </button>
+
+                      {hasCaption && (
+                        <figcaption id={captionId} className="cd-gallery-caption">
+                          {galleryItem.title && <strong className="cd-gallery-title">{galleryItem.title}</strong>}
+                          {galleryItem.caption && <span>{galleryItem.caption}</span>}
+                          {(galleryItem.credit || galleryItem.sourceUrl) && (
+                            <small className="cd-gallery-credit">
+                              {galleryItem.credit && <span>{galleryItem.credit}</span>}
+                              {galleryItem.credit && galleryItem.sourceUrl && <span aria-hidden="true"> · </span>}
+                              {galleryItem.sourceUrl && (
+                                <a href={galleryItem.sourceUrl} target="_blank" rel="noreferrer">
+                                  Source
+                                </a>
+                              )}
+                            </small>
+                          )}
+                        </figcaption>
+                      )}
+                    </figure>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+
           {/* PATHO children */}
           {!isDocNamespace && isPathologyPage && displayMatchesRoute && relatedCases.length > 0 && (
             <section className="cd-children cd-related">
               <div className="cd-related-head">
-                <h2 className="cd-children-title">Cas associés</h2>
+                <h2 className="cd-children-title">Cas cliniques associés</h2>
               </div>
 
               <div className="cd-children-grid">
@@ -2171,7 +2406,11 @@ function Aside({
                     });
                   };
 
-                  const itemTo = buildPath(docBasePath, [docSubjectSlug, docChapterSlug, it.slug]);
+                  const itemTo = buildDocPublicPath(docBasePath, {
+                    subjectSlug: docSubjectSlug,
+                    chapterSlug: docChapterSlug,
+                    itemSlug: it.slug,
+                  });
 
                   return (
                     <li key={it.slug}>
@@ -2227,7 +2466,12 @@ function Aside({
                             <div className="cd-side-children">
                               {knownSections.map((s) => {
                                 const isCurrentSection = it.slug === docItemSlug && s.slug === docSectionSlug;
-                                const to = buildPath(docBasePath, [docSubjectSlug, docChapterSlug, it.slug, s.slug]);
+                                const to = buildDocPublicPath(docBasePath, {
+                                  subjectSlug: docSubjectSlug,
+                                  chapterSlug: docChapterSlug,
+                                  itemSlug: it.slug,
+                                  sectionSlug: s.slug,
+                                });
 
                                 return (
                                   <div key={s.slug} className="cd-side-child">

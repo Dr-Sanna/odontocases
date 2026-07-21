@@ -17,6 +17,9 @@ import { CaseDetailSidebarProvider } from './ui/CaseDetailSidebarContext';
 // maintenance en prod :✅ 0 = maintenance OFF, 1 = maintenance ON
 const MAINTENANCE_PROD = 0;
 
+const DOCS_DEFAULT_CHAPTER_SLUG =
+  import.meta.env.VITE_DOCS_DEFAULT_CHAPTER_SLUG || 'medecine-orale';
+
 function MaintenancePage() {
   return (
     <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', padding: 24 }}>
@@ -65,7 +68,13 @@ function BackgroundRouteSync() {
       segs.length > 0 &&
       ['randomisation', 'atlas', 'qr-quiz', 'cas-cliniques', 'liens-utiles', 'documentation'].includes(segs[0]);
 
+    const isCanonicalMedicineOralDetail =
+      pathname.startsWith('/documentation/') &&
+      segs[1] === DOCS_DEFAULT_CHAPTER_SLUG &&
+      segs.length >= 3;
+
     const isCaseDetailDoc =
+      isCanonicalMedicineOralDetail ||
       (pathname.startsWith('/documentation/') && segs.length >= 4) ||
       (!pathname.startsWith('/documentation/') && !isReservedRoot && segs.length >= 3);
 

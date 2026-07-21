@@ -21,11 +21,12 @@ export default function Breadcrumbs({ items = [] }) {
       <ul className="breadcrumbs">
         {items.map((it, i) => {
           const last = i === items.length - 1;
-          const isHome = it?.to === '/' || it?.label?.toLowerCase() === 'accueil';
+          const label = String(it?.label || '');
+          const isHome = it?.to === '/' || label.toLowerCase() === 'accueil';
 
           return (
             <li
-              key={`${it.label}-${i}`}
+              key={`${label}-${i}`}
               className={`breadcrumbs__item ${last ? 'breadcrumbs__item--active' : ''}`}
             >
               {it.to && !last ? (
@@ -34,11 +35,11 @@ export default function Breadcrumbs({ items = [] }) {
                   className="breadcrumbs__link"
                   aria-label={isHome ? 'Page d’accueil' : undefined}
                 >
-                  {isHome ? <BreadcrumbHomeIcon /> : <span>{it.label}</span>}
+                  {isHome ? <BreadcrumbHomeIcon /> : <span>{label}</span>}
                 </Link>
               ) : (
-                <span className="breadcrumbs__link" aria-current="page">
-                  <span>{it.label}</span>
+                <span className="breadcrumbs__link" aria-current="page" title={label}>
+                  <span>{label}</span>
                 </span>
               )}
             </li>

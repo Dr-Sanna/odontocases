@@ -91,3 +91,53 @@ a.breadcrumbs__link:any-link:hover {
   color: var(--ifm-breadcrumb-color-active);
   text-decoration: none;
 }
+
+/* =========================
+   Desktop : une seule ligne
+   - les éléments précédents gardent leur largeur naturelle
+   - le dernier élément absorbe l'espace restant
+   - s'il est trop long, il est tronqué avec une ellipse
+   ========================= */
+@media (min-width: 781px) {
+  .breadcrumbsContainer_Wvrh {
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .breadcrumbs {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  .breadcrumbs__item {
+    display: flex;
+    align-items: center;
+    flex: 0 0 auto;
+    min-width: 0;
+  }
+
+  .breadcrumbs__item:not(:last-child)::after {
+    flex: 0 0 auto;
+  }
+
+  .breadcrumbs__item:last-child {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .breadcrumbs__item:last-child .breadcrumbs__link,
+  .breadcrumbs__item:last-child .breadcrumbs__link > span {
+    display: block;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}

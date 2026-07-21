@@ -35,7 +35,7 @@ const MEDICINE_ORAL_DESC = (
 // Page d’entrée de Documentation.
 // La hiérarchie Strapi reste : subject MOCO -> chapter Médecine orale -> items.
 // /documentation affiche une carte “Médecine orale” comme entrée de type Matière,
-// puis le clic ouvre /documentation/moco/medecine-orale avec les items groupés.
+// puis le clic ouvre /documentation/medecine-orale avec les items groupés.
 const DEFAULT_SUBJECT_SLUG = import.meta.env.VITE_DOCS_DEFAULT_SUBJECT_SLUG || 'moco';
 const DEFAULT_CHAPTER_SLUG = import.meta.env.VITE_DOCS_DEFAULT_CHAPTER_SLUG || 'medecine-orale';
 
@@ -147,6 +147,18 @@ function buildPath(basePath, segments) {
   const cleanSegs = (segments || []).filter(Boolean).map((s) => String(s).replace(/^\/+|\/+$/g, ''));
   const joined = [cleanBase, ...cleanSegs].filter(Boolean).join('/');
   return '/' + joined.replace(/^\/+/, '');
+}
+
+function buildDocPublicPath(basePath, { subjectSlug, chapterSlug, itemSlug = null }) {
+  const isDefaultMedicineOral =
+    subjectSlug === DEFAULT_SUBJECT_SLUG && chapterSlug === DEFAULT_CHAPTER_SLUG;
+
+  return buildPath(
+    basePath,
+    isDefaultMedicineOral
+      ? [chapterSlug, itemSlug]
+      : [subjectSlug, chapterSlug, itemSlug]
+  );
 }
 
 function ViewToggle({ view, setView }) {
@@ -362,12 +374,30 @@ export default function Documentation({ basePath = '/documentation', subjectSlug
   function toDocLink(slug) {
     if (!slug) return buildPath(basePath, []);
 
-    // Sur /documentation, la carte Médecine orale pointe vers son vrai chemin.
-    if (isDocumentationLanding) return buildPath(basePath, [DEFAULT_SUBJECT_SLUG, slug]);
+    if (isDocumentationLanding) {
+      return buildDocPublicPath(basePath, {
+        subjectSlug: DEFAULT_SUBJECT_SLUG,
+        chapterSlug: slug,
+      });
+    }
 
     if (level === 'subject') return buildPath(basePath, [slug]);
-    if (level === 'chapter') return buildPath(basePath, [effectiveSubjectSlug, slug]);
-    if (level === 'item') return buildPath(basePath, [effectiveSubjectSlug, effectiveChapterSlug, slug]);
+
+    if (level === 'chapter') {
+      return buildDocPublicPath(basePath, {
+        subjectSlug: effectiveSubjectSlug,
+        chapterSlug: slug,
+      });
+    }
+
+    if (level === 'item') {
+      return buildDocPublicPath(basePath, {
+        subjectSlug: effectiveSubjectSlug,
+        chapterSlug: effectiveChapterSlug,
+        itemSlug: slug,
+      });
+    }
+
     return buildPath(basePath, []);
   }
 
