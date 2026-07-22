@@ -115,6 +115,34 @@
   display: block;
 }
 
+/* =========================
+   Métadonnées Obsidian
+   Syntaxes :
+   > [!info|no-icon] Titre visible sans icône
+   > [!info|no-title]
+   > Contenu seul
+   ========================= */
+
+/* Le plugin Remark omet déjà l'icône pour les nouveaux rendus.
+   Cette règle garde aussi la compatibilité avec du HTML généré auparavant. */
+.cd-callout:is(
+  [data-callout-metadata~="no-icon"],
+  [data-callout-metadata~="no-title"],
+  .cd-callout--no-icon,
+  .cd-callout--no-title
+) .cd-callout-icon {
+  display: none !important;
+}
+
+/* Le plugin Remark ne génère plus l'en-tête pour no-title.
+   Règle de secours pour un ancien rendu déjà présent dans le DOM. */
+.cd-callout:is(
+  [data-callout-metadata~="no-title"],
+  .cd-callout--no-title
+) > .cd-callout-heading {
+  display: none !important;
+}
+
 .cd-callout-content > :first-child {
   margin-top: 0;
 }

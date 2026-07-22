@@ -539,8 +539,25 @@ export function remarkObsidianCallouts() {
 
       if (!contentExists) h.className.push('cd-callout--title-only');
 
+      const hideIcon = metadataTokens.includes('no-icon') || metadataTokens.includes('no-title');
+      const hideTitle = metadataTokens.includes('no-title');
+
+      // no-title reproduit le modificateur Obsidian : aucune icône, aucun titre,
+      // aucune zone d'en-tête. Le contenu reste enveloppé dans cd-callout-content
+      // afin de conserver tous les styles existants (points-clés, tableaux, etc.).
+      // Un éventuel marqueur +/- est volontairement ignoré : sans en-tête visible,
+      // il n'existerait plus de contrôle accessible pour ouvrir le callout.
+      if (hideTitle) {
+        node.children = [
+          { type: 'html', value: '<div class="cd-callout-content">' },
+          ...innerChildren,
+          { type: 'html', value: '</div>' },
+        ];
+        return;
+      }
+
       const headingCore =
-        `<span class="cd-callout-icon">${icon}</span>` +
+        (hideIcon ? '' : `<span class="cd-callout-icon">${icon}</span>`) +
         `<span class="cd-callout-title">${titleHtml}</span>`;
 
       // foldable

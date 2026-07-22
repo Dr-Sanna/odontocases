@@ -161,10 +161,6 @@ export default function QuizBlock({
                   onChange={() => onSelect(p._id)}
                 />
 
-                <span className="quiz-control" aria-hidden="true">
-                  <span className="quiz-control-dot" />
-                </span>
-
                 <span className="quiz-choice-badge" aria-hidden="true">
                   {letter}
                 </span>
@@ -189,8 +185,8 @@ export default function QuizBlock({
         })}
       </div>
 
-      <div className="quiz-actions">
-        {!checkedOnce ? (
+      {!checkedOnce && (
+        <div className="quiz-actions">
           <button
             type="button"
             className="quiz-verify"
@@ -199,26 +195,34 @@ export default function QuizBlock({
           >
             Vérifier
           </button>
-        ) : (
-          <button type="button" className="quiz-reset" onClick={onReset}>
-            Réinitialiser
-          </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {checkedOnce && (
-        <div className={['quiz-answer', result?.ok ? 'is-ok' : 'is-ko'].join(' ')}>
-          <h4 className={['quiz-answer-title', result?.ok ? 'is-ok' : 'is-ko'].join(' ')}>
-            <StatusIcon type={result?.ok ? 'ok' : 'ko'} />
-            <span>{answerTitle}</span>
-          </h4>
+        <>
+          <div className="quiz-answer-separator">
+            <span className="quiz-answer-separator-label">Correction</span>
+          </div>
 
-          {explanation && (
-            <div className="quiz-explanation">
-              <Markdown>{explanation}</Markdown>
-            </div>
-          )}
-        </div>
+          <div className={['quiz-answer', result?.ok ? 'is-ok' : 'is-ko'].join(' ')}>
+            <h4 className={['quiz-answer-title', result?.ok ? 'is-ok' : 'is-ko'].join(' ')}>
+              <StatusIcon type={result?.ok ? 'ok' : 'ko'} />
+              <span>{answerTitle}</span>
+            </h4>
+
+            {explanation && (
+              <div className="quiz-explanation">
+                <Markdown>{explanation}</Markdown>
+              </div>
+            )}
+          </div>
+
+          <div className="quiz-actions quiz-actions--after-answer">
+            <button type="button" className="quiz-reset" onClick={onReset}>
+              Réinitialiser
+            </button>
+          </div>
+        </>
       )}
     </article>
   );
