@@ -325,12 +325,8 @@
     transparent
   );
 
-  /* Teinte validée : 3 % de la couleur du callout. */
-  --cd-pc-cell-bg: color-mix(
-    in srgb,
-    var(--cd-pc-page-bg) 97%,
-    var(--cd-callout-border) 3%
-  );
+  /* Cellules transparentes : le fond natif du callout reste visible. */
+  --cd-pc-cell-bg: transparent;
 
   --cd-pc-head-bg: color-mix(
     in srgb,
@@ -360,11 +356,8 @@
     transparent
   );
 
-  --cd-pc-cell-bg: color-mix(
-    in srgb,
-    var(--cd-pc-page-bg) 97%,
-    var(--cd-callout-border) 3%
-  );
+  /* Même comportement en thème sombre. */
+  --cd-pc-cell-bg: transparent;
 
   --cd-pc-head-bg: color-mix(
     in srgb,
@@ -401,6 +394,19 @@ table:not(.cd-imgtable) {
 
   background: var(--cd-pc-cell-bg) !important;
   box-shadow: var(--cd-pc-table-shadow) !important;
+}
+
+/* Tableau « Points clés » sans véritable en-tête :
+   conserve les séparateurs internes, mais retire le cadre extérieur. */
+.cd-callout:is(
+  [data-callout-metadata~="points-cles"],
+  .cd-callout--points-cles
+)
+.cd-callout-content
+table:not(.cd-imgtable):not(:has(thead th)) {
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
 }
 
 /* Largeur initiale des deux colonnes. */
