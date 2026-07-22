@@ -1327,3 +1327,53 @@
   background: var(--ifm-menu-color-background-active);
   color: var(--ifm-menu-color-active);
 }
+
+/* =========================
+   Sources et crédits — listes mixtes
+   --------------------------------------------------------------------------
+   Le Markdown importé peut produire :
+   - une liste UL pour un crédit non numéroté ;
+   - puis une liste OL pour les références commençant par « 1. », « 2. », etc.
+
+   Le style général des références masque les marqueurs de toutes les listes.
+   Dans .cd-credits uniquement, on restaure donc la numérotation des OL et
+   l'espace entre deux listes adjacentes.
+   ========================= */
+
+/* Les crédits non numérotés restent sans puce. */
+.cd-credits ul,
+.cd-credits .markdown ul {
+  padding-left: 0 !important;
+  list-style: none !important;
+}
+
+/* Les références numérotées retrouvent leurs numéros. */
+.cd-credits ol,
+.cd-credits .markdown ol {
+  padding-left: 1.55rem !important;
+  list-style: decimal outside !important;
+}
+
+/* Annule le reset global « content: "" » appliqué aux marqueurs. */
+.cd-credits ol > li::marker,
+.cd-credits .markdown ol > li::marker {
+  content: normal !important;
+  color: currentColor;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Léger retrait du texte après le numéro. */
+.cd-credits ol > li,
+.cd-credits .markdown ol > li {
+  padding-left: 0.15rem !important;
+}
+
+/* Le dernier élément de la UL et le premier élément de la OL ne sont pas
+   des li frères : li + li ne peut donc pas créer cet espace. */
+.cd-credits ul + ol,
+.cd-credits ol + ul,
+.cd-credits .markdown ul + ol,
+.cd-credits .markdown ol + ul {
+  margin-top: 0.82rem !important;
+}
+
