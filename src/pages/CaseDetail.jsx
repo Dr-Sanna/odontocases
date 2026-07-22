@@ -21,6 +21,7 @@ import { BottomExpandIcon, BottomCollapseIcon } from '../components/Icons';
 import { useCaseDetailSidebar } from '../ui/CaseDetailSidebarContext';
 
 import './CaseDetail.css';
+import '../styles/AssociatedCasesList.css';
 
 const CASES_ENDPOINT = import.meta.env.VITE_CASES_ENDPOINT || '/cases';
 const PATHO_ENDPOINT = import.meta.env.VITE_PATHO_ENDPOINT || '/pathologies';
@@ -415,6 +416,29 @@ function mergeCreditsMarkdown(...items) {
   });
 
   return blocks.join('\n\n');
+}
+
+/* =========================
+   Icône des cas cliniques associés
+   ========================= */
+function AssociatedCaseIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path d="M6.5 3.5h7.2L18 7.8V20a1.5 1.5 0 0 1-1.5 1.5h-10A1.5 1.5 0 0 1 5 20V5a1.5 1.5 0 0 1 1.5-1.5Z" />
+      <path d="M13.5 3.8V8h4.2" />
+      <path d="M11.5 11v6" />
+      <path d="M8.5 14h6" />
+    </svg>
+  );
 }
 
 /* =========================
@@ -1604,50 +1628,46 @@ export default function CaseDetail(props) {
             </section>
           )}
 
-          {/* PATHO children */}
+          {/* Cas cliniques associés à la pathologie Atlas */}
           {!isDocNamespace && isPathologyPage && displayMatchesRoute && relatedCases.length > 0 && (
-            <section className="cd-children cd-related">
+            <section className="cd-children cd-related" aria-labelledby="cd-related-cases-title">
               <div className="cd-related-head">
-                <h2 className="cd-children-title">Cas cliniques associés</h2>
+                <h2 id="cd-related-cases-title" className="cd-children-title">
+                  Cas cliniques associés
+                </h2>
               </div>
 
-              <div className="cd-children-grid">
+              <ul className="cd-associated-cases-list">
                 {visibleRelatedCases.map((c) => (
-                  <Link
-                    key={c.slug}
-                    to={`/atlas/${pathologySlug}/${c.slug}`}
-                    state={{
-                      breadcrumb: {
-                        mode: 'atlas',
-                        pathology: {
-                          slug: pathologySlug,
-                          title: instantPathologyTitle || pathologySlug,
-                          badge: pathologyBadge, // ✅ compat : premier badge
-                          badges: pathologyBadges, // ✅ liste complète pour l'entête
+                  <li key={c.slug} className="cd-associated-case-item">
+                    <Link
+                      to={`/atlas/${pathologySlug}/${c.slug}`}
+                      state={{
+                        breadcrumb: {
+                          mode: 'atlas',
+                          pathology: {
+                            slug: pathologySlug,
+                            title: instantPathologyTitle || pathologySlug,
+                            badge: pathologyBadge, // ✅ compat : premier badge
+                            badges: pathologyBadges, // ✅ liste complète pour l'entête
+                          },
+                          case: { slug: c.slug, title: c.title || c.slug },
                         },
-                        case: { slug: c.slug, title: c.title || c.slug },
-                      },
-                      prefetch: { slug: c.slug, title: c.title || c.slug, type: c.type || 'presentation' },
-                    }}
-                    className="cd-child-card ui-card"
-                    onMouseEnter={() => prefetchCase(c.slug, { publicationState: PUB_STATE }).catch(() => {})}
-                    onFocus={() => prefetchCase(c.slug, { publicationState: PUB_STATE }).catch(() => {})}
-                    onPointerDown={() => prefetchCase(c.slug, { publicationState: PUB_STATE }).catch(() => {})}
-                  >
-                    {c.coverUrl && (
-                      <img
-                        className="cd-child-cover"
-                        src={c.coverUrl}
-                        alt={c.title || c.slug}
-                        loading="lazy"
-                        data-no-lightbox="1"
-                      />
-                    )}
-                    <div className="cd-child-title">{c.title || c.slug}</div>
-                    {c.excerpt && <div className="cd-child-excerpt">{c.excerpt}</div>}
-                  </Link>
+                        prefetch: { slug: c.slug, title: c.title || c.slug, type: c.type || 'presentation' },
+                      }}
+                      className="cd-associated-case-link"
+                      onMouseEnter={() => prefetchCase(c.slug, { publicationState: PUB_STATE }).catch(() => {})}
+                      onFocus={() => prefetchCase(c.slug, { publicationState: PUB_STATE }).catch(() => {})}
+                      onPointerDown={() => prefetchCase(c.slug, { publicationState: PUB_STATE }).catch(() => {})}
+                    >
+                      <span className="cd-associated-case-icon" aria-hidden="true">
+                        <AssociatedCaseIcon />
+                      </span>
+                      <span className="cd-associated-case-title">{c.title || c.slug}</span>
+                    </Link>
+                  </li>
                 ))}
-              </div>
+              </ul>
             </section>
           )}
 

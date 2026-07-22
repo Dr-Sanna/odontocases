@@ -1,0 +1,151 @@
+/* src/styles/AssociatedCasesList.css
+   Liste textuelle des cas cliniques associés dans les fiches de pathologie Atlas.
+   Ces styles sont volontairement séparés des cartes de sections Documentation.
+*/
+
+.cd-related {
+  position: relative;
+}
+
+.cd-related-head {
+  position: relative;
+}
+
+.cd-related-head .cd-children-title {
+  padding-right: 0;
+}
+
+.cd-associated-cases-list {
+  margin: 0.75rem 0 var(--ifm-paragraph-margin-bottom);
+  padding: 0;
+  list-style: none;
+
+  overflow: hidden;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 0.85rem;
+  background: var(--ifm-background-surface-color);
+}
+
+.cd-associated-case-item {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.cd-associated-case-item + .cd-associated-case-item {
+  border-top: 1px solid var(--ifm-color-emphasis-300);
+}
+
+.cd-associated-case-link {
+  display: grid;
+  grid-template-columns: 2.65rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.9rem;
+
+  min-width: 0;
+  min-height: 4.6rem;
+  padding: 0.9rem 1rem;
+
+  color: inherit;
+  text-decoration: none;
+  background: transparent;
+
+  transition:
+    background-color 140ms ease,
+    color 140ms ease;
+}
+
+.cd-associated-case-link:hover {
+  color: inherit;
+  text-decoration: none;
+  background: color-mix(in srgb, var(--ifm-color-primary) 7%, transparent);
+}
+
+.cd-associated-case-link:focus-visible {
+  color: inherit;
+  text-decoration: none;
+  outline: 2px solid var(--ifm-color-primary);
+  outline-offset: -2px;
+  background: color-mix(in srgb, var(--ifm-color-primary) 8%, transparent);
+}
+
+.cd-associated-case-icon {
+  display: inline-grid;
+  place-items: center;
+
+  width: 2.65rem;
+  height: 2.65rem;
+  border: 1px solid color-mix(in srgb, var(--ifm-color-primary) 18%, transparent);
+  border-radius: 10%;
+
+  color: var(--ifm-color-primary-dark);
+  background: color-mix(in srgb, var(--ifm-color-primary) 9%, transparent);
+
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease;
+}
+
+.cd-associated-case-icon svg {
+  display: block;
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+.cd-associated-case-link:hover .cd-associated-case-icon,
+.cd-associated-case-link:focus-visible .cd-associated-case-icon {
+  border-color: color-mix(in srgb, var(--ifm-color-primary) 30%, transparent);
+  color: var(--ifm-color-primary-darkest);
+  background: color-mix(in srgb, var(--ifm-color-primary) 14%, transparent);
+}
+
+.cd-associated-case-title {
+  min-width: 0;
+  font-size: 1rem;
+  font-weight: 650;
+  line-height: 1.38;
+  overflow-wrap: anywhere;
+}
+
+[data-theme='dark'] .cd-associated-case-icon {
+  color: var(--ifm-color-primary-light);
+}
+
+[data-theme='dark'] .cd-associated-case-link:hover .cd-associated-case-icon,
+[data-theme='dark'] .cd-associated-case-link:focus-visible .cd-associated-case-icon {
+  color: var(--ifm-color-primary-lightest);
+}
+
+@media (hover: none), (pointer: coarse) {
+  .cd-associated-case-link:hover {
+    background: transparent;
+  }
+
+  .cd-associated-case-link:active {
+    background: color-mix(in srgb, var(--ifm-color-primary) 8%, transparent);
+  }
+}
+
+@media (max-width: 560px) {
+  .cd-associated-case-link {
+    grid-template-columns: 2.35rem minmax(0, 1fr);
+    gap: 0.75rem;
+    min-height: 4.15rem;
+    padding: 0.78rem 0.85rem;
+  }
+
+  .cd-associated-case-icon {
+    width: 2.35rem;
+    height: 2.35rem;
+  }
+
+  .cd-associated-case-icon svg {
+    width: 1.2rem;
+    height: 1.2rem;
+  }
+
+  .cd-associated-case-title {
+    font-size: 0.96rem;
+  }
+}

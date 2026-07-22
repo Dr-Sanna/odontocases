@@ -1025,24 +1025,6 @@
   }
 }
 
-/* ===============================
-   Cas associés (pathologie)
-   =============================== */
-
-.cd-related {
-  position: relative;
-}
-
-.cd-related-head {
-  position: relative;
-}
-
-/* Le bouton anciennement placé à droite du titre n’est plus rendu.
-   Le H2 peut donc utiliser toute la largeur disponible. */
-.cd-related-head .cd-children-title {
-  padding-right: 0;
-}
-
 /* =========================
    Références et copyright modernisés
    =========================

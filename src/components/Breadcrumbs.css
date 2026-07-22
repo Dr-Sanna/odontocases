@@ -41,7 +41,8 @@
 
 .breadcrumbs__link {
   border-radius: var(--ifm-breadcrumb-border-radius);
-  color: var(--ifm-font-color-base);
+  background: transparent;
+  color: inherit;
   font-size: calc(1rem * var(--ifm-breadcrumb-size-multiplier));
   padding: calc(var(--ifm-breadcrumb-padding-vertical) * var(--ifm-breadcrumb-size-multiplier))
            calc(var(--ifm-breadcrumb-padding-horizontal) * var(--ifm-breadcrumb-size-multiplier));
@@ -56,6 +57,12 @@
 .breadcrumbs__item--active .breadcrumbs__link {
   background: var(--ifm-breadcrumb-item-background-active);
   color: var(--ifm-breadcrumb-color-active);
+}
+
+/* Neutralise les couleurs globales des liens, y compris :visited. */
+a.breadcrumbs__link:any-link {
+  background: transparent;
+  color: inherit;
 }
 
 /* home icon (classe utilisée dans le HTML Docusaurus) */
@@ -74,21 +81,10 @@
   border-radius: var(--ifm-breadcrumb-border-radius);
 }
 
-/* Hover Docusaurus-like : uniquement sur les liens */
+/* Le vert apparaît uniquement au survol des liens cliquables. */
 a.breadcrumbs__link:any-link:hover {
   background: var(--ifm-breadcrumb-item-background-active);
-  text-decoration: none;
-}
-
-/* Couleur hover globale docusaurus (si tu veux exactement pareil) */
-a.breadcrumbs__link:any-link:hover {
   color: var(--ifm-link-hover-color);
-}
-
-/* Optionnel : si tu veux éviter toute interaction visuelle sur l'item actif */
-.breadcrumbs__item--active a.breadcrumbs__link:hover {
-  background: var(--ifm-breadcrumb-item-background-active);
-  color: var(--ifm-breadcrumb-color-active);
   text-decoration: none;
 }
 
