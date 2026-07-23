@@ -28,7 +28,10 @@ export default function HomePage() {
     const constrained =
       connection?.saveData || connection?.effectiveType === '2g' || connection?.effectiveType === 'slow-2g';
     const desktopLike =
-      typeof window === 'undefined' || !window.matchMedia || window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+      typeof window === 'undefined' ||
+      !window.matchMedia ||
+      window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+
     // Sur mobile, ne pas télécharger automatiquement tout l'index documentaire.
     if (!userInitiated && (constrained || !desktopLike)) return;
 
@@ -62,8 +65,7 @@ export default function HomePage() {
           <h1 className="hero-title">Odontocases</h1>
 
           <p className="hero-subtitle">
-            Atlas de pathologies orales, cas cliniques interactifs et outil de randomisation dédiés aux pathologies
-            orales.
+            Atlas, cas cliniques interactifs et documentation dédiés aux pathologies orales.
           </p>
 
           <form onSubmit={onSubmit} className="hero-search">
@@ -78,14 +80,13 @@ export default function HomePage() {
 
           <nav className="hero-actions">
             <HomeCard title="Atlas" to="/atlas" />
-            <HomeCard title="Q/R & Quiz" to="/qr-quiz" />
-            <HomeCard title="Randomisation" to="/randomisation" />
+            <HomeCard title="Entraînement" to="/entrainement" />
             <HomeCard
               title="Documentation"
               to="/documentation"
               onPrefetch={() => primeDocs({ userInitiated: true })}
             />
-            {/* Liens utiles retiré de la Home (reste dans la navbar) */}
+            <HomeCard title="Liens utiles" to="/liens-utiles" />
           </nav>
         </section>
       </main>

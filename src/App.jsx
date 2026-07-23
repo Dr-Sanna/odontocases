@@ -1,10 +1,9 @@
 // src/App.jsx
-import { Routes, Route, useLocation } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom';
 import { useEffect } from 'react';
 
 import Navbar from './components/Navbar';
 import HomePage from './pages/HomePage';
-import Randomisation from './pages/Randomisation';
 import LiensUtiles from './pages/LiensUtiles';
 import ScrollToTop from './components/ScrollToTop';
 
@@ -13,12 +12,15 @@ import CasCliniquesRouter from './pages/CasCliniquesRouter';
 
 import { MobileDrawerProvider } from './ui/MobileDrawerContext';
 import { CaseDetailSidebarProvider } from './ui/CaseDetailSidebarContext';
+import { primeTrainingStats, revalidateTrainingStats } from './lib/trainingStatsStore';
 
 // maintenance en prod :✅ 0 = maintenance OFF, 1 = maintenance ON
 const MAINTENANCE_PROD = 0;
 
 const DOCS_DEFAULT_CHAPTER_SLUG =
   import.meta.env.VITE_DOCS_DEFAULT_CHAPTER_SLUG || 'medecine-orale';
+
+const TRAINING_STATS_PUB_STATE = import.meta.env.DEV ? 'preview' : 'live';
 
 function MaintenancePage() {
   return (
@@ -36,6 +38,78 @@ function MaintenancePage() {
   );
 }
 
+function LegacyTrainingRedirect() {
+  const splat = (useParams()['*'] || '').replace(/^\/+|\/+$/g, '');
+  const parts = splat.split('/').filter(Boolean);
+
+  if (parts.length === 0 || parts[0] === 'tous') {
+    return <Navigate to="/entrainement" replace />;
+  }
+
+  if (parts[0] === 'qr') {
+    return <Navigate to="/entrainement/qr" replace />;
+  }
+
+  if (parts[0] === 'quiz') {
+    return <Navigate to="/entrainement/quiz" replace />;
+  }
+
+  if (parts[0] === 'cas' && parts[1]) {
+    return <Navigate to={`/entrainement/cas/${parts[1]}`} replace />;
+  }
+
+  return <Navigate to="/entrainement" replace />;
+}
+
+function LegacyCasesRedirect() {
+  const splat = (useParams()['*'] || '').replace(/^\/+|\/+$/g, '');
+  const parts = splat.split('/').filter(Boolean);
+
+  if (parts.length === 0 || parts[0] === 'tous') {
+    return <Navigate to="/entrainement" replace />;
+  }
+
+  if (parts[0] === 'qr') {
+    return <Navigate to="/entrainement/qr" replace />;
+  }
+
+  if (parts[0] === 'quiz') {
+    return <Navigate to="/entrainement/quiz" replace />;
+  }
+
+  if (parts[0] === 'cas' && parts[1]) {
+    return <Navigate to={`/entrainement/cas/${parts[1]}`} replace />;
+  }
+
+  // L'ancien routeur interprétait les autres segments comme des routes Atlas.
+  return <Navigate to={`/atlas/${splat}`} replace />;
+}
+
+function TrainingStatsSync() {
+  useEffect(() => {
+    const refresh = () =>
+      revalidateTrainingStats({ publicationState: TRAINING_STATS_PUB_STATE }).catch(() => {});
+
+    // Requête minuscule et dédupliquée. Si le cache est frais, cet appel ne fait aucun fetch.
+    primeTrainingStats({ publicationState: TRAINING_STATS_PUB_STATE }).catch(() => {});
+
+    const onVisible = () => {
+      if (document.visibilityState === 'hidden') return;
+      refresh();
+    };
+
+    window.addEventListener('focus', onVisible);
+    document.addEventListener('visibilitychange', onVisible);
+
+    return () => {
+      window.removeEventListener('focus', onVisible);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, []);
+
+  return null;
+}
+
 function BackgroundRouteSync() {
   const { pathname } = useLocation();
 
@@ -45,28 +119,29 @@ function BackgroundRouteSync() {
 
     const segs = pathname.split('/').filter(Boolean);
 
-    // atlas :
-    // - liste : /atlas
-    // - detail : tout le reste sous /atlas/...
+    // Atlas : la racine affiche la liste ; les sous-routes affichent une fiche.
     const isAtlasRoot = pathname === '/atlas';
     const isCaseDetailAtlas = pathname.startsWith('/atlas/') && !isAtlasRoot;
 
-    // qr-quiz :
-    // - listes : /qr-quiz, /qr-quiz/tous, /qr-quiz/qr, /qr-quiz/quiz
-    // - detail : tout le reste sous /qr-quiz/...
-    const isQrQuizRoot = pathname === '/qr-quiz';
-    const isQrQuizList =
-      pathname === '/qr-quiz/tous' || pathname === '/qr-quiz/qr' || pathname === '/qr-quiz/quiz';
-    const isCaseDetailQrQuiz = pathname.startsWith('/qr-quiz/') && !isQrQuizRoot && !isQrQuizList;
+    // Entraînement : seules les fiches /entrainement/cas/:slug utilisent le fond de détail.
+    const isCaseDetailTraining = pathname.startsWith('/entrainement/cas/');
 
-    // compat ancien
-    const isOldCasListRoot = pathname === '/cas-cliniques';
-    const isCaseDetailOldCas = pathname.startsWith('/cas-cliniques/') && !isOldCasListRoot;
+    // Compatibilité avec d'anciennes URL avant leur redirection.
+    const isCaseDetailQrQuiz = pathname.startsWith('/qr-quiz/cas/');
+    const isCaseDetailOldCas = pathname.startsWith('/cas-cliniques/cas/');
 
-    // doc detail :
+    // Détail documentaire.
     const isReservedRoot =
       segs.length > 0 &&
-      ['randomisation', 'atlas', 'qr-quiz', 'cas-cliniques', 'liens-utiles', 'documentation'].includes(segs[0]);
+      [
+        'atlas',
+        'entrainement',
+        'randomisation',
+        'qr-quiz',
+        'cas-cliniques',
+        'liens-utiles',
+        'documentation',
+      ].includes(segs[0]);
 
     const isCanonicalMedicineOralDetail =
       pathname.startsWith('/documentation/') &&
@@ -79,7 +154,13 @@ function BackgroundRouteSync() {
       (!pathname.startsWith('/documentation/') && !isReservedRoot && segs.length >= 3);
 
     if (pathname === '/') body.classList.add('bg-home');
-    else if (isCaseDetailAtlas || isCaseDetailQrQuiz || isCaseDetailOldCas || isCaseDetailDoc) {
+    else if (
+      isCaseDetailAtlas ||
+      isCaseDetailTraining ||
+      isCaseDetailQrQuiz ||
+      isCaseDetailOldCas ||
+      isCaseDetailDoc
+    ) {
       body.classList.add('bg-none');
     } else {
       body.classList.add('bg-secondary');
@@ -98,6 +179,7 @@ export default function App() {
     <MobileDrawerProvider>
       <CaseDetailSidebarProvider>
         <BackgroundRouteSync />
+        <TrainingStatsSync />
 
         <Navbar />
         <ScrollToTop />
@@ -105,17 +187,18 @@ export default function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
 
-          <Route path="/randomisation" element={<Randomisation />} />
           <Route path="/liens-utiles" element={<LiensUtiles />} />
 
-          {/* ✅ hubs */}
+          {/* Hubs principaux */}
           <Route path="/atlas/*" element={<CasCliniquesRouter />} />
-          <Route path="/qr-quiz/*" element={<CasCliniquesRouter />} />
+          <Route path="/entrainement/*" element={<CasCliniquesRouter />} />
 
-          {/* compat ancien */}
-          <Route path="/cas-cliniques/*" element={<CasCliniquesRouter />} />
+          {/* Compatibilité avec les anciennes URL */}
+          <Route path="/randomisation" element={<Navigate to="/entrainement/aleatoire" replace />} />
+          <Route path="/qr-quiz/*" element={<LegacyTrainingRedirect />} />
+          <Route path="/cas-cliniques/*" element={<LegacyCasesRedirect />} />
 
-          {/* documentation : route générique */}
+          {/* Documentation : route générique */}
           <Route path="/documentation/*" element={<DocsRouter />} />
 
           {/* URLs courtes : /moco /moco/medecine-orale ... */}

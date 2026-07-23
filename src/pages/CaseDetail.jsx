@@ -83,7 +83,7 @@ function compareBySlugNumberAsc(a, b) {
 function typeLabelFromKey(typeKey) {
   if (typeKey === 'qa') return 'Q/R';
   if (typeKey === 'quiz') return 'Quiz';
-  if (typeKey === 'presentation') return 'Atlas';
+  if (typeKey === 'presentation') return 'Présentation';
   if (typeKey === 'doc') return 'Documentation';
   return null;
 }
@@ -1044,8 +1044,9 @@ export default function CaseDetail(props) {
   const typeLabel = useMemo(() => {
     if (effectiveType === 'qa') return 'Q/R';
     if (effectiveType === 'quiz') return 'Quiz';
+    if (effectiveType === 'presentation') return 'Présentation';
     if (effectiveType === 'doc') return 'Documentation';
-    return 'Atlas';
+    return 'Cas clinique';
   }, [effectiveType]);
 
   const qaList = !isDocNamespace && Array.isArray(displayItem?.qa_blocks) ? displayItem.qa_blocks : [];
@@ -1224,10 +1225,11 @@ export default function CaseDetail(props) {
     return { subject, chapter, theItem, theSection };
   }, [isDocNamespace, itemMatchesRoute, item, displayItem, subjectSlug, chapterSlug, docItemSlug, docSectionSlug]);
 
-  const qrHubTo = useMemo(() => {
-    if (effectiveType === 'qa') return '/qr-quiz/qr';
-    if (effectiveType === 'quiz') return '/qr-quiz/quiz';
-    return '/qr-quiz/tous';
+  const trainingHubTo = useMemo(() => {
+    if (effectiveType === 'qa') return '/entrainement/qr';
+    if (effectiveType === 'quiz') return '/entrainement/quiz';
+    if (effectiveType === 'presentation') return '/entrainement/presentation';
+    return '/entrainement';
   }, [effectiveType]);
 
   const breadcrumbItems = useMemo(() => {
@@ -1294,15 +1296,18 @@ export default function CaseDetail(props) {
       return base;
     }
 
-    // plain case (qa/quiz) => hub /qr-quiz
+    // Cas d’entraînement autonome (Q/R, quiz ou présentation).
     const base = [
       { label: 'Accueil', to: '/' },
-      { label: 'Q/R & Quiz', to: '/qr-quiz' },
+      { label: 'Entraînement', to: '/entrainement' },
     ];
 
     const crumbTypeLabel = typeLabelFromKey(effectiveType);
-    if (crumbTypeLabel && (effectiveType === 'qa' || effectiveType === 'quiz')) {
-      base.push({ label: crumbTypeLabel, to: qrHubTo });
+    if (
+      crumbTypeLabel &&
+      (effectiveType === 'qa' || effectiveType === 'quiz' || effectiveType === 'presentation')
+    ) {
+      base.push({ label: crumbTypeLabel, to: trainingHubTo });
     }
 
     base.push({ label: targetTitle || 'Cas clinique', to: null });
@@ -1322,7 +1327,7 @@ export default function CaseDetail(props) {
     targetTitle,
 
     effectiveType,
-    qrHubTo,
+    trainingHubTo,
   ]);
 
   // Lightbox + plan de l'article
@@ -2329,14 +2334,8 @@ function Aside({
               </li>
 
               <li>
-                <NavLink className="cd-side-link" to="/qr-quiz" onClick={closeMobile}>
-                  Q/R &amp; Quiz
-                </NavLink>
-              </li>
-
-              <li>
-                <NavLink className="cd-side-link" to="/randomisation" onClick={closeMobile}>
-                  Randomisation
+                <NavLink className="cd-side-link" to="/entrainement" onClick={closeMobile}>
+                  Entraînement
                 </NavLink>
               </li>
 
@@ -2527,7 +2526,7 @@ function Aside({
               </ul>
             )}
 
-            {/* CASES (qa/quiz) */}
+            {/* CAS D’ENTRAÎNEMENT (Q/R, quiz ou présentation) */}
             {sidebarView === 'list' && !errList && mode === 'cases' && (
               <ul className="cd-side-list">
                 {caseList.map((it) => {
@@ -2542,10 +2541,10 @@ function Aside({
                       ) : (
                         <Link
                           className="cd-side-link"
-                          to={`/qr-quiz/cas/${it.slug}`}
+                          to={`/entrainement/cas/${it.slug}`}
                           state={{
                             prefetch: { slug: it.slug, title: it.title || it.slug, type: it.type || currentType || null },
-                            breadcrumb: { mode: 'qr-quiz', case: { slug: it.slug, title: it.title || it.slug } },
+                            breadcrumb: { mode: 'entrainement', case: { slug: it.slug, title: it.title || it.slug } },
                           }}
                           onClick={() => {
                             if (isNarrow) closeMobile();

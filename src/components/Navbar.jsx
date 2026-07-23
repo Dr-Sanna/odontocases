@@ -59,14 +59,15 @@ function useIsNarrow(maxWidthPx = 980) {
 }
 
 function isDetailRoute(pathname) {
-  // hubs actuels
+  // Hubs actuels : seules les fiches ouvrent la navigation latérale de CaseDetail.
   const isAtlasDetail = pathname.startsWith('/atlas/') && pathname !== '/atlas';
-  const isQrQuizDetail = pathname.startsWith('/qr-quiz/') && pathname !== '/qr-quiz';
+  const isTrainingDetail = pathname.startsWith('/entrainement/cas/');
 
-  // compat anciennes routes
-  const isOldCasDetail = pathname.startsWith('/cas-cliniques/') && pathname !== '/cas-cliniques';
+  // Compatibilité pendant la redirection des anciennes URL.
+  const isLegacyQrQuizDetail = pathname.startsWith('/qr-quiz/cas/');
+  const isLegacyCasesDetail = pathname.startsWith('/cas-cliniques/cas/');
 
-  return isAtlasDetail || isQrQuizDetail || isOldCasDetail;
+  return isAtlasDetail || isTrainingDetail || isLegacyQrQuizDetail || isLegacyCasesDetail;
 }
 
 export default function Navbar() {
@@ -207,12 +208,8 @@ export default function Navbar() {
               Atlas
             </NavLink>
 
-            <NavLink to="/qr-quiz" className={({ isActive }) => (isActive ? 'active' : '')}>
-              Q/R &amp; Quiz
-            </NavLink>
-
-            <NavLink to="/randomisation" className={({ isActive }) => (isActive ? 'active' : '')}>
-              Randomisation
+            <NavLink to="/entrainement" className={({ isActive }) => (isActive ? 'active' : '')}>
+              Entraînement
             </NavLink>
 
             <NavLink to="/documentation" className={({ isActive }) => (isActive ? 'active' : '')}>
@@ -263,11 +260,8 @@ export default function Navbar() {
               <NavLink to="/atlas" className="md-link" onClick={() => setNavOpen(false)}>
                 Atlas
               </NavLink>
-              <NavLink to="/qr-quiz" className="md-link" onClick={() => setNavOpen(false)}>
-                Q/R &amp; Quiz
-              </NavLink>
-              <NavLink to="/randomisation" className="md-link" onClick={() => setNavOpen(false)}>
-                Randomisation
+              <NavLink to="/entrainement" className="md-link" onClick={() => setNavOpen(false)}>
+                Entraînement
               </NavLink>
               <NavLink to="/documentation" className="md-link" onClick={() => setNavOpen(false)}>
                 Documentation
