@@ -33,7 +33,7 @@
   transform: translateX(-50%);
 }
 
-.cc-typegrid--training {
+.cc-typepicker--training .cc-typegrid.cc-typegrid--training {
   display: grid;
   grid-template-columns: repeat(4, minmax(190px, 1fr));
   gap: clamp(14px, 1.45vw, 22px);
@@ -142,7 +142,7 @@
 }
 
 @media (max-width: 1180px) {
-  .cc-typegrid--training {
+  .cc-typepicker--training .cc-typegrid.cc-typegrid--training {
     grid-template-columns: repeat(2, minmax(220px, 1fr));
   }
 
@@ -161,7 +161,7 @@
     font-size: 1.42rem;
   }
 
-  .cc-typegrid--training {
+  .cc-typepicker--training .cc-typegrid.cc-typegrid--training {
     grid-template-columns: 1fr;
     gap: 14px;
   }
