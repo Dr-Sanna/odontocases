@@ -940,3 +940,220 @@
   }
 }
 
+
+/* =========================================================
+   HUB ENTRAÎNEMENT : GRILLE ET CARTES DE MODES
+   ========================================================= */
+
+/* Hub Entraînement : cartes monochromes proches de la base générique .ui-card. */
+.cc-typepicker--training {
+  --training-accent: var(--ifm-color-primary);
+  --training-accent-dark: var(--ifm-color-primary-dark);
+  --training-accent-soft: color-mix(
+    in srgb,
+    var(--ifm-color-primary) 11%,
+    var(--ifm-background-surface-color)
+  );
+
+  margin-top: clamp(24px, 4vh, 44px);
+}
+
+.cc-typepicker--training > h3 {
+  position: relative;
+  width: fit-content;
+  margin: 0 auto clamp(28px, 3.4vw, 42px);
+  padding-bottom: 14px;
+  text-align: center;
+  font-size: clamp(1.45rem, 2.15vw, 2rem);
+  line-height: 1.2;
+}
+
+.cc-typepicker--training > h3::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 58px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--training-accent);
+  transform: translateX(-50%);
+}
+
+.cc-typepicker--training .cc-typegrid.cc-typegrid--training {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(190px, 1fr));
+  gap: clamp(14px, 1.45vw, 22px);
+  align-items: stretch;
+}
+
+/*
+ * La carte conserve les variables partagées de Cards.css :
+ * --card-border, --card-bg, --card-shadow et --card-shadow-hover.
+ */
+.cc-typepicker--training .cc-training-card.ui-card {
+  position: relative;
+  isolation: isolate;
+  min-width: 0;
+  min-height: clamp(230px, 27vh, 285px);
+  padding: clamp(24px, 2.2vw, 32px) clamp(18px, 1.8vw, 28px);
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  text-align: center;
+  color: var(--ifm-font-color-base);
+
+  border: var(--card-border);
+  border-radius: var(--card-radius);
+  background: var(--card-bg);
+  box-shadow: var(--card-shadow);
+
+  transition:
+    border-color var(--ifm-transition-fast) var(--ifm-transition-timing-default),
+    box-shadow var(--ifm-transition-fast) var(--ifm-transition-timing-default),
+    background-color var(--ifm-transition-fast) var(--ifm-transition-timing-default);
+}
+
+.cc-typepicker--training .cc-training-card.ui-card:hover {
+  color: var(--ifm-font-color-base);
+  border-color: var(--ifm-color-primary);
+  box-shadow: var(--card-shadow-hover);
+  background: var(--card-bg);
+  transform: none;
+}
+
+.cc-typepicker--training .cc-training-card.ui-card:focus-visible {
+  border-color: var(--ifm-color-primary);
+  box-shadow: var(--card-shadow-hover);
+  background: var(--card-bg);
+  outline: none;
+}
+
+.cc-training-icon {
+  width: clamp(68px, 5.7vw, 86px);
+  aspect-ratio: 1;
+  margin-bottom: 18px;
+
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+
+  border: 1px solid color-mix(in srgb, var(--training-accent) 18%, transparent);
+  border-radius: 12px;
+  color: var(--training-accent-dark);
+  background: var(--training-accent-soft);
+  box-shadow: none;
+}
+
+.cc-training-icon svg {
+  width: 56%;
+  height: 56%;
+  overflow: visible;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.cc-typepicker--training .cc-type {
+  display: block;
+  margin: 0;
+  color: var(--ifm-color-emphasis-900);
+  font-size: clamp(1.08rem, 1.25vw, 1.28rem);
+  font-weight: var(--ifm-font-weight-bold);
+  line-height: 1.25;
+}
+
+.cc-typepicker--training .cc-typedesc {
+  display: block;
+  max-width: 260px;
+  min-height: 3.3em;
+  margin-top: 12px;
+  color: var(--ifm-color-emphasis-700);
+  font-size: clamp(0.94rem, 1vw, 1.04rem);
+  font-weight: 400;
+  line-height: 1.55;
+}
+
+[data-theme='dark'] .cc-typepicker--training {
+  --training-accent-soft: color-mix(
+    in srgb,
+    var(--ifm-color-primary) 15%,
+    var(--ifm-background-surface-color)
+  );
+}
+
+@media (max-width: 1180px) {
+  .cc-typepicker--training .cc-typegrid.cc-typegrid--training {
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
+  }
+
+  .cc-typepicker--training .cc-training-card.ui-card {
+    min-height: 240px;
+  }
+}
+
+@media (max-width: 680px) {
+  .cc-typepicker--training {
+    margin-top: 22px;
+  }
+
+  .cc-typepicker--training > h3 {
+    margin-bottom: 24px;
+    font-size: 1.42rem;
+  }
+
+  .cc-typepicker--training .cc-typegrid.cc-typegrid--training {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .cc-typepicker--training .cc-training-card.ui-card {
+    min-height: 0;
+    padding: 18px;
+
+    display: grid;
+    grid-template-columns: 56px minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    column-gap: 16px;
+    row-gap: 4px;
+    align-items: center;
+
+    text-align: left;
+  }
+
+  .cc-training-icon {
+    grid-row: 1 / span 2;
+    width: 56px;
+    margin: 0;
+    border-radius: 10px;
+  }
+
+  .cc-typepicker--training .cc-type,
+  .cc-typepicker--training .cc-typedesc {
+    max-width: none;
+    min-height: 0;
+    margin: 0;
+  }
+}
+
+/* Même comportement que les cartes génériques sur écrans tactiles. */
+@media (hover: none), (pointer: coarse) {
+  .cc-typepicker--training .cc-training-card.ui-card:hover {
+    border: var(--card-border);
+    border-top: 4px solid var(--training-accent);
+    background: var(--card-bg);
+    box-shadow: var(--card-shadow);
+    cursor: default;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cc-typepicker--training .cc-training-card.ui-card {
+    transition: none;
+  }
+}

@@ -5,7 +5,6 @@ import PageTitle from '../components/PageTitle';
 import { strapiFetch, imgUrl, isAbortError } from '../lib/strapi';
 import { useQuizCount } from '../lib/trainingStatsStore';
 import './CasCliniques.css';
-import './Entrainement.css';
 
 /**
  * Hubs :

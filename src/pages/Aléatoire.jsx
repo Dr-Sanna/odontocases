@@ -480,7 +480,7 @@ export default function Aleatoire() {
                                 to={`/atlas/${pathology.slug}/${currentCase.slug}`}
                                 title={`Voir le cas complet dans ${pathologyTitle}`}
                               >
-                                Cas complet
+                                Lien vers le cas original
                                 {pathologies.length > 1 ? ` · ${pathologyTitle}` : ''}
                               </Link>
                               <Link
@@ -488,7 +488,7 @@ export default function Aleatoire() {
                                 to={`/atlas/${pathology.slug}`}
                                 title={`Voir la fiche ${pathologyTitle}`}
                               >
-                                Fiche Atlas
+                                Lien vers la fiche lésionnelle
                                 {pathologies.length > 1 ? ` · ${pathologyTitle}` : ''}
                               </Link>
                             </div>

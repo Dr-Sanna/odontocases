@@ -1,8 +1,4 @@
-/* Hub Entraînement + écran de révision express. */
-.cc-typegrid--training {
-  grid-template-columns: repeat(4, minmax(170px, 1fr));
-}
-
+/* Écran de révision express. */
 body.aleatoire-route {
   overflow: hidden;
 }
@@ -470,10 +466,6 @@ body.aleatoire-route {
 }
 
 @media (max-width: 1100px) {
-  .cc-typegrid--training {
-    grid-template-columns: repeat(2, minmax(200px, 1fr));
-  }
-
   .aleatoire-stage.has-images {
     grid-template-columns: minmax(220px, 0.7fr) minmax(0, 1.3fr);
   }
@@ -510,10 +502,6 @@ body.aleatoire-route {
 }
 
 @media (max-width: 680px) {
-  .cc-typegrid--training {
-    grid-template-columns: 1fr;
-  }
-
   .aleatoire-app {
     padding-left: 8px;
     padding-right: 8px;
