@@ -1,13 +1,26 @@
 /* src/components/Breadcrumbs.css */
 
 .breadcrumbsContainer_Wvrh {
-    --ifm-breadcrumb-size-multiplier: .8;
-    margin-bottom: .8rem;
+  --ifm-breadcrumb-size-multiplier: 0.8;
+
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin-bottom: 0;
+  padding-bottom: 0.72rem;
+
+  /* Séparation très légère entre la navigation contextuelle et l'article. */
+  border-bottom: 1px solid color-mix(
+    in srgb,
+    var(--ifm-toc-border-color, currentColor) 72%,
+    transparent
+  );
 }
 
 .breadcrumbs {
-    margin-bottom: 0;
-    padding-left: 0;
+  min-height: 2rem;
+  margin-bottom: 0;
+  padding-left: 0;
 }
 
 .breadcrumbs li + li {
@@ -55,7 +68,11 @@
 }
 
 .breadcrumbs__item--active .breadcrumbs__link {
-  background: var(--ifm-breadcrumb-item-background-active);
+  background: color-mix(
+    in srgb,
+    var(--ifm-breadcrumb-item-background-active) 88%,
+    transparent
+  );
   color: var(--ifm-breadcrumb-color-active);
 }
 

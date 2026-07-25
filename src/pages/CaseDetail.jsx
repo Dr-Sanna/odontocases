@@ -1448,50 +1448,53 @@ export default function CaseDetail(props) {
 
       <main className="cd-main" aria-hidden={drawerOpen}>
         <article className="casedetail" ref={contentRef}>
-          <div className="cd-content" ref={outlineRootRef}>
-            <div className="cd-entry-top">
-              <div className="cd-page-header">
-                <Breadcrumbs items={breadcrumbItems} />
-              </div>
+          <div className="cd-page-header">
+            <Breadcrumbs items={breadcrumbItems} />
+          </div>
 
-              <div className="cd-entry-heading-copy">
-                <div className="cd-type-badge">
-                  {isPresentationNamespace ? (
-                    <div className="cd-type-badges" aria-label="Badges de pathologie">
-                      {pathologyBadges.map((badge, index) => (
-                        <span
-                          key={`${badge.variant || 'info'}:${badge.text || 'Atlas'}:${index}`}
-                          className={`badge badge-soft-outline badge-${badge.variant || 'info'}`}
-                        >
-                          {badge.text || 'Atlas'}
+          <div className="cd-article-inner">
+            <div className="cd-content" ref={outlineRootRef}>
+              <div className="cd-entry-top">
+                <div className="cd-entry-heading-copy">
+                  <div className="cd-entry-hero-copy">
+                    <PageTitle description={displayItem?.excerpt || ''}>{displayTitle}</PageTitle>
+
+                    {!isDocNamespace && (
+                      <div className="cd-type-badge">
+                        {isPresentationNamespace ? (
+                          <div className="cd-type-badges" aria-label="Badges de pathologie">
+                            {pathologyBadges.map((badge, index) => (
+                              <span
+                                key={`${badge.variant || 'info'}:${badge.text || 'Atlas'}:${index}`}
+                                className={`badge badge-soft-outline badge-${badge.variant || 'info'}`}
+                              >
+                                {badge.text || 'Atlas'}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className={`badge badge-soft-outline badge-${badgeVariantFromKey(effectiveType || 'qa')}`}>
+                            {typeLabel}
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {isPathologyPage && pathologyAliases.length > 0 && (
+                      <div className="cd-aliases" aria-label="Autres appellations de la pathologie">
+                        <span className="cd-aliases-label">
+                          {pathologyAliases.length > 1 ? 'Autres appellations :' : 'Autre appellation :'}
                         </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <span className={`badge badge-soft-outline badge-${badgeVariantFromKey(effectiveType || 'qa')}`}>
-                      {typeLabel}
-                    </span>
-                  )}
-                </div>
-
-                <div className="cd-entry-hero-copy">
-                  <PageTitle description={displayItem?.excerpt || ''}>{displayTitle}</PageTitle>
-
-                  {isPathologyPage && pathologyAliases.length > 0 && (
-                    <div className="cd-aliases" aria-label="Autres appellations de la pathologie">
-                      <span className="cd-aliases-label">
-                        {pathologyAliases.length > 1 ? 'Autres appellations :' : 'Autre appellation :'}
-                      </span>
-                      <span className="cd-aliases-list">
-                        {pathologyAliases.map((alias) => (
-                          <span key={alias} className="cd-alias">{alias}</span>
-                        ))}
-                      </span>
-                    </div>
-                  )}
+                        <span className="cd-aliases-list">
+                          {pathologyAliases.map((alias) => (
+                            <span key={alias} className="cd-alias">{alias}</span>
+                          ))}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
 
             {error && <div className="cd-state error">{error}</div>}
 
@@ -1718,7 +1721,9 @@ export default function CaseDetail(props) {
             </section>
           )}
 
-          {/* EXTRAS */}
+          </div>
+
+          {/* EXTRAS — hors du conteneur principal asymétrique */}
           {displayMatchesRoute && showExtras && (
             <section className="cd-extras">
               <div className="cd-references cd-credits">

@@ -427,25 +427,47 @@
    Right column content
    ========================= */
 .cd-main {
+  --cd-content-pad-start: clamp(4rem, 5vw, 5.5rem);
+  --cd-content-pad-end: clamp(8rem, 15vw, 11rem);
+  --cd-outer-pad: clamp(2.5rem, 4vw, 2.5rem);
+
   width: 100%;
   max-width: 100%;
   min-width: 0;
   box-sizing: border-box;
   overflow-x: hidden;
   padding-block: 1rem 2rem;
-
-  /* menu ouvert */
-  padding-inline-start: clamp(4rem, 5vw, 5.5rem);   /* gauche : valeur actuelle */
-  padding-inline-end: clamp(8rem, 15vw, 11rem);     /* droite : valeur doublée */
 }
 
-  /* menu fermé */
+/* Le corps de l’article conserve exactement ses marges asymétriques. */
+.cd-article-inner {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding-inline-start: var(--cd-content-pad-start);
+  padding-inline-end: var(--cd-content-pad-end);
+}
+
+/* Menu fermé : le corps de l’article reste centré comme auparavant. */
 .cd-shell.is-collapsed .cd-main {
-  padding-inline: clamp(4rem, 14vw, 14rem);
+  --cd-content-pad-start: clamp(4rem, 14vw, 14rem);
+  --cd-content-pad-end: clamp(4rem, 14vw, 14rem);
+  --cd-outer-pad: clamp(2.5rem, 4vw, 2.5rem);
+}
+
+/* Breadcrumbs et sources/crédits : marges symétriques et plus légères. */
+.cd-page-header,
+.cd-extras {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding-inline: var(--cd-outer-pad);
 }
 
 .cd-page-header {
-  margin-bottom: 0.5rem;
+  margin-bottom: 2rem;
 }
 
 .casedetail {
@@ -528,10 +550,9 @@
 
 
 /* =========================
-   Haut de fiche + couverture
-   - la couverture commence au niveau des breadcrumbs
-   - le breadcrumb, les badges et le titre la contournent
-   - dès que le bas de l’image est dépassé, le titre reprend toute la largeur
+   Haut de fiche
+   - les breadcrumbs sont désormais placés hors du conteneur asymétrique
+   - badges, titre et corps conservent la mise en page de l’article
    ========================= */
 .cd-entry-top,
 .cd-entry-heading-copy,
@@ -547,15 +568,12 @@
   margin-bottom: clamp(0.9rem, 1.4vw, 1.2rem);
 }
 
-.cd-entry-top .cd-page-header {
-  margin-bottom: 0.5rem;
-}
-
 .cd-entry-heading-copy {
   display: block;
 }
 
 .cd-entry-heading-copy .cd-type-badge {
+  margin-top: 0.65rem;
   margin-bottom: clamp(0.7rem, 1vw, 1rem);
 }
 
@@ -780,9 +798,13 @@
     background: rgba(0, 0, 0, 0.35);
   }
 
-  .cd-main {
+  .cd-main,
+  .cd-shell.is-collapsed .cd-main {
+    --cd-content-pad-start: clamp(0.875rem, 4vw, 1.25rem);
+    --cd-content-pad-end: clamp(0.875rem, 4vw, 1.25rem);
+    --cd-outer-pad: clamp(0.875rem, 4vw, 1.25rem);
+
     padding-block: 1rem 2rem;
-    padding-inline: clamp(0.875rem, 4vw, 1.25rem);
   }
 
   .casedetail { padding-right: 0; }
@@ -930,6 +952,15 @@
 .cd-pathology-gallery {
   margin-top: calc(-1 * var(--ifm-paragraph-margin-bottom));
   margin-bottom: var(--ifm-paragraph-margin-bottom);
+}
+
+/*
+ * La section des cas associés porte aussi la classe générique .cd-children,
+ * dont la marge supérieure négative rapprochait excessivement les deux blocs.
+ * Ce sélecteur ne corrige l'espacement que lorsque les cas suivent la galerie.
+ */
+.cd-pathology-gallery + .cd-children.cd-related {
+  margin-top: 1.5rem;
 }
 
 .cd-pathology-gallery-grid {
