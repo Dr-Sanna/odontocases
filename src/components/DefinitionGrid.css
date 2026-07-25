@@ -1,0 +1,558 @@
+/* Definition Grid v1.5 — séparateurs bord à bord et sous-sections affinées */
+
+.definition-grid,
+.definition-grid * {
+  box-sizing: border-box;
+}
+
+.cd-content .definition-grid,
+.definition-grid {
+  --dfg-accent: var(--ifm-color-primary);
+  --dfg-accent-strong: color-mix(
+    in srgb,
+    var(--dfg-accent) 82%,
+    var(--ifm-font-color-base)
+  );
+  --dfg-border: color-mix(
+    in srgb,
+    var(--dfg-accent) 34%,
+    var(--ifm-toc-border-color, rgba(2, 6, 23, 0.12))
+  );
+  --dfg-border-soft: color-mix(
+    in srgb,
+    var(--dfg-accent) 18%,
+    var(--ifm-toc-border-color, rgba(2, 6, 23, 0.12))
+  );
+  --dfg-surface: var(
+    --ifm-background-surface-color,
+    var(--ifm-background-color)
+  );
+  --dfg-surface-soft: color-mix(
+    in srgb,
+    var(--dfg-accent) 6.5%,
+    var(--dfg-surface)
+  );
+  --dfg-surface-softer: color-mix(
+    in srgb,
+    var(--dfg-accent) 2.5%,
+    var(--dfg-surface)
+  );
+  --dfg-comparison-bg: color-mix(
+    in srgb,
+    var(--dfg-accent) 9%,
+    var(--dfg-surface)
+  );
+  /* Les séparateurs structurels sont plus présents que les soulignements. */
+  --dfg-divider-line: color-mix(
+    in srgb,
+    var(--dfg-accent) 40%,
+    var(--ifm-toc-border-color, rgba(2, 6, 23, 0.12))
+  );
+  --dfg-underline-line: color-mix(
+    in srgb,
+    var(--dfg-accent) 26%,
+    transparent
+  );
+  --dfg-text: var(--ifm-font-color-base);
+  --dfg-muted: var(
+    --ifm-color-content-secondary,
+    color-mix(in srgb, var(--ifm-font-color-base) 62%, transparent)
+  );
+
+  /*
+   * Échelle typographique volontairement contrastée.
+   * Les écarts sont assez importants pour rester visibles même avec
+   * les réglages de zoom et de police du navigateur.
+   */
+  --dfg-font-body: 0.78rem;
+  --dfg-font-body-emphasis: 0.84rem;
+  --dfg-font-title-definition: 1.02rem;
+  --dfg-font-title-section: 1.18rem;
+  --dfg-font-title-column: 0.87rem;
+  --dfg-font-title-intro: 1rem;
+  --dfg-font-title-comparison: 0.84rem;
+
+  container-type: inline-size;
+  display: grid;
+  gap: 0.7rem;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0.75rem 0 var(--ifm-paragraph-margin-bottom);
+  padding: 0;
+  color: var(--dfg-text);
+  font-family: var(--ifm-font-family-base);
+  font-size: var(--dfg-font-body);
+  font-style: normal;
+  font-weight: 400;
+  line-height: 1.38;
+  letter-spacing: normal;
+  text-align: left;
+}
+
+/* Neutralise Typography.css et les styles Markdown globaux dans le composant. */
+.cd-content .definition-grid :is(
+  p,
+  ul,
+  ol,
+  li,
+  div,
+  span,
+  section,
+  article,
+  aside,
+  a,
+  strong,
+  em,
+  code
+),
+.definition-grid :is(
+  p,
+  ul,
+  ol,
+  li,
+  div,
+  span,
+  section,
+  article,
+  aside,
+  a,
+  strong,
+  em,
+  code
+) {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.definition-grid .dfg-definitions {
+  display: grid;
+  grid-template-columns: repeat(
+    min(var(--dfg-definition-count, 2), 2),
+    minmax(0, 1fr)
+  );
+  gap: 0.65rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.definition-grid .dfg-definition,
+.definition-grid .dfg-section {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--dfg-border);
+  border-radius: 0.52rem;
+  background: var(--dfg-surface);
+  box-shadow: none;
+}
+
+.definition-grid .dfg-definition-title,
+.definition-grid .dfg-section-title {
+  display: block;
+  margin: 0;
+  border: 0;
+  border-bottom: 1px solid var(--dfg-divider-line);
+  background: var(--dfg-surface-soft);
+  color: var(--dfg-accent-strong);
+  font-family: var(--ifm-font-family-base);
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: normal;
+  text-align: center;
+  text-transform: none;
+}
+
+.definition-grid .dfg-definition-title {
+  padding: 0.54rem 0.72rem;
+  font-size: var(--dfg-font-title-definition);
+  line-height: 1.2;
+  font-weight: 800;
+}
+
+.definition-grid .dfg-section-title {
+  padding: 0.68rem 0.82rem;
+  font-size: var(--dfg-font-title-section);
+  line-height: 1.16;
+  font-weight: 800;
+}
+
+.definition-grid .dfg-definition-body,
+.definition-grid .dfg-section-body {
+  display: block;
+  min-width: 0;
+  margin: 0;
+}
+
+.definition-grid .dfg-definition-body {
+  --dfg-definition-pad-x: 0.72rem;
+  padding: 0.58rem var(--dfg-definition-pad-x) 0.64rem;
+}
+
+.definition-grid .dfg-section-body {
+  --dfg-section-pad-x: 0.84rem;
+  padding: 0.72rem var(--dfg-section-pad-x) 0.8rem;
+}
+
+.definition-grid .dfg-markdown,
+.definition-grid .dfg-markdown > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.cd-content .definition-grid .dfg-markdown p,
+.definition-grid .dfg-markdown p {
+  margin: 0;
+  padding: 0;
+}
+
+.definition-grid .dfg-definition-body > .dfg-markdown:first-child,
+.definition-grid .dfg-section-body > .dfg-markdown:first-child {
+  color: var(--dfg-text);
+  font-size: var(--dfg-font-body-emphasis);
+  line-height: 1.44;
+}
+
+.cd-content .definition-grid .dfg-markdown p + p,
+.definition-grid .dfg-markdown p + p {
+  margin-top: 0.32rem;
+}
+
+.cd-content .definition-grid .dfg-markdown ul,
+.cd-content .definition-grid .dfg-markdown ol,
+.definition-grid .dfg-markdown ul,
+.definition-grid .dfg-markdown ol {
+  margin: 0.12rem 0 0;
+  padding-left: 1.1rem;
+}
+
+.cd-content .definition-grid .dfg-markdown li,
+.definition-grid .dfg-markdown li {
+  margin: 0;
+  padding: 0;
+}
+
+.cd-content .definition-grid .dfg-markdown li + li,
+.definition-grid .dfg-markdown li + li {
+  margin-top: 0.18rem;
+}
+
+.definition-grid .dfg-markdown li::marker {
+  color: var(--dfg-accent);
+}
+
+.definition-grid .dfg-markdown a {
+  color: var(--dfg-accent-strong);
+  text-decoration: none;
+}
+
+.definition-grid .dfg-markdown a:hover {
+  text-decoration: underline;
+}
+
+.definition-grid .dfg-inline-code {
+  padding: 0.02em 0.22em;
+  border-radius: 0.2rem;
+  background: color-mix(in srgb, var(--dfg-text) 8%, transparent);
+}
+
+.definition-grid .dfg-label {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: baseline;
+  gap: 0.18rem 0.58rem;
+  min-width: 0;
+  margin: 0.5rem calc(-1 * var(--dfg-definition-pad-x)) 0;
+  padding: 0.46rem var(--dfg-definition-pad-x) 0;
+  border-top: 1px solid var(--dfg-divider-line);
+}
+
+.definition-grid .dfg-label-title {
+  margin: 0;
+  padding: 0;
+  color: var(--dfg-accent-strong);
+  font-size: 0.71875rem;
+  font-weight: 750;
+  line-height: 1.25;
+}
+
+.definition-grid .dfg-label-content {
+  min-width: 0;
+}
+
+.definition-grid .dfg-badge {
+  display: inline-block;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0.52rem 0 0;
+  padding: 0.28rem 0.48rem;
+  border: 1px solid var(--dfg-border-soft);
+  border-radius: 0.38rem;
+  background: var(--dfg-surface-soft);
+  color: var(--dfg-accent-strong);
+  font-size: 0.71875rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.definition-grid .dfg-columns {
+  display: grid;
+  grid-template-columns: repeat(
+    var(--dfg-column-count, 2),
+    minmax(0, 1fr)
+  );
+  gap: 0;
+  min-width: 0;
+  margin: 0.56rem calc(-1 * var(--dfg-section-pad-x)) 0;
+  padding: 0.52rem var(--dfg-section-pad-x) 0;
+  border-top: 1px solid var(--dfg-divider-line);
+}
+
+.definition-grid .dfg-column {
+  min-width: 0;
+  margin: 0;
+  padding: 0 0.62rem;
+}
+
+.definition-grid .dfg-column:first-child {
+  padding-left: 0;
+}
+
+.definition-grid .dfg-column:last-child {
+  padding-right: 0;
+}
+
+.definition-grid .dfg-column + .dfg-column {
+  border-left: 1px solid var(--dfg-divider-line);
+}
+
+.definition-grid .dfg-column-title,
+.definition-grid .dfg-intro-title,
+.definition-grid .dfg-comparison-title {
+  display: inline-block;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0;
+  color: var(--dfg-accent-strong);
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.definition-grid .dfg-column-title {
+  margin-bottom: 0.42rem;
+  padding: 0 0 0.38rem;
+  border: 0;
+  border-bottom: 1px solid var(--dfg-underline-line);
+  font-size: var(--dfg-font-title-column);
+  line-height: 1.24;
+}
+
+.definition-grid .dfg-column-title::after {
+  content: none;
+}
+
+.definition-grid .dfg-intro {
+  margin: 0.66rem calc(-1 * var(--dfg-section-pad-x)) 0;
+  padding: 0.58rem var(--dfg-section-pad-x) 0;
+  border-top: 1px solid var(--dfg-divider-line);
+}
+
+.definition-grid .dfg-intro-title {
+  margin-bottom: 0.38rem;
+  padding: 0 0 0.42rem;
+  border: 0;
+  border-bottom: 1px solid var(--dfg-underline-line);
+  font-size: var(--dfg-font-title-intro);
+  line-height: 1.25;
+  font-weight: 760;
+}
+
+.definition-grid .dfg-intro-title::after {
+  content: none;
+}
+
+.definition-grid .dfg-intro > .dfg-markdown {
+  color: color-mix(in srgb, var(--dfg-text) 88%, var(--dfg-muted));
+  font-size: 0.79rem;
+  line-height: 1.43;
+}
+
+/*
+ * Les comparaisons font partie de la section @intro : le JSX les rend
+ * à l'intérieur de .dfg-intro et leur donne un niveau de titre inférieur.
+ */
+.definition-grid .dfg-comparisons {
+  display: grid;
+  grid-template-columns: repeat(
+    min(var(--dfg-comparison-count, 2), 2),
+    minmax(0, 1fr)
+  );
+  gap: 0;
+  min-width: 0;
+  margin: 0.48rem 0 0;
+  padding: 0.48rem 0.55rem 0.12rem;
+  border: 0;
+  border-radius: 0.36rem;
+  background: var(--dfg-comparison-bg);
+}
+
+.definition-grid .dfg-comparisons--standalone {
+  margin: 0.62rem calc(-1 * var(--dfg-section-pad-x)) 0;
+  padding: 0.58rem var(--dfg-section-pad-x) 0.12rem;
+  border-top: 1px solid var(--dfg-divider-line);
+  border-radius: 0;
+  background: transparent;
+}
+
+.definition-grid .dfg-comparison {
+  min-width: 0;
+  margin: 0;
+  padding: 0 0.68rem 0.08rem;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.definition-grid .dfg-comparison:first-child {
+  padding-left: 0;
+}
+
+.definition-grid .dfg-comparison:last-child {
+  padding-right: 0;
+}
+
+.definition-grid .dfg-comparison + .dfg-comparison {
+  border-left: 1px solid var(--dfg-divider-line);
+}
+
+.definition-grid .dfg-comparison-title {
+  margin: 0 0 0.38rem;
+  padding: 0 0 0.32rem;
+  border: 0;
+  border-bottom: 1px solid var(--dfg-underline-line);
+  background: transparent;
+  color: color-mix(in srgb, var(--dfg-accent-strong) 84%, var(--dfg-text));
+  font-size: var(--dfg-font-title-comparison);
+  line-height: 1.24;
+  font-weight: 680;
+  text-align: left;
+}
+
+.definition-grid .dfg-comparison-title::after {
+  content: none;
+}
+
+.definition-grid .dfg-comparison-body {
+  padding: 0;
+  font-size: 0.76rem;
+  line-height: 1.4;
+}
+
+.definition-grid.dfg-error {
+  display: block;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--ifm-color-danger, #b42318);
+  border-radius: 0.45rem;
+  background: color-mix(
+    in srgb,
+    var(--ifm-color-danger, #b42318) 7%,
+    var(--dfg-surface)
+  );
+}
+
+.definition-grid .dfg-error-title {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: var(--ifm-color-danger-dark, #912018);
+  font-size: 0.78125rem;
+}
+
+.definition-grid .dfg-error-message,
+.definition-grid .dfg-error-help {
+  font-size: 0.71875rem;
+}
+
+.definition-grid .dfg-error-help {
+  margin-top: 0.3rem;
+  color: var(--dfg-muted);
+}
+
+@container (max-width: 680px) {
+  .definition-grid .dfg-definitions,
+  .definition-grid .dfg-comparisons,
+  .definition-grid .dfg-columns {
+    grid-template-columns: 1fr;
+  }
+
+  .definition-grid .dfg-column {
+    padding: 0.45rem 0 0;
+  }
+
+  .definition-grid .dfg-column:first-child {
+    padding-top: 0;
+  }
+
+  .definition-grid .dfg-column + .dfg-column {
+    margin-top: 0.45rem;
+    border-top: 1px solid var(--dfg-divider-line);
+    border-left: 0;
+  }
+
+  .definition-grid .dfg-comparison {
+    padding: 0.48rem 0 0;
+  }
+
+  .definition-grid .dfg-comparison:first-child {
+    padding-top: 0;
+  }
+
+  .definition-grid .dfg-comparison + .dfg-comparison {
+    margin-top: 0.48rem;
+    border-top: 1px solid var(--dfg-divider-line);
+    border-left: 0;
+  }
+}
+
+@media (max-width: 720px) {
+  .definition-grid .dfg-definitions,
+  .definition-grid .dfg-comparisons,
+  .definition-grid .dfg-columns {
+    grid-template-columns: 1fr;
+  }
+
+  .definition-grid .dfg-column {
+    padding: 0.45rem 0 0;
+  }
+
+  .definition-grid .dfg-column:first-child {
+    padding-top: 0;
+  }
+
+  .definition-grid .dfg-column + .dfg-column {
+    margin-top: 0.45rem;
+    border-top: 1px solid var(--dfg-divider-line);
+    border-left: 0;
+  }
+
+  .definition-grid .dfg-comparison {
+    padding: 0.48rem 0 0;
+  }
+
+  .definition-grid .dfg-comparison:first-child {
+    padding-top: 0;
+  }
+
+  .definition-grid .dfg-comparison + .dfg-comparison {
+    margin-top: 0.48rem;
+    border-top: 1px solid var(--dfg-divider-line);
+    border-left: 0;
+  }
+}

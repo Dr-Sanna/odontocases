@@ -16,6 +16,12 @@ import ClassificationDiagram, {
   parseClassificationDiagramHeadingTree,
   resolveHeadingDrivenClassificationDiagramSpec,
 } from "./ClassificationDiagram";
+import DiagnosticDiagram, {
+  isDiagnosticDiagramCodeBlock,
+} from "./DiagnosticDiagram";
+import DefinitionGrid, {
+  isDefinitionGridCodeBlock,
+} from "./DefinitionGrid";
 
 
 function appendSanitizeAttributes(schema, tagName, attributes) {
@@ -455,6 +461,18 @@ function unwrapFence(rawText) {
   return raw;
 }
 
+function renderDiagnosticDiagramFromCode(className, codeChildren) {
+  const raw = textFromReactChildren(codeChildren).replace(/\n$/, "");
+  if (!isDiagnosticDiagramCodeBlock(className, raw)) return null;
+  return <DiagnosticDiagram source={raw} />;
+}
+
+function renderDefinitionGridFromCode(className, codeChildren) {
+  const raw = textFromReactChildren(codeChildren).replace(/\n$/, "");
+  if (!isDefinitionGridCodeBlock(className, raw)) return null;
+  return <DefinitionGrid source={raw} />;
+}
+
 function parseClassificationDiagramBlock(rawText) {
   let raw = unwrapFence(rawText);
   if (!raw) return null;
@@ -532,6 +550,18 @@ const CaseMarkdown = memo(function CaseMarkdown({ children, scopeKey = "" }) {
         const onlyChild = Array.isArray(preChildren) ? preChildren[0] : preChildren;
 
         if (isValidElement(onlyChild)) {
+          const definitionGrid = renderDefinitionGridFromCode(
+            onlyChild.props?.className,
+            onlyChild.props?.children
+          );
+          if (definitionGrid) return definitionGrid;
+
+          const diagnosticDiagram = renderDiagnosticDiagramFromCode(
+            onlyChild.props?.className,
+            onlyChild.props?.children
+          );
+          if (diagnosticDiagram) return diagnosticDiagram;
+
           try {
             const diagram = renderClassificationDiagramFromCode(
               onlyChild.props?.className,
@@ -555,6 +585,18 @@ const CaseMarkdown = memo(function CaseMarkdown({ children, scopeKey = "" }) {
 
       code({ inline, className, children: codeChildren, node, ...props }) {
         if (!inline) {
+          const definitionGrid = renderDefinitionGridFromCode(
+            className,
+            codeChildren
+          );
+          if (definitionGrid) return definitionGrid;
+
+          const diagnosticDiagram = renderDiagnosticDiagramFromCode(
+            className,
+            codeChildren
+          );
+          if (diagnosticDiagram) return diagnosticDiagram;
+
           try {
             const diagram = renderClassificationDiagramFromCode(
               className,

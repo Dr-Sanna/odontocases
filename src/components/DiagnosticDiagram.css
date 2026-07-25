@@ -1,0 +1,470 @@
+/* Diagnostic Diagram — rendu React compact, autonome et isolé */
+
+.diagnostic-diagram,
+.diagnostic-diagram * {
+  box-sizing: border-box;
+}
+
+.cd-content .diagnostic-diagram,
+.diagnostic-diagram {
+  --dd-accent: var(--ifm-color-primary);
+  --dd-accent-text: var(
+    --ifm-color-primary-contrast-foreground,
+    var(--ifm-font-color-base)
+  );
+  --dd-border: var(--ifm-toc-border-color, rgba(2, 6, 23, 0.12));
+  --dd-border-strong: color-mix(
+    in srgb,
+    var(--ifm-font-color-base) 24%,
+    var(--dd-border)
+  );
+  --dd-surface: var(
+    --ifm-background-surface-color,
+    var(--ifm-background-color)
+  );
+  --dd-surface-alt: var(--ifm-background-color);
+  --dd-text: var(--ifm-font-color-base);
+  --dd-muted: var(
+    --ifm-color-content-secondary,
+    color-mix(in srgb, var(--ifm-font-color-base) 62%, transparent)
+  );
+  --dd-followup: var(--ifm-color-warning-dark, #d97706);
+  --dd-followup-soft: color-mix(
+    in srgb,
+    var(--dd-followup) 7%,
+    var(--dd-surface)
+  );
+  --dd-accent-soft: color-mix(
+    in srgb,
+    var(--dd-accent) 7%,
+    var(--dd-surface)
+  );
+
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0.65rem 0 var(--ifm-paragraph-margin-bottom);
+  color: var(--dd-text);
+  font-family: var(--ifm-font-family-base);
+  font-size: 10.5px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 1.22;
+  text-align: left;
+}
+
+/* Neutralise Typography.css et les styles Markdown globaux dans ce composant. */
+.cd-content .diagnostic-diagram :is(
+  p,
+  ul,
+  ol,
+  li,
+  div,
+  span,
+  section,
+  article,
+  aside,
+  a,
+  strong,
+  em,
+  code
+),
+.diagnostic-diagram :is(
+  p,
+  ul,
+  ol,
+  li,
+  div,
+  span,
+  section,
+  article,
+  aside,
+  a,
+  strong,
+  em,
+  code
+) {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.diagnostic-diagram .dd-groups {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.diagnostic-diagram .dd-group {
+  display: flex;
+  flex: var(--dd-group-weight, 1) 1 0;
+  flex-direction: column;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.diagnostic-diagram .dd-group-title,
+.diagnostic-diagram .dd-followup-title {
+  display: block;
+  margin: 0;
+  padding: 0.28rem 0.48rem;
+  border: 1px solid color-mix(in srgb, var(--dd-accent) 68%, var(--dd-border));
+  border-radius: 0.38rem;
+  background: var(--dd-accent);
+  color: var(--dd-accent-text);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 1.12;
+  text-align: center;
+}
+
+.diagnostic-diagram .dd-group-connector {
+  position: relative;
+  height: 0.48rem;
+  flex: 0 0 0.48rem;
+  margin: 0;
+  padding: 0;
+}
+
+.diagnostic-diagram .dd-group-connector::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  left: 50%;
+  width: 1px;
+  background: var(--dd-border-strong);
+  transform: translateX(-50%);
+}
+
+.diagnostic-diagram .dd-cards {
+  display: grid;
+  grid-template-columns: repeat(var(--dd-card-count, 1), minmax(0, 1fr));
+  gap: 0.4rem;
+  width: 100%;
+  min-width: 0;
+  height: auto;
+  margin: 0;
+  padding: 0;
+}
+
+.diagnostic-diagram .dd-card {
+  display: flex;
+  flex-direction: column;
+  align-self: start;
+  min-width: 0;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--dd-accent) 54%, var(--dd-border));
+  border-radius: 0.42rem;
+  background: var(--dd-surface);
+}
+
+.diagnostic-diagram .dd-card-title {
+  display: block;
+  margin: 0;
+  padding: 0.28rem 0.42rem;
+  border: 0;
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--dd-accent) 32%, var(--dd-border));
+  background: var(--dd-accent-soft);
+  color: var(--dd-text);
+  font-size: 11.5px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 1.14;
+  text-align: center;
+}
+
+.diagnostic-diagram .dd-card--title-redundant .dd-card-body {
+  padding-top: 0.18rem;
+}
+
+.diagnostic-diagram .dd-card-body {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  height: auto;
+  margin: 0;
+  padding: 0.1rem 0.42rem 0.22rem;
+}
+
+/* Rubrique compacte : titre — élément · élément · élément. */
+.diagnostic-diagram .dd-section {
+  display: block;
+  min-width: 0;
+  margin: 0;
+  padding: 0.24rem 0 0.22rem;
+  color: var(--dd-text);
+  font-size: 10.5px;
+  line-height: 1.22;
+}
+
+.diagnostic-diagram .dd-section + .dd-section {
+  border-top: 1px solid color-mix(in srgb, var(--dd-border) 68%, transparent);
+}
+
+.diagnostic-diagram .dd-section-title {
+  display: inline;
+  margin: 0;
+  padding: 0;
+  color: color-mix(in srgb, var(--dd-text) 84%, var(--dd-accent));
+  font-size: 10.8px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: inherit;
+  text-align: left;
+}
+
+.diagnostic-diagram .dd-section-title::after {
+  content: " — ";
+  color: var(--dd-muted);
+  font-weight: 500;
+}
+
+.cd-content .diagnostic-diagram .dd-list,
+.cd-content .diagnostic-diagram .dd-notes-list,
+.diagnostic-diagram .dd-list,
+.diagnostic-diagram .dd-notes-list {
+  display: inline;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cd-content .diagnostic-diagram .dd-list-item,
+.cd-content .diagnostic-diagram .dd-note,
+.diagnostic-diagram .dd-list-item,
+.diagnostic-diagram .dd-note {
+  display: inline;
+  margin: 0;
+  padding: 0;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.diagnostic-diagram .dd-list-item::before,
+.diagnostic-diagram .dd-note::before,
+.diagnostic-diagram .dd-list-item::marker,
+.diagnostic-diagram .dd-note::marker {
+  content: none;
+  display: none;
+}
+
+.diagnostic-diagram .dd-list-item:not(:last-child)::after,
+.diagnostic-diagram .dd-note:not(:last-child)::after {
+  content: " · ";
+  color: color-mix(in srgb, var(--dd-accent) 72%, var(--dd-muted));
+  font-weight: 800;
+}
+
+.cd-content .diagnostic-diagram .dd-inline-markdown,
+.cd-content .diagnostic-diagram .dd-inline-markdown > *,
+.cd-content .diagnostic-diagram .dd-inline-markdown p,
+.cd-content .diagnostic-diagram .dd-inline-markdown ul,
+.cd-content .diagnostic-diagram .dd-inline-markdown ol,
+.diagnostic-diagram .dd-inline-markdown,
+.diagnostic-diagram .dd-inline-markdown > *,
+.diagnostic-diagram .dd-inline-markdown p,
+.diagnostic-diagram .dd-inline-markdown ul,
+.diagnostic-diagram .dd-inline-markdown ol {
+  display: inline;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  font-size: inherit;
+  line-height: inherit;
+  overflow-wrap: anywhere;
+}
+
+.diagnostic-diagram .dd-inline-markdown a {
+  color: var(--ifm-color-primary);
+  text-decoration: none;
+}
+
+.diagnostic-diagram .dd-inline-markdown a:hover {
+  text-decoration: underline;
+}
+
+.diagnostic-diagram .dd-inline-code {
+  padding: 0.02em 0.2em;
+  border-radius: 0.2rem;
+  background: color-mix(in srgb, var(--dd-text) 8%, transparent);
+}
+
+.diagnostic-diagram .dd-convergence {
+  display: grid;
+  place-items: center;
+  min-height: 0.85rem;
+  margin: 0;
+  padding: 0;
+  color: var(--dd-muted);
+}
+
+.diagnostic-diagram .dd-convergence-line {
+  width: 1px;
+  height: 0.32rem;
+  background: var(--dd-border-strong);
+}
+
+.diagnostic-diagram .dd-convergence-arrow {
+  margin: -0.12rem 0 0;
+  padding: 0;
+  font-size: 9px;
+  line-height: 1;
+}
+
+.diagnostic-diagram .dd-followup {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--dd-followup) 68%, var(--dd-border));
+  border-radius: 0.44rem;
+  background: var(--dd-followup-soft);
+}
+
+.diagnostic-diagram .dd-followup-title {
+  border: 0;
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--dd-followup) 55%, var(--dd-border));
+  border-radius: 0;
+  background: color-mix(in srgb, var(--dd-followup) 88%, var(--dd-surface));
+  color: var(
+    --ifm-color-warning-contrast-foreground,
+    var(--ifm-font-color-base)
+  );
+  font-size: 11.8px;
+}
+
+.diagnostic-diagram .dd-followup-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+  min-width: 0;
+  margin: 0;
+  padding: 0.08rem 0.42rem 0.18rem;
+}
+
+.diagnostic-diagram .dd-section--followup {
+  padding: 0.24rem 0.38rem 0.22rem;
+}
+
+.diagnostic-diagram .dd-section--followup:nth-child(even) {
+  border-left: 1px solid
+    color-mix(in srgb, var(--dd-followup) 27%, var(--dd-border));
+}
+
+.diagnostic-diagram .dd-section--followup:nth-child(n + 3) {
+  border-top: 1px solid
+    color-mix(in srgb, var(--dd-followup) 27%, var(--dd-border));
+}
+
+.diagnostic-diagram .dd-section--followup .dd-section-title {
+  color: color-mix(in srgb, var(--dd-text) 84%, var(--dd-followup));
+}
+
+.diagnostic-diagram
+  .dd-section--followup
+  .dd-list-item:not(:last-child)::after {
+  color: color-mix(in srgb, var(--dd-followup) 72%, var(--dd-muted));
+}
+
+.diagnostic-diagram .dd-notes {
+  margin: 0.38rem 0 0;
+  padding: 0.28rem 0.42rem;
+  border-left: 2px solid var(--dd-border-strong);
+  background: color-mix(in srgb, var(--dd-surface-alt) 58%, transparent);
+  font-size: 9.8px;
+  line-height: 1.22;
+}
+
+.diagnostic-diagram .dd-notes-title {
+  display: inline;
+  margin: 0 0.35rem 0 0;
+  padding: 0;
+  color: var(--dd-muted);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.diagnostic-diagram .dd-notes-title::after {
+  content: " —";
+}
+
+.diagnostic-diagram .dd-notes-list {
+  display: inline;
+}
+
+.diagnostic-diagram.dd-error {
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--ifm-color-danger);
+  border-radius: 0.42rem;
+  background: color-mix(
+    in srgb,
+    var(--ifm-color-danger) 8%,
+    var(--dd-surface)
+  );
+}
+
+.diagnostic-diagram .dd-error-title {
+  display: block;
+  margin-bottom: 0.2rem;
+  color: var(--ifm-color-danger-darkest);
+  font-size: 11px;
+}
+
+[data-theme="dark"] .diagnostic-diagram .dd-error-title {
+  color: var(--ifm-color-danger-lightest);
+}
+
+.diagnostic-diagram .dd-error-message {
+  font-size: 10.5px;
+}
+
+.diagnostic-diagram .dd-error-help {
+  margin-top: 0.24rem;
+  color: var(--dd-muted);
+  font-size: 9.8px;
+}
+
+@media (max-width: 900px) {
+  .diagnostic-diagram .dd-groups {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .diagnostic-diagram .dd-group + .dd-group {
+    margin-top: 0.08rem;
+  }
+}
+
+@media (max-width: 680px) {
+  .diagnostic-diagram {
+    font-size: 11px;
+  }
+
+  .diagnostic-diagram .dd-cards,
+  .diagnostic-diagram .dd-followup-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .diagnostic-diagram .dd-section--followup:nth-child(even) {
+    border-left: 0;
+  }
+
+  .diagnostic-diagram .dd-section--followup:nth-child(n + 2) {
+    border-top: 1px solid
+      color-mix(in srgb, var(--dd-followup) 27%, var(--dd-border));
+  }
+}
