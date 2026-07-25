@@ -1,4 +1,4 @@
-/* Definition Grid v1.5 — séparateurs bord à bord et sous-sections affinées */
+/* Definition Grid v1.6 — comparaison mieux équilibrée et séparateurs internes adoucis */
 
 .definition-grid,
 .definition-grid * {
@@ -52,6 +52,12 @@
     in srgb,
     var(--dfg-accent) 26%,
     transparent
+  );
+  /* Traits internes : plus discrets que les séparateurs entre grandes sections. */
+  --dfg-inner-divider-line: color-mix(
+    in srgb,
+    var(--dfg-accent) 22%,
+    var(--ifm-toc-border-color, rgba(2, 6, 23, 0.12))
   );
   --dfg-text: var(--ifm-font-color-base);
   --dfg-muted: var(
@@ -328,7 +334,7 @@
 }
 
 .definition-grid .dfg-column + .dfg-column {
-  border-left: 1px solid var(--dfg-divider-line);
+  border-left: 1px solid var(--dfg-inner-divider-line);
 }
 
 .definition-grid .dfg-column-title,
@@ -396,11 +402,15 @@
   );
   gap: 0;
   min-width: 0;
-  margin: 0.48rem 0 0;
-  padding: 0.48rem 0.55rem 0.12rem;
+  margin: 0.64rem 0 0;
+  padding: 0.58rem 0.62rem 0.18rem;
   border: 0;
-  border-radius: 0.36rem;
+  border-radius: 0.42rem;
   background: var(--dfg-comparison-bg);
+}
+
+.definition-grid .dfg-comparisons[style*="--dfg-comparison-count: 2"] {
+  grid-template-columns: minmax(0, 47fr) minmax(0, 53fr);
 }
 
 .definition-grid .dfg-comparisons--standalone {
@@ -430,7 +440,7 @@
 }
 
 .definition-grid .dfg-comparison + .dfg-comparison {
-  border-left: 1px solid var(--dfg-divider-line);
+  border-left: 1px solid var(--dfg-inner-divider-line);
 }
 
 .definition-grid .dfg-comparison-title {
@@ -502,7 +512,7 @@
 
   .definition-grid .dfg-column + .dfg-column {
     margin-top: 0.45rem;
-    border-top: 1px solid var(--dfg-divider-line);
+    border-top: 1px solid var(--dfg-inner-divider-line);
     border-left: 0;
   }
 
@@ -516,7 +526,7 @@
 
   .definition-grid .dfg-comparison + .dfg-comparison {
     margin-top: 0.48rem;
-    border-top: 1px solid var(--dfg-divider-line);
+    border-top: 1px solid var(--dfg-inner-divider-line);
     border-left: 0;
   }
 }
@@ -538,7 +548,7 @@
 
   .definition-grid .dfg-column + .dfg-column {
     margin-top: 0.45rem;
-    border-top: 1px solid var(--dfg-divider-line);
+    border-top: 1px solid var(--dfg-inner-divider-line);
     border-left: 0;
   }
 
@@ -552,7 +562,7 @@
 
   .definition-grid .dfg-comparison + .dfg-comparison {
     margin-top: 0.48rem;
-    border-top: 1px solid var(--dfg-divider-line);
+    border-top: 1px solid var(--dfg-inner-divider-line);
     border-left: 0;
   }
 }

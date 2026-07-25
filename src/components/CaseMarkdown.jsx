@@ -22,6 +22,9 @@ import DiagnosticDiagram, {
 import DefinitionGrid, {
   isDefinitionGridCodeBlock,
 } from "./DefinitionGrid";
+import SectorGrid, {
+  isSectorGridCodeBlock,
+} from "./SectorGrid";
 
 
 function appendSanitizeAttributes(schema, tagName, attributes) {
@@ -473,6 +476,12 @@ function renderDefinitionGridFromCode(className, codeChildren) {
   return <DefinitionGrid source={raw} />;
 }
 
+function renderSectorGridFromCode(className, codeChildren) {
+  const raw = textFromReactChildren(codeChildren).replace(/\n$/, "");
+  if (!isSectorGridCodeBlock(className, raw)) return null;
+  return <SectorGrid source={raw} />;
+}
+
 function parseClassificationDiagramBlock(rawText) {
   let raw = unwrapFence(rawText);
   if (!raw) return null;
@@ -550,6 +559,12 @@ const CaseMarkdown = memo(function CaseMarkdown({ children, scopeKey = "" }) {
         const onlyChild = Array.isArray(preChildren) ? preChildren[0] : preChildren;
 
         if (isValidElement(onlyChild)) {
+          const sectorGrid = renderSectorGridFromCode(
+            onlyChild.props?.className,
+            onlyChild.props?.children
+          );
+          if (sectorGrid) return sectorGrid;
+
           const definitionGrid = renderDefinitionGridFromCode(
             onlyChild.props?.className,
             onlyChild.props?.children
@@ -585,6 +600,12 @@ const CaseMarkdown = memo(function CaseMarkdown({ children, scopeKey = "" }) {
 
       code({ inline, className, children: codeChildren, node, ...props }) {
         if (!inline) {
+          const sectorGrid = renderSectorGridFromCode(
+            className,
+            codeChildren
+          );
+          if (sectorGrid) return sectorGrid;
+
           const definitionGrid = renderDefinitionGridFromCode(
             className,
             codeChildren

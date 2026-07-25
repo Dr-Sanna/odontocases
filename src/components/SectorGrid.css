@@ -1,0 +1,315 @@
+/* src/components/SectorGrid.css */
+
+.sector-grid,
+.sector-grid * {
+  box-sizing: border-box;
+}
+
+.sector-grid {
+  --sg-accent: var(--ifm-color-primary);
+  --sg-accent-strong: var(--ifm-color-primary-darkest);
+  --sg-border: color-mix(
+    in srgb,
+    var(--sg-accent) 34%,
+    var(--ifm-toc-border-color)
+  );
+  --sg-border-soft: color-mix(
+    in srgb,
+    var(--sg-accent) 18%,
+    var(--ifm-toc-border-color)
+  );
+  --sg-surface: var(--ifm-background-surface-color);
+  --sg-surface-soft: color-mix(
+    in srgb,
+    var(--sg-accent) 5%,
+    var(--ifm-background-surface-color)
+  );
+  --sg-text: var(--ifm-font-color-base);
+  --sg-muted: var(--ifm-color-emphasis-700);
+  --sg-column-gap: 0.68rem;
+  --sg-card-gap: 0.62rem;
+
+  container-type: inline-size;
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0.86rem 0 var(--ifm-paragraph-margin-bottom);
+  padding: 0;
+  color: var(--sg-text);
+  font-family: var(--ifm-font-family-base);
+  font-size: 0.78rem;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 1.35;
+  letter-spacing: normal;
+  text-align: left;
+}
+
+[data-theme="dark"] .sector-grid {
+  --sg-accent-strong: var(--ifm-color-primary-lightest);
+  --sg-border: color-mix(
+    in srgb,
+    var(--sg-accent) 40%,
+    var(--ifm-toc-border-color)
+  );
+  --sg-border-soft: color-mix(
+    in srgb,
+    var(--sg-accent) 24%,
+    var(--ifm-toc-border-color)
+  );
+  --sg-surface-soft: color-mix(
+    in srgb,
+    var(--sg-accent) 9%,
+    var(--ifm-background-surface-color)
+  );
+}
+
+.sector-grid :is(
+  p,
+  ul,
+  ol,
+  li,
+  div,
+  span,
+  section,
+  article,
+  aside,
+  a,
+  strong,
+  em,
+  code
+) {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+/* Deux piles indépendantes : aucune hauteur de rangée partagée. */
+.sector-grid .sg-layout-desktop {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sg-column-gap);
+  align-items: start;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.sector-grid .sg-column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sg-card-gap);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+}
+
+/* Le flux linéaire garantit l’ordre I → VI sur panneau étroit. */
+.sector-grid .sg-layout-mobile {
+  display: none;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.sector-grid .sg-sector {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--sg-border);
+  border-radius: 0.54rem;
+  background: var(--sg-surface);
+  box-shadow: none;
+}
+
+.sector-grid .sg-sector-title {
+  display: block;
+  margin: 0;
+  padding: 0.44rem 0.68rem;
+  border: 0;
+  border-bottom: 1px solid var(--sg-border-soft);
+  background: var(--sg-surface-soft);
+  color: var(--sg-accent-strong);
+  font-size: 0.94rem;
+  font-style: normal;
+  font-weight: 750;
+  line-height: 1.16;
+  letter-spacing: normal;
+  text-align: left;
+  text-transform: none;
+}
+
+.sector-grid .sg-sector-body {
+  display: block;
+  min-width: 0;
+  margin: 0;
+  padding: 0.5rem 0.7rem 0.54rem;
+}
+
+.sector-grid .sg-markdown,
+.sector-grid .sg-markdown > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.sector-grid .sg-markdown p {
+  margin: 0;
+  padding: 0;
+}
+
+.sector-grid .sg-markdown p + p {
+  margin-top: 0.28rem;
+}
+
+.sector-grid .sg-markdown ul,
+.sector-grid .sg-markdown ol {
+  margin: 0;
+  padding-left: 1.02rem;
+}
+
+.sector-grid .sg-markdown li {
+  margin: 0;
+  padding: 0;
+}
+
+.sector-grid .sg-markdown li + li {
+  margin-top: 0.22rem;
+}
+
+.sector-grid .sg-markdown li::marker {
+  color: var(--sg-accent);
+}
+
+.sector-grid .sg-markdown a {
+  color: var(--sg-accent-strong);
+  text-decoration: none;
+}
+
+.sector-grid .sg-markdown a:hover {
+  text-decoration: underline;
+}
+
+.sector-grid .sg-inline-code {
+  padding: 0.06em 0.24em;
+  border-radius: 0.22rem;
+  background: color-mix(
+    in srgb,
+    var(--sg-accent) 8%,
+    var(--ifm-code-background)
+  );
+  color: inherit;
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 0.92em;
+}
+
+.sector-grid .sg-subzones {
+  display: block;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--sg-border-soft);
+}
+
+.sector-grid .sg-subzone {
+  display: grid;
+  grid-template-columns: 2.55rem minmax(0, 1fr);
+  align-items: start;
+  gap: 0.52rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0.42rem 0.7rem;
+}
+
+.sector-grid .sg-subzone + .sg-subzone {
+  border-top: 1px solid var(--sg-border-soft);
+}
+
+.sector-grid .sg-subzone-title {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  margin: 0;
+  padding: 0.18rem 0.24rem;
+  border: 1px solid var(--sg-border-soft);
+  border-radius: 0.32rem;
+  background: var(--sg-surface-soft);
+  color: var(--sg-accent-strong);
+  font-size: 0.77rem;
+  font-style: normal;
+  font-weight: 750;
+  line-height: 1.16;
+  letter-spacing: normal;
+  text-align: center;
+  text-transform: none;
+}
+
+.sector-grid .sg-subzone-content {
+  min-width: 0;
+  padding-top: 0.08rem;
+}
+
+.sector-grid.sg-error {
+  display: block;
+  padding: 0.68rem 0.8rem;
+  border: 1px solid var(--ifm-color-danger);
+  border-radius: 0.46rem;
+  background: color-mix(
+    in srgb,
+    var(--ifm-color-danger) 7%,
+    var(--ifm-background-surface-color)
+  );
+}
+
+.sector-grid .sg-error-title {
+  display: block;
+  margin-bottom: 0.24rem;
+  color: var(--ifm-color-danger-darkest);
+  font-size: 0.86rem;
+}
+
+[data-theme="dark"] .sector-grid .sg-error-title {
+  color: var(--ifm-color-danger-lightest);
+}
+
+.sector-grid .sg-error-message,
+.sector-grid .sg-error-help {
+  font-size: 0.78rem;
+}
+
+.sector-grid .sg-error-help {
+  margin-top: 0.28rem;
+  color: var(--sg-muted);
+}
+
+@container (max-width: 680px) {
+  .sector-grid .sg-layout-desktop {
+    display: none;
+  }
+
+  .sector-grid .sg-layout-mobile {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sg-card-gap);
+  }
+}
+
+/* Repli pour les navigateurs ne prenant pas encore en charge les container queries. */
+@media (max-width: 720px) {
+  .sector-grid .sg-layout-desktop {
+    display: none;
+  }
+
+  .sector-grid .sg-layout-mobile {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sg-card-gap);
+  }
+
+  .sector-grid .sg-subzone {
+    grid-template-columns: 2.45rem minmax(0, 1fr);
+  }
+}
