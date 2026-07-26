@@ -1,0 +1,348 @@
+/* src/components/EtiologyGrid.css */
+
+.etiology-grid,
+.etiology-grid * {
+  box-sizing: border-box;
+}
+
+.etiology-grid {
+  --etg-accent: var(--ifm-color-primary);
+  --etg-accent-strong: var(--ifm-color-primary-darkest);
+  --etg-border: color-mix(
+    in srgb,
+    var(--ifm-color-primary) 29%,
+    var(--ifm-toc-border-color)
+  );
+  --etg-border-soft: color-mix(
+    in srgb,
+    var(--ifm-color-primary) 15%,
+    var(--ifm-toc-border-color)
+  );
+  --etg-surface: color-mix(
+    in srgb,
+    var(--ifm-color-primary) 4%,
+    var(--ifm-background-surface-color)
+  );
+  --etg-surface-soft: color-mix(
+    in srgb,
+    var(--ifm-color-primary) 7%,
+    var(--ifm-background-surface-color)
+  );
+  --etg-surface-strong: color-mix(
+    in srgb,
+    var(--ifm-color-primary) 11%,
+    var(--ifm-background-surface-color)
+  );
+
+  display: grid;
+  grid-template-columns: repeat(var(--etg-grid-columns, 2), minmax(0, 1fr));
+  align-items: start;
+  gap: 1rem 1.05rem;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  margin: 0.9rem 0 1.35rem;
+  color: var(--ifm-font-color-base);
+  font-family: var(--ifm-font-family-base);
+}
+
+[data-theme="dark"] .etiology-grid {
+  --etg-accent-strong: var(--ifm-color-primary-lightest);
+}
+
+.etiology-grid .etg-entry {
+  min-width: 0;
+  max-width: 100%;
+  margin: 0;
+}
+
+.etiology-grid .etg-entry.etg-layout-wide {
+  grid-column: 1 / -1;
+}
+
+.etiology-grid .etg-entry-title {
+  display: block;
+  margin: 0 0 0.48rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ifm-heading-color);
+  font-family: var(--ifm-heading-font-family);
+  font-size: var(--ifm-h4-font-size, 1.2rem);
+  font-style: normal;
+  font-weight: var(--ifm-heading-font-weight, 700);
+  line-height: 1.28;
+  letter-spacing: normal;
+  text-transform: none;
+  scroll-margin-top: calc(var(--ifm-navbar-height, 0px) + 14px);
+}
+
+.etiology-card {
+  container-type: inline-size;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  margin: 0;
+  padding: 0.7rem 0.76rem;
+  border: 1px solid var(--etg-border);
+  border-radius: 0.52rem;
+  background: var(--etg-surface);
+  color: var(--ifm-font-color-base);
+  font-family: var(--ifm-font-family-base);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.etiology-card .etg-markdown,
+.etiology-card .etg-markdown > :first-child {
+  margin-top: 0;
+}
+
+.etiology-card .etg-markdown > :last-child {
+  margin-bottom: 0;
+}
+
+.etiology-card p,
+.etiology-card ul,
+.etiology-card ol {
+  margin-top: 0;
+  margin-bottom: 0.4rem;
+}
+
+.etiology-card ul,
+.etiology-card ol {
+  padding-left: 1.12rem;
+}
+
+.etiology-card li + li {
+  margin-top: 0.16rem;
+}
+
+.etiology-card li::marker {
+  color: var(--etg-accent-strong);
+}
+
+.etiology-card a {
+  color: var(--ifm-color-primary);
+  text-decoration: none;
+}
+
+.etiology-card a:hover {
+  text-decoration: underline;
+}
+
+.etiology-card .etg-inline-code {
+  padding: 0.08em 0.25em;
+  border-radius: 0.25rem;
+  background: color-mix(
+    in srgb,
+    var(--ifm-font-color-base) 8%,
+    transparent
+  );
+}
+
+.etiology-card .etg-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 0;
+  margin: -0.7rem -0.76rem 0.62rem;
+  border-bottom: 1px solid var(--etg-border-soft);
+  border-radius: 0.5rem 0.5rem 0 0;
+  background: var(--etg-surface-soft);
+}
+
+.etiology-card .etg-meta-item {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 0.48rem;
+  align-items: baseline;
+  min-width: 0;
+  padding: 0.42rem 0.7rem;
+}
+
+.etiology-card .etg-meta-item + .etg-meta-item {
+  border-left: 1px solid var(--etg-border-soft);
+}
+
+.etiology-card .etg-meta-label {
+  color: var(--etg-accent-strong);
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.etiology-card .etg-meta-content {
+  min-width: 0;
+}
+
+.etiology-card .etg-summary {
+  margin: 0 0 0.62rem;
+  padding: 0 0 0.58rem;
+  border-bottom: 1px solid var(--etg-border-soft);
+  font-size: 0.82rem;
+  line-height: 1.43;
+}
+
+.etiology-grid .etg-entry.etg-layout-compact .etg-summary:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.etiology-card .etg-sections {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  gap: 0;
+  min-width: 0;
+  margin: 0 -0.16rem;
+}
+
+.etiology-card .etg-section {
+  min-width: 0;
+  margin: 0;
+  padding: 0.14rem 0.58rem 0.28rem;
+}
+
+.etiology-card .etg-section + .etg-section {
+  border-left: 1px solid var(--etg-border-soft);
+}
+
+.etiology-card .etg-section-title,
+.etiology-card .etg-subsection-title {
+  display: inline-block;
+  max-width: 100%;
+  margin: 0 0 0.34rem;
+  padding: 0 0 0.22rem;
+  border-bottom: 1px solid color-mix(
+    in srgb,
+    var(--etg-accent) 42%,
+    transparent
+  );
+  color: var(--etg-accent-strong);
+  font-size: 0.8rem;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 1.24;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.etiology-card .etg-details-list {
+  display: grid;
+  gap: 0.42rem;
+  margin-top: 0.6rem;
+}
+
+.etiology-card .etg-details {
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--etg-border-soft);
+  border-radius: 0.4rem;
+  background: var(--etg-surface-soft);
+}
+
+.etiology-card .etg-details-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 2rem;
+  margin: 0;
+  padding: 0.42rem 0.6rem;
+  color: var(--etg-accent-strong);
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.25;
+  cursor: pointer;
+  list-style-position: inside;
+}
+
+.etiology-card .etg-details[open] .etg-details-summary {
+  border-bottom: 1px solid var(--etg-border-soft);
+  background: var(--etg-surface-strong);
+}
+
+.etiology-card .etg-details-body {
+  padding: 0.56rem 0.62rem 0.6rem;
+}
+
+.etiology-card .etg-subsections {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  gap: 0.54rem;
+  margin-top: 0.46rem;
+}
+
+.etiology-card .etg-subsection {
+  min-width: 0;
+  margin: 0;
+  padding: 0.46rem 0.52rem;
+  border: 1px solid var(--etg-border-soft);
+  border-radius: 0.34rem;
+  background: var(--ifm-background-surface-color);
+}
+
+.etiology-grid.etg-error {
+  display: block;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--ifm-color-danger);
+  border-radius: 0.5rem;
+  background: color-mix(
+    in srgb,
+    var(--ifm-color-danger) 7%,
+    var(--ifm-background-surface-color)
+  );
+}
+
+.etg-error-title {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: var(--ifm-color-danger-dark);
+  font-size: 0.84rem;
+}
+
+.etg-error-message,
+.etg-error-help {
+  font-size: 0.76rem;
+}
+
+.etg-error-help {
+  margin-top: 0.3rem;
+  opacity: 0.78;
+}
+
+@container (max-width: 650px) {
+  .etiology-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .etiology-card .etg-meta-grid,
+  .etiology-card .etg-sections,
+  .etiology-card .etg-subsections {
+    grid-template-columns: 1fr;
+  }
+
+  .etiology-card .etg-meta-item + .etg-meta-item,
+  .etiology-card .etg-section + .etg-section {
+    border-left: 0;
+    border-top: 1px solid var(--etg-border-soft);
+  }
+}
+
+@media (max-width: 820px) {
+  .etiology-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .etiology-card .etg-meta-grid,
+  .etiology-card .etg-sections,
+  .etiology-card .etg-subsections {
+    grid-template-columns: 1fr;
+  }
+
+  .etiology-card .etg-meta-item + .etg-meta-item,
+  .etiology-card .etg-section + .etg-section {
+    border-left: 0;
+    border-top: 1px solid var(--etg-border-soft);
+  }
+}

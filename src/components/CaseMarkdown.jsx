@@ -25,6 +25,12 @@ import DefinitionGrid, {
 import SectorGrid, {
   isSectorGridCodeBlock,
 } from "./SectorGrid";
+import DiagnosticGrid, {
+  isDiagnosticGridCodeBlock,
+} from "./DiagnosticGrid";
+import EtiologyGrid, {
+  isEtiologyGridCodeBlock,
+} from "./EtiologyGrid";
 
 
 function appendSanitizeAttributes(schema, tagName, attributes) {
@@ -134,7 +140,6 @@ const RATIO_FIT_CAP = 2.2;
 const COL_MIN_W = { 1: 320, 2: 280, 3: 260, 4: 240 };
 const COL_SOFT_MAX_W = { 1: 900, 2: 650, 3: 600, 4: 480 };
 
-const COL_GUTTER = 14;
 
 const STABLE_FRAMES_REQUIRED = 8;
 const STABLE_TIMEOUT_MS = 1200;
@@ -240,39 +245,103 @@ function normalizeNbspIn(node) {
 /* =========================
    LAYOUT WIDTH
    ========================= */
+
+/*
+ * Mesure le véritable contenu disponible pour CaseMarkdown.
+ *
+ * Les marges horizontales de la page sont portées par .cd-article-inner,
+ * pas par .cd-main. Recalculer la largeur depuis la fenêtre et la sidebar
+ * ignorait donc ces paddings et produisait des images plus larges que
+ * .cd-content.
+ *
+ * Le div racine de CaseMarkdown est un bloc qui occupe exactement la largeur
+ * disponible dans .cd-entry-body. Sa largeur reste correcte même lorsqu'un
+ * tableau enfant déborde.
+ */
+function getContentBoxWidth(el) {
+  if (!el) return 0;
+
+  const cs = getComputedStyle(el);
+  const rectW =
+    el.getBoundingClientRect?.().width ||
+    el.clientWidth ||
+    0;
+
+  const paddingX = px(cs.paddingLeft) + px(cs.paddingRight);
+  const borderX = px(cs.borderLeftWidth) + px(cs.borderRightWidth);
+
+  return Math.max(0, rectW - paddingX - borderX);
+}
+
 function getUsableWidthFromLayout(rootEl) {
-  const shell = rootEl.closest(".cd-shell") || document.querySelector(".cd-shell");
-  const baseW =
-    shell?.getBoundingClientRect?.().width ||
+  const candidates = [
+    rootEl,
+    rootEl?.closest?.(".cd-entry-body"),
+    rootEl?.closest?.(".cd-content"),
+    rootEl?.closest?.(".cd-article-inner"),
+  ];
+
+  for (const candidate of candidates) {
+    const width = getContentBoxWidth(candidate);
+    if (width > 0) return Math.max(0, width - 6);
+  }
+
+  const fallback =
     document.documentElement.clientWidth ||
     window.innerWidth ||
     0;
 
-  const side = document.querySelector(".cd-side");
-  const sideW = side ? side.getBoundingClientRect().width : 0;
-
-  const sideCS = side ? getComputedStyle(side) : null;
-  const sideBorderR = sideCS ? px(sideCS.borderRightWidth) : 0;
-
-  const main = rootEl.closest(".cd-main") || document.querySelector(".cd-main");
-  const mainCS = main ? getComputedStyle(main) : null;
-  const mainPad = mainCS ? px(mainCS.paddingLeft) + px(mainCS.paddingRight) : 0;
-
-  const article = rootEl.closest(".casedetail") || document.querySelector(".casedetail");
-  const artCS = article ? getComputedStyle(article) : null;
-  const artPadR = artCS ? px(artCS.paddingRight) : 0;
-
-  const SAFETY = 6;
-  const usable = baseW - sideW - sideBorderR - mainPad - artPadR - SAFETY;
-  return Math.max(0, usable);
+  return Math.max(0, fallback - 6);
 }
 
-function computeTargetW(cols, rootEl) {
+/*
+ * Réserve la place réellement prise par les paddings et bordures des cellules.
+ * Sans cela, la somme des images pouvait tenir mathématiquement dans
+ * .cd-content tout en faisant dépasser le tableau une fois les cellules
+ * ajoutées.
+ */
+function getRowHorizontalOverhead(row) {
+  if (!row) return 0;
+
+  const cells = Array.from(row.children).filter((cell) => {
+    const tag = String(cell?.tagName || "").toLowerCase();
+    return tag === "td" || tag === "th";
+  });
+
+  let overhead = 0;
+
+  for (const cell of cells) {
+    const cs = getComputedStyle(cell);
+    overhead +=
+      px(cs.paddingLeft) +
+      px(cs.paddingRight) +
+      px(cs.borderLeftWidth) +
+      px(cs.borderRightWidth);
+  }
+
+  const table = row.closest?.("table");
+  if (table) {
+    const tableCS = getComputedStyle(table);
+    overhead +=
+      px(tableCS.borderLeftWidth) +
+      px(tableCS.borderRightWidth);
+  }
+
+  return overhead;
+}
+
+function computeTargetW(cols, rootEl, row = null) {
   const c = Math.max(1, Math.min(4, cols));
   const usable = getUsableWidthFromLayout(rootEl);
   if (!usable) return 0;
 
-  const raw = (usable - COL_GUTTER * (c - 1)) / c;
+  const availableForImages = Math.max(
+    0,
+    usable - getRowHorizontalOverhead(row)
+  );
+  if (!availableForImages) return 0;
+
+  const raw = availableForImages / c;
   const minW = COL_MIN_W[c] ?? 240;
   const softMax = COL_SOFT_MAX_W[c] ?? 520;
 
@@ -303,8 +372,15 @@ function applyCaptionWidth(img, imgWpx, ratio, cols, rootEl) {
     tdInnerW = Math.max(0, td.getBoundingClientRect().width - padL - padR);
   }
 
-  const fallbackW = computeTargetW(cols, rootEl) - SAFETY_PX;
-  const capCeilWpx = tdInnerW > 0 ? tdInnerW : fallbackW;
+  const row = img.closest?.("tr");
+  const fallbackW = Math.max(
+    0,
+    computeTargetW(cols, rootEl, row) - SAFETY_PX
+  );
+  const capCeilWpx =
+    tdInnerW > 0 && fallbackW > 0
+      ? Math.min(tdInnerW, fallbackW)
+      : Math.max(tdInnerW, fallbackW);
 
   if (cols <= 1) {
     cap.style.removeProperty("width");
@@ -344,7 +420,7 @@ function layoutRow(row, rootEl) {
   const cols = items.length;
   row.setAttribute("data-cd-cols", String(cols));
 
-  const targetW = computeTargetW(cols, rootEl) - SAFETY_PX;
+  const targetW = computeTargetW(cols, rootEl, row) - SAFETY_PX;
   if (!targetW) return;
 
   const hMinReal = items.reduce((m, it) => Math.min(m, it.hReal), Infinity);
@@ -359,10 +435,16 @@ function layoutRow(row, rootEl) {
   let H = Math.min(baseH, hFit);
 
   const usable = getUsableWidthFromLayout(rootEl);
-  const availableRowW = Math.max(0, usable - SAFETY_PX * 2);
+  const rowOverhead = getRowHorizontalOverhead(row);
+  const availableRowW = Math.max(
+    0,
+    usable - rowOverhead - SAFETY_PX * 2
+  );
 
-  const totalW =
-    items.reduce((sum, it) => sum + H * it.ratio, 0) + COL_GUTTER * (cols - 1);
+  const totalW = items.reduce(
+    (sum, it) => sum + H * it.ratio,
+    0
+  );
 
   if (availableRowW > 0 && totalW > availableRowW) {
     const scale = availableRowW / totalW;
@@ -482,6 +564,18 @@ function renderSectorGridFromCode(className, codeChildren) {
   return <SectorGrid source={raw} />;
 }
 
+function renderDiagnosticGridFromCode(className, codeChildren) {
+  const raw = textFromReactChildren(codeChildren).replace(/\n$/, "");
+  if (!isDiagnosticGridCodeBlock(className, raw)) return null;
+  return <DiagnosticGrid source={raw} />;
+}
+
+function renderEtiologyGridFromCode(className, codeChildren) {
+  const raw = textFromReactChildren(codeChildren).replace(/\n$/, "");
+  if (!isEtiologyGridCodeBlock(className, raw)) return null;
+  return <EtiologyGrid source={raw} />;
+}
+
 function parseClassificationDiagramBlock(rawText) {
   let raw = unwrapFence(rawText);
   if (!raw) return null;
@@ -559,6 +653,18 @@ const CaseMarkdown = memo(function CaseMarkdown({ children, scopeKey = "" }) {
         const onlyChild = Array.isArray(preChildren) ? preChildren[0] : preChildren;
 
         if (isValidElement(onlyChild)) {
+          const etiologyGrid = renderEtiologyGridFromCode(
+            onlyChild.props?.className,
+            onlyChild.props?.children
+          );
+          if (etiologyGrid) return etiologyGrid;
+
+          const diagnosticGrid = renderDiagnosticGridFromCode(
+            onlyChild.props?.className,
+            onlyChild.props?.children
+          );
+          if (diagnosticGrid) return diagnosticGrid;
+
           const sectorGrid = renderSectorGridFromCode(
             onlyChild.props?.className,
             onlyChild.props?.children
@@ -600,6 +706,18 @@ const CaseMarkdown = memo(function CaseMarkdown({ children, scopeKey = "" }) {
 
       code({ inline, className, children: codeChildren, node, ...props }) {
         if (!inline) {
+          const etiologyGrid = renderEtiologyGridFromCode(
+            className,
+            codeChildren
+          );
+          if (etiologyGrid) return etiologyGrid;
+
+          const diagnosticGrid = renderDiagnosticGridFromCode(
+            className,
+            codeChildren
+          );
+          if (diagnosticGrid) return diagnosticGrid;
+
           const sectorGrid = renderSectorGridFromCode(
             className,
             codeChildren

@@ -104,11 +104,21 @@ function scrollToElWithOffset(el) {
 function scrollToHeadingText(text) {
   const wanted = norm(text);
   const headings = document.querySelectorAll(
-    ".cd-content h1, .cd-content h2, .cd-content h3, .cd-content h4, .cd-content h5, .cd-content h6"
+    [
+      ".cd-content h1",
+      ".cd-content h2",
+      ".cd-content h3",
+      ".cd-content h4",
+      ".cd-content h5",
+      ".cd-content h6",
+      ".cd-content .etg-entry-title",
+      ".cd-content [data-etiology-title]",
+    ].join(", ")
   );
 
   for (const h of headings) {
-    if (norm(h.textContent || "") === wanted) {
+    const candidate = h.getAttribute?.("data-etiology-title") || h.textContent || "";
+    if (norm(candidate) === wanted) {
       scrollToElWithOffset(h);
       return true;
     }
@@ -373,24 +383,48 @@ function cdgParseMarkdownHeadings(text, minLevel = 2, maxLevel = 6) {
   const headings = [];
   let inFence = false;
   let fenceMarker = null;
+  let fenceLanguage = "";
   let htmlTableDepth = 0;
 
   for (let lineNo = 0; lineNo < lines.length; lineNo += 1) {
     const line = lines[lineNo];
     const tableContext = htmlTableDepth > 0 || /<(?:table|thead|tbody|tfoot|tr|td|th)\b/i.test(line);
-    const fence = line.match(/^\s*(```+|~~~+)/);
+    const fence = line.match(/^\s*(```+|~~~+)\s*([^\s`~]*)?/);
+
     if (fence) {
       const markerChar = fence[1][0];
       if (!inFence) {
         inFence = true;
         fenceMarker = markerChar;
+        fenceLanguage = String(fence[2] || "").toLowerCase().trim();
       } else if (markerChar === fenceMarker) {
         inFence = false;
         fenceMarker = null;
+        fenceLanguage = "";
       }
       continue;
     }
-    if (inFence) continue;
+
+    if (inFence) {
+      if (fenceLanguage === "etiologygrid") {
+        const etiologyMatch = line.match(/^\s*@etiology\s+(.+?)\s*$/i);
+        if (etiologyMatch && 4 >= minLevel && 4 <= maxLevel) {
+          const headingText = cdgStripInlineMarkdown(etiologyMatch[1]);
+          if (headingText) {
+            headings.push({
+              level: 4,
+              text: headingText,
+              line: lineNo,
+              column: line.indexOf("@etiology"),
+              source: "etiologyGrid",
+              virtual: true,
+              children: [],
+            });
+          }
+        }
+      }
+      continue;
+    }
 
     const foundOnLine = [];
     const md = line.match(/^(#{1,6})\s+(.+?)\s*$/);
@@ -398,7 +432,15 @@ function cdgParseMarkdownHeadings(text, minLevel = 2, maxLevel = 6) {
       const level = md[1].length;
       if (level >= minLevel && level <= maxLevel) {
         const headingText = cdgStripInlineMarkdown(md[2]);
-        if (headingText) foundOnLine.push({ level, text: headingText, line: lineNo, column: line.indexOf(md[0]), source: "markdown" });
+        if (headingText) {
+          foundOnLine.push({
+            level,
+            text: headingText,
+            line: lineNo,
+            column: line.indexOf(md[0]),
+            source: "markdown",
+          });
+        }
       }
     }
 
@@ -409,7 +451,14 @@ function cdgParseMarkdownHeadings(text, minLevel = 2, maxLevel = 6) {
       if (level < minLevel || level > maxLevel) continue;
       const headingText = cdgStripInlineMarkdown(match[2]);
       if (!headingText) continue;
-      foundOnLine.push({ level, text: headingText, line: lineNo, column: match.index, source: "html", inHtmlTable: tableContext });
+      foundOnLine.push({
+        level,
+        text: headingText,
+        line: lineNo,
+        column: match.index,
+        source: "html",
+        inHtmlTable: tableContext,
+      });
     }
 
     const openCount = (line.match(/<table\b/gi) || []).length;

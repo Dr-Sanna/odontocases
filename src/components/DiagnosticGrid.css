@@ -1,0 +1,351 @@
+/* src/components/DiagnosticGrid.css */
+
+.diagnostic-grid,
+.diagnostic-grid * {
+  box-sizing: border-box;
+}
+
+.diagnostic-grid {
+  --dxg-accent: var(--ifm-color-primary);
+  --dxg-accent-strong: var(--ifm-color-primary-darkest);
+  --dxg-border: color-mix(
+    in srgb,
+    var(--dxg-accent) 34%,
+    var(--ifm-toc-border-color)
+  );
+  --dxg-border-soft: color-mix(
+    in srgb,
+    var(--dxg-accent) 18%,
+    var(--ifm-toc-border-color)
+  );
+  --dxg-surface: var(--ifm-background-surface-color);
+  --dxg-surface-soft: color-mix(
+    in srgb,
+    var(--dxg-accent) 5%,
+    var(--ifm-background-surface-color)
+  );
+  --dxg-text: var(--ifm-font-color-base);
+  --dxg-muted: var(--ifm-color-emphasis-700);
+
+  container-type: inline-size;
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0.82rem 0 var(--ifm-paragraph-margin-bottom);
+  padding: 0;
+  color: var(--dxg-text);
+  font-family: var(--ifm-font-family-base);
+  font-size: 0.8rem;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 1.4;
+  letter-spacing: normal;
+  text-align: left;
+}
+
+[data-theme="dark"] .diagnostic-grid {
+  --dxg-accent-strong: var(--ifm-color-primary-lightest);
+  --dxg-border: color-mix(
+    in srgb,
+    var(--dxg-accent) 40%,
+    var(--ifm-toc-border-color)
+  );
+  --dxg-border-soft: color-mix(
+    in srgb,
+    var(--dxg-accent) 24%,
+    var(--ifm-toc-border-color)
+  );
+  --dxg-surface-soft: color-mix(
+    in srgb,
+    var(--dxg-accent) 9%,
+    var(--ifm-background-surface-color)
+  );
+}
+
+.diagnostic-grid :is(
+  p,
+  ul,
+  ol,
+  li,
+  div,
+  span,
+  section,
+  article,
+  aside,
+  a,
+  strong,
+  em,
+  code
+) {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.diagnostic-grid .dxg-clinical-cards {
+  display: grid;
+  grid-template-columns: repeat(var(--dxg-columns, 2), minmax(0, 1fr));
+  gap: 0.58rem;
+  min-width: 0;
+  margin: 0 0 0.64rem;
+  padding: 0;
+}
+
+.diagnostic-grid .dxg-cards {
+  display: grid;
+  grid-template-columns: repeat(var(--dxg-columns, 3), minmax(0, 1fr));
+  gap: 0;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--dxg-border);
+  border-radius: 0.54rem;
+  background: var(--dxg-surface);
+}
+
+.diagnostic-grid .dxg-card {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  background: var(--dxg-surface);
+}
+
+.diagnostic-grid.dxg-layout-clinical .dxg-card {
+  overflow: hidden;
+  border: 1px solid var(--dxg-border);
+  border-radius: 0.5rem;
+}
+
+.diagnostic-grid.dxg-layout-cards .dxg-card + .dxg-card {
+  border-left: 1px solid var(--dxg-border-soft);
+}
+
+.diagnostic-grid .dxg-card-title,
+.diagnostic-grid .dxg-matrix-title {
+  display: block;
+  margin: 0;
+  border: 0;
+  background: var(--dxg-surface-soft);
+  color: var(--dxg-accent-strong);
+  font-style: normal;
+  font-weight: 750;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.diagnostic-grid .dxg-card-title {
+  padding: 0.42rem 0.64rem;
+  border-bottom: 1px solid var(--dxg-border-soft);
+  font-size: 0.88rem;
+  line-height: 1.2;
+  text-align: left;
+}
+
+.diagnostic-grid .dxg-card-body {
+  min-width: 0;
+  margin: 0;
+  padding: 0.5rem 0.66rem 0.55rem;
+}
+
+.diagnostic-grid .dxg-markdown,
+.diagnostic-grid .dxg-markdown > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.diagnostic-grid .dxg-markdown p {
+  margin: 0;
+  padding: 0;
+}
+
+.diagnostic-grid .dxg-markdown p + p {
+  margin-top: 0.28rem;
+}
+
+.diagnostic-grid .dxg-markdown ul,
+.diagnostic-grid .dxg-markdown ol {
+  margin: 0;
+  padding-left: 1.08rem;
+}
+
+.diagnostic-grid .dxg-markdown li {
+  margin: 0;
+  padding: 0;
+}
+
+.diagnostic-grid .dxg-markdown li + li {
+  margin-top: 0.2rem;
+}
+
+.diagnostic-grid .dxg-markdown li::marker {
+  color: var(--dxg-accent);
+}
+
+.diagnostic-grid .dxg-markdown ul ul,
+.diagnostic-grid .dxg-markdown ol ol,
+.diagnostic-grid .dxg-markdown ul ol,
+.diagnostic-grid .dxg-markdown ol ul {
+  margin-top: 0.14rem;
+}
+
+.diagnostic-grid .dxg-markdown a {
+  color: var(--dxg-accent-strong);
+  text-decoration: none;
+}
+
+.diagnostic-grid .dxg-markdown a:hover {
+  text-decoration: underline;
+}
+
+.diagnostic-grid .dxg-inline-code {
+  padding: 0.06em 0.24em;
+  border-radius: 0.22rem;
+  background: color-mix(
+    in srgb,
+    var(--dxg-accent) 8%,
+    var(--ifm-code-background)
+  );
+  color: inherit;
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 0.92em;
+}
+
+.diagnostic-grid .dxg-matrix {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--dxg-border);
+  border-radius: 0.54rem;
+  background: var(--dxg-surface);
+}
+
+.diagnostic-grid .dxg-matrix-title {
+  padding: 0.45rem 0.68rem;
+  border-bottom: 1px solid var(--dxg-border);
+  font-size: 0.92rem;
+  line-height: 1.18;
+  text-align: left;
+}
+
+.diagnostic-grid .dxg-matrix-rows {
+  display: block;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.diagnostic-grid .dxg-criterion {
+  display: grid;
+  grid-template-columns: 7.8rem minmax(0, 1fr);
+  align-items: stretch;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.diagnostic-grid .dxg-criterion + .dxg-criterion {
+  border-top: 1px solid var(--dxg-border-soft);
+}
+
+.diagnostic-grid .dxg-criterion-title {
+  display: flex;
+  align-items: flex-start;
+  min-width: 0;
+  margin: 0;
+  padding: 0.43rem 0.58rem;
+  border-right: 1px solid var(--dxg-border-soft);
+  background: var(--dxg-surface-soft);
+  color: var(--dxg-accent-strong);
+  font-size: 0.79rem;
+  font-style: normal;
+  font-weight: 750;
+  line-height: 1.25;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.diagnostic-grid .dxg-criterion-content {
+  min-width: 0;
+  margin: 0;
+  padding: 0.42rem 0.64rem 0.46rem;
+}
+
+.diagnostic-grid.dxg-error {
+  display: block;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--ifm-color-danger);
+  border-radius: 0.46rem;
+  background: color-mix(
+    in srgb,
+    var(--ifm-color-danger) 7%,
+    var(--ifm-background-surface-color)
+  );
+}
+
+.diagnostic-grid .dxg-error-title {
+  display: block;
+  margin-bottom: 0.24rem;
+  color: var(--ifm-color-danger-darkest);
+  font-size: 0.86rem;
+}
+
+[data-theme="dark"] .diagnostic-grid .dxg-error-title {
+  color: var(--ifm-color-danger-lightest);
+}
+
+.diagnostic-grid .dxg-error-message,
+.diagnostic-grid .dxg-error-help {
+  font-size: 0.78rem;
+}
+
+.diagnostic-grid .dxg-error-help {
+  margin-top: 0.28rem;
+  color: var(--dxg-muted);
+}
+
+@container (max-width: 680px) {
+  .diagnostic-grid .dxg-clinical-cards,
+  .diagnostic-grid .dxg-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .diagnostic-grid.dxg-layout-cards .dxg-card + .dxg-card {
+    border-left: 0;
+    border-top: 1px solid var(--dxg-border-soft);
+  }
+
+  .diagnostic-grid .dxg-criterion {
+    grid-template-columns: 1fr;
+  }
+
+  .diagnostic-grid .dxg-criterion-title {
+    border-right: 0;
+    border-bottom: 1px solid var(--dxg-border-soft);
+  }
+}
+
+@media (max-width: 720px) {
+  .diagnostic-grid .dxg-clinical-cards,
+  .diagnostic-grid .dxg-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .diagnostic-grid.dxg-layout-cards .dxg-card + .dxg-card {
+    border-left: 0;
+    border-top: 1px solid var(--dxg-border-soft);
+  }
+
+  .diagnostic-grid .dxg-criterion {
+    grid-template-columns: 1fr;
+  }
+
+  .diagnostic-grid .dxg-criterion-title {
+    border-right: 0;
+    border-bottom: 1px solid var(--dxg-border-soft);
+  }
+}
