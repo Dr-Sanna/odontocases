@@ -31,6 +31,12 @@ import DiagnosticGrid, {
 import EtiologyGrid, {
   isEtiologyGridCodeBlock,
 } from "./EtiologyGrid";
+import ClinicalPathway, {
+  isClinicalPathwayCodeBlock,
+} from "./ClinicalPathway";
+import ClinicalEvolution, {
+  isClinicalEvolutionCodeBlock,
+} from "./ClinicalEvolution";
 
 
 function appendSanitizeAttributes(schema, tagName, attributes) {
@@ -576,6 +582,18 @@ function renderEtiologyGridFromCode(className, codeChildren) {
   return <EtiologyGrid source={raw} />;
 }
 
+function renderClinicalPathwayFromCode(className, codeChildren) {
+  const raw = textFromReactChildren(codeChildren).replace(/\n$/, "");
+  if (!isClinicalPathwayCodeBlock(className, raw)) return null;
+  return <ClinicalPathway source={raw} />;
+}
+
+function renderClinicalEvolutionFromCode(className, codeChildren) {
+  const raw = textFromReactChildren(codeChildren).replace(/\n$/, "");
+  if (!isClinicalEvolutionCodeBlock(className, raw)) return null;
+  return <ClinicalEvolution source={raw} />;
+}
+
 function parseClassificationDiagramBlock(rawText) {
   let raw = unwrapFence(rawText);
   if (!raw) return null;
@@ -653,6 +671,18 @@ const CaseMarkdown = memo(function CaseMarkdown({ children, scopeKey = "" }) {
         const onlyChild = Array.isArray(preChildren) ? preChildren[0] : preChildren;
 
         if (isValidElement(onlyChild)) {
+          const clinicalEvolution = renderClinicalEvolutionFromCode(
+            onlyChild.props?.className,
+            onlyChild.props?.children
+          );
+          if (clinicalEvolution) return clinicalEvolution;
+
+          const clinicalPathway = renderClinicalPathwayFromCode(
+            onlyChild.props?.className,
+            onlyChild.props?.children
+          );
+          if (clinicalPathway) return clinicalPathway;
+
           const etiologyGrid = renderEtiologyGridFromCode(
             onlyChild.props?.className,
             onlyChild.props?.children
@@ -706,6 +736,18 @@ const CaseMarkdown = memo(function CaseMarkdown({ children, scopeKey = "" }) {
 
       code({ inline, className, children: codeChildren, node, ...props }) {
         if (!inline) {
+          const clinicalEvolution = renderClinicalEvolutionFromCode(
+            className,
+            codeChildren
+          );
+          if (clinicalEvolution) return clinicalEvolution;
+
+          const clinicalPathway = renderClinicalPathwayFromCode(
+            className,
+            codeChildren
+          );
+          if (clinicalPathway) return clinicalPathway;
+
           const etiologyGrid = renderEtiologyGridFromCode(
             className,
             codeChildren

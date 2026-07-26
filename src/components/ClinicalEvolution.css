@@ -1,0 +1,420 @@
+/* src/components/ClinicalEvolution.css */
+
+.clinical-evolution,
+.clinical-evolution * {
+  box-sizing: border-box;
+}
+
+.clinical-evolution {
+  --cev-accent: var(--ifm-color-primary);
+  --cev-accent-strong: var(--ifm-color-primary-darkest);
+  --cev-accent-soft: color-mix(
+    in srgb,
+    var(--ifm-color-primary) 10%,
+    transparent
+  );
+  --cev-border: color-mix(
+    in srgb,
+    var(--ifm-color-primary) 19%,
+    var(--ifm-toc-border-color)
+  );
+  --cev-border-soft: color-mix(
+    in srgb,
+    var(--ifm-color-primary) 9%,
+    var(--ifm-toc-border-color)
+  );
+  --cev-surface: var(--ifm-background-surface-color);
+  --cev-surface-soft: color-mix(
+    in srgb,
+    var(--ifm-color-primary) 4%,
+    var(--ifm-background-surface-color)
+  );
+  --cev-text: var(--ifm-font-color-base);
+  --cev-muted: var(--ifm-color-emphasis-700, var(--ifm-font-color-base));
+
+  container-type: inline-size;
+  display: grid;
+  gap: 1.15rem;
+  width: 100%;
+  min-width: 0;
+  margin: 0.9rem 0 1.45rem;
+  color: var(--cev-text);
+  font-family: var(--ifm-font-family-base);
+}
+
+[data-theme="dark"] .clinical-evolution {
+  --cev-accent-strong: var(--ifm-color-primary-lightest);
+  --cev-muted: var(--ifm-color-emphasis-700, var(--ifm-font-color-base));
+}
+
+.clinical-evolution .cev-markdown > :first-child {
+  margin-top: 0;
+}
+
+.clinical-evolution .cev-markdown > :last-child {
+  margin-bottom: 0;
+}
+
+.clinical-evolution .cev-markdown p {
+  line-height: 1.5;
+}
+
+.clinical-evolution .cev-markdown ul,
+.clinical-evolution .cev-markdown ol {
+  margin-bottom: 0.5rem;
+  padding-left: 1.2rem;
+}
+
+.clinical-evolution .cev-markdown li + li {
+  margin-top: 0.2rem;
+}
+
+.clinical-evolution .cev-markdown li::marker {
+  color: var(--cev-accent-strong);
+}
+
+.clinical-evolution .cev-inline-code {
+  padding: 0.08em 0.25em;
+  border-radius: 0.25rem;
+  background: color-mix(in srgb, var(--cev-text) 8%, transparent);
+}
+
+/* Bandeau introductif aigu / chronique : fond commun, sans carte externe. */
+.clinical-evolution .cev-overview {
+  display: grid;
+  grid-template-columns: repeat(var(--cev-overview-count, 2), minmax(0, 1fr));
+  overflow: hidden;
+  border-radius: 0.6rem;
+  background: var(--cev-surface-soft);
+}
+
+.clinical-evolution .cev-overview-item {
+  min-width: 0;
+  padding: 0.8rem 0.95rem;
+}
+
+.clinical-evolution .cev-overview-item + .cev-overview-item {
+  border-left: 1px solid var(--cev-border);
+}
+
+.clinical-evolution .cev-overview-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.8rem;
+  min-width: 0;
+}
+
+.clinical-evolution .cev-overview-title {
+  margin: 0;
+  color: var(--cev-accent-strong);
+  font-size: 0.98rem;
+  line-height: 1.3;
+  font-weight: 700;
+}
+
+.clinical-evolution .cev-duration {
+  flex: 0 0 auto;
+  padding: 0.16rem 0.48rem;
+  border-radius: 999px;
+  background: var(--cev-accent-soft);
+  color: var(--cev-accent-strong);
+  font-size: 0.76rem;
+  line-height: 1.2;
+  font-weight: 700;
+}
+
+.clinical-evolution .cev-overview-context {
+  margin-top: 0.42rem;
+  color: var(--cev-muted);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+/* Les parties détaillées ne sont pas entourées d'une bordure externe. */
+.clinical-evolution .cev-section {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.clinical-evolution .cev-section-title {
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 0 0.9rem;
+  padding-bottom: 0.22rem;
+  border-bottom: 2px solid color-mix(in srgb, var(--cev-accent) 56%, transparent);
+  color: var(--cev-accent-strong);
+  font-size: 1rem;
+  line-height: 1.35;
+  font-weight: 700;
+}
+
+/* Frise aiguë */
+.clinical-evolution .cev-timeline {
+  display: flex;
+  align-items: stretch;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.clinical-evolution .cev-stage-sequence {
+  display: contents;
+}
+
+.clinical-evolution .cev-stage {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 0.95rem 0.85rem 0.82rem;
+  border: 1px solid var(--cev-border);
+  border-radius: 0.55rem;
+  background: var(--cev-surface);
+}
+
+.clinical-evolution .cev-stage-number {
+  position: absolute;
+  top: -0.68rem;
+  left: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.48rem;
+  height: 1.48rem;
+  border: 1.5px solid var(--cev-accent);
+  border-radius: 999px;
+  background: var(--ifm-background-surface-color);
+  color: var(--cev-accent-strong);
+  font-size: 0.73rem;
+  line-height: 1;
+  font-weight: 750;
+}
+
+.clinical-evolution .cev-stage-title {
+  margin: 0 0 0.45rem;
+  color: var(--cev-text);
+  font-size: 0.94rem;
+  line-height: 1.35;
+  font-weight: 700;
+}
+
+.clinical-evolution .cev-stage-body {
+  color: var(--cev-text);
+  font-size: 0.88rem;
+  line-height: 1.47;
+}
+
+.clinical-evolution .cev-stage-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1rem;
+  color: var(--cev-muted);
+  font-size: 1.15rem;
+}
+
+.clinical-evolution .cev-outcome {
+  margin-top: 0.65rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid var(--cev-border-soft);
+}
+
+.clinical-evolution .cev-outcome-title {
+  margin-bottom: 0.18rem;
+  color: var(--cev-accent-strong);
+  font-size: 0.76rem;
+  line-height: 1.25;
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: 0.035em;
+}
+
+.clinical-evolution .cev-outcome-body {
+  color: var(--cev-muted);
+  font-size: 0.83rem;
+  line-height: 1.42;
+}
+
+/* Profils chroniques */
+.clinical-evolution .cev-profiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+  min-width: 0;
+}
+
+.clinical-evolution .cev-profile {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--cev-border);
+  border-radius: 0.55rem;
+  background: var(--cev-surface);
+}
+
+.clinical-evolution .cev-profile-wide {
+  grid-column: 1 / -1;
+}
+
+.clinical-evolution .cev-profile-title {
+  margin: 0;
+  padding: 0.65rem 0.8rem;
+  background: var(--cev-surface-soft);
+  color: var(--cev-accent-strong);
+  font-size: 0.95rem;
+  line-height: 1.3;
+  font-weight: 700;
+}
+
+.clinical-evolution .cev-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--cev-meta-count, 1), minmax(0, 1fr));
+  border-bottom: 1px solid var(--cev-border-soft);
+}
+
+.clinical-evolution .cev-meta {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.55rem;
+  align-items: baseline;
+  min-width: 0;
+  padding: 0.55rem 0.8rem;
+}
+
+.clinical-evolution .cev-meta + .cev-meta {
+  border-left: 1px solid var(--cev-border-soft);
+}
+
+.clinical-evolution .cev-meta-title {
+  color: var(--cev-accent-strong);
+  font-size: 0.79rem;
+  font-weight: 750;
+}
+
+.clinical-evolution .cev-meta-body {
+  color: var(--cev-text);
+  font-size: 0.88rem;
+  line-height: 1.42;
+}
+
+.clinical-evolution .cev-profile-summary {
+  padding: 0.7rem 0.8rem;
+  color: var(--cev-text);
+  font-size: 0.9rem;
+  line-height: 1.47;
+}
+
+.clinical-evolution .cev-profile-sections {
+  display: grid;
+  grid-template-columns: repeat(var(--cev-section-count, 1), minmax(0, 1fr));
+  border-top: 1px solid var(--cev-border-soft);
+}
+
+.clinical-evolution .cev-profile-section {
+  min-width: 0;
+  padding: 0.65rem 0.8rem;
+}
+
+.clinical-evolution .cev-profile-section + .cev-profile-section {
+  border-left: 1px solid var(--cev-border-soft);
+}
+
+.clinical-evolution .cev-profile-section-title {
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 0 0.32rem;
+  padding-bottom: 0.12rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--cev-accent) 44%, transparent);
+  color: var(--cev-accent-strong);
+  font-size: 0.83rem;
+  line-height: 1.3;
+  font-weight: 700;
+}
+
+.clinical-evolution .cev-profile-section-body {
+  color: var(--cev-text);
+  font-size: 0.85rem;
+  line-height: 1.44;
+}
+
+.clinical-evolution.cev-error {
+  display: block;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--ifm-color-danger) 42%, transparent);
+  border-radius: 0.55rem;
+  background: color-mix(
+    in srgb,
+    var(--ifm-color-danger) 7%,
+    var(--ifm-background-surface-color)
+  );
+}
+
+.clinical-evolution .cev-error-title {
+  color: var(--ifm-color-danger-darkest, var(--ifm-color-danger));
+}
+
+.clinical-evolution .cev-error-message {
+  margin-top: 0.35rem;
+}
+
+.clinical-evolution .cev-error-help {
+  margin-top: 0.35rem;
+  color: var(--cev-muted);
+  font-size: 0.86rem;
+}
+
+@container (max-width: 760px) {
+  .clinical-evolution .cev-overview {
+    grid-template-columns: 1fr;
+  }
+
+  .clinical-evolution .cev-overview-item + .cev-overview-item {
+    border-left: 0;
+    border-top: 1px solid var(--cev-border);
+  }
+
+  .clinical-evolution .cev-timeline {
+    flex-direction: column;
+  }
+
+  .clinical-evolution .cev-stage-sequence {
+    display: contents;
+  }
+
+  .clinical-evolution .cev-stage-arrow {
+    min-height: 0.5rem;
+    transform: rotate(90deg);
+  }
+
+  .clinical-evolution .cev-profiles,
+  .clinical-evolution .cev-meta-grid,
+  .clinical-evolution .cev-profile-sections {
+    grid-template-columns: 1fr;
+  }
+
+  .clinical-evolution .cev-meta + .cev-meta,
+  .clinical-evolution .cev-profile-section + .cev-profile-section {
+    border-left: 0;
+    border-top: 1px solid var(--cev-border-soft);
+  }
+}
+
+@media (max-width: 800px) {
+  .clinical-evolution .cev-overview,
+  .clinical-evolution .cev-profiles {
+    grid-template-columns: 1fr;
+  }
+
+  .clinical-evolution .cev-overview-item + .cev-overview-item {
+    border-left: 0;
+    border-top: 1px solid var(--cev-border);
+  }
+
+  .clinical-evolution .cev-timeline {
+    flex-direction: column;
+  }
+
+  .clinical-evolution .cev-stage-arrow {
+    transform: rotate(90deg);
+  }
+}

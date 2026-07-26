@@ -1,0 +1,407 @@
+/* src/components/ClinicalPathway.css */
+
+.clinical-pathway,
+.clinical-pathway * {
+  box-sizing: border-box;
+}
+
+.clinical-pathway {
+  --cpg-accent: var(--ifm-color-primary);
+  --cpg-accent-strong: var(--ifm-color-primary-darkest);
+  --cpg-border: color-mix(
+    in srgb,
+    var(--ifm-color-primary) 24%,
+    var(--ifm-toc-border-color)
+  );
+  --cpg-border-soft: color-mix(
+    in srgb,
+    var(--ifm-color-primary) 11%,
+    var(--ifm-toc-border-color)
+  );
+  --cpg-surface: var(--ifm-background-surface-color);
+  --cpg-surface-soft: color-mix(
+    in srgb,
+    var(--ifm-color-primary) 5%,
+    var(--ifm-background-surface-color)
+  );
+  --cpg-surface-strong: color-mix(
+    in srgb,
+    var(--ifm-color-primary) 8%,
+    var(--ifm-background-surface-color)
+  );
+  --cpg-text: var(--ifm-font-color-base);
+  --cpg-muted: var(--ifm-color-emphasis-700, var(--ifm-font-color-base));
+
+  container-type: inline-size;
+  display: grid;
+  gap: 1.25rem;
+  width: 100%;
+  min-width: 0;
+  margin: 0.9rem 0 1.4rem;
+  color: var(--cpg-text);
+  font-family: var(--ifm-font-family-base);
+}
+
+[data-theme="dark"] .clinical-pathway {
+  --cpg-accent-strong: var(--ifm-color-primary-lightest);
+}
+
+.clinical-pathway .cpg-markdown > :first-child {
+  margin-top: 0;
+}
+
+.clinical-pathway .cpg-markdown > :last-child {
+  margin-bottom: 0;
+}
+
+.clinical-pathway .cpg-markdown p {
+  line-height: 1.55;
+}
+
+.clinical-pathway .cpg-markdown ul,
+.clinical-pathway .cpg-markdown ol {
+  margin-bottom: 0.55rem;
+  padding-left: 1.25rem;
+}
+
+.clinical-pathway .cpg-markdown li + li {
+  margin-top: 0.22rem;
+}
+
+.clinical-pathway .cpg-markdown li::marker {
+  color: var(--cpg-accent-strong);
+}
+
+.clinical-pathway .cpg-inline-code {
+  padding: 0.08em 0.25em;
+  border-radius: 0.25rem;
+  background: color-mix(in srgb, var(--cpg-text) 8%, transparent);
+}
+
+.clinical-pathway .cpg-intro {
+  margin: 0;
+  color: var(--cpg-muted);
+  font-size: 0.96rem;
+}
+
+/* Les deux grandes parties ne sont volontairement pas enfermées dans
+   une carte : les bordures restent réservées aux éléments internes. */
+.clinical-pathway .cpg-panel {
+  min-width: 0;
+  padding: 0.15rem 0 0.4rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.clinical-pathway .cpg-panel-title {
+  margin: 0 0 0.9rem;
+  color: var(--cpg-accent-strong);
+  font-size: 1rem;
+  line-height: 1.3;
+  font-weight: 700;
+}
+
+.clinical-pathway .cpg-steps {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: min(100%, 860px);
+  margin: 0 auto;
+}
+
+.clinical-pathway .cpg-step-sequence {
+  display: contents;
+}
+
+.clinical-pathway .cpg-step-row {
+  display: grid;
+  grid-template-columns: 2.1rem minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: center;
+  min-width: 0;
+}
+
+.clinical-pathway .cpg-step-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1.5px solid var(--cpg-accent);
+  border-radius: 999px;
+  color: var(--cpg-accent-strong);
+  background: var(--cpg-surface);
+  font-size: 0.92rem;
+  line-height: 1;
+  font-weight: 700;
+}
+
+.clinical-pathway .cpg-step-card,
+.clinical-pathway .cpg-decision {
+  min-width: 0;
+  padding: 0.72rem 0.9rem;
+  border: 1px solid var(--cpg-border);
+  border-radius: 0.45rem;
+  background: var(--cpg-surface);
+}
+
+.clinical-pathway .cpg-step-title,
+.clinical-pathway .cpg-decision-title {
+  margin: 0;
+  color: var(--cpg-text);
+  font-size: 0.96rem;
+  line-height: 1.4;
+  font-weight: 600;
+  text-align: center;
+}
+
+.clinical-pathway .cpg-step-body,
+.clinical-pathway .cpg-decision-body {
+  margin-top: 0.45rem;
+  color: var(--cpg-muted);
+  font-size: 0.91rem;
+}
+
+.clinical-pathway .cpg-flow-arrow {
+  align-self: center;
+  margin: 0.15rem 0;
+  padding-left: 2.85rem;
+  color: var(--cpg-muted);
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.clinical-pathway .cpg-decision {
+  width: min(calc(100% - 2.85rem), 812px);
+  margin: 0.15rem 0 0 auto;
+  border-color: color-mix(in srgb, var(--cpg-accent) 52%, var(--cpg-border));
+  background: var(--cpg-surface-strong);
+}
+
+.clinical-pathway .cpg-branches {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--cpg-branch-count, 2), minmax(0, 1fr));
+  gap: 0.9rem;
+  width: min(calc(100% - 2.85rem), 812px);
+  margin: 0 auto 0 2.85rem;
+  padding-top: 1.5rem;
+}
+
+.clinical-pathway .cpg-branches::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: calc(100% / (2 * var(--cpg-branch-count, 2)));
+  right: calc(100% / (2 * var(--cpg-branch-count, 2)));
+  height: 1px;
+  background: var(--cpg-border);
+}
+
+.clinical-pathway .cpg-branch {
+  position: relative;
+  min-width: 0;
+  padding: 0.75rem 0.85rem 0.85rem;
+  border: 1px solid var(--cpg-border);
+  border-radius: 0.55rem;
+  background: var(--cpg-surface);
+}
+
+.clinical-pathway .cpg-branch::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  width: 1px;
+  height: 1.5rem;
+  background: var(--cpg-border);
+}
+
+.clinical-pathway .cpg-branch-label {
+  margin: 0 0 0.35rem;
+  color: var(--cpg-accent-strong);
+  font-size: 0.92rem;
+  line-height: 1.2;
+  font-weight: 750;
+  text-align: center;
+}
+
+.clinical-pathway .cpg-branch-title {
+  margin: 0 0 0.4rem;
+  color: var(--cpg-text);
+  font-size: 0.92rem;
+  line-height: 1.35;
+  font-weight: 650;
+  text-align: center;
+}
+
+.clinical-pathway .cpg-branch-body {
+  color: var(--cpg-text);
+  font-size: 0.91rem;
+}
+
+.clinical-pathway .cpg-note {
+  width: min(calc(100% - 2.85rem), 812px);
+  margin: 0.85rem 0 0 auto;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--cpg-border-soft);
+  color: var(--cpg-muted);
+  font-size: 0.86rem;
+  text-align: center;
+}
+
+.clinical-pathway .cpg-orientation-table {
+  overflow: hidden;
+  border: 1px solid var(--cpg-border);
+  border-radius: 0.45rem;
+  background: var(--cpg-surface);
+}
+
+.clinical-pathway .cpg-orientation-header,
+.clinical-pathway .cpg-orientation-row {
+  display: grid;
+  grid-template-columns: minmax(13rem, 0.72fr) minmax(0, 1.28fr);
+  min-width: 0;
+}
+
+.clinical-pathway .cpg-orientation-header {
+  background: var(--cpg-surface-soft);
+  border-bottom: 1px solid var(--cpg-border);
+}
+
+.clinical-pathway .cpg-orientation-row + .cpg-orientation-row {
+  border-top: 1px solid var(--cpg-border-soft);
+}
+
+.clinical-pathway .cpg-orientation-head,
+.clinical-pathway .cpg-orientation-result,
+.clinical-pathway .cpg-orientation-action {
+  min-width: 0;
+  padding: 0.64rem 0.75rem;
+}
+
+.clinical-pathway .cpg-orientation-head {
+  color: var(--cpg-text);
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.clinical-pathway .cpg-orientation-result {
+  color: var(--cpg-text);
+  font-size: 0.9rem;
+  line-height: 1.4;
+  font-weight: 600;
+}
+
+.clinical-pathway .cpg-orientation-action {
+  border-left: 1px solid var(--cpg-border-soft);
+  color: var(--cpg-text);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.clinical-pathway.cpg-error {
+  display: block;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--ifm-color-danger) 42%, transparent);
+  border-radius: 0.55rem;
+  background: color-mix(
+    in srgb,
+    var(--ifm-color-danger) 7%,
+    var(--ifm-background-surface-color)
+  );
+}
+
+.clinical-pathway .cpg-error-title {
+  color: var(--ifm-color-danger-darkest, var(--ifm-color-danger));
+}
+
+.clinical-pathway .cpg-error-message {
+  margin-top: 0.35rem;
+}
+
+.clinical-pathway .cpg-error-help {
+  margin-top: 0.35rem;
+  color: var(--cpg-muted);
+  font-size: 0.86rem;
+}
+
+@container (max-width: 720px) {
+  .clinical-pathway .cpg-branches {
+    grid-template-columns: 1fr;
+    width: 100%;
+    margin-left: 0;
+    padding-top: 0.5rem;
+  }
+
+  .clinical-pathway .cpg-branches::before,
+  .clinical-pathway .cpg-branch::before {
+    display: none;
+  }
+
+  .clinical-pathway .cpg-decision,
+  .clinical-pathway .cpg-note {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .clinical-pathway .cpg-orientation-header {
+    display: none;
+  }
+
+  .clinical-pathway .cpg-orientation-row {
+    grid-template-columns: 1fr;
+  }
+
+  .clinical-pathway .cpg-orientation-result {
+    padding-bottom: 0.35rem;
+    background: var(--cpg-surface-soft);
+  }
+
+  .clinical-pathway .cpg-orientation-action {
+    padding-top: 0.48rem;
+    border-left: 0;
+    border-top: 1px solid var(--cpg-border-soft);
+  }
+}
+
+@media (max-width: 720px) {
+  .clinical-pathway .cpg-branches {
+    grid-template-columns: 1fr;
+    width: 100%;
+    margin-left: 0;
+    padding-top: 0.5rem;
+  }
+
+  .clinical-pathway .cpg-branches::before,
+  .clinical-pathway .cpg-branch::before {
+    display: none;
+  }
+
+  .clinical-pathway .cpg-decision,
+  .clinical-pathway .cpg-note {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .clinical-pathway .cpg-orientation-header {
+    display: none;
+  }
+
+  .clinical-pathway .cpg-orientation-row {
+    grid-template-columns: 1fr;
+  }
+
+  .clinical-pathway .cpg-orientation-result {
+    padding-bottom: 0.35rem;
+    background: var(--cpg-surface-soft);
+  }
+
+  .clinical-pathway .cpg-orientation-action {
+    padding-top: 0.48rem;
+    border-left: 0;
+    border-top: 1px solid var(--cpg-border-soft);
+  }
+}
