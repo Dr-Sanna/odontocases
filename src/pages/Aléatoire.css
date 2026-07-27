@@ -814,3 +814,80 @@ body.aleatoire-route {
 .aleatoire-primary-action {
   justify-self: center;
 }
+
+
+/* =========================================================
+   Intégration du mode Aléatoire à la navigation Entraînement
+   ========================================================= */
+.aleatoire-app {
+  --aleatoire-panel-padding: clamp(14px, 1.7vw, 24px);
+
+  width: 100%;
+  max-width: none;
+  padding: clamp(8px, 1vw, 14px) clamp(16px, 1.7vw, 30px) clamp(10px, 1.2vw, 18px);
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: clamp(12px, 1.25vw, 18px);
+}
+
+.aleatoire-tabs-toolbar {
+  min-width: 0;
+  margin: 0;
+}
+
+.aleatoire-tabs-toolbar .cc-tabs {
+  width: 100%;
+}
+
+.aleatoire-tabs-toolbar .cc-tab {
+  text-decoration: none;
+}
+
+.aleatoire-viewport {
+  min-height: 0;
+}
+
+/* La question devient une zone fonctionnelle clairement distincte. */
+.aleatoire-clinical-panel {
+  --aleatoire-current-panel-padding: var(--aleatoire-panel-padding);
+}
+
+.aleatoire-flashcard.is-dense .aleatoire-clinical-panel {
+  --aleatoire-current-panel-padding: 12px;
+}
+
+.aleatoire-flashcard.is-very-dense .aleatoire-clinical-panel {
+  --aleatoire-current-panel-padding: 10px;
+}
+
+.aleatoire-question {
+  margin:
+    auto
+    calc(-1 * var(--aleatoire-current-panel-padding))
+    calc(-1 * var(--aleatoire-current-panel-padding));
+  padding:
+    clamp(16px, 2vh, 22px)
+    var(--aleatoire-current-panel-padding)
+    clamp(17px, 2.2vh, 24px);
+  border-top: 1px solid var(--ifm-color-emphasis-200, rgba(127, 127, 127, 0.24));
+  background: color-mix(
+    in srgb,
+    var(--ifm-color-primary, #2e8555) 4%,
+    var(--ifm-background-surface-color, #fff)
+  );
+}
+
+.aleatoire-question p {
+  font-size: clamp(1.05rem, 1.45vw, 1.24rem);
+}
+
+@media (max-width: 680px) {
+  .aleatoire-app {
+    padding-left: 12px;
+    padding-right: 12px;
+    gap: 10px;
+  }
+
+  .aleatoire-tabs-toolbar {
+    overflow: hidden;
+  }
+}

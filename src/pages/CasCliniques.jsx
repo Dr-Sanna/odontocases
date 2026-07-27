@@ -243,19 +243,6 @@ function compareByTitleAsc(aNode, bNode) {
   return sa.localeCompare(sb, 'fr', { numeric: true, sensitivity: 'base' });
 }
 
-function typeLabel(type) {
-  if (type === STRAPI_QA_TYPE) return 'Q/R';
-  if (type === STRAPI_QUIZ_TYPE) return 'Quiz';
-  if (type === STRAPI_PRESENTATION_TYPE) return 'Présentation';
-  return 'Cas clinique';
-}
-
-function badgeVariant(type) {
-  if (type === STRAPI_QA_TYPE) return 'success';
-  if (type === STRAPI_QUIZ_TYPE) return 'info';
-  return 'danger';
-}
-
 /* -------- Recherche permissive -------- */
 
 function normalizeSearch(s) {
@@ -382,14 +369,6 @@ function ViewToggle({ view, setView }) {
 function AtlasControls({ atlasGroup, setAtlasGroup }) {
   return (
     <div className="cc-atlas-controls" role="group" aria-label="Contrôles Atlas">
-      <div className="cc-atlas-control" role="group" aria-label="Afficher">
-        <span className="cc-sortlabel">Afficher :</span>
-
-        <button type="button" className="cc-sortbtn active" aria-pressed="true">
-          Tous
-        </button>
-      </div>
-
       <div className="cc-atlas-control" role="group" aria-label="Grouper par">
         <span className="cc-sortlabel">Grouper par :</span>
 
@@ -415,17 +394,9 @@ function AtlasControls({ atlasGroup, setAtlasGroup }) {
   );
 }
 
-function CaseControls({ caseGroup, setCaseGroup }) {
+function CaseControls({ caseGroup, setCaseGroup, groupLabel = 'Thème' }) {
   return (
     <div className="cc-atlas-controls" role="group" aria-label="Contrôles des cas cliniques">
-      <div className="cc-atlas-control" role="group" aria-label="Afficher">
-        <span className="cc-sortlabel">Afficher :</span>
-
-        <button type="button" className="cc-sortbtn active" aria-pressed="true">
-          Tous
-        </button>
-      </div>
-
       <div className="cc-atlas-control" role="group" aria-label="Grouper par">
         <span className="cc-sortlabel">Grouper par :</span>
 
@@ -435,7 +406,7 @@ function CaseControls({ caseGroup, setCaseGroup }) {
           onClick={() => setCaseGroup('theme')}
           aria-pressed={caseGroup === 'theme'}
         >
-          Thème
+          {groupLabel}
         </button>
 
         <button
@@ -868,13 +839,12 @@ export default function CasCliniques() {
 
     const isPathology = entity === 'pathology';
     const isListView = view === 'list';
-    const itemType = isPathology ? STRAPI_PRESENTATION_TYPE : attrs?.type || STRAPI_QA_TYPE;
 
-    // Badges : Atlas = badges de pathologie ; Entraînement = badge du type de cas.
+    // Les badges sont réservés à l’Atlas.
     const pathoBadges = isPathology ? normalizeBadges(attrs?.badges) : [];
-    const badgesToRender = isPathology
-      ? (pathoBadges.length ? pathoBadges : [{ label: 'Atlas', variant: 'info' }])
-      : [{ label: typeLabel(itemType), variant: badgeVariant(itemType) }];
+    const badgesToRender = pathoBadges.length
+      ? pathoBadges
+      : [{ label: 'Atlas', variant: 'info' }];
 
     // On garde un badge primaire pour le breadcrumb/prefetch.
     const primaryBadge = isPathology ? pickPrimaryBadge(attrs?.badges) : null;
@@ -972,8 +942,8 @@ export default function CasCliniques() {
       );
     }
 
-    // Entraînement : même modèle visuel que les cartes Documentation.
-    const cardClass = `doc-card ui-card ${isListView ? 'doc-card--list' : ''}`;
+    // Entraînement : même modèle visuel que les cartes Documentation, sans badge redondant.
+    const cardClass = `doc-card doc-card--training ui-card ${isListView ? 'doc-card--list' : ''}`;
 
     const Inner = (
       <>
@@ -984,9 +954,6 @@ export default function CasCliniques() {
         >
           {!isListView && (
             <div className="doc-thumb-overlay">
-              <span className={`badge badge-soft badge-${badgeVariant(itemType)}`}>
-                {typeLabel(itemType)}
-              </span>
               <h3 className="doc-thumb-title">{titleText}</h3>
             </div>
           )}
@@ -997,14 +964,6 @@ export default function CasCliniques() {
             <h3 className="doc-title">
               <span className="doc-title-text">{titleText}</span>
             </h3>
-
-            <div className="doc-title-badges">
-              <span
-                className={`doc-title-badge badge badge-soft-outline badge-${badgeVariant(itemType)}`}
-              >
-                {typeLabel(itemType)}
-              </span>
-            </div>
 
             {excerpt ? <p className="doc-excerpt">{excerpt}</p> : null}
           </div>
@@ -1032,13 +991,15 @@ export default function CasCliniques() {
 
   return (
     <>
-      <div className="page-header">
-        <div className="container">
-          <PageTitle description={description}>{title}</PageTitle>
+      {!showChips && (
+        <div className="page-header">
+          <div className="container">
+            <PageTitle description={description}>{title}</PageTitle>
+          </div>
         </div>
-      </div>
+      )}
 
-      <div className="container">
+      <div className={`container ${showChips ? 'cc-training-active' : ''}`}>
         {showTypePicker && <TypePicker />}
 
         {showChips && (
@@ -1088,7 +1049,15 @@ export default function CasCliniques() {
             </section>
 
             <section className="cc-toolbar cc-toolbar--views" aria-label="Options d’affichage">
-              <CaseControls caseGroup={caseGroup} setCaseGroup={setCaseGroup} />
+              <CaseControls
+                caseGroup={caseGroup}
+                setCaseGroup={setCaseGroup}
+                groupLabel={
+                  tab === STRAPI_QUIZ_TYPE || tab === STRAPI_PRESENTATION_TYPE
+                    ? 'Localisation'
+                    : 'Thème'
+                }
+              />
               <ViewToggle view={view} setView={setView} />
             </section>
           </>

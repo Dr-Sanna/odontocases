@@ -202,14 +202,6 @@ function ViewToggle({ view, setView }) {
 function DocItemControls({ docGroup, setDocGroup }) {
   return (
     <div className="doc-atlas-controls" role="group" aria-label="Contrôles Documentation">
-      <div className="doc-atlas-control" role="group" aria-label="Afficher">
-        <span className="doc-sortlabel">Afficher :</span>
-
-        <button type="button" className="doc-sortbtn active" aria-pressed="true">
-          Tous
-        </button>
-      </div>
-
       <div className="doc-atlas-control" role="group" aria-label="Grouper par">
         <span className="doc-sortlabel">Grouper par :</span>
 

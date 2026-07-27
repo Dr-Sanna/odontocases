@@ -166,6 +166,34 @@ function chooseImageColumns(images, containerWidth, containerHeight, gap = 7) {
   return bestColumns;
 }
 
+
+function TrainingTabs() {
+  return (
+    <nav className="cc-toolbar cc-toolbar--top aleatoire-tabs-toolbar" aria-label="Modes d’entraînement">
+      <div className="cc-tabs" role="tablist" aria-label="Choisir un mode d’entraînement">
+        <Link className="cc-tab" to="/entrainement/qr" role="tab" aria-selected="false">
+          Q/R
+        </Link>
+        <Link className="cc-tab" to="/entrainement/quiz" role="tab" aria-selected="false">
+          Quiz
+        </Link>
+        <Link className="cc-tab" to="/entrainement/presentation" role="tab" aria-selected="false">
+          Présentation
+        </Link>
+        <Link
+          className="cc-tab active"
+          to="/entrainement/aleatoire"
+          role="tab"
+          aria-selected="true"
+          aria-current="page"
+        >
+          Aléatoire
+        </Link>
+      </div>
+    </nav>
+  );
+}
+
 export default function Aleatoire() {
   const screenRef = useRef(null);
   const imagesGridRef = useRef(null);
@@ -349,6 +377,8 @@ export default function Aleatoire() {
 
   return (
     <div ref={screenRef} className="aleatoire-app">
+      <TrainingTabs />
+
       <main className="aleatoire-viewport">
         {loading ? <div className="aleatoire-state ui-card">Chargement des cas compatibles…</div> : null}
 
