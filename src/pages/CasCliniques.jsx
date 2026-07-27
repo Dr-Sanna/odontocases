@@ -32,6 +32,15 @@ const FALLBACK_PAGE_SIZE = 300;
 const CASES_ENDPOINT = import.meta.env.VITE_CASES_ENDPOINT || '/cases';
 const PATHO_ENDPOINT = import.meta.env.VITE_PATHO_ENDPOINT || '/pathologies';
 const TRAINING_STATS_PUB_STATE = import.meta.env.DEV ? 'preview' : 'live';
+const CASE_THEME_RELATION = import.meta.env.VITE_CASE_THEME_RELATION || 'doc_themes';
+
+const UNTHEMED_KEY = '__sans-theme__';
+const UNTHEMED_THEME = {
+  key: UNTHEMED_KEY,
+  slug: UNTHEMED_KEY,
+  title: 'Sans thème',
+  order: Number.POSITIVE_INFINITY,
+};
 
 
 const LIST_CACHE = new Map();
@@ -78,6 +87,82 @@ function normalizeBadges(badgesAny) {
       variant: String(b?.variant || 'info').trim() || 'info',
     }))
     .filter((b) => b.label);
+}
+
+function getCaseThemesValue(item) {
+  return (
+    item?.[CASE_THEME_RELATION] ??
+    item?.doc_themes ??
+    item?.doc_theme ??
+    item?.doctheme ??
+    item?.docthemes ??
+    null
+  );
+}
+
+function normalizeDocThemes(value) {
+  const list = Array.isArray(value)
+    ? value
+    : Array.isArray(value?.data)
+      ? value.data
+      : value
+        ? [value]
+        : [];
+
+  return list
+    .map((node) => (node?.attributes ? { id: node.id, ...node.attributes } : node))
+    .filter(Boolean)
+    .map((theme) => ({
+      id: theme?.id ?? null,
+      slug: String(theme?.slug || '').trim(),
+      title: String(theme?.title || '').trim(),
+      order: Number.isFinite(theme?.order) ? theme.order : Number.POSITIVE_INFINITY,
+    }))
+    .filter((theme) => theme.title || theme.slug);
+}
+
+function compareThemeSections(a, b) {
+  const ao = Number.isFinite(a?.order) ? a.order : Number.POSITIVE_INFINITY;
+  const bo = Number.isFinite(b?.order) ? b.order : Number.POSITIVE_INFINITY;
+  if (ao !== bo) return ao - bo;
+
+  return String(a?.label || '').localeCompare(String(b?.label || ''), 'fr', {
+    sensitivity: 'base',
+    numeric: true,
+  });
+}
+
+function buildCaseThemeSections(items) {
+  const source = Array.isArray(items) ? items : [];
+  const hasAtLeastOneTheme = source.some(
+    (item) => normalizeDocThemes(getCaseThemesValue(item)).length > 0
+  );
+
+  if (!hasAtLeastOneTheme) return null;
+
+  const map = new Map();
+
+  for (const item of source) {
+    const themes = normalizeDocThemes(getCaseThemesValue(item));
+    const targets = themes.length ? themes : [UNTHEMED_THEME];
+
+    for (const theme of targets) {
+      const key = theme.slug || theme.title || UNTHEMED_KEY;
+
+      if (!map.has(key)) {
+        map.set(key, {
+          key,
+          label: theme.title || theme.slug || 'Sans thème',
+          order: Number.isFinite(theme.order) ? theme.order : Number.POSITIVE_INFINITY,
+          items: [],
+        });
+      }
+
+      map.get(key).items.push(item);
+    }
+  }
+
+  return Array.from(map.values()).sort(compareThemeSections);
 }
 
 function pickPrimaryBadge(badgesAny) {
@@ -330,6 +415,42 @@ function AtlasControls({ atlasGroup, setAtlasGroup }) {
   );
 }
 
+function CaseControls({ caseGroup, setCaseGroup }) {
+  return (
+    <div className="cc-atlas-controls" role="group" aria-label="Contrôles des cas cliniques">
+      <div className="cc-atlas-control" role="group" aria-label="Afficher">
+        <span className="cc-sortlabel">Afficher :</span>
+
+        <button type="button" className="cc-sortbtn active" aria-pressed="true">
+          Tous
+        </button>
+      </div>
+
+      <div className="cc-atlas-control" role="group" aria-label="Grouper par">
+        <span className="cc-sortlabel">Grouper par :</span>
+
+        <button
+          type="button"
+          className={`cc-sortbtn ${caseGroup === 'theme' ? 'active' : ''}`}
+          onClick={() => setCaseGroup('theme')}
+          aria-pressed={caseGroup === 'theme'}
+        >
+          Thème
+        </button>
+
+        <button
+          type="button"
+          className={`cc-sortbtn ${caseGroup === 'none' ? 'active' : ''}`}
+          onClick={() => setCaseGroup('none')}
+          aria-pressed={caseGroup === 'none'}
+        >
+          Aucun
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function CasCliniques() {
   const [searchParams] = useSearchParams();
   const { pathname } = useLocation();
@@ -379,6 +500,15 @@ export default function CasCliniques() {
     localStorage.setItem('atlas:group', atlasGroup);
     localStorage.setItem('atlas:show', 'all');
   }, [atlasGroup]);
+
+  const [caseGroup, setCaseGroup] = useState(() => {
+    const saved = localStorage.getItem('cases:group');
+    return saved === 'none' ? 'none' : 'theme';
+  }); // 'theme' | 'none'
+
+  useEffect(() => {
+    localStorage.setItem('cases:group', caseGroup);
+  }, [caseGroup]);
 
   const q = searchParams.get('q') || '';
   const page = Number(searchParams.get('page') || 1);
@@ -526,7 +656,10 @@ export default function CasCliniques() {
         ) {
           const data = await strapiFetch(CASES_ENDPOINT, {
             params: {
-              populate: { cover: { fields: ['url', 'formats'] } },
+              populate: {
+                cover: { fields: ['url', 'formats'] },
+                [CASE_THEME_RELATION]: { fields: ['title', 'slug', 'order'] },
+              },
               locale: 'all',
               filters: caseFilters,
               // Les présentations sont triées par titre ; Q/R et Quiz conservent le tri historique par slug.
@@ -546,7 +679,10 @@ export default function CasCliniques() {
           if (q && normalized.length === 0) {
             const fallback = await strapiFetch(CASES_ENDPOINT, {
               params: {
-                populate: { cover: { fields: ['url', 'formats'] } },
+                populate: {
+                  cover: { fields: ['url', 'formats'] },
+                  [CASE_THEME_RELATION]: { fields: ['title', 'slug', 'order'] },
+                },
                 locale: 'all',
                 filters: caseTypeFilterOnly,
                 sort: tab === STRAPI_PRESENTATION_TYPE ? 'title:asc,slug:asc' : 'slug:asc',
@@ -662,6 +798,27 @@ export default function CasCliniques() {
       items: map.get(label),
     }));
   }, [isAtlasHub, tab, atlasVisibleItems, atlasGroup]);
+
+
+  const caseThemeSections = useMemo(() => {
+    if (
+      !isTrainingHub ||
+      !(
+        tab === STRAPI_QA_TYPE ||
+        tab === STRAPI_QUIZ_TYPE ||
+        tab === STRAPI_PRESENTATION_TYPE
+      )
+    ) {
+      return null;
+    }
+
+    return buildCaseThemeSections(sortedItems);
+  }, [isTrainingHub, tab, sortedItems]);
+
+  const useCaseThemeSections =
+    caseGroup === 'theme' &&
+    Array.isArray(caseThemeSections) &&
+    caseThemeSections.length > 0;
 
   const title = isAtlasHub ? 'Atlas' : isTrainingHub ? 'Entraînement' : 'Atlas';
   const description = isAtlasHub
@@ -815,59 +972,56 @@ export default function CasCliniques() {
       );
     }
 
-    // Entraînement : on conserve le style historique des cartes de cas cliniques.
+    // Entraînement : même modèle visuel que les cartes Documentation.
+    const cardClass = `doc-card ui-card ${isListView ? 'doc-card--list' : ''}`;
+
     const Inner = (
       <>
         <div
-          className="cc-thumb"
-          style={{ backgroundImage: coverUrl ? `url(${coverUrl})` : undefined }}
+          className={coverUrl ? 'doc-thumb' : 'doc-thumb is-empty'}
+          style={coverUrl ? { backgroundImage: `url(${coverUrl})` } : undefined}
           aria-hidden="true"
         >
-          {view !== 'list' && (
-            <div className="cc-thumb-badges">
-              {badgesToRender.map((b) => (
-                <span
-                  key={`${b.variant}:${b.label}`}
-                  className={`cc-thumb-badge badge badge-soft badge-${b.variant}`}
-                >
-                  {b.label}
-                </span>
-              ))}
+          {!isListView && (
+            <div className="doc-thumb-overlay">
+              <span className={`badge badge-soft badge-${badgeVariant(itemType)}`}>
+                {typeLabel(itemType)}
+              </span>
+              <h3 className="doc-thumb-title">{titleText}</h3>
             </div>
           )}
         </div>
 
-        <div className="cc-body">
-          <h3 className="cc-title">
-            <span className="cc-title-text">{titleText}</span>
-          </h3>
+        {isListView ? (
+          <div className="doc-body">
+            <h3 className="doc-title">
+              <span className="doc-title-text">{titleText}</span>
+            </h3>
 
-          {view === 'list' && (
-            <div className="cc-title-badges">
-              {badgesToRender.map((b) => (
-                <span
-                  key={`${b.variant}:${b.label}`}
-                  className={`cc-title-badge badge badge-soft-outline badge-${b.variant}`}
-                >
-                  {b.label}
-                </span>
-              ))}
+            <div className="doc-title-badges">
+              <span
+                className={`doc-title-badge badge badge-soft-outline badge-${badgeVariant(itemType)}`}
+              >
+                {typeLabel(itemType)}
+              </span>
             </div>
-          )}
 
-          {view === 'list' ? (excerpt ? <p className="cc-excerpt">{excerpt}</p> : null) : <span className="sr-only">{excerpt}</span>}
-        </div>
+            {excerpt ? <p className="doc-excerpt">{excerpt}</p> : null}
+          </div>
+        ) : excerpt ? (
+          <div className="doc-body">
+            <p className="doc-excerpt">{excerpt}</p>
+          </div>
+        ) : null}
       </>
     );
-
-    const cardClass = `cc-card ui-card ${view === 'list' ? 'cc-card--list' : ''}`;
 
     return toHref ? (
       <Link key={key} to={toHref} className={cardClass} state={linkState}>
         {Inner}
       </Link>
     ) : (
-      <div key={key} className={`${cardClass} cc-card--disabled`} title="Slug manquant">
+      <div key={key} className={`${cardClass} doc-card--disabled`} title="Slug manquant">
         {Inner}
       </div>
     );
@@ -888,51 +1042,56 @@ export default function CasCliniques() {
         {showTypePicker && <TypePicker />}
 
         {showChips && (
-          <section className="cc-toolbar cc-toolbar--top">
-            <div className="cc-tabs" role="tablist" aria-label="Filtrer">
-              <button
-                type="button"
-                className={`cc-tab ${tab === STRAPI_QA_TYPE ? 'active' : ''}`}
-                onClick={() => onChip(STRAPI_QA_TYPE)}
-                role="tab"
-                aria-selected={tab === STRAPI_QA_TYPE}
-              >
-                Q/R
-              </button>
+          <>
+            <section className="cc-toolbar cc-toolbar--top">
+              <div className="cc-tabs" role="tablist" aria-label="Filtrer">
+                <button
+                  type="button"
+                  className={`cc-tab ${tab === STRAPI_QA_TYPE ? 'active' : ''}`}
+                  onClick={() => onChip(STRAPI_QA_TYPE)}
+                  role="tab"
+                  aria-selected={tab === STRAPI_QA_TYPE}
+                >
+                  Q/R
+                </button>
 
-              <button
-                type="button"
-                className={`cc-tab ${tab === STRAPI_QUIZ_TYPE ? 'active' : ''}`}
-                onClick={() => onChip(STRAPI_QUIZ_TYPE)}
-                role="tab"
-                aria-selected={tab === STRAPI_QUIZ_TYPE}
-              >
-                Quiz
-              </button>
+                <button
+                  type="button"
+                  className={`cc-tab ${tab === STRAPI_QUIZ_TYPE ? 'active' : ''}`}
+                  onClick={() => onChip(STRAPI_QUIZ_TYPE)}
+                  role="tab"
+                  aria-selected={tab === STRAPI_QUIZ_TYPE}
+                >
+                  Quiz
+                </button>
 
-              <button
-                type="button"
-                className={`cc-tab ${tab === STRAPI_PRESENTATION_TYPE ? 'active' : ''}`}
-                onClick={() => onChip(STRAPI_PRESENTATION_TYPE)}
-                role="tab"
-                aria-selected={tab === STRAPI_PRESENTATION_TYPE}
-              >
-                Présentation
-              </button>
+                <button
+                  type="button"
+                  className={`cc-tab ${tab === STRAPI_PRESENTATION_TYPE ? 'active' : ''}`}
+                  onClick={() => onChip(STRAPI_PRESENTATION_TYPE)}
+                  role="tab"
+                  aria-selected={tab === STRAPI_PRESENTATION_TYPE}
+                >
+                  Présentation
+                </button>
 
-              <button
-                type="button"
-                className="cc-tab"
-                onClick={() => onChip(RANDOM_KEY)}
-                role="tab"
-                aria-selected={false}
-              >
-                Aléatoire
-              </button>
-            </div>
+                <button
+                  type="button"
+                  className="cc-tab"
+                  onClick={() => onChip(RANDOM_KEY)}
+                  role="tab"
+                  aria-selected={false}
+                >
+                  Aléatoire
+                </button>
+              </div>
+            </section>
 
-            <ViewToggle view={view} setView={setView} />
-          </section>
+            <section className="cc-toolbar cc-toolbar--views" aria-label="Options d’affichage">
+              <CaseControls caseGroup={caseGroup} setCaseGroup={setCaseGroup} />
+              <ViewToggle view={view} setView={setView} />
+            </section>
+          </>
         )}
 
         {!showTypePicker && !showChips && (
@@ -958,7 +1117,10 @@ export default function CasCliniques() {
             {!loading && !error && listForEmptyCheck.length > 0 && (
               <>
                 {isAtlasList && atlasSections && atlasGroup !== 'none' ? (
-                  <div className="resource-groups cc-groups" aria-label="Ressources">
+                  <div
+                    className={`resource-groups cc-groups cc-groups--atlas ${view === 'list' ? 'cc-groups--list' : 'cc-groups--cards'}`}
+                    aria-label="Ressources"
+                  >
                     {atlasSections.map((section) => (
                       <div key={section.key} className="resource-group cc-group">
                         {section.label && (
@@ -977,13 +1139,30 @@ export default function CasCliniques() {
                       </div>
                     ))}
                   </div>
+                ) : useCaseThemeSections ? (
+                  <div
+                    className={`resource-groups cc-groups ${view === 'list' ? 'cc-groups--list' : 'cc-groups--cards'}`}
+                    aria-label="Cas cliniques par thème"
+                  >
+                    {caseThemeSections.map((section) => (
+                      <div key={section.key} className="resource-group cc-group">
+                        <div className="resource-group-header cc-group-header" aria-hidden="true">
+                          <span className="resource-group-title cc-group-title">{section.label}</span>
+                          <div className="resource-group-rule cc-group-rule" />
+                        </div>
+
+                        <section
+                          className={`resource-grid doc-grid ${view === 'list' ? 'doc-grid--list' : ''}`}
+                          aria-label={section.label}
+                        >
+                          {section.items.map(renderItem)}
+                        </section>
+                      </div>
+                    ))}
+                  </div>
                 ) : (
                   <section
-                    className={
-                      isAtlasList
-                        ? `resource-grid doc-grid ${view === 'list' ? 'doc-grid--list' : ''}`
-                        : `resource-grid cc-grid ${view === 'list' ? 'cc-grid--list' : ''}`
-                    }
+                    className={`resource-grid doc-grid ${view === 'list' ? 'doc-grid--list' : ''}`}
                     aria-label="Ressources"
                   >
                     {(isAtlasList ? atlasVisibleItems : sortedItems).map(renderItem)}

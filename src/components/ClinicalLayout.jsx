@@ -13,7 +13,7 @@ export class ClinicalLayoutParseError extends Error {
   }
 }
 
-const PANEL_TYPES = new Set(["grid", "steps", "comparison", "profiles", "media", "lesions"]);
+const PANEL_TYPES = new Set(["grid", "steps", "comparison", "profiles", "media", "lesions", "matrix"]);
 
 function cleanTitle(value) {
   return String(value || "").trim();
@@ -64,10 +64,118 @@ function markdownFromLines(lines) {
     .replace(/^\s+|\s+$/g, "");
 }
 
+
+function splitJoinedBody(lines) {
+  const source = markdownFromLines(lines).replace(/\r\n?/g, "\n").trim();
+  if (!source) return { lead: "", rest: "" };
+
+  const parts = source
+    .split(/\n\s*\n/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  const lead = parts.shift() || "";
+  const rest = parts.join("\n\n").trim();
+  return { lead, rest };
+}
+
+function JoinedComparisonPanel({ panel }) {
+  const columns = Math.max(1, Number(panel.columns) || panel.items.length || 1);
+  const tableStyle = { "--clx-columns": String(columns) };
+  const cells = [];
+  const pushCell = (content, kind, rowIndex, colIndex) => {
+    const classes = [
+      "clx-joined-cell",
+      `clx-joined-${kind}`,
+      colIndex === 0 ? "clx-joined-first-col" : "",
+      rowIndex === 0 ? "clx-joined-first-row" : "",
+    ].filter(Boolean).join(" ");
+    cells.push(<div className={classes} key={`${kind}-${rowIndex}-${colIndex}`}>{content}</div>);
+  };
+
+  panel.items.forEach((item, colIndex) => {
+    pushCell(<div className="clx-item-title" role="heading" aria-level="4">{item.title}</div>, "title", 0, colIndex);
+  });
+  panel.items.forEach((item, colIndex) => {
+    const { lead } = splitJoinedBody(item.body);
+    pushCell(lead ? <MarkdownBlock source={lead} className="clx-joined-lead-markdown" /> : null, "meta", 1, colIndex);
+  });
+  panel.items.forEach((item, colIndex) => {
+    const { rest } = splitJoinedBody(item.body);
+    pushCell(rest ? <MarkdownBlock source={rest} className="clx-joined-body-markdown" /> : null, "body", 2, colIndex);
+  });
+
+  return <div className="clx-joined-table" data-columns={String(columns)} style={tableStyle}>{cells}</div>;
+}
+
 function normalizeColumns(value, fallback = 2) {
   const number = Number(value);
   if (!Number.isFinite(number)) return fallback;
   return Math.max(1, Math.min(4, Math.floor(number)));
+}
+
+function normalizeFieldKey(value) {
+  return cleanTitle(value)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("fr");
+}
+
+function ensureItemField(item, label) {
+  const cleanLabel = cleanTitle(label);
+  const key = normalizeFieldKey(cleanLabel);
+  if (!key) return null;
+  if (!item.fields[key]) {
+    item.fields[key] = createTextBlock();
+    item.fieldLabels[key] = cleanLabel;
+    item.fieldOrder.push(key);
+  }
+  return item.fields[key];
+}
+
+function itemFieldSource(item, label) {
+  const key = normalizeFieldKey(label);
+  const custom = markdownFromLines(item?.fields?.[key]);
+  if (custom) return custom;
+  if (key === normalizeFieldKey("Définition")) {
+    return markdownFromLines(item?.definition) || markdownFromLines(item?.body);
+  }
+  if (key === normalizeFieldKey("Orientation diagnostique")) {
+    return markdownFromLines(item?.orientation);
+  }
+  return "";
+}
+
+function resolvePanelRows(panel) {
+  const explicit = (Array.isArray(panel?.rowLabels) ? panel.rowLabels : [])
+    .map(cleanTitle)
+    .filter(Boolean);
+  if (explicit.length) return [...new Set(explicit)];
+
+  const rows = [];
+  const seen = new Set();
+  for (const item of panel?.items || []) {
+    for (const key of item.fieldOrder || []) {
+      const label = item.fieldLabels?.[key] || key;
+      const normalized = normalizeFieldKey(label);
+      if (!seen.has(normalized)) {
+        seen.add(normalized);
+        rows.push(label);
+      }
+    }
+  }
+
+  const hasLegacyDefinition = (panel?.items || []).some(
+    (item) => Boolean(markdownFromLines(item.definition) || markdownFromLines(item.body))
+  );
+  const hasLegacyOrientation = (panel?.items || []).some(
+    (item) => Boolean(markdownFromLines(item.orientation))
+  );
+  if (hasLegacyDefinition && !seen.has(normalizeFieldKey("Définition"))) rows.unshift("Définition");
+  if (hasLegacyOrientation && !seen.has(normalizeFieldKey("Orientation diagnostique"))) {
+    rows.push("Orientation diagnostique");
+  }
+  return rows;
 }
 
 function createPanel(type, title, lineNumber) {
@@ -76,7 +184,11 @@ function createPanel(type, title, lineNumber) {
     title,
     columns: type === "steps" ? 3 : 2,
     ratio: [65, 35],
+    matrixDirection: "columns",
     intro: createTextBlock(),
+    rowLabels: [],
+    itemLabel: type === "lesions" ? "Lésion" : "Élément",
+    joined: false,
     items: [],
     lineNumber,
   };
@@ -131,7 +243,7 @@ export function parseClinicalLayoutSource(source) {
       return;
     }
 
-    const panelMatch = trimmed.match(/^@panel\s+(grid|steps|comparison|profiles|media|lesions)(?:\s+(.+))?$/i);
+    const panelMatch = trimmed.match(/^@panel\s+(grid|steps|comparison|profiles|media|lesions|matrix)(?:\s+(.+))?$/i);
     if (panelMatch) {
       const type = panelMatch[1].toLowerCase();
       const title = cleanTitle(panelMatch[2] || "");
@@ -143,6 +255,15 @@ export function parseClinicalLayoutSource(source) {
       return;
     }
 
+    if (/^@joined\s*$/i.test(trimmed)) {
+      if (!currentPanel || !["comparison", "profiles"].includes(currentPanel.type)) {
+        throw new ClinicalLayoutParseError(" doit suivre un  comparison ou profiles.", lineNumber);
+      }
+      currentPanel.joined = true;
+      currentTarget = null;
+      return;
+    }
+
     const columnsMatch = trimmed.match(/^@columns\s+([1-4])$/i);
     if (columnsMatch) {
       if (!currentPanel) {
@@ -150,6 +271,35 @@ export function parseClinicalLayoutSource(source) {
       }
       currentPanel.columns = normalizeColumns(columnsMatch[1], currentPanel.columns);
       currentTarget = null;
+      return;
+    }
+
+    const matrixDirectionMatch = trimmed.match(/^@matrixDirection\s+(columns|rows)$/i);
+    if (matrixDirectionMatch) {
+      if (!currentPanel || currentPanel.type !== "matrix") {
+        throw new ClinicalLayoutParseError("@matrixDirection doit suivre un @panel matrix.", lineNumber);
+      }
+      currentPanel.matrixDirection = matrixDirectionMatch[1].toLowerCase();
+      currentTarget = null;
+      return;
+    }
+
+    const itemLabelMatch = trimmed.match(/^@itemLabel\s+(.+)$/i);
+    if (itemLabelMatch) {
+      if (!currentPanel || !["lesions", "matrix"].includes(currentPanel.type)) {
+        throw new ClinicalLayoutParseError("@itemLabel doit suivre un @panel lesions ou matrix.", lineNumber);
+      }
+      currentPanel.itemLabel = cleanTitle(itemLabelMatch[1]) || currentPanel.itemLabel;
+      currentTarget = null;
+      return;
+    }
+
+    if (/^@rows\s*$/i.test(trimmed)) {
+      if (!currentPanel || !["lesions", "matrix"].includes(currentPanel.type)) {
+        throw new ClinicalLayoutParseError("@rows doit suivre un @panel lesions ou matrix.", lineNumber);
+      }
+      currentItem = null;
+      currentTarget = currentPanel.rowLabels;
       return;
     }
 
@@ -200,11 +350,25 @@ export function parseClinicalLayoutSource(source) {
         image: createTextBlock(),
         definition: createTextBlock(),
         orientation: createTextBlock(),
+        fields: {},
+        fieldLabels: {},
+        fieldOrder: [],
+        galleryColumns: 1,
         lineNumber,
       };
       currentPanel.items.push(item);
       currentItem = item;
       currentTarget = item.body;
+      return;
+    }
+
+    const galleryMatch = trimmed.match(/^@gallery\s+([1-4])$/i);
+    if (galleryMatch) {
+      if (!currentPanel || currentPanel.type !== "lesions" || !currentItem) {
+        throw new ClinicalLayoutParseError("@gallery doit suivre un @item dans un panneau lesions.", lineNumber);
+      }
+      currentItem.galleryColumns = normalizeColumns(galleryMatch[1], 1);
+      currentTarget = currentItem.image;
       return;
     }
 
@@ -229,6 +393,19 @@ export function parseClinicalLayoutSource(source) {
         throw new ClinicalLayoutParseError("@orientation doit suivre un @item dans un panneau lesions.", lineNumber);
       }
       currentTarget = currentItem.orientation;
+      return;
+    }
+
+    const fieldMatch = trimmed.match(/^@field\s+(.+)$/i);
+    if (fieldMatch) {
+      if (!currentPanel || !["lesions", "matrix"].includes(currentPanel.type) || !currentItem) {
+        throw new ClinicalLayoutParseError("@field doit suivre un @item dans un panneau lesions ou matrix.", lineNumber);
+      }
+      const fieldTarget = ensureItemField(currentItem, fieldMatch[1]);
+      if (!fieldTarget) {
+        throw new ClinicalLayoutParseError("@field doit être suivi d’un intitulé.", lineNumber);
+      }
+      currentTarget = fieldTarget;
       return;
     }
 
@@ -281,10 +458,20 @@ export function parseClinicalLayoutSource(source) {
     panel.items.forEach((item) => {
       if (panel.type === "lesions") {
         if (!markdownFromLines(item.image)) {
-          throw new ClinicalLayoutParseError(`Ajoute une @image à la lésion « ${item.title} ».`, item.lineNumber);
+          throw new ClinicalLayoutParseError(`Ajoute une @image à l’élément « ${item.title} ».`, item.lineNumber);
         }
-        if (!markdownFromLines(item.definition) && !markdownFromLines(item.body)) {
-          throw new ClinicalLayoutParseError(`Ajoute une @definition à la lésion « ${item.title} ».`, item.lineNumber);
+        const rows = resolvePanelRows(panel);
+        const hasFieldContent = rows.some((row) => Boolean(itemFieldSource(item, row)));
+        if (!hasFieldContent) {
+          throw new ClinicalLayoutParseError(`Ajoute au moins un @field à l’élément « ${item.title} ».`, item.lineNumber);
+        }
+        return;
+      }
+      if (panel.type === "matrix") {
+        const rows = resolvePanelRows(panel);
+        const hasFieldContent = rows.some((row) => Boolean(itemFieldSource(item, row)));
+        if (!hasFieldContent) {
+          throw new ClinicalLayoutParseError(`Ajoute au moins un @field à l’élément « ${item.title} ».`, item.lineNumber);
         }
         return;
       }
@@ -306,7 +493,21 @@ function MarkdownBlock({ source, className = "" }) {
   );
 }
 
-function ItemCard({ item, panelType, index }) {
+function LesionImageBlock({ item, className = "" }) {
+  const source = markdownFromLines(item.image);
+  if (!source) return null;
+  return (
+    <div
+      className={`clx-markdown clx-image-gallery ${className}`.trim()}
+      data-gallery-columns={String(item.galleryColumns || 1)}
+      style={{ "--clx-gallery-columns": String(item.galleryColumns || 1) }}
+    >
+      <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>{source}</ReactMarkdown>
+    </div>
+  );
+}
+
+function ItemCard({ item, panelType, index, panel = null }) {
   const classes = [
     "clx-item",
     `clx-item-${panelType}`,
@@ -326,23 +527,38 @@ function ItemCard({ item, panelType, index }) {
   }
 
   if (panelType === "lesions") {
-    const definition = markdownFromLines(item.definition) || markdownFromLines(item.body);
-    const orientation = markdownFromLines(item.orientation);
+    const rows = resolvePanelRows(panel).filter((label) => Boolean(itemFieldSource(item, label)));
     return (
       <article className={classes}>
         <div className="clx-item-title" role="heading" aria-level="4">{item.title}</div>
-        <MarkdownBlock source={markdownFromLines(item.image)} className="clx-lesion-image" />
+        <LesionImageBlock item={item} className="clx-lesion-image" />
         <div className="clx-lesion-content">
-          <section className="clx-lesion-section clx-lesion-definition">
-            <div className="clx-lesion-label">Définition</div>
-            <MarkdownBlock source={definition} />
-          </section>
-          {orientation ? (
-            <section className="clx-lesion-section clx-lesion-orientation">
-              <div className="clx-lesion-label">Orientation diagnostique</div>
-              <MarkdownBlock source={orientation} />
+          {rows.map((label, rowIndex) => (
+            <section
+              className={`clx-lesion-section${normalizeFieldKey(label) === normalizeFieldKey("Orientation diagnostique") ? " clx-lesion-orientation" : ""}`}
+              key={`${item.title}-${label}-${rowIndex}`}
+            >
+              <div className="clx-lesion-label">{label}</div>
+              <MarkdownBlock source={itemFieldSource(item, label)} />
             </section>
-          ) : null}
+          ))}
+        </div>
+      </article>
+    );
+  }
+
+  if (panelType === "matrix") {
+    const rows = resolvePanelRows(panel).filter((label) => Boolean(itemFieldSource(item, label)));
+    return (
+      <article className={`${classes} clx-item-lesions clx-item-matrix`}>
+        <div className="clx-item-title" role="heading" aria-level="4">{item.title}</div>
+        <div className="clx-lesion-content clx-matrix-content">
+          {rows.map((label, rowIndex) => (
+            <section className="clx-lesion-section clx-matrix-section" key={`${item.title}-${label}-${rowIndex}`}>
+              <div className="clx-lesion-label">{label}</div>
+              <MarkdownBlock source={itemFieldSource(item, label)} />
+            </section>
+          ))}
         </div>
       </article>
     );
@@ -366,10 +582,12 @@ function chunkItems(items, size) {
   return chunks;
 }
 
-function LesionComparisonTable({ items, columns, title, groupIndex }) {
-  const hasOrientation = items.some((item) => Boolean(markdownFromLines(item.orientation)));
+function LesionComparisonTable({ items, columns, title, groupIndex, panel }) {
   const effectiveColumns = Math.max(1, Math.min(columns, items.length));
   const tableStyle = { "--clx-columns": String(effectiveColumns) };
+  const rows = resolvePanelRows(panel).filter(
+    (label) => items.some((item) => Boolean(itemFieldSource(item, label)))
+  );
 
   return (
     <div
@@ -377,11 +595,11 @@ function LesionComparisonTable({ items, columns, title, groupIndex }) {
       data-columns={String(effectiveColumns)}
       style={tableStyle}
       role="table"
-      aria-label={title || `Comparaison des lésions — groupe ${groupIndex + 1}`}
+      aria-label={title || `Comparaison — groupe ${groupIndex + 1}`}
     >
       <div className="clx-lesion-table-row clx-lesion-title-row" role="row">
         <div className="clx-lesion-corner" role="columnheader">
-          Lésion
+          {panel.itemLabel || "Lésion"}
         </div>
         {items.map((item, index) => (
           <div
@@ -399,34 +617,38 @@ function LesionComparisonTable({ items, columns, title, groupIndex }) {
           Illustration
         </div>
         {items.map((item, index) => (
-          <div className="clx-lesion-table-image" role="cell" key={`image-${groupIndex}-${item.title}-${index}`}>
-            <MarkdownBlock source={markdownFromLines(item.image)} />
+          <div
+            className="clx-lesion-table-image"
+            data-gallery-columns={String(item.galleryColumns || 1)}
+            role="cell"
+            key={`image-${groupIndex}-${item.title}-${index}`}
+          >
+            <LesionImageBlock item={item} />
           </div>
         ))}
       </div>
 
-      <div className="clx-lesion-table-row clx-lesion-data-row" role="row">
-        <div className="clx-lesion-row-label" role="rowheader">Définition</div>
-        {items.map((item, index) => (
-          <div className="clx-lesion-table-text" role="cell" key={`definition-${groupIndex}-${item.title}-${index}`}>
-            <MarkdownBlock source={markdownFromLines(item.definition) || markdownFromLines(item.body)} />
+      {rows.map((label, rowIndex) => {
+        const isOrientation = normalizeFieldKey(label) === normalizeFieldKey("Orientation diagnostique");
+        return (
+          <div
+            className={`clx-lesion-table-row clx-lesion-data-row${isOrientation ? " clx-lesion-orientation-row" : ""}`}
+            role="row"
+            key={`row-${groupIndex}-${label}-${rowIndex}`}
+          >
+            <div className="clx-lesion-row-label" role="rowheader">{label}</div>
+            {items.map((item, index) => (
+              <div className="clx-lesion-table-text" role="cell" key={`field-${groupIndex}-${label}-${item.title}-${index}`}>
+                <MarkdownBlock source={itemFieldSource(item, label)} />
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
-
-      {hasOrientation ? (
-        <div className="clx-lesion-table-row clx-lesion-data-row clx-lesion-orientation-row" role="row">
-          <div className="clx-lesion-row-label" role="rowheader">Orientation diagnostique</div>
-          {items.map((item, index) => (
-            <div className="clx-lesion-table-text" role="cell" key={`orientation-${groupIndex}-${item.title}-${index}`}>
-              <MarkdownBlock source={markdownFromLines(item.orientation)} />
-            </div>
-          ))}
-        </div>
-      ) : null}
+        );
+      })}
     </div>
   );
 }
+
 
 function LesionComparison({ panel }) {
   const groups = chunkItems(panel.items, panel.columns);
@@ -474,6 +696,7 @@ function LesionComparison({ panel }) {
             columns={panel.columns}
             title={panel.title}
             groupIndex={groupIndex}
+            panel={panel}
             key={`lesion-table-${groupIndex}-${items.map((item) => item.title).join("-")}`}
           />
         ))}
@@ -482,7 +705,144 @@ function LesionComparison({ panel }) {
       <div className="clx-lesion-mobile" aria-label={panel.title || "Lésions"}>
         {panel.items.map((item, index) => (
           <div className="clx-item-slot" key={`mobile-${item.title}-${index}`}>
-            <ItemCard item={item} panelType="lesions" index={index} />
+            <ItemCard item={item} panelType="lesions" index={index} panel={panel} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function MatrixComparisonTable({ items, columns, title, groupIndex, panel }) {
+  const effectiveColumns = Math.max(1, Math.min(columns, items.length));
+  const rows = resolvePanelRows(panel).filter(
+    (label) => items.some((item) => Boolean(itemFieldSource(item, label)))
+  );
+
+  return (
+    <div
+      className="clx-lesion-table clx-matrix-table"
+      data-columns={String(effectiveColumns)}
+      style={{ "--clx-columns": String(effectiveColumns) }}
+      role="table"
+      aria-label={title || `Matrice — groupe ${groupIndex + 1}`}
+    >
+      <div className="clx-lesion-table-row clx-lesion-title-row" role="row">
+        <div className="clx-lesion-corner" role="columnheader">{panel.itemLabel || "Élément"}</div>
+        {items.map((item, index) => (
+          <div className="clx-lesion-column-title" role="columnheader" key={`matrix-title-${groupIndex}-${item.title}-${index}`}>
+            {item.title}
+          </div>
+        ))}
+      </div>
+
+      {rows.map((label, rowIndex) => (
+        <div className="clx-lesion-table-row clx-lesion-data-row clx-matrix-data-row" role="row" key={`matrix-row-${groupIndex}-${label}-${rowIndex}`}>
+          <div className="clx-lesion-row-label" role="rowheader">{label}</div>
+          {items.map((item, index) => (
+            <div className="clx-lesion-table-text" role="cell" key={`matrix-field-${groupIndex}-${label}-${item.title}-${index}`}>
+              <MarkdownBlock source={itemFieldSource(item, label)} />
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function MatrixRowsTable({ panel }) {
+  const rows = resolvePanelRows(panel).filter(
+    (label) => panel.items.some((item) => Boolean(itemFieldSource(item, label)))
+  );
+  const fieldColumns = Math.max(1, rows.length);
+
+  return (
+    <div
+      className="clx-lesion-table clx-matrix-table clx-matrix-table-rows"
+      data-columns={String(fieldColumns)}
+      style={{ "--clx-columns": String(fieldColumns) }}
+      role="table"
+      aria-label={panel.title || "Matrice comparative"}
+    >
+      <div className="clx-lesion-table-row clx-lesion-title-row" role="row">
+        <div className="clx-lesion-corner" role="columnheader">{panel.itemLabel || "Élément"}</div>
+        {rows.map((label, index) => (
+          <div className="clx-lesion-column-title" role="columnheader" key={`matrix-row-header-${label}-${index}`}>
+            {label}
+          </div>
+        ))}
+      </div>
+
+      {panel.items.map((item, itemIndex) => (
+        <div className="clx-lesion-table-row clx-lesion-data-row clx-matrix-data-row" role="row" key={`matrix-item-row-${item.title}-${itemIndex}`}>
+          <div className="clx-lesion-row-label clx-matrix-item-title" role="rowheader">{item.title}</div>
+          {rows.map((label, fieldIndex) => (
+            <div className="clx-lesion-table-text" role="cell" key={`matrix-item-field-${item.title}-${label}-${fieldIndex}`}>
+              <MarkdownBlock source={itemFieldSource(item, label)} />
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function MatrixComparison({ panel }) {
+  const rowDirection = panel.matrixDirection === "rows";
+  const rows = resolvePanelRows(panel).filter(
+    (label) => panel.items.some((item) => Boolean(itemFieldSource(item, label)))
+  );
+  const groups = rowDirection ? [panel.items] : chunkItems(panel.items, panel.columns);
+  const responsiveColumns = rowDirection ? Math.max(1, rows.length) : panel.columns;
+  const layoutRef = useRef(null);
+
+  useEffect(() => {
+    const element = layoutRef.current;
+    if (!element) return undefined;
+    const columns = Math.max(1, Math.min(4, Number(responsiveColumns) || 2));
+    const breakpoints = { 1: 0, 2: 480, 3: 620, 4: 780 };
+    const breakpoint = breakpoints[columns] || 620;
+    const update = () => {
+      const width = element.getBoundingClientRect?.().width || element.clientWidth || 0;
+      if (width > 0) element.dataset.view = breakpoint > 0 && width < breakpoint ? "cards" : "table";
+    };
+    element.dataset.view = "table";
+    update();
+    if (typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", update);
+      return () => window.removeEventListener("resize", update);
+    }
+    const observer = new ResizeObserver(update);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [responsiveColumns]);
+
+  return (
+    <div
+      ref={layoutRef}
+      className={`clx-lesion-layout clx-matrix-layout${rowDirection ? " clx-matrix-layout-rows" : ""}`}
+      data-view="table"
+      data-columns={String(responsiveColumns)}
+      data-matrix-direction={rowDirection ? "rows" : "columns"}
+    >
+      <div className="clx-lesion-tables clx-matrix-tables" data-columns={String(responsiveColumns)}>
+        {rowDirection ? (
+          <MatrixRowsTable panel={panel} />
+        ) : groups.map((items, groupIndex) => (
+          <MatrixComparisonTable
+            items={items}
+            columns={panel.columns}
+            title={panel.title}
+            groupIndex={groupIndex}
+            panel={panel}
+            key={`matrix-table-${groupIndex}-${items.map((item) => item.title).join("-")}`}
+          />
+        ))}
+      </div>
+      <div className="clx-lesion-mobile clx-matrix-mobile" aria-label={panel.title || "Matrice comparative"}>
+        {panel.items.map((item, index) => (
+          <div className="clx-item-slot" key={`matrix-mobile-${item.title}-${index}`}>
+            <ItemCard item={item} panelType="matrix" index={index} panel={panel} />
           </div>
         ))}
       </div>
@@ -494,6 +854,7 @@ function Panel({ panel }) {
   const isSteps = panel.type === "steps";
   const isMedia = panel.type === "media";
   const isLesions = panel.type === "lesions";
+  const isMatrix = panel.type === "matrix";
   const panelStyle = {
     "--clx-columns": String(panel.columns),
     "--clx-media-main": `${panel.ratio?.[0] || 65}fr`,
@@ -501,7 +862,7 @@ function Panel({ panel }) {
   };
 
   return (
-    <section className={`clx-panel clx-panel-${panel.type}`}>
+    <section className={`clx-panel clx-panel-${panel.type}`} data-joined={panel.joined ? "true" : "false"}>
       {panel.title ? (
         <div className="clx-panel-title" role="heading" aria-level="3">{panel.title}</div>
       ) : null}
@@ -512,6 +873,10 @@ function Panel({ panel }) {
 
       {isLesions ? (
         <LesionComparison panel={panel} />
+      ) : isMatrix ? (
+        <MatrixComparison panel={panel} />
+      ) : panel.type === "comparison" && panel.joined ? (
+        <JoinedComparisonPanel panel={panel} />
       ) : (
         <div className={isSteps ? "clx-steps" : "clx-items"} style={panelStyle}>
           {panel.items.map((item, index) => {
@@ -527,7 +892,7 @@ function Panel({ panel }) {
 
             return (
               <div className={slotClass} key={`${item.title}-${index}`}>
-                <ItemCard item={item} panelType={panel.type} index={index} />
+                <ItemCard item={item} panelType={panel.type} index={index} panel={panel} />
                 {isSteps && index < panel.items.length - 1 ? (
                   <div className="clx-step-arrow" aria-hidden="true">→</div>
                 ) : null}
@@ -556,7 +921,7 @@ const ClinicalLayout = memo(function ClinicalLayout({ source }) {
         <strong>Données cliniques structurées invalides</strong>
         <div>{prefix}{String(parsed.error.message || parsed.error)}</div>
         <div className="clx-error-help">
-          Directives : @label, @intro, @footer, @panel, @columns, @ratio, @panelIntro, @item, @step, @layout, @image, @definition et @orientation.
+          Directives : @label, @intro, @footer, @panel (dont matrix), @joined, @columns, @matrixDirection, @ratio, @panelIntro, @itemLabel, @rows, @item, @step, @layout, @gallery, @image, @field, @definition et @orientation.
         </div>
       </div>
     );

@@ -167,6 +167,95 @@
   padding: 0.68rem 0.78rem 0.74rem;
 }
 
+
+/* Variante tableau continu pour certaines comparaisons. */
+.clinical-layout .clx-joined-table {
+  display: grid !important;
+  grid-template-columns: repeat(var(--clx-columns, 2), minmax(0, 1fr)) !important;
+  border: 1px solid var(--clx-border) !important;
+  border-radius: var(--sbo-radius) !important;
+  overflow: hidden !important;
+  background: var(--clx-surface) !important;
+}
+
+.clinical-layout .clx-joined-cell {
+  min-width: 0 !important;
+  background: var(--clx-surface) !important;
+}
+
+.clinical-layout .clx-joined-cell:not(.clx-joined-first-col) {
+  border-left: 1px solid var(--clx-border) !important;
+}
+
+.clinical-layout .clx-joined-cell:not(.clx-joined-first-row) {
+  border-top: 1px solid var(--clx-border-soft) !important;
+}
+
+.clinical-layout .clx-joined-title {
+  background: var(--clx-surface-soft) !important;
+}
+
+.clinical-layout .clx-joined-title .clx-item-title {
+  margin: 0 !important;
+  padding: 0.58rem 0.78rem !important;
+  border: 0 !important;
+  background: transparent !important;
+  color: var(--clx-accent-strong) !important;
+  font-family: var(--font-interface) !important;
+  font-size: var(--sbo-title-size) !important;
+  line-height: 1.3 !important;
+  font-weight: 700 !important;
+}
+
+.clinical-layout .clx-joined-meta {
+  padding: 0.62rem 0.78rem !important;
+}
+
+.clinical-layout .clx-joined-meta .clx-joined-lead-markdown > p:first-child,
+.clinical-layout .clx-joined-meta .clx-joined-lead-markdown > :first-child {
+  margin-top: 0 !important;
+}
+
+.clinical-layout .clx-joined-meta .clx-joined-lead-markdown > :last-child {
+  margin-bottom: 0 !important;
+}
+
+.clinical-layout .clx-joined-meta strong {
+  font-weight: 700 !important;
+}
+
+.clinical-layout .clx-joined-body {
+  padding: 0.78rem !important;
+}
+
+.clinical-layout .clx-joined-body .clx-joined-body-markdown > :first-child {
+  margin-top: 0 !important;
+}
+
+.clinical-layout .clx-joined-body .clx-joined-body-markdown > :last-child {
+  margin-bottom: 0 !important;
+}
+
+@container (max-width: 720px) {
+  .clinical-layout .clx-joined-table {
+    grid-template-columns: 1fr !important;
+  }
+
+  .clinical-layout .clx-joined-cell:not(.clx-joined-first-col) {
+    border-left: 0 !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .clinical-layout .clx-joined-table {
+    grid-template-columns: 1fr !important;
+  }
+
+  .clinical-layout .clx-joined-cell:not(.clx-joined-first-col) {
+    border-left: 0 !important;
+  }
+}
+
 /* Séquence clinique. */
 .clinical-layout .clx-steps {
   display: flex;
@@ -250,6 +339,11 @@
     grid-template-columns: 1fr;
   }
 
+  .clinical-layout .clx-panel-comparison[data-joined="true"] .clx-item-slot + .clx-item-slot {
+    border-left: 0;
+    border-top: 1px solid var(--clx-border);
+  }
+
   .clinical-layout .clx-steps {
     flex-direction: column;
   }
@@ -264,6 +358,11 @@
   .clinical-layout .clx-items,
   .clinical-layout .clx-panel-grid .clx-items {
     grid-template-columns: 1fr;
+  }
+
+  .clinical-layout .clx-panel-comparison[data-joined="true"] .clx-item-slot + .clx-item-slot {
+    border-left: 0;
+    border-top: 1px solid var(--clx-border);
   }
 
   .clinical-layout .clx-steps {
@@ -648,4 +747,122 @@
 .clinical-layout .clx-lesion-table[data-columns="3"] .clx-lesion-table-text,
 .clinical-layout .clx-lesion-table[data-columns="3"] :is(.clx-lesion-corner, .clx-lesion-row-label) {
   padding: 0.62rem 0.64rem 0.68rem;
+}
+
+/* =========================
+   Clinical Layout v1.6 — lignes comparatives personnalisées et galeries
+   ========================= */
+.clinical-layout .clx-image-gallery {
+  display: grid;
+  grid-template-columns: repeat(var(--clx-gallery-columns, 1), minmax(0, 1fr));
+  align-items: stretch;
+  gap: 0.48rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.clinical-layout .clx-image-gallery > :is(p, figure) {
+  display: contents;
+  margin: 0;
+}
+
+.clinical-layout .clx-image-gallery img {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  max-width: 100%;
+  margin: 0;
+  object-fit: contain;
+}
+
+.clinical-layout .clx-lesion-table-image .clx-image-gallery {
+  display: grid;
+}
+
+.clinical-layout .clx-lesion-table-image[data-gallery-columns="2"] img,
+.clinical-layout .clx-lesion-table-image[data-gallery-columns="3"] img,
+.clinical-layout .clx-lesion-table-image[data-gallery-columns="4"] img {
+  max-height: 11rem;
+}
+
+.clinical-layout .clx-lesion-table[data-columns="1"] .clx-lesion-table-image[data-gallery-columns="3"] {
+  min-height: 10rem;
+  padding: 0.55rem;
+}
+
+.clinical-layout .clx-lesion-mobile .clx-image-gallery {
+  display: grid;
+}
+
+.clinical-layout .clx-lesion-mobile .clx-image-gallery[data-gallery-columns="2"],
+.clinical-layout .clx-lesion-mobile .clx-image-gallery[data-gallery-columns="3"],
+.clinical-layout .clx-lesion-mobile .clx-image-gallery[data-gallery-columns="4"] {
+  grid-template-columns: repeat(var(--clx-gallery-columns, 1), minmax(0, 1fr));
+}
+
+@container (max-width: 520px) {
+  .clinical-layout .clx-lesion-mobile .clx-image-gallery[data-gallery-columns="3"],
+  .clinical-layout .clx-lesion-mobile .clx-image-gallery[data-gallery-columns="4"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* =========================
+   Clinical Layout v1.7 — matrice comparative sans illustration
+   ========================= */
+.clinical-layout .clx-matrix-table {
+  --clx-lesion-label-width: 9rem;
+}
+
+.clinical-layout .clx-matrix-table[data-columns="3"] {
+  --clx-lesion-label-width: 8rem;
+}
+
+.clinical-layout .clx-matrix-table .clx-lesion-column-title {
+  display: flex;
+  align-items: center;
+}
+
+.clinical-layout .clx-matrix-table .clx-lesion-table-text {
+  padding-top: 0.68rem;
+  padding-bottom: 0.72rem;
+}
+
+.clinical-layout .clx-matrix-mobile .clx-item-matrix {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.clinical-layout .clx-matrix-mobile .clx-matrix-section {
+  background: var(--clx-surface);
+}
+
+.clinical-layout .clx-matrix-mobile .clx-matrix-section:nth-child(even) {
+  background: color-mix(in srgb, var(--clx-surface-soft) 54%, var(--clx-surface));
+}
+
+
+/* =========================
+   Clinical Layout v1.8 — matrices orientables
+   ========================= */
+.clinical-layout .clx-matrix-table-rows {
+  --clx-lesion-label-width: 6.8rem;
+}
+
+.clinical-layout .clx-matrix-table-rows .clx-lesion-corner {
+  align-items: center;
+}
+
+.clinical-layout .clx-matrix-table-rows .clx-matrix-item-title {
+  align-items: center;
+  color: var(--clx-accent-strong);
+  font-size: var(--sbt-title-size);
+  line-height: 1.3;
+  font-weight: 700;
+}
+
+.clinical-layout .clx-matrix-table-rows .clx-lesion-column-title {
+  align-items: center;
 }

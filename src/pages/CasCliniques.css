@@ -154,6 +154,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  margin-bottom: 0;
 }
 
 /* toolbar en dessous (contrôles à gauche / toggle à droite) */
@@ -411,22 +412,43 @@
 
 
 /* =========================================================
-   Atlas : groupage sobre, sans barre horizontale ni gras
+   Groupes Atlas / Cas cliniques
+   - cartes : trait de séparation visible
+   - liste : trait masqué
+   - graisse intermédiaire dans les deux vues
    ========================================================= */
 
 .cc-groups .cc-group-header,
 .cc-groups .resource-group-header.cc-group-header {
-  gap: 0;
+  gap: 0.75rem;
   margin: 0.25rem 0 0.75rem;
 }
 
 .cc-groups .cc-group-title,
 .cc-groups .resource-group-title.cc-group-title {
-  font-weight: 400 !important;
-  opacity: 0.85;
+  font-weight: 600 !important;
+  opacity: 0.88;
 }
 
-.cc-groups .cc-group-rule,
-.cc-groups .resource-group-rule.cc-group-rule {
+/* Exception Atlas : les lettres restent sans graisse, quel que soit le mode. */
+.cc-groups--atlas .cc-group-title,
+.cc-groups--atlas .resource-group-title.cc-group-title {
+  font-weight: 400 !important;
+}
+
+/* En cartes, le trait commun de Cards.css reste visible. */
+.cc-groups--cards .cc-group-rule,
+.cc-groups--cards .resource-group-rule.cc-group-rule {
+  display: block !important;
+}
+
+/* En liste, titre plus sobre et sans trait. */
+.cc-groups--list .cc-group-header,
+.cc-groups--list .resource-group-header.cc-group-header {
+  gap: 0;
+}
+
+.cc-groups--list .cc-group-rule,
+.cc-groups--list .resource-group-rule.cc-group-rule {
   display: none !important;
 }
