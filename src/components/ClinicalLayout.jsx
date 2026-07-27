@@ -1,4 +1,4 @@
-import { memo, useMemo } from "react";
+import { memo, useEffect, useMemo, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
@@ -13,7 +13,7 @@ export class ClinicalLayoutParseError extends Error {
   }
 }
 
-const PANEL_TYPES = new Set(["grid", "steps", "comparison", "profiles", "media"]);
+const PANEL_TYPES = new Set(["grid", "steps", "comparison", "profiles", "media", "lesions"]);
 
 function cleanTitle(value) {
   return String(value || "").trim();
@@ -131,7 +131,7 @@ export function parseClinicalLayoutSource(source) {
       return;
     }
 
-    const panelMatch = trimmed.match(/^@panel\s+(grid|steps|comparison|profiles|media)(?:\s+(.+))?$/i);
+    const panelMatch = trimmed.match(/^@panel\s+(grid|steps|comparison|profiles|media|lesions)(?:\s+(.+))?$/i);
     if (panelMatch) {
       const type = panelMatch[1].toLowerCase();
       const title = cleanTitle(panelMatch[2] || "");
@@ -197,11 +197,38 @@ export function parseClinicalLayoutSource(source) {
         title,
         layout: "compact",
         body: createTextBlock(),
+        image: createTextBlock(),
+        definition: createTextBlock(),
+        orientation: createTextBlock(),
         lineNumber,
       };
       currentPanel.items.push(item);
       currentItem = item;
       currentTarget = item.body;
+      return;
+    }
+
+    if (/^@image\s*$/i.test(trimmed)) {
+      if (!currentPanel || currentPanel.type !== "lesions" || !currentItem) {
+        throw new ClinicalLayoutParseError("@image doit suivre un @item dans un panneau lesions.", lineNumber);
+      }
+      currentTarget = currentItem.image;
+      return;
+    }
+
+    if (/^@definition\s*$/i.test(trimmed)) {
+      if (!currentPanel || currentPanel.type !== "lesions" || !currentItem) {
+        throw new ClinicalLayoutParseError("@definition doit suivre un @item dans un panneau lesions.", lineNumber);
+      }
+      currentTarget = currentItem.definition;
+      return;
+    }
+
+    if (/^@orientation\s*$/i.test(trimmed)) {
+      if (!currentPanel || currentPanel.type !== "lesions" || !currentItem) {
+        throw new ClinicalLayoutParseError("@orientation doit suivre un @item dans un panneau lesions.", lineNumber);
+      }
+      currentTarget = currentItem.orientation;
       return;
     }
 
@@ -252,6 +279,15 @@ export function parseClinicalLayoutSource(source) {
       );
     }
     panel.items.forEach((item) => {
+      if (panel.type === "lesions") {
+        if (!markdownFromLines(item.image)) {
+          throw new ClinicalLayoutParseError(`Ajoute une @image à la lésion « ${item.title} ».`, item.lineNumber);
+        }
+        if (!markdownFromLines(item.definition) && !markdownFromLines(item.body)) {
+          throw new ClinicalLayoutParseError(`Ajoute une @definition à la lésion « ${item.title} ».`, item.lineNumber);
+        }
+        return;
+      }
       if (!markdownFromLines(item.body)) {
         throw new ClinicalLayoutParseError(`L’élément « ${item.title} » est vide.`, item.lineNumber);
       }
@@ -289,6 +325,29 @@ function ItemCard({ item, panelType, index }) {
     );
   }
 
+  if (panelType === "lesions") {
+    const definition = markdownFromLines(item.definition) || markdownFromLines(item.body);
+    const orientation = markdownFromLines(item.orientation);
+    return (
+      <article className={classes}>
+        <div className="clx-item-title" role="heading" aria-level="4">{item.title}</div>
+        <MarkdownBlock source={markdownFromLines(item.image)} className="clx-lesion-image" />
+        <div className="clx-lesion-content">
+          <section className="clx-lesion-section clx-lesion-definition">
+            <div className="clx-lesion-label">Définition</div>
+            <MarkdownBlock source={definition} />
+          </section>
+          {orientation ? (
+            <section className="clx-lesion-section clx-lesion-orientation">
+              <div className="clx-lesion-label">Orientation diagnostique</div>
+              <MarkdownBlock source={orientation} />
+            </section>
+          ) : null}
+        </div>
+      </article>
+    );
+  }
+
   return (
     <article className={classes}>
       <div className="clx-item-title" role="heading" aria-level="4">{item.title}</div>
@@ -297,9 +356,144 @@ function ItemCard({ item, panelType, index }) {
   );
 }
 
+
+function chunkItems(items, size) {
+  const safeSize = Math.max(1, Number(size) || 1);
+  const chunks = [];
+  for (let index = 0; index < items.length; index += safeSize) {
+    chunks.push(items.slice(index, index + safeSize));
+  }
+  return chunks;
+}
+
+function LesionComparisonTable({ items, columns, title, groupIndex }) {
+  const hasOrientation = items.some((item) => Boolean(markdownFromLines(item.orientation)));
+  const effectiveColumns = Math.max(1, Math.min(columns, items.length));
+  const tableStyle = { "--clx-columns": String(effectiveColumns) };
+
+  return (
+    <div
+      className="clx-lesion-table"
+      data-columns={String(effectiveColumns)}
+      style={tableStyle}
+      role="table"
+      aria-label={title || `Comparaison des lésions — groupe ${groupIndex + 1}`}
+    >
+      <div className="clx-lesion-table-row clx-lesion-title-row" role="row">
+        <div className="clx-lesion-corner" role="columnheader">
+          Lésion
+        </div>
+        {items.map((item, index) => (
+          <div
+            className="clx-lesion-column-title"
+            role="columnheader"
+            key={`title-${groupIndex}-${item.title}-${index}`}
+          >
+            {item.title}
+          </div>
+        ))}
+      </div>
+
+      <div className="clx-lesion-table-row clx-lesion-image-row" role="row">
+        <div className="clx-lesion-row-label clx-lesion-row-label-empty" role="rowheader">
+          Illustration
+        </div>
+        {items.map((item, index) => (
+          <div className="clx-lesion-table-image" role="cell" key={`image-${groupIndex}-${item.title}-${index}`}>
+            <MarkdownBlock source={markdownFromLines(item.image)} />
+          </div>
+        ))}
+      </div>
+
+      <div className="clx-lesion-table-row clx-lesion-data-row" role="row">
+        <div className="clx-lesion-row-label" role="rowheader">Définition</div>
+        {items.map((item, index) => (
+          <div className="clx-lesion-table-text" role="cell" key={`definition-${groupIndex}-${item.title}-${index}`}>
+            <MarkdownBlock source={markdownFromLines(item.definition) || markdownFromLines(item.body)} />
+          </div>
+        ))}
+      </div>
+
+      {hasOrientation ? (
+        <div className="clx-lesion-table-row clx-lesion-data-row clx-lesion-orientation-row" role="row">
+          <div className="clx-lesion-row-label" role="rowheader">Orientation diagnostique</div>
+          {items.map((item, index) => (
+            <div className="clx-lesion-table-text" role="cell" key={`orientation-${groupIndex}-${item.title}-${index}`}>
+              <MarkdownBlock source={markdownFromLines(item.orientation)} />
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function LesionComparison({ panel }) {
+  const groups = chunkItems(panel.items, panel.columns);
+  const layoutRef = useRef(null);
+
+  useEffect(() => {
+    const element = layoutRef.current;
+    if (!element) return undefined;
+
+    const columns = Math.max(1, Math.min(4, Number(panel.columns) || 2));
+    const breakpoints = { 1: 0, 2: 480, 3: 560, 4: 760 };
+    const breakpoint = breakpoints[columns] || 560;
+
+    const update = () => {
+      const width = element.getBoundingClientRect?.().width || element.clientWidth || 0;
+      if (width <= 0) return;
+      element.dataset.view = breakpoint > 0 && width < breakpoint ? "cards" : "table";
+    };
+
+    element.dataset.view = "table";
+    update();
+
+    if (typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", update);
+      return () => window.removeEventListener("resize", update);
+    }
+
+    const observer = new ResizeObserver(update);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [panel.columns]);
+
+  return (
+    <div
+      ref={layoutRef}
+      className="clx-lesion-layout"
+      data-view="table"
+      data-columns={String(panel.columns)}
+      style={{ "--clx-columns": String(panel.columns) }}
+    >
+      <div className="clx-lesion-tables" data-columns={String(panel.columns)}>
+        {groups.map((items, groupIndex) => (
+          <LesionComparisonTable
+            items={items}
+            columns={panel.columns}
+            title={panel.title}
+            groupIndex={groupIndex}
+            key={`lesion-table-${groupIndex}-${items.map((item) => item.title).join("-")}`}
+          />
+        ))}
+      </div>
+
+      <div className="clx-lesion-mobile" aria-label={panel.title || "Lésions"}>
+        {panel.items.map((item, index) => (
+          <div className="clx-item-slot" key={`mobile-${item.title}-${index}`}>
+            <ItemCard item={item} panelType="lesions" index={index} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function Panel({ panel }) {
   const isSteps = panel.type === "steps";
   const isMedia = panel.type === "media";
+  const isLesions = panel.type === "lesions";
   const panelStyle = {
     "--clx-columns": String(panel.columns),
     "--clx-media-main": `${panel.ratio?.[0] || 65}fr`,
@@ -316,28 +510,32 @@ function Panel({ panel }) {
         <MarkdownBlock source={markdownFromLines(panel.intro)} className="clx-panel-intro" />
       ) : null}
 
-      <div className={isSteps ? "clx-steps" : "clx-items"} style={panelStyle}>
-        {panel.items.map((item, index) => {
-          const slotClass = isSteps
-            ? "clx-step-sequence"
-            : [
-                "clx-item-slot",
-                item.layout === "wide" ? "clx-item-slot-wide" : "",
-                isMedia ? "clx-media-slot" : "",
-                isMedia && index === 0 ? "clx-media-slot-content" : "",
-                isMedia && index === 1 ? "clx-media-slot-visual" : "",
-              ].filter(Boolean).join(" ");
+      {isLesions ? (
+        <LesionComparison panel={panel} />
+      ) : (
+        <div className={isSteps ? "clx-steps" : "clx-items"} style={panelStyle}>
+          {panel.items.map((item, index) => {
+            const slotClass = isSteps
+              ? "clx-step-sequence"
+              : [
+                  "clx-item-slot",
+                  item.layout === "wide" ? "clx-item-slot-wide" : "",
+                  isMedia ? "clx-media-slot" : "",
+                  isMedia && index === 0 ? "clx-media-slot-content" : "",
+                  isMedia && index === 1 ? "clx-media-slot-visual" : "",
+                ].filter(Boolean).join(" ");
 
-          return (
-          <div className={slotClass} key={`${item.title}-${index}`}>
-            <ItemCard item={item} panelType={panel.type} index={index} />
-            {isSteps && index < panel.items.length - 1 ? (
-              <div className="clx-step-arrow" aria-hidden="true">→</div>
-            ) : null}
-          </div>
-          );
-        })}
-      </div>
+            return (
+              <div className={slotClass} key={`${item.title}-${index}`}>
+                <ItemCard item={item} panelType={panel.type} index={index} />
+                {isSteps && index < panel.items.length - 1 ? (
+                  <div className="clx-step-arrow" aria-hidden="true">→</div>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </section>
   );
 }
@@ -358,7 +556,7 @@ const ClinicalLayout = memo(function ClinicalLayout({ source }) {
         <strong>Données cliniques structurées invalides</strong>
         <div>{prefix}{String(parsed.error.message || parsed.error)}</div>
         <div className="clx-error-help">
-          Directives : @label, @intro, @footer, @panel, @columns, @ratio, @panelIntro, @item, @step et @layout.
+          Directives : @label, @intro, @footer, @panel, @columns, @ratio, @panelIntro, @item, @step, @layout, @image, @definition et @orientation.
         </div>
       </div>
     );
