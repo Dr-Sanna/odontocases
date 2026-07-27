@@ -1,5 +1,8 @@
 /* Definition Grid v1.6 — comparaison mieux équilibrée et séparateurs internes adoucis */
 
+
+@import "./StructuredBlocksTheme.css";
+
 .definition-grid,
 .definition-grid * {
   box-sizing: border-box;
@@ -7,91 +10,42 @@
 
 .cd-content .definition-grid,
 .definition-grid {
-  --dfg-accent: var(--ifm-color-primary);
-  --dfg-accent-strong: color-mix(
-    in srgb,
-    var(--dfg-accent) 82%,
-    var(--ifm-font-color-base)
-  );
-  --dfg-border: color-mix(
-    in srgb,
-    var(--dfg-accent) 34%,
-    var(--ifm-toc-border-color, rgba(2, 6, 23, 0.12))
-  );
-  --dfg-border-soft: color-mix(
-    in srgb,
-    var(--dfg-accent) 18%,
-    var(--ifm-toc-border-color, rgba(2, 6, 23, 0.12))
-  );
-  --dfg-surface: var(
-    --ifm-background-surface-color,
-    var(--ifm-background-color)
-  );
-  --dfg-surface-soft: color-mix(
-    in srgb,
-    var(--dfg-accent) 6.5%,
-    var(--dfg-surface)
-  );
-  --dfg-surface-softer: color-mix(
-    in srgb,
-    var(--dfg-accent) 2.5%,
-    var(--dfg-surface)
-  );
-  --dfg-comparison-bg: color-mix(
-    in srgb,
-    var(--dfg-accent) 9%,
-    var(--dfg-surface)
-  );
-  /* Les séparateurs structurels sont plus présents que les soulignements. */
-  --dfg-divider-line: color-mix(
-    in srgb,
-    var(--dfg-accent) 40%,
-    var(--ifm-toc-border-color, rgba(2, 6, 23, 0.12))
-  );
-  --dfg-underline-line: color-mix(
-    in srgb,
-    var(--dfg-accent) 26%,
-    transparent
-  );
-  /* Traits internes : plus discrets que les séparateurs entre grandes sections. */
-  --dfg-inner-divider-line: color-mix(
-    in srgb,
-    var(--dfg-accent) 22%,
-    var(--ifm-toc-border-color, rgba(2, 6, 23, 0.12))
-  );
-  --dfg-text: var(--ifm-font-color-base);
-  --dfg-muted: var(
-    --ifm-color-content-secondary,
-    color-mix(in srgb, var(--ifm-font-color-base) 62%, transparent)
-  );
+  --dfg-accent: var(--sbt-accent);
+  --dfg-accent-strong: var(--sbt-accent-strong);
+  --dfg-border: var(--sbt-border);
+  --dfg-border-soft: var(--sbt-border-soft);
+  --dfg-surface: var(--sbt-surface);
+  --dfg-surface-soft: var(--sbt-surface-soft);
+  --dfg-surface-softer: color-mix(in srgb, var(--sbt-surface-soft) 48%, var(--sbt-surface));
+  --dfg-comparison-bg: var(--sbt-surface-soft);
+  --dfg-divider-line: var(--sbt-border);
+  --dfg-underline-line: var(--sbt-underline);
+  --dfg-inner-divider-line: var(--sbt-border-soft);
+  --dfg-text: var(--sbt-text);
+  --dfg-muted: var(--sbt-muted);
 
-  /*
-   * Échelle typographique volontairement contrastée.
-   * Les écarts sont assez importants pour rester visibles même avec
-   * les réglages de zoom et de police du navigateur.
-   */
-  --dfg-font-body: 0.78rem;
-  --dfg-font-body-emphasis: 0.84rem;
-  --dfg-font-title-definition: 1.02rem;
-  --dfg-font-title-section: 1.18rem;
-  --dfg-font-title-column: 0.87rem;
-  --dfg-font-title-intro: 1rem;
-  --dfg-font-title-comparison: 0.84rem;
+  --dfg-font-body: var(--sbt-body-size);
+  --dfg-font-body-emphasis: var(--sbt-body-size);
+  --dfg-font-title-definition: var(--sbt-title-size);
+  --dfg-font-title-section: var(--sbt-section-title-size);
+  --dfg-font-title-column: 0.93rem;
+  --dfg-font-title-intro: var(--sbt-title-size);
+  --dfg-font-title-comparison: var(--sbt-small-size);
 
   container-type: inline-size;
   display: grid;
-  gap: 0.7rem;
+  gap: var(--sbt-gap);
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  margin: 0.75rem 0 var(--ifm-paragraph-margin-bottom);
+  margin: 0.9rem 0 1.45rem;
   padding: 0;
   color: var(--dfg-text);
   font-family: var(--ifm-font-family-base);
   font-size: var(--dfg-font-body);
   font-style: normal;
   font-weight: 400;
-  line-height: 1.38;
+  line-height: var(--sbt-body-line);
   letter-spacing: normal;
   text-align: left;
 }
@@ -140,7 +94,7 @@
     min(var(--dfg-definition-count, 2), 2),
     minmax(0, 1fr)
   );
-  gap: 0.65rem;
+  gap: var(--sbt-gap);
   min-width: 0;
   margin: 0;
   padding: 0;
@@ -153,7 +107,7 @@
   padding: 0;
   overflow: hidden;
   border: 1px solid var(--dfg-border);
-  border-radius: 0.52rem;
+  border-radius: var(--sbt-radius);
   background: var(--dfg-surface);
   box-shadow: none;
 }
@@ -175,14 +129,14 @@
 }
 
 .definition-grid .dfg-definition-title {
-  padding: 0.54rem 0.72rem;
+  padding: 0.62rem 0.82rem;
   font-size: var(--dfg-font-title-definition);
   line-height: 1.2;
   font-weight: 800;
 }
 
 .definition-grid .dfg-section-title {
-  padding: 0.68rem 0.82rem;
+  padding: 0.68rem 0.9rem;
   font-size: var(--dfg-font-title-section);
   line-height: 1.16;
   font-weight: 800;
@@ -196,13 +150,13 @@
 }
 
 .definition-grid .dfg-definition-body {
-  --dfg-definition-pad-x: 0.72rem;
-  padding: 0.58rem var(--dfg-definition-pad-x) 0.64rem;
+  --dfg-definition-pad-x: 0.95rem;
+  padding: 0.72rem var(--dfg-definition-pad-x) 0.78rem;
 }
 
 .definition-grid .dfg-section-body {
-  --dfg-section-pad-x: 0.84rem;
-  padding: 0.72rem var(--dfg-section-pad-x) 0.8rem;
+  --dfg-section-pad-x: 0.95rem;
+  padding: 0.8rem var(--dfg-section-pad-x) 0.86rem;
 }
 
 .definition-grid .dfg-markdown,
@@ -221,7 +175,7 @@
 .definition-grid .dfg-section-body > .dfg-markdown:first-child {
   color: var(--dfg-text);
   font-size: var(--dfg-font-body-emphasis);
-  line-height: 1.44;
+  line-height: var(--sbt-body-line);
 }
 
 .cd-content .definition-grid .dfg-markdown p + p,
@@ -282,7 +236,7 @@
   margin: 0;
   padding: 0;
   color: var(--dfg-accent-strong);
-  font-size: 0.71875rem;
+  font-size: var(--sbt-label-size);
   font-weight: 750;
   line-height: 1.25;
 }
@@ -298,10 +252,10 @@
   margin: 0.52rem 0 0;
   padding: 0.28rem 0.48rem;
   border: 1px solid var(--dfg-border-soft);
-  border-radius: 0.38rem;
+  border-radius: 999px;
   background: var(--dfg-surface-soft);
   color: var(--dfg-accent-strong);
-  font-size: 0.71875rem;
+  font-size: var(--sbt-label-size);
   font-weight: 700;
   line-height: 1.2;
 }
@@ -386,8 +340,8 @@
 
 .definition-grid .dfg-intro > .dfg-markdown {
   color: color-mix(in srgb, var(--dfg-text) 88%, var(--dfg-muted));
-  font-size: 0.79rem;
-  line-height: 1.43;
+  font-size: var(--sbt-small-size);
+  line-height: var(--sbt-body-line);
 }
 
 /*
@@ -405,7 +359,7 @@
   margin: 0.64rem 0 0;
   padding: 0.58rem 0.62rem 0.18rem;
   border: 0;
-  border-radius: 0.42rem;
+  border-radius: var(--sbt-radius);
   background: var(--dfg-comparison-bg);
 }
 
@@ -443,16 +397,18 @@
   border-left: 1px solid var(--dfg-inner-divider-line);
 }
 
+/* Les éléments @comparison restent des termes comparés à l’intérieur de la
+   sous-section : ils sont mis en valeur sans reprendre le soulignement réservé
+   aux véritables titres de niveau supérieur. */
 .definition-grid .dfg-comparison-title {
-  margin: 0 0 0.38rem;
-  padding: 0 0 0.32rem;
+  margin: 0 0 0.28rem;
+  padding: 0;
   border: 0;
-  border-bottom: 1px solid var(--dfg-underline-line);
   background: transparent;
   color: color-mix(in srgb, var(--dfg-accent-strong) 84%, var(--dfg-text));
   font-size: var(--dfg-font-title-comparison);
   line-height: 1.24;
-  font-weight: 680;
+  font-weight: 700;
   text-align: left;
 }
 
@@ -462,8 +418,8 @@
 
 .definition-grid .dfg-comparison-body {
   padding: 0;
-  font-size: 0.76rem;
-  line-height: 1.4;
+  font-size: var(--sbt-small-size);
+  line-height: var(--sbt-small-line);
 }
 
 .definition-grid.dfg-error {
@@ -487,7 +443,7 @@
 
 .definition-grid .dfg-error-message,
 .definition-grid .dfg-error-help {
-  font-size: 0.71875rem;
+  font-size: var(--sbt-label-size);
 }
 
 .definition-grid .dfg-error-help {

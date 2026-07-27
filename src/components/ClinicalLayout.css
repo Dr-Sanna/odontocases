@@ -1,0 +1,359 @@
+/* src/components/ClinicalLayout.css */
+
+@import "./StructuredBlocksTheme.css";
+
+.clinical-layout,
+.clinical-layout * {
+  box-sizing: border-box;
+}
+
+.clinical-layout {
+  --clx-accent: var(--sbt-accent);
+  --clx-accent-strong: var(--sbt-accent-strong);
+  --clx-accent-soft: var(--sbt-accent-soft);
+  --clx-border: var(--sbt-border);
+  --clx-border-soft: var(--sbt-border-soft);
+  --clx-surface: var(--sbt-surface);
+  --clx-surface-soft: var(--sbt-surface-soft);
+  --clx-surface-strong: var(--sbt-surface-strong);
+  --clx-text: var(--sbt-text);
+  --clx-muted: var(--sbt-muted);
+
+  container-type: inline-size;
+  display: grid;
+  gap: var(--sbt-section-gap);
+  width: 100%;
+  min-width: 0;
+  margin: 0.9rem 0 1.45rem;
+  color: var(--clx-text);
+  font-family: var(--ifm-font-family-base);
+  font-size: var(--sbt-body-size);
+  line-height: var(--sbt-body-line);
+}
+
+.clinical-layout .clx-markdown > :first-child {
+  margin-top: 0;
+}
+
+.clinical-layout .clx-markdown > :last-child {
+  margin-bottom: 0;
+}
+
+.clinical-layout .clx-markdown p {
+  line-height: inherit;
+}
+
+.clinical-layout .clx-markdown ul,
+.clinical-layout .clx-markdown ol {
+  margin: 0.1rem 0 0.45rem;
+  padding-left: 1.2rem;
+}
+
+.clinical-layout .clx-markdown li + li {
+  margin-top: 0.2rem;
+}
+
+.clinical-layout .clx-markdown li::marker {
+  color: var(--clx-accent-strong);
+}
+
+.clinical-layout .clx-markdown a {
+  color: var(--clx-accent-strong);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.14em;
+}
+
+.clinical-layout .clx-intro {
+  color: var(--clx-text);
+}
+
+.clinical-layout .clx-footer {
+  padding: 0.7rem 0.8rem;
+  border-left: 3px solid var(--clx-accent);
+  border-radius: 0 var(--sbt-radius) var(--sbt-radius) 0;
+  background: var(--clx-surface-soft);
+  color: var(--clx-muted);
+}
+
+.clinical-layout .clx-panel {
+  min-width: 0;
+}
+
+.clinical-layout .clx-panel-title {
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 0 0.85rem;
+  padding-bottom: 0.22rem;
+  border-bottom: 2px solid var(--sbt-underline);
+  color: var(--clx-accent-strong);
+  font-size: var(--sbt-section-title-size);
+  line-height: 1.3;
+  font-weight: 700;
+}
+
+.clinical-layout .clx-panel-intro {
+  margin: -0.25rem 0 0.75rem;
+  color: var(--clx-muted);
+}
+
+/* Grille à fond commun et séparateurs internes. */
+.clinical-layout .clx-panel-grid .clx-items {
+  display: grid;
+  grid-template-columns: repeat(var(--clx-columns, 2), minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--clx-border);
+  border-radius: var(--sbt-radius-soft);
+  background: var(--clx-border);
+}
+
+.clinical-layout .clx-panel-grid .clx-item-slot {
+  min-width: 0;
+  background: var(--clx-surface-soft);
+}
+
+.clinical-layout .clx-panel-grid .clx-item {
+  height: 100%;
+  padding: 0.78rem 0.9rem 0.82rem;
+}
+
+.clinical-layout .clx-panel-grid .clx-item-slot-wide {
+  grid-column: 1 / -1;
+}
+
+.clinical-layout .clx-panel-grid .clx-item-title {
+  margin: 0 0 0.48rem;
+  color: var(--clx-accent-strong);
+  font-size: var(--sbt-title-size);
+  line-height: 1.3;
+  font-weight: 700;
+}
+
+/* Comparaisons et profils : cartes encadrées avec bandeau de titre. */
+.clinical-layout :is(.clx-panel-comparison, .clx-panel-profiles) .clx-items {
+  display: grid;
+  grid-template-columns: repeat(var(--clx-columns, 2), minmax(0, 1fr));
+  gap: var(--sbt-gap);
+}
+
+.clinical-layout :is(.clx-panel-comparison, .clx-panel-profiles) .clx-item-slot {
+  min-width: 0;
+}
+
+.clinical-layout :is(.clx-panel-comparison, .clx-panel-profiles) .clx-item-slot-wide {
+  grid-column: 1 / -1;
+}
+
+.clinical-layout :is(.clx-panel-comparison, .clx-panel-profiles) .clx-item {
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid var(--clx-border);
+  border-radius: var(--sbt-radius);
+  background: var(--clx-surface);
+}
+
+.clinical-layout :is(.clx-panel-comparison, .clx-panel-profiles) .clx-item-title {
+  margin: 0;
+  padding: 0.58rem 0.78rem;
+  border-bottom: 1px solid var(--clx-border-soft);
+  background: var(--clx-surface-soft);
+  color: var(--clx-accent-strong);
+  font-size: var(--sbt-title-size);
+  line-height: 1.3;
+  font-weight: 700;
+}
+
+.clinical-layout :is(.clx-panel-comparison, .clx-panel-profiles) .clx-item-body {
+  padding: 0.68rem 0.78rem 0.74rem;
+}
+
+/* Séquence clinique. */
+.clinical-layout .clx-steps {
+  display: flex;
+  align-items: stretch;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.clinical-layout .clx-step-sequence {
+  display: contents;
+}
+
+.clinical-layout .clx-item-steps {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.65rem;
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 0.82rem 0.85rem;
+  border: 1px solid var(--clx-border);
+  border-radius: var(--sbt-radius);
+  background: var(--clx-surface);
+}
+
+.clinical-layout .clx-step-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 1px solid var(--clx-accent);
+  border-radius: 999px;
+  background: var(--clx-surface);
+  color: var(--clx-accent-strong);
+  font-size: 0.78rem;
+  line-height: 1;
+  font-weight: 750;
+}
+
+.clinical-layout .clx-step-title {
+  margin: 0 0 0.3rem;
+  color: var(--clx-accent-strong);
+  font-size: 0.93rem;
+  line-height: 1.3;
+  font-weight: 700;
+}
+
+.clinical-layout .clx-step-body {
+  color: var(--clx-text);
+}
+
+.clinical-layout .clx-step-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  min-width: 0.8rem;
+  color: var(--clx-accent-strong);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.clinical-layout.clx-error {
+  display: block;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--ifm-color-danger) 42%, transparent);
+  border-radius: var(--sbt-radius);
+  background: color-mix(in srgb, var(--ifm-color-danger) 7%, var(--ifm-background-surface-color));
+}
+
+.clinical-layout .clx-error-help {
+  margin-top: 0.35rem;
+  color: var(--clx-muted);
+  font-size: 0.84rem;
+}
+
+@container (max-width: 760px) {
+  .clinical-layout .clx-items,
+  .clinical-layout .clx-panel-grid .clx-items {
+    grid-template-columns: 1fr;
+  }
+
+  .clinical-layout .clx-steps {
+    flex-direction: column;
+  }
+
+  .clinical-layout .clx-step-arrow {
+    min-height: 0.5rem;
+    transform: rotate(90deg);
+  }
+}
+
+@media (max-width: 800px) {
+  .clinical-layout .clx-items,
+  .clinical-layout .clx-panel-grid .clx-items {
+    grid-template-columns: 1fr;
+  }
+
+  .clinical-layout .clx-steps {
+    flex-direction: column;
+  }
+
+  .clinical-layout .clx-step-arrow {
+    transform: rotate(90deg);
+  }
+}
+
+/* Panneau générique texte + média. Le premier @item contient le texte,
+   le second l'illustration et sa légende. */
+.clinical-layout .clx-panel-media .clx-items {
+  display: grid;
+  grid-template-columns: minmax(0, var(--clx-media-main, 65fr)) minmax(0, var(--clx-media-side, 35fr));
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--clx-border);
+  border-radius: var(--sbt-radius);
+  background: var(--clx-border);
+}
+
+.clinical-layout .clx-panel-media .clx-item-slot {
+  min-width: 0;
+  background: var(--clx-surface);
+}
+
+.clinical-layout .clx-panel-media .clx-item {
+  height: 100%;
+}
+
+.clinical-layout .clx-panel-media .clx-item-title {
+  margin: 0;
+  padding: 0.58rem 0.78rem;
+  border-bottom: 1px solid var(--clx-border-soft);
+  background: var(--clx-surface-soft);
+  color: var(--clx-accent-strong);
+  font-size: var(--sbt-title-size);
+  line-height: 1.3;
+  font-weight: 700;
+}
+
+.clinical-layout .clx-panel-media .clx-item-body {
+  padding: 0.72rem 0.82rem 0.78rem;
+}
+
+.clinical-layout .clx-media-slot-visual .clx-item-body {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 0.48rem;
+  height: calc(100% - 2.35rem);
+  text-align: center;
+  color: var(--clx-muted);
+}
+
+.clinical-layout .clx-media-slot-visual .clx-markdown > p {
+  width: 100%;
+  margin: 0;
+}
+
+.clinical-layout .clx-media-slot-visual img {
+  display: block;
+  width: auto;
+  max-width: min(100%, 18rem);
+  max-height: 18rem;
+  margin: 0 auto;
+  border-radius: calc(var(--sbt-radius) - 0.12rem);
+  object-fit: contain;
+}
+
+.clinical-layout .clx-media-slot-visual em {
+  color: var(--clx-muted);
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+@container (max-width: 760px) {
+  .clinical-layout .clx-panel-media .clx-items {
+    grid-template-columns: 1fr;
+  }
+
+  .clinical-layout .clx-media-slot-visual img {
+    max-width: min(100%, 20rem);
+  }
+}
+
+@media (max-width: 800px) {
+  .clinical-layout .clx-panel-media .clx-items {
+    grid-template-columns: 1fr;
+  }
+}

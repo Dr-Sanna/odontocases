@@ -1,54 +1,36 @@
 /* src/components/EtiologyGrid.css */
 
+
+@import "./StructuredBlocksTheme.css";
+
 .etiology-grid,
 .etiology-grid * {
   box-sizing: border-box;
 }
 
 .etiology-grid {
-  --etg-accent: var(--ifm-color-primary);
-  --etg-accent-strong: var(--ifm-color-primary-darkest);
-  --etg-border: color-mix(
-    in srgb,
-    var(--ifm-color-primary) 29%,
-    var(--ifm-toc-border-color)
-  );
-  --etg-border-soft: color-mix(
-    in srgb,
-    var(--ifm-color-primary) 15%,
-    var(--ifm-toc-border-color)
-  );
-  --etg-surface: color-mix(
-    in srgb,
-    var(--ifm-color-primary) 4%,
-    var(--ifm-background-surface-color)
-  );
-  --etg-surface-soft: color-mix(
-    in srgb,
-    var(--ifm-color-primary) 7%,
-    var(--ifm-background-surface-color)
-  );
-  --etg-surface-strong: color-mix(
-    in srgb,
-    var(--ifm-color-primary) 11%,
-    var(--ifm-background-surface-color)
-  );
+  --etg-accent: var(--sbt-accent);
+  --etg-accent-strong: var(--sbt-accent-strong);
+  --etg-border: var(--sbt-border);
+  --etg-border-soft: var(--sbt-border-soft);
+  --etg-surface: var(--sbt-surface);
+  --etg-surface-soft: var(--sbt-surface-soft);
+  --etg-surface-strong: var(--sbt-surface-strong);
+  --etg-text: var(--sbt-text);
+  --etg-muted: var(--sbt-muted);
 
   display: grid;
   grid-template-columns: repeat(var(--etg-grid-columns, 2), minmax(0, 1fr));
   align-items: start;
-  gap: 1rem 1.05rem;
+  gap: var(--sbt-gap);
   width: 100%;
   min-width: 0;
   max-width: 100%;
-  margin: 0.9rem 0 1.35rem;
-  color: var(--ifm-font-color-base);
+  margin: 0.9rem 0 1.45rem;
+  color: var(--etg-text);
   font-family: var(--ifm-font-family-base);
 }
 
-[data-theme="dark"] .etiology-grid {
-  --etg-accent-strong: var(--ifm-color-primary-lightest);
-}
 
 .etiology-grid .etg-entry {
   min-width: 0;
@@ -62,13 +44,13 @@
 
 .etiology-grid .etg-entry-title {
   display: block;
-  margin: 0 0 0.48rem;
+  margin: 0 0 0.55rem;
   padding: 0;
   border: 0;
   background: transparent;
-  color: var(--ifm-heading-color);
+  color: var(--etg-accent-strong);
   font-family: var(--ifm-heading-font-family);
-  font-size: var(--ifm-h4-font-size, 1.2rem);
+  font-size: var(--sbt-section-title-size);
   font-style: normal;
   font-weight: var(--ifm-heading-font-weight, 700);
   line-height: 1.28;
@@ -83,14 +65,14 @@
   min-width: 0;
   max-width: 100%;
   margin: 0;
-  padding: 0.7rem 0.76rem;
+  padding: 0.8rem 0.95rem;
   border: 1px solid var(--etg-border);
-  border-radius: 0.52rem;
+  border-radius: var(--sbt-radius);
   background: var(--etg-surface);
-  color: var(--ifm-font-color-base);
+  color: var(--etg-text);
   font-family: var(--ifm-font-family-base);
-  font-size: 0.8rem;
-  line-height: 1.4;
+  font-size: var(--sbt-body-size);
+  line-height: var(--sbt-body-line);
 }
 
 .etiology-card .etg-markdown,
@@ -123,7 +105,7 @@
 }
 
 .etiology-card a {
-  color: var(--ifm-color-primary);
+  color: var(--etg-accent-strong);
   text-decoration: none;
 }
 
@@ -145,9 +127,9 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
   gap: 0;
-  margin: -0.7rem -0.76rem 0.62rem;
+  margin: -0.8rem -0.95rem 0.68rem;
   border-bottom: 1px solid var(--etg-border-soft);
-  border-radius: 0.5rem 0.5rem 0 0;
+  border-radius: var(--sbt-radius) var(--sbt-radius) 0 0;
   background: var(--etg-surface-soft);
 }
 
@@ -157,7 +139,7 @@
   gap: 0.48rem;
   align-items: baseline;
   min-width: 0;
-  padding: 0.42rem 0.7rem;
+  padding: 0.46rem 0.75rem;
 }
 
 .etiology-card .etg-meta-item + .etg-meta-item {
@@ -166,7 +148,7 @@
 
 .etiology-card .etg-meta-label {
   color: var(--etg-accent-strong);
-  font-size: 0.76rem;
+  font-size: var(--sbt-label-size);
   font-weight: 700;
   line-height: 1.25;
 }
@@ -179,8 +161,8 @@
   margin: 0 0 0.62rem;
   padding: 0 0 0.58rem;
   border-bottom: 1px solid var(--etg-border-soft);
-  font-size: 0.82rem;
-  line-height: 1.43;
+  font-size: var(--sbt-body-size);
+  line-height: var(--sbt-body-line);
 }
 
 .etiology-grid .etg-entry.etg-layout-compact .etg-summary:last-child {
@@ -219,7 +201,7 @@
     transparent
   );
   color: var(--etg-accent-strong);
-  font-size: 0.8rem;
+  font-size: var(--sbt-body-size);
   font-style: normal;
   font-weight: 700;
   line-height: 1.24;
@@ -238,7 +220,7 @@
   margin: 0;
   padding: 0;
   border: 1px solid var(--etg-border-soft);
-  border-radius: 0.4rem;
+  border-radius: var(--sbt-radius);
   background: var(--etg-surface-soft);
 }
 
@@ -250,7 +232,7 @@
   margin: 0;
   padding: 0.42rem 0.6rem;
   color: var(--etg-accent-strong);
-  font-size: 0.8rem;
+  font-size: var(--sbt-body-size);
   font-weight: 700;
   line-height: 1.25;
   cursor: pointer;
@@ -278,8 +260,8 @@
   margin: 0;
   padding: 0.46rem 0.52rem;
   border: 1px solid var(--etg-border-soft);
-  border-radius: 0.34rem;
-  background: var(--ifm-background-surface-color);
+  border-radius: var(--sbt-radius);
+  background: var(--etg-surface);
 }
 
 .etiology-grid.etg-error {
@@ -303,7 +285,7 @@
 
 .etg-error-message,
 .etg-error-help {
-  font-size: 0.76rem;
+  font-size: var(--sbt-label-size);
 }
 
 .etg-error-help {

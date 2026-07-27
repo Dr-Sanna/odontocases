@@ -1,69 +1,42 @@
 /* src/components/SectorGrid.css */
 
+
+@import "./StructuredBlocksTheme.css";
+
 .sector-grid,
 .sector-grid * {
   box-sizing: border-box;
 }
 
 .sector-grid {
-  --sg-accent: var(--ifm-color-primary);
-  --sg-accent-strong: var(--ifm-color-primary-darkest);
-  --sg-border: color-mix(
-    in srgb,
-    var(--sg-accent) 34%,
-    var(--ifm-toc-border-color)
-  );
-  --sg-border-soft: color-mix(
-    in srgb,
-    var(--sg-accent) 18%,
-    var(--ifm-toc-border-color)
-  );
-  --sg-surface: var(--ifm-background-surface-color);
-  --sg-surface-soft: color-mix(
-    in srgb,
-    var(--sg-accent) 5%,
-    var(--ifm-background-surface-color)
-  );
-  --sg-text: var(--ifm-font-color-base);
-  --sg-muted: var(--ifm-color-emphasis-700);
-  --sg-column-gap: 0.68rem;
-  --sg-card-gap: 0.62rem;
+  --sg-accent: var(--sbt-accent);
+  --sg-accent-strong: var(--sbt-accent-strong);
+  --sg-border: var(--sbt-border);
+  --sg-border-soft: var(--sbt-border-soft);
+  --sg-surface: var(--sbt-surface);
+  --sg-surface-soft: var(--sbt-surface-soft);
+  --sg-text: var(--sbt-text);
+  --sg-muted: var(--sbt-muted);
+  --sg-column-gap: var(--sbt-gap);
+  --sg-card-gap: var(--sbt-gap);
 
   container-type: inline-size;
   display: block;
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  margin: 0.86rem 0 var(--ifm-paragraph-margin-bottom);
+  margin: 0.9rem 0 1.45rem;
   padding: 0;
   color: var(--sg-text);
   font-family: var(--ifm-font-family-base);
-  font-size: 0.78rem;
+  font-size: var(--sbt-body-size);
   font-style: normal;
   font-weight: 400;
-  line-height: 1.35;
+  line-height: var(--sbt-body-line);
   letter-spacing: normal;
   text-align: left;
 }
 
-[data-theme="dark"] .sector-grid {
-  --sg-accent-strong: var(--ifm-color-primary-lightest);
-  --sg-border: color-mix(
-    in srgb,
-    var(--sg-accent) 40%,
-    var(--ifm-toc-border-color)
-  );
-  --sg-border-soft: color-mix(
-    in srgb,
-    var(--sg-accent) 24%,
-    var(--ifm-toc-border-color)
-  );
-  --sg-surface-soft: color-mix(
-    in srgb,
-    var(--sg-accent) 9%,
-    var(--ifm-background-surface-color)
-  );
-}
 
 .sector-grid :is(
   p,
@@ -121,7 +94,7 @@
   padding: 0;
   overflow: hidden;
   border: 1px solid var(--sg-border);
-  border-radius: 0.54rem;
+  border-radius: var(--sbt-radius);
   background: var(--sg-surface);
   box-shadow: none;
 }
@@ -129,12 +102,12 @@
 .sector-grid .sg-sector-title {
   display: block;
   margin: 0;
-  padding: 0.44rem 0.68rem;
+  padding: 0.58rem 0.78rem;
   border: 0;
   border-bottom: 1px solid var(--sg-border-soft);
   background: var(--sg-surface-soft);
   color: var(--sg-accent-strong);
-  font-size: 0.94rem;
+  font-size: var(--sbt-title-size);
   font-style: normal;
   font-weight: 750;
   line-height: 1.16;
@@ -147,7 +120,7 @@
   display: block;
   min-width: 0;
   margin: 0;
-  padding: 0.5rem 0.7rem 0.54rem;
+  padding: 0.7rem 0.82rem 0.75rem;
 }
 
 .sector-grid .sg-markdown,
@@ -221,7 +194,7 @@
   gap: 0.52rem;
   min-width: 0;
   margin: 0;
-  padding: 0.42rem 0.7rem;
+  padding: 0.52rem 0.82rem;
 }
 
 .sector-grid .sg-subzone + .sg-subzone {
@@ -235,10 +208,10 @@
   margin: 0;
   padding: 0.18rem 0.24rem;
   border: 1px solid var(--sg-border-soft);
-  border-radius: 0.32rem;
+  border-radius: 0.4rem;
   background: var(--sg-surface-soft);
   color: var(--sg-accent-strong);
-  font-size: 0.77rem;
+  font-size: var(--sbt-small-size);
   font-style: normal;
   font-weight: 750;
   line-height: 1.16;
@@ -277,7 +250,7 @@
 
 .sector-grid .sg-error-message,
 .sector-grid .sg-error-help {
-  font-size: 0.78rem;
+  font-size: var(--sbt-body-size);
 }
 
 .sector-grid .sg-error-help {

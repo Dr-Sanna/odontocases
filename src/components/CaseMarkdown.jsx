@@ -37,6 +37,9 @@ import ClinicalPathway, {
 import ClinicalEvolution, {
   isClinicalEvolutionCodeBlock,
 } from "./ClinicalEvolution";
+import ClinicalLayout, {
+  isClinicalLayoutCodeBlock,
+} from "./ClinicalLayout";
 
 
 function appendSanitizeAttributes(schema, tagName, attributes) {
@@ -594,6 +597,12 @@ function renderClinicalEvolutionFromCode(className, codeChildren) {
   return <ClinicalEvolution source={raw} />;
 }
 
+function renderClinicalLayoutFromCode(className, codeChildren) {
+  const raw = textFromReactChildren(codeChildren).replace(/\n$/, "");
+  if (!isClinicalLayoutCodeBlock(className, raw)) return null;
+  return <ClinicalLayout source={raw} />;
+}
+
 function parseClassificationDiagramBlock(rawText) {
   let raw = unwrapFence(rawText);
   if (!raw) return null;
@@ -671,6 +680,12 @@ const CaseMarkdown = memo(function CaseMarkdown({ children, scopeKey = "" }) {
         const onlyChild = Array.isArray(preChildren) ? preChildren[0] : preChildren;
 
         if (isValidElement(onlyChild)) {
+          const clinicalLayout = renderClinicalLayoutFromCode(
+            onlyChild.props?.className,
+            onlyChild.props?.children
+          );
+          if (clinicalLayout) return clinicalLayout;
+
           const clinicalEvolution = renderClinicalEvolutionFromCode(
             onlyChild.props?.className,
             onlyChild.props?.children
@@ -736,6 +751,12 @@ const CaseMarkdown = memo(function CaseMarkdown({ children, scopeKey = "" }) {
 
       code({ inline, className, children: codeChildren, node, ...props }) {
         if (!inline) {
+          const clinicalLayout = renderClinicalLayoutFromCode(
+            className,
+            codeChildren
+          );
+          if (clinicalLayout) return clinicalLayout;
+
           const clinicalEvolution = renderClinicalEvolutionFromCode(
             className,
             codeChildren

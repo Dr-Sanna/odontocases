@@ -1,36 +1,23 @@
 /* src/components/ClinicalEvolution.css */
 
+
+@import "./StructuredBlocksTheme.css";
+
 .clinical-evolution,
 .clinical-evolution * {
   box-sizing: border-box;
 }
 
 .clinical-evolution {
-  --cev-accent: var(--ifm-color-primary);
-  --cev-accent-strong: var(--ifm-color-primary-darkest);
-  --cev-accent-soft: color-mix(
-    in srgb,
-    var(--ifm-color-primary) 10%,
-    transparent
-  );
-  --cev-border: color-mix(
-    in srgb,
-    var(--ifm-color-primary) 19%,
-    var(--ifm-toc-border-color)
-  );
-  --cev-border-soft: color-mix(
-    in srgb,
-    var(--ifm-color-primary) 9%,
-    var(--ifm-toc-border-color)
-  );
-  --cev-surface: var(--ifm-background-surface-color);
-  --cev-surface-soft: color-mix(
-    in srgb,
-    var(--ifm-color-primary) 4%,
-    var(--ifm-background-surface-color)
-  );
-  --cev-text: var(--ifm-font-color-base);
-  --cev-muted: var(--ifm-color-emphasis-700, var(--ifm-font-color-base));
+  --cev-accent: var(--sbt-accent);
+  --cev-accent-strong: var(--sbt-accent-strong);
+  --cev-accent-soft: var(--sbt-accent-soft);
+  --cev-border: var(--sbt-border);
+  --cev-border-soft: var(--sbt-border-soft);
+  --cev-surface: var(--sbt-surface);
+  --cev-surface-soft: var(--sbt-surface-soft);
+  --cev-text: var(--sbt-text);
+  --cev-muted: var(--sbt-muted);
 
   container-type: inline-size;
   display: grid;
@@ -40,12 +27,10 @@
   margin: 0.9rem 0 1.45rem;
   color: var(--cev-text);
   font-family: var(--ifm-font-family-base);
+  font-size: var(--sbt-body-size);
+  line-height: var(--sbt-body-line);
 }
 
-[data-theme="dark"] .clinical-evolution {
-  --cev-accent-strong: var(--ifm-color-primary-lightest);
-  --cev-muted: var(--ifm-color-emphasis-700, var(--ifm-font-color-base));
-}
 
 .clinical-evolution .cev-markdown > :first-child {
   margin-top: 0;
@@ -56,7 +41,7 @@
 }
 
 .clinical-evolution .cev-markdown p {
-  line-height: 1.5;
+  line-height: inherit;
 }
 
 .clinical-evolution .cev-markdown ul,
@@ -79,11 +64,12 @@
   background: color-mix(in srgb, var(--cev-text) 8%, transparent);
 }
 
-/* Bandeau introductif aigu / chronique : fond commun, sans carte externe. */
+/* Bandeau introductif aigu / chronique : fond commun avec bordure externe. */
 .clinical-evolution .cev-overview {
   display: grid;
   grid-template-columns: repeat(var(--cev-overview-count, 2), minmax(0, 1fr));
   overflow: hidden;
+  border: 1px solid var(--cev-border);
   border-radius: 0.6rem;
   background: var(--cev-surface-soft);
 }
@@ -108,7 +94,7 @@
 .clinical-evolution .cev-overview-title {
   margin: 0;
   color: var(--cev-accent-strong);
-  font-size: 0.98rem;
+  font-size: 0.95rem;
   line-height: 1.3;
   font-weight: 700;
 }
@@ -127,8 +113,8 @@
 .clinical-evolution .cev-overview-context {
   margin-top: 0.42rem;
   color: var(--cev-muted);
-  font-size: 0.88rem;
-  line-height: 1.45;
+  font-size: 0.87rem;
+  line-height: 1.42;
 }
 
 /* Les parties détaillées ne sont pas entourées d'une bordure externe. */
@@ -142,12 +128,12 @@
 .clinical-evolution .cev-section-title {
   width: fit-content;
   max-width: 100%;
-  margin: 0 0 0.9rem;
+  margin: 0 0 0.85rem;
   padding-bottom: 0.22rem;
   border-bottom: 2px solid color-mix(in srgb, var(--cev-accent) 56%, transparent);
   color: var(--cev-accent-strong);
   font-size: 1rem;
-  line-height: 1.35;
+  line-height: 1.3;
   font-weight: 700;
 }
 
@@ -167,7 +153,7 @@
   position: relative;
   flex: 1 1 0;
   min-width: 0;
-  padding: 0.95rem 0.85rem 0.82rem;
+  padding: 0.9rem 0.85rem 0.8rem;
   border: 1px solid var(--cev-border);
   border-radius: 0.55rem;
   background: var(--cev-surface);
@@ -180,13 +166,13 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.48rem;
-  height: 1.48rem;
+  width: 1.45rem;
+  height: 1.45rem;
   border: 1.5px solid var(--cev-accent);
   border-radius: 999px;
-  background: var(--ifm-background-surface-color);
+  background: var(--cev-surface);
   color: var(--cev-accent-strong);
-  font-size: 0.73rem;
+  font-size: 0.72rem;
   line-height: 1;
   font-weight: 750;
 }
@@ -194,15 +180,15 @@
 .clinical-evolution .cev-stage-title {
   margin: 0 0 0.45rem;
   color: var(--cev-text);
-  font-size: 0.94rem;
+  font-size: 0.93rem;
   line-height: 1.35;
   font-weight: 700;
 }
 
 .clinical-evolution .cev-stage-body {
   color: var(--cev-text);
-  font-size: 0.88rem;
-  line-height: 1.47;
+  font-size: 0.87rem;
+  line-height: 1.45;
 }
 
 .clinical-evolution .cev-stage-arrow {
@@ -232,8 +218,8 @@
 
 .clinical-evolution .cev-outcome-body {
   color: var(--cev-muted);
-  font-size: 0.83rem;
-  line-height: 1.42;
+  font-size: 0.82rem;
+  line-height: 1.4;
 }
 
 /* Profils chroniques */
@@ -259,9 +245,10 @@
 .clinical-evolution .cev-profile-title {
   margin: 0;
   padding: 0.65rem 0.8rem;
+  border-bottom: 1px solid var(--cev-border-soft);
   background: var(--cev-surface-soft);
   color: var(--cev-accent-strong);
-  font-size: 0.95rem;
+  font-size: 0.94rem;
   line-height: 1.3;
   font-weight: 700;
 }
@@ -287,21 +274,21 @@
 
 .clinical-evolution .cev-meta-title {
   color: var(--cev-accent-strong);
-  font-size: 0.79rem;
+  font-size: 0.78rem;
   font-weight: 750;
 }
 
 .clinical-evolution .cev-meta-body {
   color: var(--cev-text);
-  font-size: 0.88rem;
-  line-height: 1.42;
+  font-size: 0.87rem;
+  line-height: 1.4;
 }
 
 .clinical-evolution .cev-profile-summary {
   padding: 0.7rem 0.8rem;
   color: var(--cev-text);
-  font-size: 0.9rem;
-  line-height: 1.47;
+  font-size: 0.89rem;
+  line-height: 1.45;
 }
 
 .clinical-evolution .cev-profile-sections {
@@ -326,15 +313,15 @@
   padding-bottom: 0.12rem;
   border-bottom: 1px solid color-mix(in srgb, var(--cev-accent) 44%, transparent);
   color: var(--cev-accent-strong);
-  font-size: 0.83rem;
+  font-size: 0.82rem;
   line-height: 1.3;
   font-weight: 700;
 }
 
 .clinical-evolution .cev-profile-section-body {
   color: var(--cev-text);
-  font-size: 0.85rem;
-  line-height: 1.44;
+  font-size: 0.84rem;
+  line-height: 1.42;
 }
 
 .clinical-evolution.cev-error {

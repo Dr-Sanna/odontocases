@@ -1,0 +1,70 @@
+/*
+ * Palette et échelle communes aux blocs structurés React.
+ *
+ * Le thème clair reprend les valeurs calculées dans Obsidian.
+ * La police n'est volontairement jamais définie ici : chaque composant
+ * continue d'utiliser la police globale de l'application React.
+ */
+
+:root {
+  --sbt-accent: hsl(142 34.34% 48.375%);
+  --sbt-accent-strong: hsl(143 34% 45%);
+  --sbt-accent-soft: color-mix(in srgb, var(--sbt-accent) 10%, transparent);
+
+  --sbt-border: color-mix(in srgb, #5c5c5c 26%, transparent);
+  --sbt-border-soft: color-mix(in srgb, #5c5c5c 17%, transparent);
+  --sbt-underline: color-mix(in srgb, var(--sbt-accent) 56%, transparent);
+
+  --sbt-surface: #ffffff;
+  --sbt-surface-soft: color-mix(in srgb, #f9f8f7 58%, #ffffff);
+  --sbt-surface-strong: color-mix(in srgb, #f9f8f7 82%, #ffffff);
+
+  --sbt-text: #222222;
+  --sbt-muted: #5c5c5c;
+
+  --sbt-radius: 0.55rem;
+  --sbt-radius-soft: 0.6rem;
+  --sbt-gap: 0.85rem;
+  --sbt-section-gap: 1.15rem;
+
+  --sbt-body-size: 0.87rem;
+  --sbt-body-line: 1.45;
+  --sbt-small-size: 0.82rem;
+  --sbt-small-line: 1.4;
+  --sbt-label-size: 0.76rem;
+  --sbt-title-size: 0.95rem;
+  --sbt-section-title-size: 1rem;
+}
+
+[data-theme="dark"] {
+  --sbt-accent: var(--ifm-color-primary);
+  --sbt-accent-strong: var(--ifm-color-primary-lightest);
+  --sbt-accent-soft: color-mix(in srgb, var(--ifm-color-primary) 10%, transparent);
+
+  --sbt-border: color-mix(
+    in srgb,
+    var(--ifm-color-primary) 19%,
+    var(--ifm-toc-border-color)
+  );
+  --sbt-border-soft: color-mix(
+    in srgb,
+    var(--ifm-color-primary) 9%,
+    var(--ifm-toc-border-color)
+  );
+  --sbt-underline: color-mix(in srgb, var(--ifm-color-primary) 56%, transparent);
+
+  --sbt-surface: var(--ifm-background-surface-color);
+  --sbt-surface-soft: color-mix(
+    in srgb,
+    var(--ifm-color-primary) 4%,
+    var(--ifm-background-surface-color)
+  );
+  --sbt-surface-strong: color-mix(
+    in srgb,
+    var(--ifm-color-primary) 8%,
+    var(--ifm-background-surface-color)
+  );
+
+  --sbt-text: var(--ifm-font-color-base);
+  --sbt-muted: var(--ifm-color-emphasis-700, var(--ifm-font-color-base));
+}

@@ -1,67 +1,40 @@
 /* src/components/DiagnosticGrid.css */
 
+
+@import "./StructuredBlocksTheme.css";
+
 .diagnostic-grid,
 .diagnostic-grid * {
   box-sizing: border-box;
 }
 
 .diagnostic-grid {
-  --dxg-accent: var(--ifm-color-primary);
-  --dxg-accent-strong: var(--ifm-color-primary-darkest);
-  --dxg-border: color-mix(
-    in srgb,
-    var(--dxg-accent) 34%,
-    var(--ifm-toc-border-color)
-  );
-  --dxg-border-soft: color-mix(
-    in srgb,
-    var(--dxg-accent) 18%,
-    var(--ifm-toc-border-color)
-  );
-  --dxg-surface: var(--ifm-background-surface-color);
-  --dxg-surface-soft: color-mix(
-    in srgb,
-    var(--dxg-accent) 5%,
-    var(--ifm-background-surface-color)
-  );
-  --dxg-text: var(--ifm-font-color-base);
-  --dxg-muted: var(--ifm-color-emphasis-700);
+  --dxg-accent: var(--sbt-accent);
+  --dxg-accent-strong: var(--sbt-accent-strong);
+  --dxg-border: var(--sbt-border);
+  --dxg-border-soft: var(--sbt-border-soft);
+  --dxg-surface: var(--sbt-surface);
+  --dxg-surface-soft: var(--sbt-surface-soft);
+  --dxg-text: var(--sbt-text);
+  --dxg-muted: var(--sbt-muted);
 
   container-type: inline-size;
   display: block;
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  margin: 0.82rem 0 var(--ifm-paragraph-margin-bottom);
+  margin: 0.9rem 0 1.45rem;
   padding: 0;
   color: var(--dxg-text);
   font-family: var(--ifm-font-family-base);
-  font-size: 0.8rem;
+  font-size: var(--sbt-body-size);
   font-style: normal;
   font-weight: 400;
-  line-height: 1.4;
+  line-height: var(--sbt-body-line);
   letter-spacing: normal;
   text-align: left;
 }
 
-[data-theme="dark"] .diagnostic-grid {
-  --dxg-accent-strong: var(--ifm-color-primary-lightest);
-  --dxg-border: color-mix(
-    in srgb,
-    var(--dxg-accent) 40%,
-    var(--ifm-toc-border-color)
-  );
-  --dxg-border-soft: color-mix(
-    in srgb,
-    var(--dxg-accent) 24%,
-    var(--ifm-toc-border-color)
-  );
-  --dxg-surface-soft: color-mix(
-    in srgb,
-    var(--dxg-accent) 9%,
-    var(--ifm-background-surface-color)
-  );
-}
 
 .diagnostic-grid :is(
   p,
@@ -88,9 +61,9 @@
 .diagnostic-grid .dxg-clinical-cards {
   display: grid;
   grid-template-columns: repeat(var(--dxg-columns, 2), minmax(0, 1fr));
-  gap: 0.58rem;
+  gap: var(--sbt-gap);
   min-width: 0;
-  margin: 0 0 0.64rem;
+  margin: 0 0 var(--sbt-gap);
   padding: 0;
 }
 
@@ -103,7 +76,7 @@
   padding: 0;
   overflow: hidden;
   border: 1px solid var(--dxg-border);
-  border-radius: 0.54rem;
+  border-radius: var(--sbt-radius);
   background: var(--dxg-surface);
 }
 
@@ -117,7 +90,7 @@
 .diagnostic-grid.dxg-layout-clinical .dxg-card {
   overflow: hidden;
   border: 1px solid var(--dxg-border);
-  border-radius: 0.5rem;
+  border-radius: var(--sbt-radius);
 }
 
 .diagnostic-grid.dxg-layout-cards .dxg-card + .dxg-card {
@@ -138,9 +111,9 @@
 }
 
 .diagnostic-grid .dxg-card-title {
-  padding: 0.42rem 0.64rem;
+  padding: 0.55rem 0.75rem;
   border-bottom: 1px solid var(--dxg-border-soft);
-  font-size: 0.88rem;
+  font-size: var(--sbt-title-size);
   line-height: 1.2;
   text-align: left;
 }
@@ -148,7 +121,7 @@
 .diagnostic-grid .dxg-card-body {
   min-width: 0;
   margin: 0;
-  padding: 0.5rem 0.66rem 0.55rem;
+  padding: 0.7rem 0.82rem 0.75rem;
 }
 
 .diagnostic-grid .dxg-markdown,
@@ -220,14 +193,14 @@
   padding: 0;
   overflow: hidden;
   border: 1px solid var(--dxg-border);
-  border-radius: 0.54rem;
+  border-radius: var(--sbt-radius);
   background: var(--dxg-surface);
 }
 
 .diagnostic-grid .dxg-matrix-title {
-  padding: 0.45rem 0.68rem;
+  padding: 0.58rem 0.78rem;
   border-bottom: 1px solid var(--dxg-border);
-  font-size: 0.92rem;
+  font-size: var(--sbt-title-size);
   line-height: 1.18;
   text-align: left;
 }
@@ -257,11 +230,11 @@
   align-items: flex-start;
   min-width: 0;
   margin: 0;
-  padding: 0.43rem 0.58rem;
+  padding: 0.52rem 0.68rem;
   border-right: 1px solid var(--dxg-border-soft);
   background: var(--dxg-surface-soft);
   color: var(--dxg-accent-strong);
-  font-size: 0.79rem;
+  font-size: var(--sbt-small-size);
   font-style: normal;
   font-weight: 750;
   line-height: 1.25;
@@ -272,7 +245,7 @@
 .diagnostic-grid .dxg-criterion-content {
   min-width: 0;
   margin: 0;
-  padding: 0.42rem 0.64rem 0.46rem;
+  padding: 0.56rem 0.72rem 0.6rem;
 }
 
 .diagnostic-grid.dxg-error {
