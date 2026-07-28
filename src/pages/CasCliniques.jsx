@@ -550,7 +550,12 @@ export default function CasCliniques() {
 
     const cacheKey = `${isAtlasHub ? 'atlas' : 'cases'}:${tab}:${page}:${q}`;
     const cached = readListCache(cacheKey);
+    const isBackgroundRefresh = Boolean(cached);
+
     if (cached) {
+      // Stale-while-revalidate : on conserve le contenu déjà affiché pendant
+      // un rafraîchissement (notamment au retour sur l'onglet du navigateur).
+      // Cela évite que la hauteur de la page s'effondre et que le scroll remonte.
       setItems(cached.items);
       setTotal(cached.total);
       setLoading(false);
@@ -559,7 +564,9 @@ export default function CasCliniques() {
     }
 
     async function load() {
-      setLoading(true);
+      // Le loader plein écran n'est utile que lorsqu'il n'y a encore rien à afficher.
+      // Si une copie en cache existe, le fetch se fait silencieusement en arrière-plan.
+      if (!isBackgroundRefresh) setLoading(true);
       setError('');
 
       try {
@@ -683,9 +690,15 @@ export default function CasCliniques() {
         setItems([]);
         setTotal(0);
       } catch (e) {
-        if (!ignore && !isAbortError(e)) setError(e?.message || 'Erreur de chargement');
+        if (!ignore && !isAbortError(e)) {
+          // En cas d'échec d'un refresh en arrière-plan, on garde la dernière
+          // liste valide à l'écran au lieu de la remplacer par un état d'erreur.
+          if (!isBackgroundRefresh) {
+            setError(e?.message || 'Erreur de chargement');
+          }
+        }
       } finally {
-        if (!ignore) setLoading(false);
+        if (!ignore && !isBackgroundRefresh) setLoading(false);
       }
     }
 
