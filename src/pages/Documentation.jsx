@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import PageTitle from '../components/PageTitle';
+import FilterMenu from '../components/FilterMenu';
 import {
   getPrefetchedBySlug,
   getPrefetchedChildren,
@@ -450,33 +451,39 @@ export default function Documentation({ basePath = '/documentation', subjectSlug
 
   const hasContent = list.length > 0;
   const hasThemeSections = Array.isArray(themeSections) && themeSections.length > 0;
-  const showViewToolbar = !isDocumentationLanding && level === 'item' && !loading && !error && hasContent;
+  const showHeaderControls = !isDocumentationLanding && level === 'item';
   const useThemeSections = docGroup === 'theme' && hasThemeSections;
 
   return (
     <>
-      <div className="page-header">
+      <div className="page-header display-page-header">
         <div className="container">
-          {headerTitle ? (
-            <PageTitle description={description}>{headerTitle}</PageTitle>
-          ) : (
-            <div className="doc-title-skel" aria-hidden="true">
-              <div className="doc-sk-line doc-sk-h24 doc-sk-w55" />
-              {isRoot ? <div className="doc-sk-line doc-sk-h16 doc-sk-w90" /> : null}
+          <div className="display-page-header-row">
+            <div className="display-page-header-copy">
+              {headerTitle ? (
+                <PageTitle description={description}>{headerTitle}</PageTitle>
+              ) : (
+                <div className="doc-title-skel" aria-hidden="true">
+                  <div className="doc-sk-line doc-sk-h24 doc-sk-w55" />
+                  {isRoot ? <div className="doc-sk-line doc-sk-h16 doc-sk-w90" /> : null}
+                </div>
+              )}
             </div>
-          )}
+
+            {showHeaderControls && (
+              <div className="display-page-header-actions" aria-label="Options d’affichage de la documentation">
+                <FilterMenu>
+                  <DocItemControls docGroup={docGroup} setDocGroup={setDocGroup} />
+                </FilterMenu>
+                <ViewToggle view={view} setView={setView} />
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       <div className="container">
         <div className="doc-gridwrap">
-          {showViewToolbar && (
-            <section className="doc-toolbar" aria-label="Options d’affichage">
-              <DocItemControls docGroup={docGroup} setDocGroup={setDocGroup} />
-              <ViewToggle view={view} setView={setView} />
-            </section>
-          )}
-
           {loading && list.length > 0 && (
             <div className="doc-loading" aria-hidden="true">
               <div className="doc-loading-pill">Mise à jour…</div>

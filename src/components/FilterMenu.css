@@ -1,0 +1,378 @@
+/* =========================================================
+   Contrôles d'affichage partagés
+   - bouton Filtres + menu
+   - actions à droite des headers Atlas / Documentation
+   - actions à droite des tabs Entraînement
+   ========================================================= */
+
+.display-page-header {
+  overflow: visible;
+}
+
+.display-page-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: clamp(20px, 3vw, 48px);
+  min-width: 0;
+}
+
+.display-page-header-copy {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.display-page-header-actions,
+.display-toolbar-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+
+/* =========================================================
+   Rythme vertical partagé
+   ---------------------------------------------------------
+   Les headers Atlas / Documentation gardent leur construction actuelle.
+   Entraînement n'a pas de titre de page dans ce mode : la rangée d'onglets
+   joue ce rôle. On lui donne donc une vraie zone de respiration avant le
+   premier groupe de cas, afin de retrouver la hiérarchie visuelle de la
+   Documentation : navigation / actions -> espace -> groupe -> cartes.
+   ========================================================= */
+
+:root {
+  --display-toolbar-to-content: 24px;
+  --display-toolbar-padding-y: 10px;
+}
+
+/* Entraînement : tabs à gauche, filtres + vue à droite, sur une ligne,
+   mais sans effet carte ni bordure externe. La barre redevient un élément
+   natif de la page, légèrement affiné par ses tabs et un petit séparateur
+   interne avant les actions de droite. */
+.cc-toolbar--top.cc-training-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: clamp(18px, 2vw, 30px);
+  row-gap: 0;
+
+  min-height: 0;
+  margin-bottom: var(--display-toolbar-to-content) !important;
+  padding-top: 0 !important;
+  padding-right: 0 !important;
+  padding-bottom: var(--display-toolbar-padding-y) !important;
+  padding-left: 0 !important;
+
+  border: 0 !important;
+  border-bottom: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.cc-toolbar--top.cc-training-toolbar .cc-tabs {
+  width: auto;
+  min-width: 0;
+  padding-top: 0;
+
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.cc-toolbar--top.cc-training-toolbar .cc-tab {
+  appearance: none;
+  border: 0 !important;
+  background: transparent;
+  color: #1c1e21 !important;
+  opacity: 1 !important;
+
+  padding: 10px 14px;
+  border-radius: 10px;
+
+  font: inherit;
+  font-size: 1.02rem;
+  font-weight: 600;
+  line-height: 1;
+
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.cc-toolbar--top.cc-training-toolbar .cc-tab::after {
+  content: none !important;
+  display: none !important;
+}
+
+.cc-toolbar--top.cc-training-toolbar .cc-tab:hover {
+  background: rgba(0, 0, 0, 0.035);
+  color: #1c1e21 !important;
+  opacity: 1 !important;
+}
+
+.cc-toolbar--top.cc-training-toolbar .cc-tab.active {
+  color: var(--ifm-color-primary) !important;
+  opacity: 1 !important;
+  font-weight: 600;
+  background: color-mix(in srgb, var(--ifm-color-primary) 10%, transparent);
+}
+
+.cc-toolbar--top.cc-training-toolbar .display-toolbar-actions {
+  width: auto;
+  margin-left: 0;
+  justify-self: end;
+  align-self: center;
+
+  position: relative;
+  padding-left: 0;
+}
+
+.cc-toolbar--top.cc-training-toolbar .display-toolbar-actions::before {
+  content: none !important;
+  display: none !important;
+}
+
+
+/* Le toggle Cartes/Liste conserve uniquement sa capsule extérieure.
+   Les deux boutons internes ne portent aucune bordure ni pseudo-séparateur. */
+.cc-toolbar--top.cc-training-toolbar .cc-viewtoggle .cc-viewbtn,
+.cc-toolbar--top.cc-training-toolbar .cc-viewtoggle .cc-viewbtn + .cc-viewbtn {
+  border: 0 !important;
+  border-left: 0 !important;
+  border-right: 0 !important;
+  border-top: 0 !important;
+  border-bottom: 0 !important;
+  box-shadow: none !important;
+}
+
+.cc-toolbar--top.cc-training-toolbar .cc-viewtoggle .cc-viewbtn::before,
+.cc-toolbar--top.cc-training-toolbar .cc-viewtoggle .cc-viewbtn::after {
+  content: none !important;
+  display: none !important;
+  border: 0 !important;
+}
+.display-filter-wrap {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+
+.display-filterbtn {
+  appearance: none;
+  min-height: 36px;
+  padding: 0 12px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 9px;
+  background: var(--ifm-background-surface-color);
+  color: var(--ifm-font-color-base);
+
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 650;
+  line-height: 1;
+  white-space: nowrap;
+
+  cursor: pointer;
+  box-shadow: none;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.display-filterbtn:hover,
+.display-filterbtn.active {
+  background: rgba(0, 0, 0, 0.035);
+  border-color: rgba(0, 0, 0, 0.18);
+}
+
+.display-filterbtn:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--ifm-color-primary) 55%, transparent);
+  outline-offset: 2px;
+}
+
+.display-filter-ico {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 auto;
+}
+
+.display-filter-popover {
+  position: absolute;
+  z-index: 60;
+  top: calc(100% + 8px);
+  right: 0;
+
+  width: max-content;
+  min-width: 220px;
+  max-width: min(300px, calc(100vw - 32px));
+  padding: 12px;
+
+  border: 1px solid rgba(0, 0, 0, 0.11);
+  border-radius: 12px;
+  background: var(--ifm-background-surface-color);
+  box-shadow:
+    0 10px 28px rgba(0, 0, 0, 0.12),
+    0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.display-filter-popover :is(.cc-atlas-controls, .doc-atlas-controls) {
+  display: block;
+  width: auto;
+}
+
+.display-filter-popover :is(.cc-atlas-control, .doc-atlas-control) {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+}
+
+.display-filter-popover :is(.cc-sortlabel, .doc-sortlabel) {
+  grid-column: 1 / -1;
+  margin: 0 0 2px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  opacity: 0.72;
+}
+
+.display-filter-popover :is(.cc-sortbtn, .doc-sortbtn) {
+  width: 100%;
+  min-width: 88px;
+  padding: 8px 10px;
+  line-height: 1.1;
+}
+
+/* Entraînement : le titre de groupe marque clairement le début du contenu.
+   On supprime les longs traits horizontaux qui se heurtaient visuellement à la
+   toolbar, et on les remplace par un accent vertical plus naturel. */
+.cc-training-active .cc-group-header {
+  margin-top: 0;
+  margin-bottom: 14px;
+  gap: 0;
+}
+
+.cc-training-active .cc-group + .cc-group {
+  margin-top: 0;
+}
+
+.cc-training-active .cc-group-title {
+  position: relative;
+  padding-left: 0;
+  font-size: 1.02rem;
+  font-weight: 750;
+}
+
+.cc-training-active .cc-group-title::before {
+  content: none !important;
+  display: none !important;
+}
+
+.cc-training-active .cc-group-rule {
+  display: none;
+}
+
+/* En absence de groupement, la grille conserve la même respiration que le
+   premier groupe : le margin-bottom de la toolbar fait le gros du travail,
+   sans rajouter un second grand espace. */
+.cc-training-active > .cc-resource-grid {
+  margin-top: 0;
+}
+
+[data-theme='dark'] .display-filterbtn {
+  border-color: rgba(255, 255, 255, 0.14);
+  background: var(--ifm-background-surface-color);
+}
+
+[data-theme='dark'] .display-filterbtn:hover,
+[data-theme='dark'] .display-filterbtn.active {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+[data-theme='dark'] .display-filter-popover {
+  border-color: rgba(255, 255, 255, 0.13);
+  box-shadow:
+    0 14px 32px rgba(0, 0, 0, 0.38),
+    0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme='dark'] .cc-toolbar--top.cc-training-toolbar .cc-tab {
+  color: var(--ifm-font-color-base) !important;
+  opacity: 1 !important;
+}
+
+
+[data-theme='dark'] .cc-toolbar--top.cc-training-toolbar .cc-tab:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--ifm-font-color-base) !important;
+}
+
+[data-theme='dark'] .cc-toolbar--top.cc-training-toolbar .cc-tab.active {
+  color: var(--ifm-color-primary) !important;
+  background: color-mix(in srgb, var(--ifm-color-primary) 14%, transparent);
+}
+
+
+@media (max-width: 760px) {
+  .display-page-header-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .display-page-header-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  /* Sur petit écran seulement, les actions repassent sous les onglets. */
+  .cc-toolbar--top.cc-training-toolbar {
+    grid-template-columns: 1fr;
+    row-gap: 12px;
+    min-height: 0;
+    padding-bottom: 14px !important;
+    margin-bottom: 20px !important;
+  }
+
+  .cc-toolbar--top.cc-training-toolbar .cc-tabs {
+    gap: 6px;
+  }
+
+  .cc-toolbar--top.cc-training-toolbar .cc-tab {
+    padding: 9px 12px;
+    font-size: 0.98rem;
+  }
+
+  .cc-toolbar--top.cc-training-toolbar .display-toolbar-actions {
+    width: 100%;
+    margin-left: 0;
+    padding-left: 0;
+    justify-self: stretch;
+    justify-content: flex-end;
+  }
+
+  .cc-toolbar--top.cc-training-toolbar .display-toolbar-actions::before {
+    display: none;
+  }
+}
+
+@media (max-width: 420px) {
+  .display-page-header-actions,
+  .display-toolbar-actions {
+    gap: 8px;
+  }
+
+  .display-filterbtn {
+    padding-inline: 10px;
+  }
+}

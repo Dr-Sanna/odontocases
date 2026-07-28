@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import PageTitle from '../components/PageTitle';
+import FilterMenu from '../components/FilterMenu';
 import { strapiFetch, imgUrl, isAbortError } from '../lib/strapi';
 import { useQuizCount } from '../lib/trainingStatsStore';
 import './CasCliniques.css';
@@ -1005,9 +1006,22 @@ export default function CasCliniques() {
   return (
     <>
       {!showChips && (
-        <div className="page-header">
+        <div className="page-header display-page-header">
           <div className="container">
-            <PageTitle description={description}>{title}</PageTitle>
+            <div className="display-page-header-row">
+              <div className="display-page-header-copy">
+                <PageTitle description={description}>{title}</PageTitle>
+              </div>
+
+              {isAtlasHub && tab === ATLAS_KEY && (
+                <div className="display-page-header-actions" aria-label="Options d’affichage de l’Atlas">
+                  <FilterMenu>
+                    <AtlasControls atlasGroup={atlasGroup} setAtlasGroup={setAtlasGroup} />
+                  </FilterMenu>
+                  <ViewToggle view={view} setView={setView} />
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -1016,75 +1030,63 @@ export default function CasCliniques() {
         {showTypePicker && <TypePicker />}
 
         {showChips && (
-          <>
-            <section className="cc-toolbar cc-toolbar--top">
-              <div className="cc-tabs" role="tablist" aria-label="Filtrer">
-                <button
-                  type="button"
-                  className={`cc-tab ${tab === STRAPI_QA_TYPE ? 'active' : ''}`}
-                  onClick={() => onChip(STRAPI_QA_TYPE)}
-                  role="tab"
-                  aria-selected={tab === STRAPI_QA_TYPE}
-                >
-                  Q/R
-                </button>
+          <section className="cc-toolbar cc-toolbar--top cc-training-toolbar">
+            <div className="cc-tabs" role="tablist" aria-label="Modes d’entraînement">
+              <button
+                type="button"
+                className={`cc-tab ${tab === STRAPI_QA_TYPE ? 'active' : ''}`}
+                onClick={() => onChip(STRAPI_QA_TYPE)}
+                role="tab"
+                aria-selected={tab === STRAPI_QA_TYPE}
+              >
+                Q/R
+              </button>
 
-                <button
-                  type="button"
-                  className={`cc-tab ${tab === STRAPI_QUIZ_TYPE ? 'active' : ''}`}
-                  onClick={() => onChip(STRAPI_QUIZ_TYPE)}
-                  role="tab"
-                  aria-selected={tab === STRAPI_QUIZ_TYPE}
-                >
-                  Quiz
-                </button>
+              <button
+                type="button"
+                className={`cc-tab ${tab === STRAPI_QUIZ_TYPE ? 'active' : ''}`}
+                onClick={() => onChip(STRAPI_QUIZ_TYPE)}
+                role="tab"
+                aria-selected={tab === STRAPI_QUIZ_TYPE}
+              >
+                Quiz
+              </button>
 
-                <button
-                  type="button"
-                  className={`cc-tab ${tab === STRAPI_PRESENTATION_TYPE ? 'active' : ''}`}
-                  onClick={() => onChip(STRAPI_PRESENTATION_TYPE)}
-                  role="tab"
-                  aria-selected={tab === STRAPI_PRESENTATION_TYPE}
-                >
-                  Présentation
-                </button>
+              <button
+                type="button"
+                className={`cc-tab ${tab === STRAPI_PRESENTATION_TYPE ? 'active' : ''}`}
+                onClick={() => onChip(STRAPI_PRESENTATION_TYPE)}
+                role="tab"
+                aria-selected={tab === STRAPI_PRESENTATION_TYPE}
+              >
+                Présentation
+              </button>
 
-                <button
-                  type="button"
-                  className="cc-tab"
-                  onClick={() => onChip(RANDOM_KEY)}
-                  role="tab"
-                  aria-selected={false}
-                >
-                  Aléatoire
-                </button>
-              </div>
-            </section>
+              <button
+                type="button"
+                className={`cc-tab ${tab === RANDOM_KEY ? 'active' : ''}`}
+                onClick={() => onChip(RANDOM_KEY)}
+                role="tab"
+                aria-selected={tab === RANDOM_KEY}
+              >
+                Aléatoire
+              </button>
+            </div>
 
-            <section className="cc-toolbar cc-toolbar--views" aria-label="Options d’affichage">
-              <CaseControls
-                caseGroup={caseGroup}
-                setCaseGroup={setCaseGroup}
-                groupLabel={
-                  tab === STRAPI_QUIZ_TYPE || tab === STRAPI_PRESENTATION_TYPE
-                    ? 'Localisation'
-                    : 'Thème'
-                }
-              />
+            <div className="display-toolbar-actions" aria-label="Options d’affichage">
+              <FilterMenu>
+                <CaseControls
+                  caseGroup={caseGroup}
+                  setCaseGroup={setCaseGroup}
+                  groupLabel={
+                    tab === STRAPI_QUIZ_TYPE || tab === STRAPI_PRESENTATION_TYPE
+                      ? 'Localisation'
+                      : 'Thème'
+                  }
+                />
+              </FilterMenu>
               <ViewToggle view={view} setView={setView} />
-            </section>
-          </>
-        )}
-
-        {!showTypePicker && !showChips && (
-          <section className="cc-toolbar cc-toolbar--views">
-            {isAtlasHub && tab === ATLAS_KEY ? (
-              <AtlasControls atlasGroup={atlasGroup} setAtlasGroup={setAtlasGroup} />
-            ) : (
-              <span />
-            )}
-
-            <ViewToggle view={view} setView={setView} />
+            </div>
           </section>
         )}
 
@@ -1113,7 +1115,7 @@ export default function CasCliniques() {
                         )}
 
                         <section
-                          className={`resource-grid doc-grid ${view === 'list' ? 'doc-grid--list' : ''}`}
+                          className={`resource-grid doc-grid cc-resource-grid ${view === 'list' ? 'doc-grid--list' : ''}`}
                           aria-label={section.label ? `Groupe ${section.label}` : 'Ressources'}
                         >
                           {section.items.map(renderItem)}
@@ -1134,7 +1136,7 @@ export default function CasCliniques() {
                         </div>
 
                         <section
-                          className={`resource-grid doc-grid ${view === 'list' ? 'doc-grid--list' : ''}`}
+                          className={`resource-grid doc-grid cc-resource-grid ${view === 'list' ? 'doc-grid--list' : ''}`}
                           aria-label={section.label}
                         >
                           {section.items.map(renderItem)}
@@ -1144,7 +1146,7 @@ export default function CasCliniques() {
                   </div>
                 ) : (
                   <section
-                    className={`resource-grid doc-grid ${view === 'list' ? 'doc-grid--list' : ''}`}
+                    className={`resource-grid doc-grid cc-resource-grid ${view === 'list' ? 'doc-grid--list' : ''}`}
                     aria-label="Ressources"
                   >
                     {(isAtlasList ? atlasVisibleItems : sortedItems).map(renderItem)}
