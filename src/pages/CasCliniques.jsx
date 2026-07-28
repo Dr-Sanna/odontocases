@@ -169,13 +169,13 @@ function buildCaseThemeSections(items) {
 function pickPrimaryBadge(badgesAny) {
   const badges = normalizeBadges(badgesAny);
 
-  if (badges.length === 0) return { text: 'Atlas', variant: 'info' };
+  if (badges.length === 0) return null;
 
   // déterministe
   badges.sort((a, b) => String(a.label).localeCompare(String(b.label), 'fr', { sensitivity: 'base' }));
 
   return {
-    text: badges[0].label || 'Atlas',
+    text: badges[0].label,
     variant: badges[0].variant || 'info',
   };
 }
@@ -367,7 +367,7 @@ function ViewToggle({ view, setView }) {
    Contrôles Atlas
    ========================= */
 
-function AtlasControls({ atlasGroup, setAtlasGroup }) {
+function AtlasControls({ atlasGroup, setAtlasGroup, showBadges, setShowBadges }) {
   return (
     <div className="cc-atlas-controls" role="group" aria-label="Contrôles Atlas">
       <div className="cc-atlas-control" role="group" aria-label="Grouper par">
@@ -389,6 +389,28 @@ function AtlasControls({ atlasGroup, setAtlasGroup }) {
           aria-pressed={atlasGroup === 'none'}
         >
           Aucun
+        </button>
+      </div>
+
+      <div className="cc-atlas-control" role="group" aria-label="Afficher les badges">
+        <span className="cc-sortlabel">Badges :</span>
+
+        <button
+          type="button"
+          className={`cc-sortbtn ${showBadges ? 'active' : ''}`}
+          onClick={() => setShowBadges(true)}
+          aria-pressed={showBadges}
+        >
+          Afficher
+        </button>
+
+        <button
+          type="button"
+          className={`cc-sortbtn ${!showBadges ? 'active' : ''}`}
+          onClick={() => setShowBadges(false)}
+          aria-pressed={!showBadges}
+        >
+          Masquer
         </button>
       </div>
     </div>
@@ -472,6 +494,16 @@ export default function CasCliniques() {
     localStorage.setItem('atlas:group', atlasGroup);
     localStorage.setItem('atlas:show', 'all');
   }, [atlasGroup]);
+
+  // Atlas : les badges sont visibles par défaut, avec préférence persistée.
+  const [atlasShowBadges, setAtlasShowBadges] = useState(() => {
+    const saved = localStorage.getItem('atlas:badges');
+    return saved !== 'hidden';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('atlas:badges', atlasShowBadges ? 'shown' : 'hidden');
+  }, [atlasShowBadges]);
 
   const [caseGroup, setCaseGroup] = useState(() => {
     const saved = localStorage.getItem('cases:group');
@@ -854,13 +886,11 @@ export default function CasCliniques() {
     const isPathology = entity === 'pathology';
     const isListView = view === 'list';
 
-    // Les badges sont réservés à l’Atlas.
+    // Les badges sont réservés à l’Atlas. Une pathologie sans badge n’en affiche aucun.
     const pathoBadges = isPathology ? normalizeBadges(attrs?.badges) : [];
-    const badgesToRender = pathoBadges.length
-      ? pathoBadges
-      : [{ label: 'Atlas', variant: 'info' }];
+    const badgesToRender = isPathology && atlasShowBadges ? pathoBadges : [];
 
-    // On garde un badge primaire pour le breadcrumb/prefetch.
+    // Les données de navigation conservent les vrais badges, indépendamment de leur affichage.
     const primaryBadge = isPathology ? pickPrimaryBadge(attrs?.badges) : null;
 
     const key = `${entity}:${slug || idx}`;
@@ -874,7 +904,7 @@ export default function CasCliniques() {
                 slug,
                 title: titleText,
                 badge: primaryBadge,
-                badges: badgesToRender,
+                badges: pathoBadges,
               },
               case: null,
             },
@@ -1016,7 +1046,12 @@ export default function CasCliniques() {
               {isAtlasHub && tab === ATLAS_KEY && (
                 <div className="display-page-header-actions" aria-label="Options d’affichage de l’Atlas">
                   <FilterMenu>
-                    <AtlasControls atlasGroup={atlasGroup} setAtlasGroup={setAtlasGroup} />
+                    <AtlasControls
+                      atlasGroup={atlasGroup}
+                      setAtlasGroup={setAtlasGroup}
+                      showBadges={atlasShowBadges}
+                      setShowBadges={setAtlasShowBadges}
+                    />
                   </FilterMenu>
                   <ViewToggle view={view} setView={setView} />
                 </div>

@@ -237,6 +237,10 @@
   width: 100%;
 }
 
+.display-filter-popover .cc-atlas-controls > .cc-atlas-control + .cc-atlas-control {
+  margin-top: 12px;
+}
+
 .display-filter-popover :is(.cc-sortlabel, .doc-sortlabel) {
   grid-column: 1 / -1;
   margin: 0 0 2px;

@@ -1126,7 +1126,7 @@ export default function CaseDetail(props) {
 
   const pathologyBadges = useMemo(() => {
     if (!isPresentationNamespace) return [];
-    return instantBadges.length ? instantBadges : [{ text: 'Atlas', variant: 'info' }];
+    return instantBadges;
   }, [isPresentationNamespace, instantBadges]);
 
   const pathologyBadge = useMemo(() => firstBadgeFromList(pathologyBadges), [pathologyBadges]);
@@ -1459,15 +1459,15 @@ export default function CaseDetail(props) {
                   <div className="cd-entry-hero-copy">
                     <PageTitle description={displayItem?.excerpt || ''}>{displayTitle}</PageTitle>
 
-                    {isPathologyPage && (
+                    {isPathologyPage && pathologyBadges.length > 0 && (
                       <div className="cd-type-badge">
                         <div className="cd-type-badges" aria-label="Badges de pathologie">
                           {pathologyBadges.map((badge, index) => (
                             <span
-                              key={`${badge.variant || 'info'}:${badge.text || 'Atlas'}:${index}`}
+                              key={`${badge.variant || 'info'}:${badge.text}:${index}`}
                               className={`badge badge-soft-outline badge-${badge.variant || 'info'}`}
                             >
-                              {badge.text || 'Atlas'}
+                              {badge.text}
                             </span>
                           ))}
                         </div>
