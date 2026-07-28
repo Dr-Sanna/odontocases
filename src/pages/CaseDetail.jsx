@@ -1459,24 +1459,18 @@ export default function CaseDetail(props) {
                   <div className="cd-entry-hero-copy">
                     <PageTitle description={displayItem?.excerpt || ''}>{displayTitle}</PageTitle>
 
-                    {!isDocNamespace && (
+                    {isPathologyPage && (
                       <div className="cd-type-badge">
-                        {isPresentationNamespace ? (
-                          <div className="cd-type-badges" aria-label="Badges de pathologie">
-                            {pathologyBadges.map((badge, index) => (
-                              <span
-                                key={`${badge.variant || 'info'}:${badge.text || 'Atlas'}:${index}`}
-                                className={`badge badge-soft-outline badge-${badge.variant || 'info'}`}
-                              >
-                                {badge.text || 'Atlas'}
-                              </span>
-                            ))}
-                          </div>
-                        ) : (
-                          <span className={`badge badge-soft-outline badge-${badgeVariantFromKey(effectiveType || 'qa')}`}>
-                            {typeLabel}
-                          </span>
-                        )}
+                        <div className="cd-type-badges" aria-label="Badges de pathologie">
+                          {pathologyBadges.map((badge, index) => (
+                            <span
+                              key={`${badge.variant || 'info'}:${badge.text || 'Atlas'}:${index}`}
+                              className={`badge badge-soft-outline badge-${badge.variant || 'info'}`}
+                            >
+                              {badge.text || 'Atlas'}
+                            </span>
+                          ))}
+                        </div>
                       </div>
                     )}
 

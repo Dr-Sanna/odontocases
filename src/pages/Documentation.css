@@ -265,29 +265,9 @@
   min-width: 0;
 }
 
-.doc-group-header {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin: 0.25rem 0 0.75rem;
-}
-
-.doc-group-title {
-  font-size: 1rem;
-  font-weight: 600;
-  opacity: 0.92;
-  white-space: nowrap;
-}
-
-.doc-group-rule {
-  height: 1px;
-  flex: 1;
-  background: rgba(0, 0, 0, 0.1);
-}
-
-[data-theme='dark'] .doc-group-rule {
-  background: rgba(255, 255, 255, 0.12);
-}
+/* Le header, le texte et le trait des groupes sont entièrement partagés avec
+   Entraînement via .resource-group-header / .resource-group-title /
+   .resource-group-rule dans Cards.css. Aucune surcharge locale ici. */
 
 .doc-loading {
   display: flex;
@@ -334,7 +314,4 @@
     align-self: flex-end;
   }
 
-  .doc-group-title {
-    white-space: normal;
-  }
 }

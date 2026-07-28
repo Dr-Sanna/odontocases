@@ -252,34 +252,9 @@
   line-height: 1.1;
 }
 
-/* Entraînement : le titre de groupe marque clairement le début du contenu.
-   On supprime les longs traits horizontaux qui se heurtaient visuellement à la
-   toolbar, et on les remplace par un accent vertical plus naturel. */
-.cc-training-active .cc-group-header {
-  margin-top: 0;
-  margin-bottom: 14px;
-  gap: 0;
-}
-
-.cc-training-active .cc-group + .cc-group {
-  margin-top: 0;
-}
-
-.cc-training-active .cc-group-title {
-  position: relative;
-  padding-left: 0;
-  font-size: 1.02rem;
-  font-weight: 750;
-}
-
-.cc-training-active .cc-group-title::before {
-  content: none !important;
-  display: none !important;
-}
-
-.cc-training-active .cc-group-rule {
-  display: none;
-}
+/* Les groupes d’Entraînement utilisent désormais directement les styles
+   partagés .resource-group-* de Cards.css, comme Documentation.
+   Aucun positionnement, épaisseur ou affichage du séparateur n’est redéfini ici. */
 
 /* En absence de groupement, la grille conserve la même respiration que le
    premier groupe : le margin-bottom de la toolbar fait le gros du travail,

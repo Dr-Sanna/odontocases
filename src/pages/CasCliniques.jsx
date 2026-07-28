@@ -1125,14 +1125,14 @@ export default function CasCliniques() {
                   </div>
                 ) : useCaseThemeSections ? (
                   <div
-                    className={`resource-groups cc-groups ${view === 'list' ? 'cc-groups--list' : 'cc-groups--cards'}`}
+                    className="resource-groups cc-training-groups"
                     aria-label="Cas cliniques par thème"
                   >
                     {caseThemeSections.map((section) => (
-                      <div key={section.key} className="resource-group cc-group">
-                        <div className="resource-group-header cc-group-header" aria-hidden="true">
-                          <span className="resource-group-title cc-group-title">{section.label}</span>
-                          <div className="resource-group-rule cc-group-rule" />
+                      <div key={section.key} className="resource-group">
+                        <div className="resource-group-header" aria-hidden="true">
+                          <span className="resource-group-title">{section.label}</span>
+                          <div className="resource-group-rule" />
                         </div>
 
                         <section

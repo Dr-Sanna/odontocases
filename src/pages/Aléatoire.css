@@ -821,12 +821,16 @@ body.aleatoire-route {
    ========================================================= */
 .aleatoire-app {
   --aleatoire-panel-padding: clamp(14px, 1.7vw, 24px);
+  --aleatoire-page-edge-gap: clamp(8px, 1vw, 14px);
 
   width: 100%;
   max-width: none;
-  padding: clamp(8px, 1vw, 14px) clamp(16px, 1.7vw, 30px) clamp(10px, 1.2vw, 18px);
+  padding:
+    var(--aleatoire-page-edge-gap)
+    clamp(16px, 1.7vw, 30px)
+    clamp(10px, 1.2vw, 18px);
   grid-template-rows: auto minmax(0, 1fr);
-  gap: clamp(12px, 1.25vw, 18px);
+  gap: 0;
 }
 
 .aleatoire-tabs-toolbar {
@@ -884,7 +888,7 @@ body.aleatoire-route {
   .aleatoire-app {
     padding-left: 12px;
     padding-right: 12px;
-    gap: 10px;
+    gap: 0;
   }
 
   .aleatoire-tabs-toolbar {
@@ -899,7 +903,8 @@ body.aleatoire-route {
    ========================================================= */
 .aleatoire-tabs-toolbar.cc-training-toolbar {
   grid-template-columns: 1fr;
-  margin-bottom: var(--display-toolbar-to-content, 24px) !important;
+  padding-bottom: 0 !important;
+  margin-bottom: var(--aleatoire-page-edge-gap) !important;
 }
 
 .aleatoire-tabs-toolbar.cc-training-toolbar .cc-tabs {
