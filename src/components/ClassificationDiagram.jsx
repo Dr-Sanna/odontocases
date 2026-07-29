@@ -113,11 +113,12 @@ function scrollToHeadingText(text) {
       ".cd-content h6",
       ".cd-content .etg-entry-title",
       ".cd-content [data-etiology-title]",
+      ".cd-content [data-clx-heading-title]",
     ].join(", ")
   );
 
   for (const h of headings) {
-    const candidate = h.getAttribute?.("data-etiology-title") || h.textContent || "";
+    const candidate = h.getAttribute?.("data-etiology-title") || h.getAttribute?.("data-clx-heading-title") || h.textContent || "";
     if (norm(candidate) === wanted) {
       scrollToElWithOffset(h);
       return true;
@@ -386,6 +387,14 @@ function cdgParseMarkdownHeadings(text, minLevel = 2, maxLevel = 6) {
   let fenceLanguage = "";
   let htmlTableDepth = 0;
 
+  const normalizedFenceLanguage = (value) =>
+    String(value || "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "");
+
+  const isEtiologyGridFence = () => normalizedFenceLanguage(fenceLanguage) === "etiologygrid";
+  const isClinicalLayoutFence = () => normalizedFenceLanguage(fenceLanguage) === "clinicallayout";
+
   for (let lineNo = 0; lineNo < lines.length; lineNo += 1) {
     const line = lines[lineNo];
     const tableContext = htmlTableDepth > 0 || /<(?:table|thead|tbody|tfoot|tr|td|th)\b/i.test(line);
@@ -406,7 +415,7 @@ function cdgParseMarkdownHeadings(text, minLevel = 2, maxLevel = 6) {
     }
 
     if (inFence) {
-      if (fenceLanguage === "etiologygrid") {
+      if (isEtiologyGridFence()) {
         const etiologyMatch = line.match(/^\s*@etiology\s+(.+?)\s*$/i);
         if (etiologyMatch && 4 >= minLevel && 4 <= maxLevel) {
           const headingText = cdgStripInlineMarkdown(etiologyMatch[1]);
@@ -415,11 +424,32 @@ function cdgParseMarkdownHeadings(text, minLevel = 2, maxLevel = 6) {
               level: 4,
               text: headingText,
               line: lineNo,
-              column: line.indexOf("@etiology"),
+              column: Math.max(0, line.search(/@etiology/i)),
               source: "etiologyGrid",
               virtual: true,
               children: [],
             });
+          }
+        }
+      }
+
+      if (isClinicalLayoutFence()) {
+        const itemHeadingMatch = line.match(/^\s*@(item|step)H([2-6])\s+(.+?)\s*$/i);
+        if (itemHeadingMatch) {
+          const level = Number(itemHeadingMatch[2]);
+          if (level >= minLevel && level <= maxLevel) {
+            const headingText = cdgStripInlineMarkdown(itemHeadingMatch[3]);
+            if (headingText) {
+              headings.push({
+                level,
+                text: headingText,
+                line: lineNo,
+                column: Math.max(0, line.search(/@(item|step)H[2-6]/i)),
+                source: "clinicalLayout",
+                virtual: true,
+                children: [],
+              });
+            }
           }
         }
       }

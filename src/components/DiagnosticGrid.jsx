@@ -1,6 +1,7 @@
 import { memo, useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
 
 import "./DiagnosticGrid.css";
 
@@ -141,9 +142,61 @@ export function parseDiagnosticGridSource(source) {
           lineNumber
         );
       }
-      result.matrix = { title, criteria: [] };
+      result.matrix = {
+        title,
+        criteria: [],
+        ratio: [72, 28],
+        media: createTextBlock(),
+        caption: createTextBlock(),
+      };
       currentMatrix = result.matrix;
       currentTarget = null;
+      return;
+    }
+
+    const ratioMatch = trimmed.match(/^@ratio\s+(\d+(?:[.,]\d+)?)\s*[:/]\s*(\d+(?:[.,]\d+)?)$/i);
+    if (ratioMatch) {
+      if (!currentMatrix) {
+        throw new DiagnosticGridParseError(
+          "@ratio doit être placé après @matrix.",
+          lineNumber
+        );
+      }
+      const main = Number(String(ratioMatch[1]).replace(",", "."));
+      const side = Number(String(ratioMatch[2]).replace(",", "."));
+      if (!(main > 0) || !(side > 0)) {
+        throw new DiagnosticGridParseError(
+          "@ratio attend deux valeurs positives, par exemple 72:28.",
+          lineNumber
+        );
+      }
+      currentMatrix.ratio = [main, side];
+      currentTarget = null;
+      return;
+    }
+
+    if (/^@media\s*$/i.test(trimmed)) {
+      if (!currentMatrix) {
+        throw new DiagnosticGridParseError(
+          "@media doit être placé après @matrix.",
+          lineNumber
+        );
+      }
+      currentTarget = currentMatrix.media;
+      return;
+    }
+
+    const captionMatch = trimmed.match(/^@caption(?:\s+(.+))?$/i);
+    if (captionMatch) {
+      if (!currentMatrix) {
+        throw new DiagnosticGridParseError(
+          "@caption doit être placé après @matrix.",
+          lineNumber
+        );
+      }
+      currentTarget = currentMatrix.caption;
+      const inlineCaption = cleanTitle(captionMatch[1] || "");
+      if (inlineCaption) appendLine(currentTarget, inlineCaption);
       return;
     }
 
@@ -230,6 +283,12 @@ export function parseDiagnosticGridSource(source) {
         );
       }
     });
+
+    if (markdownFromLines(result.matrix.caption) && !markdownFromLines(result.matrix.media)) {
+      throw new DiagnosticGridParseError(
+        "@caption nécessite un contenu @media dans la matrice."
+      );
+    }
   }
 
   return result;
@@ -272,8 +331,8 @@ function MarkdownBlock({ lines, className = "dxg-markdown" }) {
     <div className={className}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
+        rehypePlugins={[rehypeRaw]}
         components={markdownComponents}
-        skipHtml
       >
         {markdown}
       </ReactMarkdown>
@@ -294,28 +353,64 @@ function DiagnosticCard({ card }) {
   );
 }
 
-function DiagnosticMatrix({ matrix }) {
+function DiagnosticMatrixMedia({ matrix }) {
+  const media = markdownFromLines(matrix.media);
+  if (!media) return null;
+
+  const caption = markdownFromLines(matrix.caption);
+
   return (
-    <section className="dxg-matrix" aria-label={matrix.title}>
+    <figure className="dxg-matrix-media">
+      <div className="dxg-matrix-media-image">
+        <MarkdownBlock lines={matrix.media} />
+      </div>
+      {caption ? (
+        <figcaption className="dxg-matrix-media-caption">
+          <MarkdownBlock lines={matrix.caption} />
+        </figcaption>
+      ) : null}
+    </figure>
+  );
+}
+
+function DiagnosticMatrix({ matrix }) {
+  const hasMedia = Boolean(markdownFromLines(matrix.media));
+  const matrixStyle = hasMedia
+    ? {
+        "--dxg-matrix-main": `${matrix.ratio?.[0] || 72}fr`,
+        "--dxg-matrix-side": `${matrix.ratio?.[1] || 28}fr`,
+      }
+    : undefined;
+
+  return (
+    <section
+      className={`dxg-matrix${hasMedia ? " dxg-matrix-has-media" : ""}`}
+      aria-label={matrix.title}
+      style={matrixStyle}
+    >
       <VisualHeading className="dxg-matrix-title" level={3}>
         {matrix.title}
       </VisualHeading>
 
-      <div className="dxg-matrix-rows">
-        {matrix.criteria.map((criterion, index) => (
-          <section
-            className="dxg-criterion"
-            key={`${criterion.title}:${index}`}
-          >
-            <VisualHeading className="dxg-criterion-title" level={4}>
-              {criterion.title}
-            </VisualHeading>
-            <MarkdownBlock
-              lines={criterion.body}
-              className="dxg-criterion-content dxg-markdown"
-            />
-          </section>
-        ))}
+      <div className="dxg-matrix-content">
+        <div className="dxg-matrix-rows">
+          {matrix.criteria.map((criterion, index) => (
+            <section
+              className="dxg-criterion"
+              key={`${criterion.title}:${index}`}
+            >
+              <VisualHeading className="dxg-criterion-title" level={4}>
+                {criterion.title}
+              </VisualHeading>
+              <MarkdownBlock
+                lines={criterion.body}
+                className="dxg-criterion-content dxg-markdown"
+              />
+            </section>
+          ))}
+        </div>
+
+        {hasMedia ? <DiagnosticMatrixMedia matrix={matrix} /> : null}
       </div>
     </section>
   );
@@ -332,8 +427,8 @@ function DiagnosticGridError({ error }) {
         {error?.message || "Erreur inconnue."}
       </div>
       <div className="dxg-error-help">
-        Directives disponibles : @layout clinical|cards, @card, @matrix et
-        @criterion.
+        Directives disponibles : @layout clinical|cards, @card, @matrix,
+        @ratio, @criterion, @media et @caption.
       </div>
     </div>
   );

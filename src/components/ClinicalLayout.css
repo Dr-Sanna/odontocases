@@ -123,10 +123,15 @@
 
 .clinical-layout .clx-panel-grid .clx-item-title {
   margin: 0 0 0.48rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
   color: var(--clx-accent-strong);
+  font-family: inherit;
   font-size: var(--sbt-title-size);
   line-height: 1.3;
   font-weight: 700;
+  text-decoration: none;
 }
 
 /* Comparaisons et profils : cartes encadrées avec bandeau de titre. */
@@ -258,6 +263,8 @@
 
 /* Séquence clinique. */
 .clinical-layout .clx-steps {
+  --clx-step-image-max-height: clamp(17rem, 26vw, 21rem);
+  --clx-step-image-height: var(--clx-step-image-max-height);
   display: flex;
   align-items: stretch;
   gap: 0.65rem;
@@ -270,15 +277,32 @@
 
 .clinical-layout .clx-item-steps {
   position: relative;
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-width: 0;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.clinical-layout .clx-item-steps.clx-item-wide {
+  flex-grow: 1.35;
+}
+
+.clinical-layout .clx-item-steps.clx-item-compact {
+  flex-grow: 1;
+}
+
+.clinical-layout .clx-step-header {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
   gap: 0.65rem;
-  flex: 1 1 0;
   min-width: 0;
-  padding: 0.82rem 0.85rem;
-  border: 1px solid var(--clx-border);
-  border-radius: var(--sbt-radius);
-  background: var(--clx-surface);
+  padding: 0 0.12rem;
 }
 
 .clinical-layout .clx-step-number {
@@ -297,26 +321,147 @@
 }
 
 .clinical-layout .clx-step-title {
-  margin: 0 0 0.3rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
   color: var(--clx-accent-strong);
+  font-family: inherit;
   font-size: 0.93rem;
   line-height: 1.3;
   font-weight: 700;
+  text-decoration: none;
 }
 
 .clinical-layout .clx-step-body {
+  margin-top: 0.62rem;
   color: var(--clx-text);
+}
+
+.clinical-layout .clx-step-figure,
+.clinical-layout .clx-step-body figure,
+.clinical-layout .clx-step-body figure.image {
+  display: grid;
+  grid-template-rows: var(--clx-step-image-height) auto;
+  width: 100%;
+  min-width: 0;
+  margin: 0.72rem 0 0;
+  overflow: hidden;
+  border: 1px solid var(--clx-border-soft);
+  border-radius: 0;
+  background: var(--clx-surface);
+}
+
+.clinical-layout .clx-step-image {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: var(--clx-step-image-height);
+  max-height: var(--clx-step-image-max-height);
+  min-width: 0;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--clx-surface-soft) 42%, var(--clx-surface));
+}
+
+.clinical-layout .clx-step-image :is(.clx-step-image-markdown, p, figure, span),
+.clinical-layout .clx-step-body figure > :is(p, span) {
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.clinical-layout .clx-step-image :is(.internal-embed, .media-embed, .image-embed) {
+  display: grid !important;
+  place-items: center !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.clinical-layout .clx-step-image :is(.clx-step-image-markdown, p, figure),
+.clinical-layout .clx-step-body figure > p {
+  display: grid !important;
+  place-items: center !important;
+}
+
+.clinical-layout .clx-step-image img,
+.clinical-layout .clx-step-body figure img,
+.clinical-layout .clx-step-body figure.image img {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: 100% !important;
+  max-height: none !important;
+  margin: 0 auto !important;
+  border-radius: 0 !important;
+  object-fit: contain !important;
+}
+
+.clinical-layout .clx-step-caption,
+.clinical-layout .clx-step-body figcaption {
+  display: grid !important;
+  place-items: center !important;
+  min-height: 3.25rem !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0.58rem 0.72rem !important;
+  border: 0 !important;
+  border-top: 1px solid var(--clx-border-soft) !important;
+  border-radius: 0 !important;
+  background: var(--clx-surface-soft) !important;
+  color: var(--clx-muted) !important;
+  font-family: inherit !important;
+  font-size: var(--sbt-small-size) !important;
+  font-style: normal !important;
+  line-height: var(--sbt-small-line) !important;
+  text-align: center !important;
+}
+
+.clinical-layout .clx-step-caption :is(.clx-markdown, p),
+.clinical-layout .clx-step-body figcaption :is(.clx-markdown, p) {
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  color: inherit !important;
+  font: inherit !important;
+  line-height: inherit !important;
+  text-align: center !important;
 }
 
 .clinical-layout .clx-step-arrow {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 0.32rem;
   flex: 0 0 auto;
   min-width: 0.8rem;
   color: var(--clx-accent-strong);
   font-size: 1rem;
   font-weight: 700;
+}
+
+.clinical-layout .clx-step-arrow:has(.clx-step-connector-label) {
+  min-width: 5.6rem;
+}
+
+.clinical-layout .clx-step-connector-label {
+  max-width: 6.4rem;
+  color: var(--clx-muted);
+  font-size: var(--sbt-label-size);
+  line-height: 1.3;
+  font-weight: 650;
+  text-align: center;
+}
+
+.clinical-layout .clx-step-arrow-symbol {
+  display: block;
+  font-size: 1.15rem;
+  line-height: 1;
 }
 
 .clinical-layout.clx-error {
@@ -345,11 +490,17 @@
   }
 
   .clinical-layout .clx-steps {
+    --clx-step-image-max-height: clamp(14rem, 62vw, 19rem);
+    --clx-step-image-height: var(--clx-step-image-max-height);
     flex-direction: column;
   }
 
   .clinical-layout .clx-step-arrow {
-    min-height: 0.5rem;
+    min-height: 2.3rem;
+    transform: none;
+  }
+
+  .clinical-layout .clx-step-arrow-symbol {
     transform: rotate(90deg);
   }
 }
@@ -366,10 +517,17 @@
   }
 
   .clinical-layout .clx-steps {
+    --clx-step-image-max-height: clamp(14rem, 62vw, 19rem);
+    --clx-step-image-height: var(--clx-step-image-max-height);
     flex-direction: column;
   }
 
   .clinical-layout .clx-step-arrow {
+    min-height: 2.3rem;
+    transform: none;
+  }
+
+  .clinical-layout .clx-step-arrow-symbol {
     transform: rotate(90deg);
   }
 }
