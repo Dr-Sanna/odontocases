@@ -178,7 +178,7 @@
   display: grid !important;
   grid-template-columns: repeat(var(--clx-columns, 2), minmax(0, 1fr)) !important;
   border: 1px solid var(--clx-border) !important;
-  border-radius: var(--sbo-radius) !important;
+  border-radius: var(--sbt-radius) !important;
   overflow: hidden !important;
   background: var(--clx-surface) !important;
 }
@@ -207,7 +207,7 @@
   background: transparent !important;
   color: var(--clx-accent-strong) !important;
   font-family: var(--font-interface) !important;
-  font-size: var(--sbo-title-size) !important;
+  font-size: var(--sbt-title-size) !important;
   line-height: 1.3 !important;
   font-weight: 700 !important;
 }

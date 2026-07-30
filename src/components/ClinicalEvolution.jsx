@@ -76,6 +76,7 @@ function createEvolutionSection(type, title, lineNumber) {
 export function parseClinicalEvolutionSource(source) {
   const result = {
     label: "Formes cliniques évolutives",
+    mode: "full",
     acute: null,
     chronic: null,
   };
@@ -104,6 +105,16 @@ export function parseClinicalEvolutionSource(source) {
     const labelMatch = trimmed.match(/^@label\s+(.+)$/i);
     if (labelMatch) {
       result.label = cleanTitle(labelMatch[1]) || result.label;
+      currentTarget = null;
+      return;
+    }
+
+    const modeMatch = trimmed.match(/^@mode\s+(full|overview|details)$/i);
+    if (modeMatch) {
+      result.mode = modeMatch[1].toLowerCase();
+      currentSection = null;
+      currentProfile = null;
+      currentStage = null;
       currentTarget = null;
       return;
     }
@@ -338,8 +349,38 @@ export function parseClinicalEvolutionSource(source) {
     );
   }
 
+  const acuteHasOverview = Boolean(
+    result.acute &&
+      (result.acute.duration || markdownFromLines(result.acute.context))
+  );
+  const chronicHasOverview = Boolean(
+    result.chronic &&
+      (result.chronic.duration || markdownFromLines(result.chronic.context))
+  );
+  const acuteHasDetails = Boolean(result.acute?.stages.length);
+  const chronicHasDetails = Boolean(result.chronic?.profiles.length);
+
+  if (result.mode === "overview") {
+    if (!acuteHasOverview && !chronicHasOverview) {
+      throw new ClinicalEvolutionParseError(
+        "Le mode overview doit contenir au moins une durée ou un contexte."
+      );
+    }
+    if (acuteHasDetails || chronicHasDetails) {
+      throw new ClinicalEvolutionParseError(
+        "Le mode overview ne doit contenir ni @stage ni @profile."
+      );
+    }
+  }
+
+  if (result.mode === "details" && !acuteHasDetails && !chronicHasDetails) {
+    throw new ClinicalEvolutionParseError(
+      "Le mode details doit contenir au moins un @stage ou un @profile."
+    );
+  }
+
   if (result.acute) {
-    if (!result.acute.stages.length) {
+    if (result.mode === "full" && !acuteHasDetails) {
       throw new ClinicalEvolutionParseError(
         "La partie aiguë doit contenir au moins un @stage.",
         result.acute.lineNumber
@@ -362,7 +403,7 @@ export function parseClinicalEvolutionSource(source) {
   }
 
   if (result.chronic) {
-    if (!result.chronic.profiles.length) {
+    if (result.mode === "full" && !chronicHasDetails) {
       throw new ClinicalEvolutionParseError(
         "La partie chronique doit contenir au moins un @profile.",
         result.chronic.lineNumber
@@ -470,12 +511,14 @@ function EvolutionOverview({ sections }) {
   );
 }
 
-function AcuteEvolution({ section }) {
+function AcuteEvolution({ section, showTitle = true }) {
   return (
     <section className="cev-section cev-acute-section">
-      <VisualHeading className="cev-section-title" level={3}>
-        {sectionFormsTitle(section)}
-      </VisualHeading>
+      {showTitle ? (
+        <VisualHeading className="cev-section-title" level={3}>
+          {sectionFormsTitle(section)}
+        </VisualHeading>
+      ) : null}
 
       <div
         className="cev-timeline"
@@ -570,12 +613,14 @@ function ChronicProfile({ profile }) {
   );
 }
 
-function ChronicEvolution({ section }) {
+function ChronicEvolution({ section, showTitle = true }) {
   return (
     <section className="cev-section cev-chronic-section">
-      <VisualHeading className="cev-section-title" level={3}>
-        {sectionFormsTitle(section)}
-      </VisualHeading>
+      {showTitle ? (
+        <VisualHeading className="cev-section-title" level={3}>
+          {sectionFormsTitle(section)}
+        </VisualHeading>
+      ) : null}
 
       <div className="cev-profiles">
         {section.profiles.map((profile, index) => (
@@ -610,8 +655,9 @@ const ClinicalEvolution = memo(function ClinicalEvolution({ source = "" }) {
           {String(parsed.error?.message || "Erreur inconnue.")}
         </div>
         <div className="cev-error-help">
-          Directives : @label, @acute, @chronic, @duration, @context, @stage,
-          @outcome, @profile, @layout, @summary, @meta et @section.
+          Directives : @label, @mode full|overview|details, @acute, @chronic,
+          @duration, @context, @stage, @outcome, @profile, @layout, @summary,
+          @meta et @section.
         </div>
       </div>
     );
@@ -619,16 +665,32 @@ const ClinicalEvolution = memo(function ClinicalEvolution({ source = "" }) {
 
   const { data } = parsed;
   const sections = [data.acute, data.chronic].filter(Boolean);
+  const overviewSections = sections.filter(
+    (section) => section.duration || markdownFromLines(section.context)
+  );
+  const showOverview = data.mode !== "details" && overviewSections.length > 0;
+  const showDetails = data.mode !== "overview";
+  const showInternalSectionTitles = data.mode === "full";
 
   return (
     <div
-      className="clinical-evolution cev"
+      className={`clinical-evolution cev cev-mode-${data.mode}`}
       role="group"
       aria-label={data.label || "Formes cliniques évolutives"}
     >
-      <EvolutionOverview sections={sections} />
-      {data.acute ? <AcuteEvolution section={data.acute} /> : null}
-      {data.chronic ? <ChronicEvolution section={data.chronic} /> : null}
+      {showOverview ? <EvolutionOverview sections={overviewSections} /> : null}
+      {showDetails && data.acute?.stages.length ? (
+        <AcuteEvolution
+          section={data.acute}
+          showTitle={showInternalSectionTitles}
+        />
+      ) : null}
+      {showDetails && data.chronic?.profiles.length ? (
+        <ChronicEvolution
+          section={data.chronic}
+          showTitle={showInternalSectionTitles}
+        />
+      ) : null}
     </div>
   );
 });
