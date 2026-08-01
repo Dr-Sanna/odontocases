@@ -11,6 +11,8 @@ import { ckeditorSchema } from "../lib/markdown/ckeditorSchema";
 import { remarkObsidianCallouts } from "../lib/markdown/remarkObsidianCallouts";
 import { remarkFigureCaptions } from "../lib/markdown/remarkFigureCaptions";
 
+import "./DiagnosticOrientationTable.css";
+
 import ClassificationDiagram, {
   isHeadingDrivenClassificationDiagramSpec,
   parseClassificationDiagramHeadingTree,
