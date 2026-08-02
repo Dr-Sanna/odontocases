@@ -246,8 +246,28 @@
     grid-template-columns: 1fr !important;
   }
 
-  .clinical-layout .clx-joined-cell:not(.clx-joined-first-col) {
+  /*
+   * Le tableau continu est construit par lignes sur grand écran
+   * (tous les titres, puis tous les premiers paragraphes, etc.).
+   * Sur petit écran, on réordonne les cellules par élément afin de conserver
+   * la séquence : titre 1 → contenu 1 → titre 2 → contenu 2.
+   */
+  .clinical-layout .clx-joined-cell {
+    order: var(--clx-mobile-order, 0) !important;
     border-left: 0 !important;
+    border-top: 1px solid var(--clx-border-soft) !important;
+  }
+
+  .clinical-layout .clx-joined-title {
+    border-top-color: var(--clx-border) !important;
+  }
+
+  .clinical-layout .clx-joined-title[data-item-index="0"] {
+    border-top: 0 !important;
+  }
+
+  .clinical-layout .clx-joined-cell[data-empty="true"] {
+    display: none !important;
   }
 }
 
@@ -256,8 +276,22 @@
     grid-template-columns: 1fr !important;
   }
 
-  .clinical-layout .clx-joined-cell:not(.clx-joined-first-col) {
+  .clinical-layout .clx-joined-cell {
+    order: var(--clx-mobile-order, 0) !important;
     border-left: 0 !important;
+    border-top: 1px solid var(--clx-border-soft) !important;
+  }
+
+  .clinical-layout .clx-joined-title {
+    border-top-color: var(--clx-border) !important;
+  }
+
+  .clinical-layout .clx-joined-title[data-item-index="0"] {
+    border-top: 0 !important;
+  }
+
+  .clinical-layout .clx-joined-cell[data-empty="true"] {
+    display: none !important;
   }
 }
 

@@ -83,14 +83,29 @@ function JoinedComparisonPanel({ panel }) {
   const columns = Math.max(1, Number(panel.columns) || panel.items.length || 1);
   const tableStyle = { "--clx-columns": String(columns) };
   const cells = [];
+  const joinedRowCount = 3;
+
   const pushCell = (content, kind, rowIndex, colIndex) => {
+    const empty = content === null || content === undefined;
     const classes = [
       "clx-joined-cell",
       `clx-joined-${kind}`,
       colIndex === 0 ? "clx-joined-first-col" : "",
       rowIndex === 0 ? "clx-joined-first-row" : "",
     ].filter(Boolean).join(" ");
-    cells.push(<div className={classes} key={`${kind}-${rowIndex}-${colIndex}`}>{content}</div>);
+
+    cells.push(
+      <div
+        className={classes}
+        data-item-index={String(colIndex)}
+        data-row-index={String(rowIndex)}
+        data-empty={empty ? "true" : "false"}
+        style={{ "--clx-mobile-order": String(colIndex * joinedRowCount + rowIndex) }}
+        key={`${kind}-${rowIndex}-${colIndex}`}
+      >
+        {content}
+      </div>
+    );
   };
 
   panel.items.forEach((item, colIndex) => {
