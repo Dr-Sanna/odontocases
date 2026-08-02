@@ -36,6 +36,9 @@ import EtiologyGrid, {
 import ClinicalPathway, {
   isClinicalPathwayCodeBlock,
 } from "./ClinicalPathway";
+import PathophysiologyDiagram, {
+  isPathophysiologyDiagramCodeBlock,
+} from "./PathophysiologyDiagram";
 import ClinicalEvolution, {
   isClinicalEvolutionCodeBlock,
 } from "./ClinicalEvolution";
@@ -557,6 +560,12 @@ function unwrapFence(rawText) {
   return raw;
 }
 
+function renderPathophysiologyDiagramFromCode(className, codeChildren) {
+  const raw = textFromReactChildren(codeChildren).replace(/\n$/, "");
+  if (!isPathophysiologyDiagramCodeBlock(className, raw)) return null;
+  return <PathophysiologyDiagram source={raw} />;
+}
+
 function renderDiagnosticDiagramFromCode(className, codeChildren) {
   const raw = textFromReactChildren(codeChildren).replace(/\n$/, "");
   if (!isDiagnosticDiagramCodeBlock(className, raw)) return null;
@@ -700,6 +709,12 @@ const CaseMarkdown = memo(function CaseMarkdown({ children, scopeKey = "" }) {
           );
           if (clinicalPathway) return clinicalPathway;
 
+          const pathophysiologyDiagram = renderPathophysiologyDiagramFromCode(
+            onlyChild.props?.className,
+            onlyChild.props?.children
+          );
+          if (pathophysiologyDiagram) return pathophysiologyDiagram;
+
           const etiologyGrid = renderEtiologyGridFromCode(
             onlyChild.props?.className,
             onlyChild.props?.children
@@ -770,6 +785,12 @@ const CaseMarkdown = memo(function CaseMarkdown({ children, scopeKey = "" }) {
             codeChildren
           );
           if (clinicalPathway) return clinicalPathway;
+
+          const pathophysiologyDiagram = renderPathophysiologyDiagramFromCode(
+            className,
+            codeChildren
+          );
+          if (pathophysiologyDiagram) return pathophysiologyDiagram;
 
           const etiologyGrid = renderEtiologyGridFromCode(
             className,

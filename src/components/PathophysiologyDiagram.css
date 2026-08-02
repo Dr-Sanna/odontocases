@@ -1,0 +1,275 @@
+/* src/components/PathophysiologyDiagram.css */
+
+@import "./StructuredBlocksTheme.css";
+
+.pathophysiology-diagram,
+.pathophysiology-diagram * {
+  box-sizing: border-box;
+}
+
+.pathophysiology-diagram {
+  --pdg-accent: var(--sbt-accent);
+  --pdg-accent-strong: var(--sbt-accent-strong);
+  --pdg-border: var(--sbt-border);
+  --pdg-border-soft: var(--sbt-border-soft);
+  --pdg-surface: var(--sbt-surface);
+  --pdg-surface-soft: var(--sbt-surface-soft);
+  --pdg-text: var(--sbt-text);
+  --pdg-muted: var(--sbt-muted);
+
+  container-type: inline-size;
+  width: 100%;
+  min-width: 0;
+  margin: 0.72rem 0 1.1rem;
+  color: var(--pdg-text);
+  font-family: var(--ifm-font-family-base);
+  font-size: var(--sbt-body-size);
+  line-height: 1.36;
+}
+
+.pathophysiology-diagram .pdg-title {
+  width: 100%;
+  margin: 0 0 0.55rem;
+  padding: 0.38rem 0.68rem;
+  border-radius: 0.42rem;
+  background: var(--pdg-accent-strong);
+  color: #fff;
+  font-size: 0.93rem;
+  line-height: 1.2;
+  font-weight: 750;
+  text-align: left;
+}
+
+.pathophysiology-diagram .pdg-scroll {
+  width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+}
+
+.pathophysiology-diagram .pdg-canvas {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto auto auto auto;
+  gap: 0;
+  width: 100%;
+  min-width: 46rem;
+  padding: 0.08rem 0.12rem 0.04rem;
+  isolation: isolate;
+}
+
+.pathophysiology-diagram .pdg-connectors {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.pathophysiology-diagram .pdg-connector {
+  fill: none;
+  stroke: var(--pdg-accent-strong);
+  stroke-width: 1.7;
+  stroke-linecap: square;
+  stroke-linejoin: miter;
+  vector-effect: non-scaling-stroke;
+}
+
+.pathophysiology-diagram .pdg-marker {
+  fill: var(--pdg-accent-strong);
+}
+
+.pathophysiology-diagram .pdg-card,
+.pathophysiology-diagram .pdg-sequence,
+.pathophysiology-diagram .pdg-balance-wrap,
+.pathophysiology-diagram .pdg-branches,
+.pathophysiology-diagram .pdg-outcome-wrap {
+  position: relative;
+  z-index: 1;
+}
+
+.pathophysiology-diagram .pdg-card {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--pdg-border);
+  border-radius: 0.34rem;
+  background: var(--pdg-surface);
+  box-shadow: none;
+}
+
+.pathophysiology-diagram .pdg-card-title {
+  display: grid;
+  place-items: center;
+  min-height: 0;
+  margin: 0;
+  padding: 0.42rem 0.56rem;
+  background: transparent;
+  color: var(--pdg-text);
+  font-size: 0.9rem;
+  line-height: 1.18;
+  font-weight: 700;
+  text-align: center;
+}
+
+.pathophysiology-diagram .pdg-card-body {
+  padding: 0.32rem 0.55rem 0.38rem;
+  border-top: 1px solid var(--pdg-border-soft);
+}
+
+.pathophysiology-diagram .pdg-markdown > :first-child {
+  margin-top: 0;
+}
+
+.pathophysiology-diagram .pdg-markdown > :last-child {
+  margin-bottom: 0;
+}
+
+.pathophysiology-diagram .pdg-markdown p {
+  margin: 0;
+}
+
+.pathophysiology-diagram .pdg-markdown p + p {
+  margin-top: 0.24rem;
+}
+
+.pathophysiology-diagram .pdg-markdown ul,
+.pathophysiology-diagram .pdg-markdown ol {
+  margin: 0;
+  padding-left: 1rem;
+}
+
+.pathophysiology-diagram .pdg-markdown li + li {
+  margin-top: 0.12rem;
+}
+
+.pathophysiology-diagram .pdg-markdown li::marker {
+  color: var(--pdg-accent-strong);
+}
+
+.pathophysiology-diagram .pdg-inline-code {
+  padding: 0.06em 0.22em;
+  border-radius: 0.22rem;
+  background: color-mix(in srgb, var(--pdg-text) 8%, transparent);
+}
+
+/* Rangée initiale : trois étapes et aucun connecteur HTML intermédiaire. */
+.pathophysiology-diagram .pdg-sequence {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(4.5rem, 14vw, 11rem);
+  align-items: stretch;
+  width: 100%;
+}
+
+.pathophysiology-diagram .pdg-step-card {
+  min-height: 3.05rem;
+}
+
+.pathophysiology-diagram .pdg-step-card .pdg-card-title {
+  height: 100%;
+  min-height: 3.05rem;
+}
+
+/* L'équilibre est superposé à la grande double flèche horizontale. */
+.pathophysiology-diagram .pdg-balance-wrap {
+  display: grid;
+  place-items: center;
+  min-height: 5.4rem;
+  padding-top: 1.15rem;
+}
+
+.pathophysiology-diagram .pdg-balance-card {
+  width: clamp(9.3rem, 20%, 12rem);
+  background: var(--pdg-surface);
+}
+
+.pathophysiology-diagram .pdg-balance-card .pdg-card-title {
+  padding-block: 0.44rem;
+  color: var(--pdg-text);
+}
+
+/* Les deux évolutions laissent un espace central pour les deux flèches opposées. */
+.pathophysiology-diagram .pdg-branches {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 22% minmax(0, 1fr);
+  align-items: stretch;
+  width: 100%;
+  min-height: 5.2rem;
+}
+
+.pathophysiology-diagram .pdg-branch-card:first-child {
+  grid-column: 1;
+}
+
+.pathophysiology-diagram .pdg-branch-card:last-child {
+  grid-column: 3;
+}
+
+.pathophysiology-diagram .pdg-branch-card .pdg-card-title {
+  color: var(--pdg-text);
+  background: transparent;
+}
+
+.pathophysiology-diagram .pdg-branch-card .pdg-card-body {
+  min-height: 2.65rem;
+}
+
+.pathophysiology-diagram .pdg-outcome-wrap {
+  display: grid;
+  place-items: center;
+  min-height: 4.2rem;
+  padding-top: 1.3rem;
+}
+
+.pathophysiology-diagram .pdg-outcome-card {
+  width: min(49%, 30rem);
+  border-color: color-mix(in srgb, var(--pdg-accent) 74%, var(--pdg-border));
+  border-radius: 0;
+}
+
+.pathophysiology-diagram .pdg-outcome-card .pdg-card-title {
+  padding: 0.45rem 0.65rem;
+  color: var(--pdg-text);
+  background: var(--pdg-surface);
+  font-size: 0.92rem;
+}
+
+.pathophysiology-diagram.pdg-error {
+  padding: 0.8rem 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--ifm-color-danger) 42%, transparent);
+  border-radius: var(--sbt-radius);
+  background: color-mix(
+    in srgb,
+    var(--ifm-color-danger) 7%,
+    var(--ifm-background-surface-color)
+  );
+}
+
+.pathophysiology-diagram .pdg-error-title {
+  color: var(--ifm-color-danger-darkest, var(--ifm-color-danger));
+}
+
+.pathophysiology-diagram .pdg-error-message,
+.pathophysiology-diagram .pdg-error-help {
+  margin-top: 0.35rem;
+}
+
+.pathophysiology-diagram .pdg-error-help {
+  color: var(--pdg-muted);
+  font-size: var(--sbt-small-size);
+}
+
+@container (max-width: 720px) {
+  .pathophysiology-diagram .pdg-canvas {
+    min-width: 44rem;
+  }
+}
+
+@media (max-width: 720px) {
+  .pathophysiology-diagram .pdg-canvas {
+    min-width: 44rem;
+  }
+}
