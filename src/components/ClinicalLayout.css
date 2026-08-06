@@ -1058,3 +1058,48 @@
 .clinical-layout .clx-matrix-table-rows .clx-lesion-column-title {
   align-items: center;
 }
+
+/* Galerie d’illustrations autonome : même rendu que les images des étapes,
+   sans numérotation ni connecteurs. */
+.clinical-layout .clx-gallery-grid {
+  --clx-step-image-max-height: clamp(17rem, 26vw, 21rem);
+  --clx-step-image-height: var(--clx-step-image-max-height);
+  display: grid;
+  grid-template-columns: repeat(var(--clx-columns, 2), minmax(0, 1fr));
+  gap: 0.65rem;
+  align-items: start;
+  min-width: 0;
+}
+
+.clinical-layout .clx-gallery-item {
+  min-width: 0;
+}
+
+.clinical-layout .clx-gallery-title {
+  margin: 0 0 0.38rem;
+  color: var(--clx-accent-strong);
+  font-size: var(--sbt-title-size);
+  line-height: 1.28;
+  font-weight: 700;
+  text-align: center;
+}
+
+.clinical-layout .clx-gallery-item .clx-step-figure {
+  margin-top: 0;
+}
+
+@container (max-width: 680px) {
+  .clinical-layout .clx-gallery-grid {
+    --clx-step-image-max-height: clamp(14rem, 62vw, 19rem);
+    --clx-step-image-height: var(--clx-step-image-max-height);
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 680px) {
+  .clinical-layout .clx-gallery-grid {
+    --clx-step-image-max-height: clamp(14rem, 62vw, 19rem);
+    --clx-step-image-height: var(--clx-step-image-max-height);
+    grid-template-columns: 1fr;
+  }
+}

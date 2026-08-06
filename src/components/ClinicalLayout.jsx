@@ -13,7 +13,7 @@ export class ClinicalLayoutParseError extends Error {
   }
 }
 
-const PANEL_TYPES = new Set(["grid", "steps", "comparison", "profiles", "media", "lesions", "matrix"]);
+const PANEL_TYPES = new Set(["grid", "steps", "comparison", "profiles", "media", "lesions", "matrix", "gallery"]);
 
 function cleanTitle(value) {
   return String(value || "").trim();
@@ -258,7 +258,7 @@ export function parseClinicalLayoutSource(source) {
       return;
     }
 
-    const panelMatch = trimmed.match(/^@panel\s+(grid|steps|comparison|profiles|media|lesions|matrix)(?:\s+(.+))?$/i);
+    const panelMatch = trimmed.match(/^@panel\s+(grid|steps|comparison|profiles|media|lesions|matrix|gallery)(?:\s+(.+))?$/i);
     if (panelMatch) {
       const type = panelMatch[1].toLowerCase();
       const title = cleanTitle(panelMatch[2] || "");
@@ -342,6 +342,47 @@ export function parseClinicalLayoutSource(source) {
       return;
     }
 
+    const figureMatch = trimmed.match(/^@figure(?:H([2-6]))?(?:\s+(.+))?$/i);
+    if (figureMatch) {
+      if (!currentPanel || currentPanel.type !== "gallery") {
+        throw new ClinicalLayoutParseError("@figure ou @figureH4 doit suivre un @panel gallery.", lineNumber);
+      }
+      const headingLevel = figureMatch[1] ? Number(figureMatch[1]) : null;
+      const explicitTitle = cleanTitle(figureMatch[2] || "");
+      if (headingLevel && !explicitTitle) {
+        throw new ClinicalLayoutParseError(
+          `@figureH${headingLevel} doit être suivi d’un titre.`,
+          lineNumber
+        );
+      }
+      if (!headingLevel && explicitTitle) {
+        throw new ClinicalLayoutParseError(
+          "Utilise @figureH4 Titre pour afficher un titre au-dessus d’une image.",
+          lineNumber
+        );
+      }
+      const item = {
+        title: explicitTitle || `Illustration ${currentPanel.items.length + 1}`,
+        headingLevel,
+        layout: "compact",
+        body: createTextBlock(),
+        image: createTextBlock(),
+        caption: createTextBlock(),
+        definition: createTextBlock(),
+        orientation: createTextBlock(),
+        fields: {},
+        fieldLabels: {},
+        fieldOrder: [],
+        galleryColumns: 1,
+        connector: "",
+        lineNumber,
+      };
+      currentPanel.items.push(item);
+      currentItem = item;
+      currentTarget = item.image;
+      return;
+    }
+
     const itemMatch = trimmed.match(/^@(item|step)(?:H([2-6]))?\s+(.+)$/i);
     if (itemMatch) {
       if (!currentPanel) {
@@ -392,8 +433,8 @@ export function parseClinicalLayoutSource(source) {
     }
 
     if (/^@image\s*$/i.test(trimmed)) {
-      if (!currentPanel || !["lesions", "steps"].includes(currentPanel.type) || !currentItem) {
-        throw new ClinicalLayoutParseError("@image doit suivre un @item dans un panneau lesions ou un @step dans un panneau steps.", lineNumber);
+      if (!currentPanel || !["lesions", "steps", "gallery"].includes(currentPanel.type) || !currentItem) {
+        throw new ClinicalLayoutParseError("@image doit suivre un élément compatible dans un panneau lesions, steps ou gallery.", lineNumber);
       }
       currentTarget = currentItem.image;
       return;
@@ -401,8 +442,8 @@ export function parseClinicalLayoutSource(source) {
 
     const captionMatch = trimmed.match(/^@caption(?:\s+(.+))?$/i);
     if (captionMatch) {
-      if (!currentPanel || currentPanel.type !== "steps" || !currentItem) {
-        throw new ClinicalLayoutParseError("@caption doit suivre un @step dans un panneau steps.", lineNumber);
+      if (!currentPanel || !["steps", "gallery"].includes(currentPanel.type) || !currentItem) {
+        throw new ClinicalLayoutParseError("@caption doit suivre une image dans un panneau steps ou gallery.", lineNumber);
       }
       currentTarget = currentItem.caption;
       const inlineCaption = cleanTitle(captionMatch[1] || "");
@@ -500,9 +541,6 @@ export function parseClinicalLayoutSource(source) {
     }
     panel.items.forEach((item) => {
       if (panel.type === "lesions") {
-        if (!markdownFromLines(item.image)) {
-          throw new ClinicalLayoutParseError(`Ajoute une @image à l’élément « ${item.title} ».`, item.lineNumber);
-        }
         const rows = resolvePanelRows(panel);
         const hasFieldContent = rows.some((row) => Boolean(itemFieldSource(item, row)));
         if (!hasFieldContent) {
@@ -521,6 +559,12 @@ export function parseClinicalLayoutSource(source) {
       if (panel.type === "steps") {
         if (!markdownFromLines(item.body) && !markdownFromLines(item.image)) {
           throw new ClinicalLayoutParseError(`L’étape « ${item.title} » doit contenir du texte ou une @image.`, item.lineNumber);
+        }
+        return;
+      }
+      if (panel.type === "gallery") {
+        if (!markdownFromLines(item.image)) {
+          throw new ClinicalLayoutParseError(`Ajoute une image à l’illustration ${panel.items.indexOf(item) + 1}.`, item.lineNumber);
         }
         return;
       }
@@ -707,21 +751,23 @@ function LesionComparisonTable({ items, columns, title, groupIndex, panel }) {
         ))}
       </div>
 
-      <div className="clx-lesion-table-row clx-lesion-image-row" role="row">
-        <div className="clx-lesion-row-label clx-lesion-row-label-empty" role="rowheader">
-          Illustration
-        </div>
-        {items.map((item, index) => (
-          <div
-            className="clx-lesion-table-image"
-            data-gallery-columns={String(item.galleryColumns || 1)}
-            role="cell"
-            key={`image-${groupIndex}-${item.title}-${index}`}
-          >
-            <LesionImageBlock item={item} />
+      {items.some((item) => Boolean(markdownFromLines(item.image))) ? (
+        <div className="clx-lesion-table-row clx-lesion-image-row" role="row">
+          <div className="clx-lesion-row-label clx-lesion-row-label-empty" role="rowheader">
+            Illustration
           </div>
-        ))}
-      </div>
+          {items.map((item, index) => (
+            <div
+              className="clx-lesion-table-image"
+              data-gallery-columns={String(item.galleryColumns || 1)}
+              role="cell"
+              key={`image-${groupIndex}-${item.title}-${index}`}
+            >
+              <LesionImageBlock item={item} />
+            </div>
+          ))}
+        </div>
+      ) : null}
 
       {rows.map((label, rowIndex) => {
         const isOrientation = normalizeFieldKey(label) === normalizeFieldKey("Orientation diagnostique");
@@ -1049,11 +1095,83 @@ function StepSequence({ panel, panelStyle }) {
   );
 }
 
+function GalleryPanel({ panel, panelStyle }) {
+  const galleryRef = useRef(null);
+
+  useEffect(() => {
+    const gallery = galleryRef.current;
+    if (!gallery) return undefined;
+
+    let frameId = 0;
+    const updateImageHeight = () => {
+      cancelAnimationFrame(frameId);
+      frameId = requestAnimationFrame(() => {
+        if (!gallery.isConnected) return;
+        const entries = Array.from(gallery.querySelectorAll(".clx-step-image img"))
+          .map((image) => {
+            const frame = image.closest(".clx-step-image");
+            const naturalWidth = image.naturalWidth || Number(image.getAttribute("width")) || 0;
+            const naturalHeight = image.naturalHeight || Number(image.getAttribute("height")) || 0;
+            const frameWidth = frame?.getBoundingClientRect?.().width || frame?.clientWidth || 0;
+            const computedMaxHeight = frame ? Number.parseFloat(getComputedStyle(frame).maxHeight) : 0;
+            if (!(naturalWidth > 0) || !(naturalHeight > 0) || !(frameWidth > 0)) return null;
+            return {
+              fitHeight: frameWidth / (naturalWidth / naturalHeight),
+              maxHeight: computedMaxHeight > 0 ? computedMaxHeight : Infinity,
+            };
+          })
+          .filter(Boolean);
+
+        if (!entries.length) return;
+        const commonHeight = Math.min(
+          ...entries.map((entry) => entry.fitHeight),
+          ...entries.map((entry) => entry.maxHeight)
+        );
+        if (Number.isFinite(commonHeight) && commonHeight > 0) {
+          gallery.style.setProperty("--clx-step-image-height", `${Math.max(1, Math.floor(commonHeight))}px`);
+        }
+      });
+    };
+
+    const images = Array.from(gallery.querySelectorAll(".clx-step-image img"));
+    images.forEach((image) => {
+      if (!image.complete) image.addEventListener("load", updateImageHeight);
+    });
+    updateImageHeight();
+
+    const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(updateImageHeight) : null;
+    observer?.observe(gallery);
+    gallery.querySelectorAll(".clx-step-image").forEach((frame) => observer?.observe(frame));
+    window.addEventListener("resize", updateImageHeight);
+
+    return () => {
+      cancelAnimationFrame(frameId);
+      observer?.disconnect();
+      window.removeEventListener("resize", updateImageHeight);
+      images.forEach((image) => image.removeEventListener("load", updateImageHeight));
+    };
+  }, [panel]);
+
+  return (
+    <div ref={galleryRef} className="clx-gallery-grid" style={panelStyle}>
+      {panel.items.map((item, index) => (
+        <div className="clx-gallery-item" key={`gallery-${item.title}-${index}`}>
+          {Number(item.headingLevel) >= 2 && Number(item.headingLevel) <= 6 ? (
+            <ItemHeading item={item} className="clx-gallery-title" defaultLevel={4} />
+          ) : null}
+          <StepFigure item={item} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function Panel({ panel }) {
   const isSteps = panel.type === "steps";
   const isMedia = panel.type === "media";
   const isLesions = panel.type === "lesions";
   const isMatrix = panel.type === "matrix";
+  const isGallery = panel.type === "gallery";
   const panelStyle = {
     "--clx-columns": String(panel.columns),
     "--clx-media-main": `${panel.ratio?.[0] || 65}fr`,
@@ -1078,6 +1196,8 @@ function Panel({ panel }) {
         <JoinedComparisonPanel panel={panel} />
       ) : isSteps ? (
         <StepSequence panel={panel} panelStyle={panelStyle} />
+      ) : isGallery ? (
+        <GalleryPanel panel={panel} panelStyle={panelStyle} />
       ) : (
         <div className="clx-items" style={panelStyle}>
           {panel.items.map((item, index) => {
@@ -1117,7 +1237,7 @@ const ClinicalLayout = memo(function ClinicalLayout({ source }) {
         <strong>Données cliniques structurées invalides</strong>
         <div>{prefix}{String(parsed.error.message || parsed.error)}</div>
         <div className="clx-error-help">
-          Directives : @label, @intro, @footer, @panel (dont matrix), @joined, @columns, @matrixDirection, @ratio, @panelIntro, @itemLabel, @rows, @item, @itemH4, @step, @stepH4, @layout, @connector, @gallery, @image, @caption, @field, @definition et @orientation.
+          Directives : @label, @intro, @footer, @panel (dont matrix et gallery), @joined, @columns, @matrixDirection, @ratio, @panelIntro, @itemLabel, @rows, @item, @itemH4, @step, @stepH4, @figure, @figureH4, @layout, @connector, @gallery, @image, @caption, @field, @definition et @orientation.
         </div>
       </div>
     );
