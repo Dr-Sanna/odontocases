@@ -1210,9 +1210,13 @@ function SharedPanel({ panel }) {
       aria-label={panel.title || "Données avec contenu commun"}
     >
       <section className="clx-shared-card clx-shared-card-items">
-        <VisualHeading className="clx-shared-card-title" level={3}>
+        <div
+          className="clx-shared-card-title"
+          role="heading"
+          aria-level="3"
+        >
           {panel.title || "Éléments"}
-        </VisualHeading>
+        </div>
 
         <div className="clx-shared-items">
           {panel.items.map((item, index) => (
@@ -1234,9 +1238,13 @@ function SharedPanel({ panel }) {
       </section>
 
       <section className="clx-shared-card clx-shared-card-common">
-        <VisualHeading className="clx-shared-card-title" level={3}>
+        <div
+          className="clx-shared-card-title"
+          role="heading"
+          aria-level="3"
+        >
           {panel.sharedTitle || "Contenu commun"}
-        </VisualHeading>
+        </div>
 
         <div className="clx-shared-common">
           <MarkdownBlock
