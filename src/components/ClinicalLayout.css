@@ -1107,149 +1107,171 @@
 
 /* =========================
    Clinical Layout — panneau shared
-   Tableau d’éléments partageant un même contenu latéral
+   Deux encadrés indépendants : éléments à gauche, contenu commun à droite.
+   Variables React --sbt-* avec valeurs de secours explicites afin de
+   garantir le même rendu en lecture et en Live Preview.
    ========================= */
-.clinical-layout .clx-panel-shared {
-  padding-top: 0;
+.clinical-layout .clx-panel-shared,
+.clx.clinical-layout .clx-panel-shared {
+  padding-top: 0 !important;
 }
 
-.clinical-layout .clx-shared-table {
-  display: grid;
-  grid-template-columns: minmax(0, 1.62fr) minmax(15rem, 1fr);
-  grid-template-areas:
-    "items-head common-head"
-    "items common";
-  overflow: hidden;
-  width: 100%;
-  min-width: 0;
-  border: 1px solid var(--clx-border);
-  border-radius: var(--sbt-radius);
-  background: var(--clx-surface);
+.clinical-layout .clx-shared-layout,
+.clx.clinical-layout .clx-shared-layout {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1.62fr) minmax(15rem, 1fr) !important;
+  gap: var(--sbt-gap, 0.85rem) !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  align-items: stretch !important;
 }
 
-.clinical-layout .clx-shared-header {
-  padding: 0.56rem 0.72rem;
-  background: var(--clx-surface-soft);
-  color: var(--clx-text);
-  font-size: var(--sbt-body-size);
-  line-height: 1.25;
-  font-weight: 750;
-  text-align: center;
-  text-transform: uppercase;
+.clinical-layout .clx-shared-card,
+.clx.clinical-layout .clx-shared-card {
+  min-width: 0 !important;
+  overflow: hidden !important;
+  border: 1px solid var(--clx-border, var(--sbt-border)) !important;
+  border-radius: var(--sbt-radius, 0.55rem) !important;
+  background: var(--clx-surface, var(--sbt-surface)) !important;
+  box-shadow: none !important;
 }
 
-.clinical-layout .clx-shared-header-items {
-  grid-area: items-head;
+.clinical-layout .clx-shared-card-title,
+.clx.clinical-layout .clx-shared-card-title {
+  margin: 0 !important;
+  padding: 0.58rem 0.78rem !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--clx-border-soft, var(--sbt-border-soft)) !important;
+  background: var(--clx-surface-soft, var(--sbt-surface-soft)) !important;
+  color: var(--clx-accent-strong, var(--sbt-accent-strong)) !important;
+  font-family: var(--font-interface) !important;
+  font-size: var(--sbt-title-size, 0.95rem) !important;
+  line-height: 1.3 !important;
+  font-weight: 700 !important;
+  letter-spacing: normal !important;
+  text-transform: none !important;
+  text-align: center !important;
 }
 
-.clinical-layout .clx-shared-header-common {
-  grid-area: common-head;
-  border-left: 1px solid var(--clx-border);
+.clinical-layout .clx-shared-items,
+.clx.clinical-layout .clx-shared-items {
+  min-width: 0 !important;
 }
 
-.clinical-layout .clx-shared-items {
-  grid-area: items;
-  min-width: 0;
-  border-top: 1px solid var(--clx-border);
+.clinical-layout .clx-shared-row,
+.clx.clinical-layout .clx-shared-row {
+  display: grid !important;
+  grid-template-columns: minmax(10.5rem, 0.92fr) minmax(0, 1.08fr) !important;
+  min-width: 0 !important;
+  background: var(--clx-surface, var(--sbt-surface)) !important;
 }
 
-.clinical-layout .clx-shared-row {
-  display: grid;
-  grid-template-columns: minmax(10.5rem, 0.92fr) minmax(0, 1.08fr);
-  min-width: 0;
-}
-
-.clinical-layout .clx-shared-row + .clx-shared-row {
-  border-top: 1px solid var(--clx-border-soft);
+.clinical-layout .clx-shared-row + .clx-shared-row,
+.clx.clinical-layout .clx-shared-row + .clx-shared-row {
+  border-top: 1px solid var(--clx-border-soft, var(--sbt-border-soft)) !important;
 }
 
 .clinical-layout .clx-shared-item-title,
 .clinical-layout .clx-shared-item-body,
-.clinical-layout .clx-shared-common {
-  min-width: 0;
-  padding: 0.66rem 0.72rem;
+.clinical-layout .clx-shared-common,
+.clx.clinical-layout .clx-shared-item-title,
+.clx.clinical-layout .clx-shared-item-body,
+.clx.clinical-layout .clx-shared-common {
+  min-width: 0 !important;
+  padding: 0.68rem 0.78rem !important;
 }
 
-.clinical-layout .clx-shared-item-title {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-right: 1px solid var(--clx-border-soft);
-  background: color-mix(in srgb, var(--clx-surface-soft) 42%, var(--clx-surface));
-  text-align: center;
+.clinical-layout .clx-shared-item-title,
+.clx.clinical-layout .clx-shared-item-title {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-right: 1px solid var(--clx-border-soft, var(--sbt-border-soft)) !important;
+  background: color-mix(
+    in srgb,
+    var(--clx-surface-soft, var(--sbt-surface-soft)) 58%,
+    var(--clx-surface, var(--sbt-surface))
+  ) !important;
+  text-align: center !important;
 }
 
-.clinical-layout .clx-shared-item-heading {
-  margin: 0;
-  color: var(--clx-text);
-  font-size: 0.94rem;
-  line-height: 1.35;
-  font-weight: 700;
+/* Neutralise les dimensions H4 du thème Obsidian sans supprimer le vrai H4. */
+.clinical-layout .clx-shared-item-heading,
+.clx.clinical-layout .clx-shared-item-heading {
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  color: var(--clx-accent-strong, var(--sbt-accent-strong)) !important;
+  font-family: var(--font-interface) !important;
+  font-size: var(--sbt-title-size, 0.95rem) !important;
+  line-height: 1.32 !important;
+  font-weight: 700 !important;
+  letter-spacing: normal !important;
+  text-transform: none !important;
+  text-decoration: none !important;
 }
 
-.clinical-layout .clx-shared-item-body {
-  display: flex;
-  align-items: center;
-  color: var(--clx-text);
+.clinical-layout .clx-shared-item-body,
+.clx.clinical-layout .clx-shared-item-body {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  justify-content: center !important;
+  color: var(--clx-text, var(--sbt-text)) !important;
 }
 
-.clinical-layout .clx-shared-common {
-  grid-area: common;
-  border-top: 1px solid var(--clx-border);
-  border-left: 1px solid var(--clx-border);
-  color: var(--clx-text);
+.clinical-layout .clx-shared-common,
+.clx.clinical-layout .clx-shared-common {
+  color: var(--clx-text, var(--sbt-text)) !important;
 }
 
-.clinical-layout .clx-shared-table .clx-markdown > :first-child {
-  margin-top: 0;
+.clinical-layout .clx-shared-card .clx-markdown > :first-child,
+.clx.clinical-layout .clx-shared-card .clx-markdown > :first-child {
+  margin-top: 0 !important;
 }
 
-.clinical-layout .clx-shared-table .clx-markdown > :last-child {
-  margin-bottom: 0;
+.clinical-layout .clx-shared-card .clx-markdown > :last-child,
+.clx.clinical-layout .clx-shared-card .clx-markdown > :last-child {
+  margin-bottom: 0 !important;
 }
 
-.clinical-layout .clx-shared-common ul {
-  margin: 0;
-  padding-left: 1.15rem;
+.clinical-layout .clx-shared-common ul,
+.clx.clinical-layout .clx-shared-common ul {
+  margin: 0 !important;
+  padding-left: 1.15rem !important;
 }
 
-.clinical-layout .clx-shared-common li + li {
-  margin-top: 0.42rem;
+.clinical-layout .clx-shared-common li + li,
+.clx.clinical-layout .clx-shared-common li + li {
+  margin-top: 0.42rem !important;
 }
 
-@container (max-width: 700px) {
-  .clinical-layout .clx-shared-table {
-    grid-template-columns: 1fr;
-    grid-template-areas:
-      "items-head"
-      "items"
-      "common-head"
-      "common";
+@container (max-width: 760px) {
+  .clinical-layout .clx-shared-layout,
+  .clx.clinical-layout .clx-shared-layout {
+    grid-template-columns: 1fr !important;
   }
+}
 
-  .clinical-layout .clx-shared-header-common,
-  .clinical-layout .clx-shared-common {
-    border-left: 0;
-  }
-
-  .clinical-layout .clx-shared-header-common {
-    border-top: 1px solid var(--clx-border);
-  }
-
-  .clinical-layout .clx-shared-row {
-    grid-template-columns: minmax(8.5rem, 0.82fr) minmax(0, 1.18fr);
+@media (max-width: 760px) {
+  .clinical-layout .clx-shared-layout,
+  .clx.clinical-layout .clx-shared-layout {
+    grid-template-columns: 1fr !important;
   }
 }
 
 @media (max-width: 560px) {
-  .clinical-layout .clx-shared-row {
-    grid-template-columns: 1fr;
+  .clinical-layout .clx-shared-row,
+  .clx.clinical-layout .clx-shared-row {
+    grid-template-columns: 1fr !important;
   }
 
-  .clinical-layout .clx-shared-item-title {
-    justify-content: flex-start;
-    border-right: 0;
-    border-bottom: 1px solid var(--clx-border-soft);
-    text-align: left;
+  .clinical-layout .clx-shared-item-title,
+  .clx.clinical-layout .clx-shared-item-title {
+    justify-content: flex-start !important;
+    border-right: 0 !important;
+    border-bottom: 1px solid var(--clx-border-soft, var(--sbt-border-soft)) !important;
+    text-align: left !important;
   }
 }

@@ -1204,28 +1204,47 @@ function SharedPanel({ panel }) {
   const sharedSource = markdownFromLines(panel.sharedBody);
 
   return (
-    <div className="clx-shared-table" role="table" aria-label={panel.title || "Données avec contenu commun"}>
-      <div className="clx-shared-header clx-shared-header-items" role="columnheader">
-        {panel.title || "Éléments"}
-      </div>
-      <div className="clx-shared-header clx-shared-header-common" role="columnheader">
-        {panel.sharedTitle || "Contenu commun"}
-      </div>
+    <div
+      className="clx-shared-layout"
+      role="group"
+      aria-label={panel.title || "Données avec contenu commun"}
+    >
+      <section className="clx-shared-card clx-shared-card-items">
+        <VisualHeading className="clx-shared-card-title" level={3}>
+          {panel.title || "Éléments"}
+        </VisualHeading>
 
-      <div className="clx-shared-items" role="rowgroup">
-        {panel.items.map((item, index) => (
-          <article className="clx-shared-row" role="row" key={`${item.title}-${index}`}>
-            <div className="clx-shared-item-title" role="rowheader">
-              <ItemHeading item={item} className="clx-shared-item-heading" defaultLevel={4} />
-            </div>
-            <MarkdownBlock source={markdownFromLines(item.body)} className="clx-shared-item-body" />
-          </article>
-        ))}
-      </div>
+        <div className="clx-shared-items">
+          {panel.items.map((item, index) => (
+            <article className="clx-shared-row" key={`${item.title}-${index}`}>
+              <div className="clx-shared-item-title">
+                <ItemHeading
+                  item={item}
+                  className="clx-shared-item-heading"
+                  defaultLevel={4}
+                />
+              </div>
+              <MarkdownBlock
+                source={markdownFromLines(item.body)}
+                className="clx-shared-item-body"
+              />
+            </article>
+          ))}
+        </div>
+      </section>
 
-      <div className="clx-shared-common" role="cell">
-        <MarkdownBlock source={sharedSource} className="clx-shared-common-markdown" />
-      </div>
+      <section className="clx-shared-card clx-shared-card-common">
+        <VisualHeading className="clx-shared-card-title" level={3}>
+          {panel.sharedTitle || "Contenu commun"}
+        </VisualHeading>
+
+        <div className="clx-shared-common">
+          <MarkdownBlock
+            source={sharedSource}
+            className="clx-shared-common-markdown"
+          />
+        </div>
+      </section>
     </div>
   );
 }
