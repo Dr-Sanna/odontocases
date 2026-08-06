@@ -13,7 +13,7 @@ export class ClinicalLayoutParseError extends Error {
   }
 }
 
-const PANEL_TYPES = new Set(["grid", "steps", "comparison", "profiles", "media", "lesions", "matrix", "gallery"]);
+const PANEL_TYPES = new Set(["grid", "steps", "comparison", "profiles", "media", "lesions", "matrix", "gallery", "shared"]);
 
 function cleanTitle(value) {
   return String(value || "").trim();
@@ -204,6 +204,8 @@ function createPanel(type, title, lineNumber) {
     rowLabels: [],
     itemLabel: type === "lesions" ? "Lésion" : "Élément",
     joined: false,
+    sharedTitle: "Contenu commun",
+    sharedBody: createTextBlock(),
     items: [],
     lineNumber,
   };
@@ -258,7 +260,7 @@ export function parseClinicalLayoutSource(source) {
       return;
     }
 
-    const panelMatch = trimmed.match(/^@panel\s+(grid|steps|comparison|profiles|media|lesions|matrix|gallery)(?:\s+(.+))?$/i);
+    const panelMatch = trimmed.match(/^@panel\s+(grid|steps|comparison|profiles|media|lesions|matrix|gallery|shared)(?:\s+(.+))?$/i);
     if (panelMatch) {
       const type = panelMatch[1].toLowerCase();
       const title = cleanTitle(panelMatch[2] || "");
@@ -339,6 +341,26 @@ export function parseClinicalLayoutSource(source) {
       }
       currentItem = null;
       currentTarget = currentPanel.intro;
+      return;
+    }
+
+    const sharedTitleMatch = trimmed.match(/^@sharedTitle\s+(.+)$/i);
+    if (sharedTitleMatch) {
+      if (!currentPanel || currentPanel.type !== "shared") {
+        throw new ClinicalLayoutParseError("@sharedTitle doit suivre un @panel shared.", lineNumber);
+      }
+      currentPanel.sharedTitle = cleanTitle(sharedTitleMatch[1]) || currentPanel.sharedTitle;
+      currentItem = null;
+      currentTarget = null;
+      return;
+    }
+
+    if (/^@shared\s*$/i.test(trimmed)) {
+      if (!currentPanel || currentPanel.type !== "shared") {
+        throw new ClinicalLayoutParseError("@shared doit suivre un @panel shared.", lineNumber);
+      }
+      currentItem = null;
+      currentTarget = currentPanel.sharedBody;
       return;
     }
 
@@ -539,6 +561,12 @@ export function parseClinicalLayoutSource(source) {
         panel.lineNumber
       );
     }
+    if (panel.type === "shared" && !markdownFromLines(panel.sharedBody)) {
+      throw new ClinicalLayoutParseError(
+        `Le panneau partagé « ${panel.title || "sans titre"} » doit contenir un bloc @shared.`,
+        panel.lineNumber
+      );
+    }
     panel.items.forEach((item) => {
       if (panel.type === "lesions") {
         const rows = resolvePanelRows(panel);
@@ -565,6 +593,12 @@ export function parseClinicalLayoutSource(source) {
       if (panel.type === "gallery") {
         if (!markdownFromLines(item.image)) {
           throw new ClinicalLayoutParseError(`Ajoute une image à l’illustration ${panel.items.indexOf(item) + 1}.`, item.lineNumber);
+        }
+        return;
+      }
+      if (panel.type === "shared") {
+        if (!markdownFromLines(item.body)) {
+          throw new ClinicalLayoutParseError(`L’élément « ${item.title} » doit contenir une description.`, item.lineNumber);
         }
         return;
       }
@@ -1166,12 +1200,43 @@ function GalleryPanel({ panel, panelStyle }) {
   );
 }
 
+function SharedPanel({ panel }) {
+  const sharedSource = markdownFromLines(panel.sharedBody);
+
+  return (
+    <div className="clx-shared-table" role="table" aria-label={panel.title || "Données avec contenu commun"}>
+      <div className="clx-shared-header clx-shared-header-items" role="columnheader">
+        {panel.title || "Éléments"}
+      </div>
+      <div className="clx-shared-header clx-shared-header-common" role="columnheader">
+        {panel.sharedTitle || "Contenu commun"}
+      </div>
+
+      <div className="clx-shared-items" role="rowgroup">
+        {panel.items.map((item, index) => (
+          <article className="clx-shared-row" role="row" key={`${item.title}-${index}`}>
+            <div className="clx-shared-item-title" role="rowheader">
+              <ItemHeading item={item} className="clx-shared-item-heading" defaultLevel={4} />
+            </div>
+            <MarkdownBlock source={markdownFromLines(item.body)} className="clx-shared-item-body" />
+          </article>
+        ))}
+      </div>
+
+      <div className="clx-shared-common" role="cell">
+        <MarkdownBlock source={sharedSource} className="clx-shared-common-markdown" />
+      </div>
+    </div>
+  );
+}
+
 function Panel({ panel }) {
   const isSteps = panel.type === "steps";
   const isMedia = panel.type === "media";
   const isLesions = panel.type === "lesions";
   const isMatrix = panel.type === "matrix";
   const isGallery = panel.type === "gallery";
+  const isShared = panel.type === "shared";
   const panelStyle = {
     "--clx-columns": String(panel.columns),
     "--clx-media-main": `${panel.ratio?.[0] || 65}fr`,
@@ -1180,7 +1245,7 @@ function Panel({ panel }) {
 
   return (
     <section className={`clx-panel clx-panel-${panel.type}`} data-joined={panel.joined ? "true" : "false"}>
-      {panel.title ? (
+      {panel.title && !isShared ? (
         <div className="clx-panel-title" role="heading" aria-level="3">{panel.title}</div>
       ) : null}
 
@@ -1198,6 +1263,8 @@ function Panel({ panel }) {
         <StepSequence panel={panel} panelStyle={panelStyle} />
       ) : isGallery ? (
         <GalleryPanel panel={panel} panelStyle={panelStyle} />
+      ) : isShared ? (
+        <SharedPanel panel={panel} />
       ) : (
         <div className="clx-items" style={panelStyle}>
           {panel.items.map((item, index) => {
@@ -1237,7 +1304,7 @@ const ClinicalLayout = memo(function ClinicalLayout({ source }) {
         <strong>Données cliniques structurées invalides</strong>
         <div>{prefix}{String(parsed.error.message || parsed.error)}</div>
         <div className="clx-error-help">
-          Directives : @label, @intro, @footer, @panel (dont matrix et gallery), @joined, @columns, @matrixDirection, @ratio, @panelIntro, @itemLabel, @rows, @item, @itemH4, @step, @stepH4, @figure, @figureH4, @layout, @connector, @gallery, @image, @caption, @field, @definition et @orientation.
+          Directives : @label, @intro, @footer, @panel (dont matrix, gallery et shared), @joined, @columns, @matrixDirection, @ratio, @panelIntro, @sharedTitle, @shared, @itemLabel, @rows, @item, @itemH4, @step, @stepH4, @figure, @figureH4, @layout, @connector, @gallery, @image, @caption, @field, @definition et @orientation.
         </div>
       </div>
     );
