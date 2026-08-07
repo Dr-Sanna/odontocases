@@ -740,7 +740,15 @@ export default function CaseDetail(props) {
             ...(withCasesInner
               ? {
                   cases: {
-                    fields: ['title', 'slug', 'excerpt', 'type'],
+                    fields: [
+                      'title',
+                      'slug',
+                      'excerpt',
+                      'type',
+                      'credits',
+                      'references',
+                      'copyright',
+                    ],
                     populate: { cover: { fields: ['url', 'formats'] } },
                     sort: ['slug:asc'],
                   },
@@ -1395,10 +1403,23 @@ export default function CaseDetail(props) {
     return parent?.level === 'item' ? parent : null;
   }, [isDocNamespace, displayItem]);
 
-  const creditsMarkdown =
-    isDocNamespace && displayItem?.level === 'section'
-      ? mergeCreditsMarkdown(docParentItem, displayItem)
-      : getCreditsMarkdown(displayItem);
+  const creditsMarkdown = useMemo(() => {
+    if (isDocNamespace && displayItem?.level === 'section') {
+      return mergeCreditsMarkdown(docParentItem, displayItem);
+    }
+
+    if (isPathologyPage) {
+      return mergeCreditsMarkdown(displayItem, ...visibleRelatedCases);
+    }
+
+    return getCreditsMarkdown(displayItem);
+  }, [
+    isDocNamespace,
+    isPathologyPage,
+    docParentItem,
+    displayItem,
+    visibleRelatedCases,
+  ]);
   const showExtras = Boolean(creditsMarkdown);
 
   return (
