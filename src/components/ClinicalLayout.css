@@ -1403,3 +1403,28 @@
   align-self: stretch !important;
   height: 100% !important;
 }
+
+/* ==========================================================================\n   Clinical Layout v2.8.29 — images de même hauteur sans recadrage\n   ========================================================================== */
+
+/*
+ * La hauteur commune reste calculée par ClinicalLayout. L'image elle-même est
+ * toujours rendue intégralement dans ce cadre : aucun recadrage de type cover.
+ */
+.clinical-layout .clx-step-image img,
+.clx.clinical-layout .clx-step-image img {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+  aspect-ratio: auto !important;
+  transform: none !important;
+}
+
+.clinical-layout .clx-step-image,
+.clx.clinical-layout .clx-step-image {
+  display: grid !important;
+  place-items: center !important;
+  overflow: hidden !important;
+}
