@@ -390,6 +390,7 @@ export function parseClinicalLayoutSource(source) {
         body: createTextBlock(),
         image: createTextBlock(),
         caption: createTextBlock(),
+        subcaption: createTextBlock(),
         definition: createTextBlock(),
         orientation: createTextBlock(),
         fields: {},
@@ -429,6 +430,7 @@ export function parseClinicalLayoutSource(source) {
         body: createTextBlock(),
         image: createTextBlock(),
         caption: createTextBlock(),
+        subcaption: createTextBlock(),
         definition: createTextBlock(),
         orientation: createTextBlock(),
         fields: {},
@@ -470,6 +472,17 @@ export function parseClinicalLayoutSource(source) {
       currentTarget = currentItem.caption;
       const inlineCaption = cleanTitle(captionMatch[1] || "");
       if (inlineCaption) appendLine(currentTarget, inlineCaption);
+      return;
+    }
+
+    const subcaptionMatch = trimmed.match(/^@subcaption(?:\s+(.+))?$/i);
+    if (subcaptionMatch) {
+      if (!currentPanel || !["steps", "gallery"].includes(currentPanel.type) || !currentItem) {
+        throw new ClinicalLayoutParseError("@subcaption doit suivre une image dans un panneau steps ou gallery.", lineNumber);
+      }
+      currentTarget = currentItem.subcaption;
+      const inlineSubcaption = cleanTitle(subcaptionMatch[1] || "");
+      if (inlineSubcaption) appendLine(currentTarget, inlineSubcaption);
       return;
     }
 
@@ -648,15 +661,25 @@ function StepFigure({ item }) {
   const imageSource = markdownFromLines(item.image);
   if (!imageSource) return null;
   const captionSource = markdownFromLines(item.caption);
+  const subcaptionSource = markdownFromLines(item.subcaption);
+  const hasDetailedCaption = Boolean(subcaptionSource);
 
   return (
     <figure className="clx-step-figure">
       <div className="clx-step-image">
         <MarkdownBlock source={imageSource} className="clx-step-image-markdown" />
       </div>
-      {captionSource ? (
-        <figcaption className="clx-step-caption">
-          <MarkdownBlock source={captionSource} className="clx-step-caption-markdown" />
+      {captionSource || subcaptionSource ? (
+        <figcaption className={`clx-step-caption${hasDetailedCaption ? " clx-step-caption--detailed" : ""}`}>
+          {captionSource ? (
+            <MarkdownBlock
+              source={captionSource}
+              className={hasDetailedCaption ? "clx-step-caption-main" : "clx-step-caption-markdown"}
+            />
+          ) : null}
+          {subcaptionSource ? (
+            <MarkdownBlock source={subcaptionSource} className="clx-step-subcaption" />
+          ) : null}
         </figcaption>
       ) : null}
     </figure>
@@ -1090,18 +1113,27 @@ function StepSequence({ panel, panelStyle }) {
 
     updateImageHeight();
 
-    const observer = typeof ResizeObserver !== "undefined"
-      ? new ResizeObserver(updateImageHeight)
-      : null;
-    observer?.observe(sequence);
-    sequence.querySelectorAll(".clx-step-image").forEach((frame) => observer?.observe(frame));
+    let observer = null;
+    let onWindowResize = null;
 
-    window.addEventListener("resize", updateImageHeight);
+    if (typeof ResizeObserver !== "undefined") {
+      let lastWidth = sequence.getBoundingClientRect?.().width || sequence.clientWidth || 0;
+      observer = new ResizeObserver((entries) => {
+        const width = entries[0]?.contentRect?.width || 0;
+        if (!(width > 0) || Math.abs(width - lastWidth) < 0.5) return;
+        lastWidth = width;
+        updateImageHeight();
+      });
+      observer.observe(sequence);
+    } else {
+      onWindowResize = updateImageHeight;
+      window.addEventListener("resize", onWindowResize);
+    }
 
     return () => {
       cancelAnimationFrame(frameId);
       observer?.disconnect();
-      window.removeEventListener("resize", updateImageHeight);
+      if (onWindowResize) window.removeEventListener("resize", onWindowResize);
       images.forEach((image) => image.removeEventListener("load", updateImageHeight));
     };
   }, [panel]);
@@ -1173,15 +1205,27 @@ function GalleryPanel({ panel, panelStyle }) {
     });
     updateImageHeight();
 
-    const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(updateImageHeight) : null;
-    observer?.observe(gallery);
-    gallery.querySelectorAll(".clx-step-image").forEach((frame) => observer?.observe(frame));
-    window.addEventListener("resize", updateImageHeight);
+    let observer = null;
+    let onWindowResize = null;
+
+    if (typeof ResizeObserver !== "undefined") {
+      let lastWidth = gallery.getBoundingClientRect?.().width || gallery.clientWidth || 0;
+      observer = new ResizeObserver((entries) => {
+        const width = entries[0]?.contentRect?.width || 0;
+        if (!(width > 0) || Math.abs(width - lastWidth) < 0.5) return;
+        lastWidth = width;
+        updateImageHeight();
+      });
+      observer.observe(gallery);
+    } else {
+      onWindowResize = updateImageHeight;
+      window.addEventListener("resize", onWindowResize);
+    }
 
     return () => {
       cancelAnimationFrame(frameId);
       observer?.disconnect();
-      window.removeEventListener("resize", updateImageHeight);
+      if (onWindowResize) window.removeEventListener("resize", onWindowResize);
       images.forEach((image) => image.removeEventListener("load", updateImageHeight));
     };
   }, [panel]);
@@ -1331,7 +1375,7 @@ const ClinicalLayout = memo(function ClinicalLayout({ source }) {
         <strong>Données cliniques structurées invalides</strong>
         <div>{prefix}{String(parsed.error.message || parsed.error)}</div>
         <div className="clx-error-help">
-          Directives : @label, @intro, @footer, @panel (dont matrix, gallery et shared), @joined, @columns, @matrixDirection, @ratio, @panelIntro, @sharedTitle, @shared, @itemLabel, @rows, @item, @itemH4, @step, @stepH4, @figure, @figureH4, @layout, @connector, @gallery, @image, @caption, @field, @definition et @orientation.
+          Directives : @label, @intro, @footer, @panel (dont matrix, gallery et shared), @joined, @columns, @matrixDirection, @ratio, @panelIntro, @sharedTitle, @shared, @itemLabel, @rows, @item, @itemH4, @step, @stepH4, @figure, @figureH4, @layout, @connector, @gallery, @image, @caption, @subcaption, @field, @definition et @orientation.
         </div>
       </div>
     );
