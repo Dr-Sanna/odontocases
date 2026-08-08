@@ -65,10 +65,13 @@ function markdownFromLines(lines) {
 }
 
 
-function subcaptionMarkdownFromLines(lines) {
+function subcaptionBlocksFromLines(lines) {
   const source = markdownFromLines(lines).replace(/\r\n?/g, "\n").trim();
-  if (!source) return "";
-  return source.replace(/\n[ \t]*\n+/g, "  \n");
+  if (!source) return [];
+  return source
+    .split(/\n[ \t]*\n+/)
+    .map((block) => block.trim())
+    .filter(Boolean);
 }
 
 
@@ -668,15 +671,15 @@ function StepFigure({ item }) {
   const imageSource = markdownFromLines(item.image);
   if (!imageSource) return null;
   const captionSource = markdownFromLines(item.caption);
-  const subcaptionSource = subcaptionMarkdownFromLines(item.subcaption);
-  const hasDetailedCaption = Boolean(subcaptionSource);
+  const subcaptionBlocks = subcaptionBlocksFromLines(item.subcaption);
+  const hasDetailedCaption = subcaptionBlocks.length > 0;
 
   return (
     <figure className="clx-step-figure">
       <div className="clx-step-image">
         <MarkdownBlock source={imageSource} className="clx-step-image-markdown" />
       </div>
-      {captionSource || subcaptionSource ? (
+      {captionSource || hasDetailedCaption ? (
         <figcaption className={`clx-step-caption${hasDetailedCaption ? " clx-step-caption--detailed" : ""}`}>
           {captionSource ? (
             <MarkdownBlock
@@ -684,8 +687,16 @@ function StepFigure({ item }) {
               className={hasDetailedCaption ? "clx-step-caption-main" : "clx-step-caption-markdown"}
             />
           ) : null}
-          {subcaptionSource ? (
-            <MarkdownBlock source={subcaptionSource} className="clx-step-subcaption" />
+          {hasDetailedCaption ? (
+            <div className="clx-step-subcaption">
+              {subcaptionBlocks.map((block, index) => (
+                <MarkdownBlock
+                  key={`subcaption-${index}`}
+                  source={block}
+                  className="clx-subcaption-line"
+                />
+              ))}
+            </div>
           ) : null}
         </figcaption>
       ) : null}
@@ -1087,8 +1098,12 @@ function StepSequence({ panel, panelStyle }) {
               : 0;
 
             if (!(naturalWidth > 0) || !(naturalHeight > 0) || !(frameWidth > 0)) return null;
+            const ratio = naturalWidth / naturalHeight;
             return {
-              fitHeight: frameWidth / (naturalWidth / naturalHeight),
+              image,
+              frameWidth,
+              ratio,
+              fitHeight: frameWidth / ratio,
               maxHeight: computedMaxHeight > 0 ? computedMaxHeight : Infinity,
             };
           })
@@ -1109,6 +1124,16 @@ function StepSequence({ panel, panelStyle }) {
           if (!Number.isFinite(currentHeight) || Math.abs(currentHeight - nextHeight) > 0.5) {
             sequence.style.setProperty("--clx-step-image-height", `${nextHeight}px`);
           }
+
+          entries.forEach(({ image, frameWidth, ratio }) => {
+            const renderedWidth = Math.min(frameWidth, nextHeight * ratio);
+            image.style.setProperty("width", `${Math.max(1, renderedWidth)}px`, "important");
+            image.style.setProperty("height", `${nextHeight}px`, "important");
+            image.style.setProperty("max-width", "none", "important");
+            image.style.setProperty("max-height", "none", "important");
+            image.style.setProperty("object-fit", "contain", "important");
+            image.style.setProperty("object-position", "center center", "important");
+          });
         }
       });
     };
@@ -1188,8 +1213,12 @@ function GalleryPanel({ panel, panelStyle }) {
             const frameWidth = frame?.getBoundingClientRect?.().width || frame?.clientWidth || 0;
             const computedMaxHeight = frame ? Number.parseFloat(getComputedStyle(frame).maxHeight) : 0;
             if (!(naturalWidth > 0) || !(naturalHeight > 0) || !(frameWidth > 0)) return null;
+            const ratio = naturalWidth / naturalHeight;
             return {
-              fitHeight: frameWidth / (naturalWidth / naturalHeight),
+              image,
+              frameWidth,
+              ratio,
+              fitHeight: frameWidth / ratio,
               maxHeight: computedMaxHeight > 0 ? computedMaxHeight : Infinity,
             };
           })
@@ -1201,7 +1230,18 @@ function GalleryPanel({ panel, panelStyle }) {
           ...entries.map((entry) => entry.maxHeight)
         );
         if (Number.isFinite(commonHeight) && commonHeight > 0) {
-          gallery.style.setProperty("--clx-step-image-height", `${Math.max(1, Math.floor(commonHeight))}px`);
+          const nextHeight = Math.max(1, Math.floor(commonHeight));
+          gallery.style.setProperty("--clx-step-image-height", `${nextHeight}px`);
+
+          entries.forEach(({ image, frameWidth, ratio }) => {
+            const renderedWidth = Math.min(frameWidth, nextHeight * ratio);
+            image.style.setProperty("width", `${Math.max(1, renderedWidth)}px`, "important");
+            image.style.setProperty("height", `${nextHeight}px`, "important");
+            image.style.setProperty("max-width", "none", "important");
+            image.style.setProperty("max-height", "none", "important");
+            image.style.setProperty("object-fit", "contain", "important");
+            image.style.setProperty("object-position", "center center", "important");
+          });
         }
       });
     };

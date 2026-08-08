@@ -1428,3 +1428,234 @@
   place-items: center !important;
   overflow: hidden !important;
 }
+
+
+/* ==========================================================================
+   Clinical Layout v2.8.30 — même hauteur réelle, image entière
+   ========================================================================== */
+
+/*
+ * La hauteur commune est déjà calculée par ClinicalLayout pour que toutes les
+ * images tiennent dans leur colonne. La largeur de l’image doit donc rester
+ * automatique : même hauteur réelle, ratio conservé, aucun recadrage.
+ */
+.clinical-layout .clx-step-image img,
+.clx.clinical-layout .clx-step-image img {
+  display: block !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  margin: 0 auto !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+  aspect-ratio: auto !important;
+  transform: none !important;
+}
+
+.clinical-layout .clx-step-image :is(.clx-step-image-markdown, p, figure, span, .internal-embed, .media-embed, .image-embed),
+.clx.clinical-layout .clx-step-image :is(.clx-step-image-markdown, p, figure, span, .internal-embed, .media-embed, .image-embed) {
+  display: grid !important;
+  place-items: center !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.clinical-layout .clx-step-image,
+.clx.clinical-layout .clx-step-image {
+  display: grid !important;
+  place-items: center !important;
+  overflow: visible !important;
+}
+
+/* ==========================================================================
+   Clinical Layout v2.8.31 — image entière + caption réellement séparée
+   ========================================================================== */
+
+/*
+ * Galerie : chaque carte possède exactement deux rangées :
+ * 1. la zone image, de hauteur commune calculée par ClinicalLayout ;
+ * 2. la zone de légende, qui occupe l'espace restant de la carte.
+ *
+ * Important : le figcaption n'a JAMAIS la hauteur de la figure entière.
+ */
+.clinical-layout .clx-gallery-grid,
+.clx.clinical-layout .clx-gallery-grid {
+  align-items: stretch !important;
+}
+
+.clinical-layout .clx-gallery-item,
+.clx.clinical-layout .clx-gallery-item {
+  display: flex !important;
+  flex-direction: column !important;
+  align-self: stretch !important;
+  min-height: 0 !important;
+}
+
+.clinical-layout .clx-gallery-item > .clx-step-figure,
+.clx.clinical-layout .clx-gallery-item > .clx-step-figure {
+  display: grid !important;
+  grid-template-rows: var(--clx-step-image-height) minmax(min-content, 1fr) !important;
+  flex: 1 1 auto !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+/* La zone image seule reçoit la hauteur commune. */
+.clinical-layout .clx-gallery-item .clx-step-image,
+.clx.clinical-layout .clx-gallery-item .clx-step-image {
+  grid-row: 1 !important;
+  display: grid !important;
+  place-items: center !important;
+  width: 100% !important;
+  height: var(--clx-step-image-height) !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+/* Tous les wrappers Obsidian/Markdown remplissent le cadre sans changer le ratio. */
+.clinical-layout .clx-gallery-item .clx-step-image :is(.clx-step-image-markdown, p, figure, span, .internal-embed, .media-embed, .image-embed),
+.clx.clinical-layout .clx-gallery-item .clx-step-image :is(.clx-step-image-markdown, p, figure, span, .internal-embed, .media-embed, .image-embed) {
+  display: grid !important;
+  place-items: center !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+/*
+ * L'image visible a réellement la hauteur commune. Sa largeur est dérivée de
+ * son ratio natif. Le calcul JS choisit une hauteur qui tient dans toutes les
+ * colonnes : aucune partie de l'image n'a donc besoin d'être rognée.
+ */
+.clinical-layout .clx-gallery-item .clx-step-image img,
+.clx.clinical-layout .clx-gallery-item .clx-step-image img {
+  display: block !important;
+  width: auto !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  margin: 0 auto !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+  aspect-ratio: auto !important;
+  transform: none !important;
+}
+
+/* Caption : seconde rangée, toujours SOUS l'image. */
+.clinical-layout .clx-gallery-item .clx-step-caption,
+.clx.clinical-layout .clx-gallery-item .clx-step-caption {
+  grid-row: 2 !important;
+  position: static !important;
+  inset: auto !important;
+  align-self: stretch !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  margin: 0 !important;
+  overflow: visible !important;
+  transform: none !important;
+}
+
+
+/* ==========================================================================\n   Clinical Layout v2.8.32 — taille explicite par ratio naturel\n   ========================================================================== */
+.clinical-layout .clx-step-image,
+.clx.clinical-layout .clx-step-image {
+  display: grid !important;
+  place-items: center !important;
+}
+
+.clinical-layout .clx-step-image img,
+.clx.clinical-layout .clx-step-image img {
+  flex: none !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+  transform: none !important;
+}
+
+
+/* ==========================================================================
+   Clinical Layout v2.8.33 — respiration des légendes
+   ========================================================================== */
+
+/* Petit espace entre la légende principale et la sous-légende. */
+.clinical-layout .clx-step-subcaption,
+.clx.clinical-layout .clx-step-subcaption {
+  margin-top: 0.48rem !important;
+}
+
+/*
+ * Interligne légèrement plus ample pour les lignes a / b / c,
+ * sans recréer de faux paragraphe ni modifier les <br>.
+ */
+.clinical-layout .clx-step-subcaption,
+.clinical-layout .clx-step-subcaption p,
+.clx.clinical-layout .clx-step-subcaption,
+.clx.clinical-layout .clx-step-subcaption p {
+  line-height: 1.42 !important;
+}
+
+
+/* ==========================================================================
+   Clinical Layout v2.8.34 — sous-légendes structurées
+   ========================================================================== */
+
+/*
+ * Dans @subcaption, chaque paragraphe séparé par une ligne vide devient
+ * désormais un élément `.clx-subcaption-line` indépendant.
+ */
+.clinical-layout .clx-step-caption.clx-step-caption--detailed,
+.clx.clinical-layout .clx-step-caption.clx-step-caption--detailed {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+}
+
+/* Espace entre le caption principal et le début de la sous-légende. */
+.clinical-layout .clx-step-caption--detailed .clx-step-subcaption,
+.clx.clinical-layout .clx-step-caption--detailed .clx-step-subcaption {
+  display: grid !important;
+  width: 100% !important;
+  margin-top: 0.52rem !important;
+  padding: 0 !important;
+  gap: 0.40rem !important;
+  color: var(--clx-muted, var(--text-muted)) !important;
+  text-align: left !important;
+}
+
+/* Espace entre a, b, c… piloté par le gap du parent. */
+.clinical-layout .clx-subcaption-line,
+.clx.clinical-layout .clx-subcaption-line {
+  display: block !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  color: inherit !important;
+  font: inherit !important;
+  line-height: 1.36 !important;
+  text-align: left !important;
+}
+
+.clinical-layout .clx-subcaption-line > *,
+.clx.clinical-layout .clx-subcaption-line > *,
+.clinical-layout .clx-subcaption-line p,
+.clx.clinical-layout .clx-subcaption-line p {
+  margin: 0 !important;
+  padding: 0 !important;
+  color: inherit !important;
+  font: inherit !important;
+  line-height: inherit !important;
+  text-align: inherit !important;
+}
