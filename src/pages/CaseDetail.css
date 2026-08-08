@@ -1401,10 +1401,14 @@
 
 /* Le dernier élément de la UL et le premier élément de la OL ne sont pas
    des li frères : li + li ne peut donc pas créer cet espace. */
+.cd-credits ul + ul,
 .cd-credits ul + ol,
 .cd-credits ol + ul,
+.cd-credits ol + ol,
+.cd-credits .markdown ul + ul,
 .cd-credits .markdown ul + ol,
-.cd-credits .markdown ol + ul {
+.cd-credits .markdown ol + ul,
+.cd-credits .markdown ol + ol {
   margin-top: 0.82rem !important;
 }
 
