@@ -1323,3 +1323,83 @@
 .clinical-layout .clx-step-subcaption p + p {
   margin-top: 0.22rem !important;
 }
+
+
+/* ==========================================================================
+   Clinical Layout v2.8.24 — captions homogènes
+   ========================================================================== */
+.clinical-layout .clx-gallery-grid {
+  align-items: stretch !important;
+}
+
+.clinical-layout .clx-gallery-item {
+  display: flex !important;
+  flex-direction: column !important;
+  align-self: stretch !important;
+}
+
+.clinical-layout .clx-gallery-item .clx-step-figure {
+  flex: 1 1 auto !important;
+  grid-template-rows: var(--clx-step-image-height) minmax(0, 1fr) !important;
+  height: 100% !important;
+}
+
+.clinical-layout .clx-gallery-item .clx-step-caption {
+  height: 100% !important;
+}
+
+.clinical-layout .clx-step-subcaption > * {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.clinical-layout .clx-step-subcaption p + p {
+  margin-top: 0 !important;
+}
+
+.clinical-layout .clx-step-subcaption p:empty {
+  display: none !important;
+}
+
+
+/* ==========================================================================
+   Clinical Layout v2.8.25 — sous-captions compactes et hauteurs homogènes
+   ========================================================================== */
+
+.clinical-layout .clx-step-subcaption,
+.clx.clinical-layout .clx-step-subcaption {
+  margin-top: 0.34rem !important;
+}
+
+.clinical-layout .clx-step-subcaption p,
+.clx.clinical-layout .clx-step-subcaption p {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.clinical-layout .clx-gallery-grid,
+.clx.clinical-layout .clx-gallery-grid {
+  align-items: stretch !important;
+}
+
+.clinical-layout .clx-gallery-item,
+.clx.clinical-layout .clx-gallery-item {
+  display: flex !important;
+  flex-direction: column !important;
+  align-self: stretch !important;
+  min-height: 100% !important;
+}
+
+.clinical-layout .clx-gallery-item > .clx-step-figure,
+.clx.clinical-layout .clx-gallery-item > .clx-step-figure {
+  display: grid !important;
+  grid-template-rows: var(--clx-step-image-height) minmax(0, 1fr) !important;
+  flex: 1 1 auto !important;
+  height: 100% !important;
+}
+
+.clinical-layout .clx-gallery-item .clx-step-caption,
+.clx.clinical-layout .clx-gallery-item .clx-step-caption {
+  align-self: stretch !important;
+  height: 100% !important;
+}

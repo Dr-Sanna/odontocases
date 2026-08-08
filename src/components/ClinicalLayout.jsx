@@ -65,6 +65,13 @@ function markdownFromLines(lines) {
 }
 
 
+function subcaptionMarkdownFromLines(lines) {
+  const source = markdownFromLines(lines).replace(/\r\n?/g, "\n").trim();
+  if (!source) return "";
+  return source.replace(/\n[ \t]*\n+/g, "  \n");
+}
+
+
 function splitJoinedBody(lines) {
   const source = markdownFromLines(lines).replace(/\r\n?/g, "\n").trim();
   if (!source) return { lead: "", rest: "" };
@@ -661,7 +668,7 @@ function StepFigure({ item }) {
   const imageSource = markdownFromLines(item.image);
   if (!imageSource) return null;
   const captionSource = markdownFromLines(item.caption);
-  const subcaptionSource = markdownFromLines(item.subcaption);
+  const subcaptionSource = subcaptionMarkdownFromLines(item.subcaption);
   const hasDetailedCaption = Boolean(subcaptionSource);
 
   return (
