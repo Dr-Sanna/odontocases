@@ -1058,10 +1058,7 @@
 /* V11 — renvoi bibliographique compact sous les images gérées par
    Zotero/image-sources.yml : "Torres [2]", "Gossiôme et al. [3]", etc. */
 .cd-gallery-credit-compact {
-  display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 0.28rem;
+  display: block;
   min-width: 0;
   opacity: 0.72;
   font-size: 0.8rem;
@@ -1069,15 +1066,17 @@
 }
 
 .cd-gallery-credit-compact > span {
-  min-width: 0;
+  display: inline;
   overflow-wrap: anywhere;
 }
 
 .cd-gallery-reference-link {
-  flex: 0 0 auto;
+  display: inline;
+  margin-left: 0.28rem;
   font-weight: 650;
   color: var(--ifm-color-primary);
   text-decoration: none;
+  white-space: nowrap;
 }
 
 .cd-gallery-reference-link:visited {
