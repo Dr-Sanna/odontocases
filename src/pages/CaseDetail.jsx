@@ -467,6 +467,210 @@ function mergeCreditsMarkdown(...items) {
   return blocks.join('\n\n');
 }
 
+
+function stripOdontoCitationMarker(markdown) {
+  return String(markdown || '').replace(
+    /<!--\s*odonto-cite:([A-Za-z0-9_:.+\-]+)\s*-->/gi,
+    ''
+  );
+}
+
+function extractOdontoCitationMarkers(markdown) {
+  const text = String(markdown || '');
+  const out = [];
+  const re = /<!--\s*odonto-cite:([A-Za-z0-9_:.+\-]+)\s*-->/gi;
+  let match;
+  while ((match = re.exec(text))) out.push(match[1]);
+  return out;
+}
+
+function normalizeCreditEntryKey(markdown) {
+  return stripOdontoCitationMarker(markdown)
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Découpe un bloc de crédits en entrées bibliographiques indépendantes.
+ * L'importeur produit généralement des listes Markdown, mais quelques anciennes
+ * fiches contiennent encore des paragraphes simples : les deux formes sont gérées.
+ */
+function splitCreditsMarkdownEntries(markdown) {
+  const text = String(markdown || '').replace(/\r\n/g, '\n').trim();
+  if (!text) return [];
+
+  const lines = text.split('\n');
+  const entries = [];
+  let currentList = null;
+  let paragraph = [];
+
+  const flushList = () => {
+    if (!currentList) return;
+    const value = currentList.join('\n').trim();
+    if (value) entries.push(value);
+    currentList = null;
+  };
+
+  const flushParagraph = () => {
+    const value = paragraph.join('\n').trim();
+    paragraph = [];
+    if (value) entries.push(value);
+  };
+
+  for (const line of lines) {
+    const heading = line.match(/^\s{0,3}#{1,6}\s+/);
+    if (heading) {
+      flushList();
+      flushParagraph();
+      continue;
+    }
+
+    const listStart = line.match(/^\s{0,3}(?:[-*+]|\d+\.)\s+(.*)$/);
+    if (listStart) {
+      flushParagraph();
+      flushList();
+      currentList = [listStart[1]];
+      continue;
+    }
+
+    if (currentList) {
+      if (!line.trim()) {
+        currentList.push('');
+        continue;
+      }
+
+      if (/^\s{2,}/.test(line)) {
+        currentList.push(line.replace(/^\s{2,4}/, ''));
+        continue;
+      }
+
+      flushList();
+    }
+
+    if (!line.trim()) {
+      flushParagraph();
+      continue;
+    }
+
+    paragraph.push(line);
+  }
+
+  flushList();
+  flushParagraph();
+
+  return entries.filter(Boolean);
+}
+
+function parseGalleryReferenceMarker(value) {
+  const raw = String(value || '').trim();
+  if (!raw.startsWith('#odonto-')) return null;
+
+  const cite = raw.match(/^#odonto-cite=([^#&]+)$/i);
+  if (cite) {
+    try {
+      return { kind: 'citation', key: decodeURIComponent(cite[1]) };
+    } catch {
+      return { kind: 'citation', key: cite[1] };
+    }
+  }
+
+  const caseMatch = raw.match(/^#odonto-case=([^#&]+)$/i);
+  if (caseMatch) {
+    try {
+      return { kind: 'case', key: decodeURIComponent(caseMatch[1]) };
+    } catch {
+      return { kind: 'case', key: caseMatch[1] };
+    }
+  }
+
+  return null;
+}
+
+function buildNumberedPathologyCredits(displayItem, relatedCases = []) {
+  const entries = [];
+  const seen = new Map();
+  const citationNumbers = new Map();
+  const caseNumbers = new Map();
+
+  const addEntry = (markdown, owner = null) => {
+    const markers = extractOdontoCitationMarkers(markdown);
+    const visibleMarkdown = stripOdontoCitationMarker(markdown).trim();
+    if (!visibleMarkdown) return null;
+
+    const key = normalizeCreditEntryKey(visibleMarkdown);
+    let number = seen.get(key);
+
+    if (!number) {
+      number = entries.length + 1;
+      seen.set(key, number);
+      entries.push({
+        number,
+        id: `cd-reference-${number}`,
+        markdown: visibleMarkdown,
+      });
+    }
+
+    markers.forEach((citekey) => {
+      if (citekey && !citationNumbers.has(citekey)) citationNumbers.set(citekey, number);
+    });
+
+    if (owner?.kind === 'case' && owner.slug && !caseNumbers.has(owner.slug)) {
+      caseNumbers.set(owner.slug, number);
+    }
+
+    return number;
+  };
+
+  splitCreditsMarkdownEntries(getCreditsMarkdown(displayItem)).forEach((entry) => {
+    addEntry(entry, { kind: 'pathology' });
+  });
+
+  (Array.isArray(relatedCases) ? relatedCases : []).forEach((caseItem) => {
+    const slug = String(caseItem?.slug || '').trim();
+    const caseEntries = splitCreditsMarkdownEntries(getCreditsMarkdown(caseItem));
+    caseEntries.forEach((entry, index) => {
+      const number = addEntry(entry, index === 0 ? { kind: 'case', slug } : null);
+      if (index === 0 && slug && number && !caseNumbers.has(slug)) {
+        caseNumbers.set(slug, number);
+      }
+    });
+  });
+
+  return { entries, citationNumbers, caseNumbers };
+}
+
+function galleryReferenceNumber(galleryItem, numberedCredits) {
+  const marker = parseGalleryReferenceMarker(galleryItem?.sourceUrl);
+  if (!marker || !numberedCredits) return null;
+
+  if (marker.kind === 'citation') {
+    return numberedCredits.citationNumbers.get(marker.key) || null;
+  }
+
+  if (marker.kind === 'case') {
+    return numberedCredits.caseNumbers.get(marker.key) || null;
+  }
+
+  return null;
+}
+
+function NumberedCreditsList({ model, Markdown }) {
+  if (!model?.entries?.length) return null;
+
+  return (
+    <div className="cd-reference-list">
+      {model.entries.map((entry) => (
+        <div key={entry.id} id={entry.id} className="cd-reference-entry">
+          <span className="cd-reference-number" aria-hidden="true">[{entry.number}]</span>
+          <div className="cd-reference-body">
+            <Markdown>{entry.markdown}</Markdown>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /* =========================
    Icône des cas cliniques associés
    ========================= */
@@ -1469,7 +1673,20 @@ export default function CaseDetail(props) {
     displayItem,
     visibleRelatedCases,
   ]);
-  const showExtras = Boolean(creditsMarkdown);
+  const pathologyNumberedCredits = useMemo(() => {
+    if (!isPathologyPage) return null;
+    return buildNumberedPathologyCredits(displayItem, visibleRelatedCases);
+  }, [isPathologyPage, displayItem, visibleRelatedCases]);
+
+  const usesGalleryReferenceSystem = useMemo(() => {
+    if (!isPathologyPage) return false;
+    return pathologyGallery.some((galleryItem) => Boolean(parseGalleryReferenceMarker(galleryItem?.sourceUrl)));
+  }, [isPathologyPage, pathologyGallery]);
+
+  const showExtras = Boolean(
+    creditsMarkdown ||
+    (usesGalleryReferenceSystem && pathologyNumberedCredits?.entries?.length)
+  );
 
   return (
     <div className={['cd-shell', collapsed ? 'is-collapsed' : '', drawerOpen ? 'is-drawer-open' : ''].join(' ')}>
@@ -1649,10 +1866,21 @@ export default function CaseDetail(props) {
               <div className="cd-pathology-gallery-grid">
                 {pathologyGallery.map((galleryItem, index) => {
                   const captionId = `cd-gallery-caption-${markdownScopeKey}-${index}`;
-                  const sourceLabel = gallerySourceLabelFromUrl(galleryItem.sourceUrl, visibleRelatedCases);
-                  const internalSourcePath = galleryInternalSourcePath(galleryItem.sourceUrl);
+                  const referenceMarker = parseGalleryReferenceMarker(galleryItem.sourceUrl);
+                  const referenceNumber = galleryReferenceNumber(galleryItem, pathologyNumberedCredits);
+                  const sourceLabel = referenceMarker
+                    ? ''
+                    : gallerySourceLabelFromUrl(galleryItem.sourceUrl, visibleRelatedCases);
+                  const internalSourcePath = referenceMarker
+                    ? ''
+                    : galleryInternalSourcePath(galleryItem.sourceUrl);
+                  const hasBibliographicFooter = Boolean(referenceMarker && (galleryItem.credit || referenceNumber));
+                  const hasLegacySource = Boolean(!referenceMarker && galleryItem.sourceUrl);
                   const hasCaption = Boolean(
-                    galleryItem.title || galleryItem.caption || galleryItem.credit || galleryItem.sourceUrl
+                    galleryItem.title ||
+                    galleryItem.caption ||
+                    hasBibliographicFooter ||
+                    hasLegacySource
                   );
 
                   return (
@@ -1682,26 +1910,40 @@ export default function CaseDetail(props) {
                         <figcaption id={captionId} className="cd-gallery-caption">
                           {galleryItem.title && <strong className="cd-gallery-title">{galleryItem.title}</strong>}
                           {galleryItem.caption && <span>{galleryItem.caption}</span>}
-                          {(galleryItem.credit || galleryItem.sourceUrl) && (
-                            <small className="cd-gallery-credit">
+
+                          {hasBibliographicFooter && (
+                            <small className="cd-gallery-credit cd-gallery-credit-compact">
+                              {galleryItem.credit && <span>{galleryItem.credit}</span>}
+                              {referenceNumber && (
+                                <a
+                                  className="cd-gallery-reference-link"
+                                  href={`#cd-reference-${referenceNumber}`}
+                                  aria-label={`Voir la source ${referenceNumber}`}
+                                >
+                                  [{referenceNumber}]
+                                </a>
+                              )}
+                            </small>
+                          )}
+
+                          {!referenceMarker && galleryItem.sourceUrl && (
+                            <small className="cd-gallery-credit cd-gallery-credit-legacy">
                               {galleryItem.credit && (
                                 <span className="cd-gallery-meta-row">
                                   <span className="cd-gallery-meta-label">Crédit :</span>{' '}
                                   <span>{galleryItem.credit}</span>
                                 </span>
                               )}
-                              {galleryItem.sourceUrl && (
-                                <span className="cd-gallery-meta-row">
-                                  <span className="cd-gallery-meta-label">Source :</span>{' '}
-                                  {internalSourcePath ? (
-                                    <Link to={internalSourcePath}>{sourceLabel || 'Cas clinique'}</Link>
-                                  ) : (
-                                    <a href={galleryItem.sourceUrl} target="_blank" rel="noreferrer">
-                                      {sourceLabel || 'Source'}
-                                    </a>
-                                  )}
-                                </span>
-                              )}
+                              <span className="cd-gallery-meta-row">
+                                <span className="cd-gallery-meta-label">Source :</span>{' '}
+                                {internalSourcePath ? (
+                                  <Link to={internalSourcePath}>{sourceLabel || 'Cas clinique'}</Link>
+                                ) : (
+                                  <a href={galleryItem.sourceUrl} target="_blank" rel="noreferrer">
+                                    {sourceLabel || 'Source'}
+                                  </a>
+                                )}
+                              </span>
                             </small>
                           )}
                         </figcaption>
@@ -1805,7 +2047,11 @@ export default function CaseDetail(props) {
             <section className="cd-extras">
               <div className="cd-references cd-credits">
                 <h3>Sources et crédits</h3>
-                <CaseMarkdown>{creditsMarkdown}</CaseMarkdown>
+                {isPathologyPage && usesGalleryReferenceSystem && pathologyNumberedCredits?.entries?.length ? (
+                  <NumberedCreditsList model={pathologyNumberedCredits} Markdown={CaseMarkdown} />
+                ) : (
+                  <CaseMarkdown>{creditsMarkdown}</CaseMarkdown>
+                )}
               </div>
             </section>
           )}

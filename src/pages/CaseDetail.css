@@ -969,13 +969,16 @@
   gap: 0.75rem;
   margin-top: 0.75rem;
   justify-content: start;
-  align-items: start;
+  align-items: stretch;
 }
 
 .cd-gallery-item {
   min-width: 0;
+  height: 100%;
   margin: 0;
-  align-self: start;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
   border: 1px solid var(--ifm-toc-border-color);
   border-radius: 8px;
   overflow: hidden;
@@ -984,6 +987,7 @@
 
 .cd-gallery-image-button {
   display: block;
+  flex: 0 0 auto;
   width: 100%;
   margin: 0;
   padding: 0;
@@ -1009,9 +1013,12 @@
 
 .cd-gallery-caption {
   display: grid;
+  flex: 1 1 auto;
+  align-content: start;
   gap: 0.25rem;
+  min-height: 2.55rem;
   margin: 0;
-  padding: 0.65rem 0.75rem 0.75rem;
+  padding: 0.58rem 0.72rem 0.64rem;
   text-align: left;
   font-size: 0.9rem;
   line-height: 1.35;
@@ -1043,6 +1050,39 @@
 
 .cd-gallery-credit a {
   font-weight: 600;
+}
+
+
+/* V11 — renvoi bibliographique compact sous les images gérées par
+   Zotero/image-sources.yml : "Torres [2]", "Gossiôme et al. [3]", etc. */
+.cd-gallery-credit-compact {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.28rem;
+  min-width: 0;
+  opacity: 0.72;
+  font-size: 0.8rem;
+  line-height: 1.25;
+}
+
+.cd-gallery-credit-compact > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.cd-gallery-reference-link {
+  flex: 0 0 auto;
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.cd-gallery-reference-link:hover {
+  text-decoration: underline;
+}
+
+.cd-gallery-credit-legacy {
+  margin-top: 0.05rem;
 }
 
 @media (max-width: 980px) {
@@ -1116,6 +1156,47 @@
 .cd-copyright li {
   font-size: 0.9rem;
   line-height: 1.36;
+}
+
+
+/* V11 — liste numérotée des sources utilisée par les renvois de galerie. */
+.cd-reference-list {
+  display: grid;
+  gap: 0.72rem;
+}
+
+.cd-reference-entry {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: baseline;
+  column-gap: 0.42rem;
+  scroll-margin-top: calc(var(--ifm-navbar-height) + 1rem);
+}
+
+.cd-reference-number {
+  font-size: 0.88rem;
+  line-height: 1.36;
+  font-weight: 650;
+  color: color-mix(in srgb, var(--ifm-font-color-base) 76%, transparent);
+  white-space: nowrap;
+}
+
+.cd-reference-body {
+  min-width: 0;
+}
+
+.cd-reference-body > .markdown,
+.cd-reference-body > div {
+  min-width: 0;
+}
+
+.cd-reference-body p {
+  margin: 0 !important;
+}
+
+.cd-reference-body ul,
+.cd-reference-body ol {
+  margin: 0 !important;
 }
 
 /* Reset fort des listes Markdown dans références/copyright.
