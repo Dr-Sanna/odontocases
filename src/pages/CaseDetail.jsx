@@ -511,7 +511,10 @@ function renderInlineContentCitations(markdown, numberedCredits) {
   return text.replace(/\[@([A-Za-z0-9_:.+\-]+)\]/g, (whole, citekey) => {
     const number = numberedCredits.citationNumbers.get(citekey);
     if (!number) return whole;
-    return `[${number}](#cd-reference-${number})`;
+    // Les crochets font partie du texte visible du lien.
+    // En Markdown, [1](...) affiche seulement "1" : il faut donc
+    // échapper les crochets internes pour obtenir visuellement "[1]".
+    return `[\\[${number}\\]](#cd-reference-${number})`;
   });
 }
 
@@ -669,10 +672,16 @@ function buildNumberedPathologyCredits(displayItem, relatedCases = [], galleryIt
     addEntry(entry, { kind: 'pathology' });
   });
 
-  // Les crédits des cas associés restent visibles. La première entrée d'un
-  // cas est la cible de l'image lorsque image-sources.yml utilise "case:".
+  // V19 : les crédits d'un cas associé ne sont intégrés que si une image
+  // de la galerie le désigne explicitement comme source via "case:" / "Cas".
+  // Un cas simplement listé dans « Cas cliniques associés » ne pollue donc
+  // plus « Sources et crédits ».
+  const requestedGalleryReferences = collectGalleryReferenceRequests(galleryItems);
+
   (Array.isArray(relatedCases) ? relatedCases : []).forEach((caseItem) => {
     const slug = String(caseItem?.slug || '').trim();
+    if (!slug || !requestedGalleryReferences.cases.has(slug)) return;
+
     const caseEntries = splitCreditsMarkdownEntries(getCreditsMarkdown(caseItem));
 
     caseEntries.forEach((entry, index) => {
@@ -1820,7 +1829,11 @@ export default function CaseDetail(props) {
     }
 
     if (isPathologyPage) {
-      return mergeCreditsMarkdown(displayItem, ...visibleRelatedCases);
+      // V19 : un cas simplement associé à une pathologie n'est pas, en soi,
+      // une source de la fiche. Ses crédits ne sont donc plus injectés ici.
+      // Ils restent disponibles pour une image de galerie explicitement liée
+      // au cas via image-sources.md -> colonne "Cas".
+      return getCreditsMarkdown(displayItem);
     }
 
     return getCreditsMarkdown(displayItem);
@@ -1829,7 +1842,6 @@ export default function CaseDetail(props) {
     isPathologyPage,
     docParentItem,
     displayItem,
-    visibleRelatedCases,
   ]);
   const pathologyNumberedCredits = useMemo(() => {
     if (!isPathologyPage) return null;
