@@ -193,9 +193,37 @@ function normalizeGalleryList(galleryRel, pathologyTitle = '') {
     .filter(Boolean);
 }
 
-function gallerySourceLabelFromUrl(value) {
+function galleryInternalSourcePath(value) {
+  const raw = String(value || '').trim();
+  if (!raw || !raw.startsWith('/')) return '';
+  return raw;
+}
+
+function galleryCaseSlugFromSourceUrl(value) {
+  const internalPath = galleryInternalSourcePath(value);
+  if (!internalPath) return '';
+
+  try {
+    const parsed = new URL(internalPath, 'https://odontocases.local');
+    const parts = parsed.pathname.split('/').filter(Boolean).map(decodeURIComponent);
+    if (parts[0] !== 'atlas' || parts.length < 3) return '';
+    return parts[2] || '';
+  } catch {
+    return '';
+  }
+}
+
+function gallerySourceLabelFromUrl(value, relatedCases = []) {
   const raw = String(value || '').trim();
   if (!raw) return '';
+
+  const caseSlug = galleryCaseSlugFromSourceUrl(raw);
+  if (caseSlug) {
+    const matchedCase = (Array.isArray(relatedCases) ? relatedCases : []).find(
+      (entry) => String(entry?.slug || '').trim() === caseSlug
+    );
+    return String(matchedCase?.title || caseSlug).trim();
+  }
 
   try {
     const host = new URL(raw).hostname.toLowerCase().replace(/^www\./, '');
@@ -1621,7 +1649,8 @@ export default function CaseDetail(props) {
               <div className="cd-pathology-gallery-grid">
                 {pathologyGallery.map((galleryItem, index) => {
                   const captionId = `cd-gallery-caption-${markdownScopeKey}-${index}`;
-                  const sourceLabel = gallerySourceLabelFromUrl(galleryItem.sourceUrl);
+                  const sourceLabel = gallerySourceLabelFromUrl(galleryItem.sourceUrl, visibleRelatedCases);
+                  const internalSourcePath = galleryInternalSourcePath(galleryItem.sourceUrl);
                   const hasCaption = Boolean(
                     galleryItem.title || galleryItem.caption || galleryItem.credit || galleryItem.sourceUrl
                   );
@@ -1664,9 +1693,13 @@ export default function CaseDetail(props) {
                               {galleryItem.sourceUrl && (
                                 <span className="cd-gallery-meta-row">
                                   <span className="cd-gallery-meta-label">Source :</span>{' '}
-                                  <a href={galleryItem.sourceUrl} target="_blank" rel="noreferrer">
-                                    {sourceLabel || 'Source'}
-                                  </a>
+                                  {internalSourcePath ? (
+                                    <Link to={internalSourcePath}>{sourceLabel || 'Cas clinique'}</Link>
+                                  ) : (
+                                    <a href={galleryItem.sourceUrl} target="_blank" rel="noreferrer">
+                                      {sourceLabel || 'Source'}
+                                    </a>
+                                  )}
                                 </span>
                               )}
                             </small>
