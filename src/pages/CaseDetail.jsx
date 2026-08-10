@@ -490,6 +490,31 @@ function normalizeCreditEntryKey(markdown) {
     .trim();
 }
 
+function extractInlineContentCitationKeys(markdown) {
+  const text = String(markdown || '');
+  const out = [];
+  const re = /\[@([A-Za-z0-9_:.+\-]+)\]/g;
+  let match;
+
+  while ((match = re.exec(text))) {
+    const citekey = String(match[1] || '').trim();
+    if (citekey) out.push(citekey);
+  }
+
+  return out;
+}
+
+function renderInlineContentCitations(markdown, numberedCredits) {
+  const text = String(markdown || '');
+  if (!text || !numberedCredits?.citationNumbers) return text;
+
+  return text.replace(/\[@([A-Za-z0-9_:.+\-]+)\]/g, (whole, citekey) => {
+    const number = numberedCredits.citationNumbers.get(citekey);
+    if (!number) return whole;
+    return `[${number}](#cd-reference-${number})`;
+  });
+}
+
 /**
  * Découpe un bloc de crédits en entrées bibliographiques indépendantes.
  * L'importeur produit généralement des listes Markdown, mais quelques anciennes
@@ -601,7 +626,7 @@ function collectGalleryReferenceRequests(galleryItems = []) {
   return { citations, cases };
 }
 
-function buildNumberedPathologyCredits(displayItem, relatedCases = [], galleryItems = []) {
+function buildNumberedPathologyCredits(displayItem, relatedCases = [], galleryItems = [], contentMarkdown = '') {
   const entries = [];
   const seen = new Map();
   const citationNumbers = new Map();
@@ -669,18 +694,30 @@ function buildNumberedPathologyCredits(displayItem, relatedCases = [], galleryIt
     return null;
   };
 
-  // V14 : la numérotation suit STRICTEMENT l'ordre visuel de la galerie,
-  // et non l'ordre interne dans lequel les crédits ont été assemblés.
+  // V17 : ordre bibliographique = ordre de première citation dans le contenu,
+  // puis ordre visuel de la galerie. Une source non appelée reste sans numéro.
   //
-  // Exemple :
-  // galerie = Elsevier / SFCO / Wikimedia
-  // sources = [1] Elsevier / [2] SFCO / [3] Wikimedia
-  //
-  // Deux images renvoyant à la même source conservent naturellement le
-  // même numéro, car l'entrée n'est numérotée que lors de sa première
-  // apparition dans la galerie.
+  // Cela permet par exemple :
+  //   ... plusieurs semaines[@brunello...] -> [1]
+  // puis les images de galerie -> [2], [3], etc.
   let nextNumber = 1;
 
+  extractInlineContentCitationKeys(contentMarkdown).forEach((citekey) => {
+    const entry = entries.find((candidate) => candidate.citekeys.has(citekey));
+    if (!entry) return;
+
+    if (!entry.number) {
+      entry.number = nextNumber++;
+      entry.id = `cd-reference-${entry.number}`;
+    }
+
+    if (!citationNumbers.has(citekey)) {
+      citationNumbers.set(citekey, entry.number);
+    }
+  });
+
+  // Les images viennent après le corps de la fiche dans l'ordre de lecture.
+  // Deux images renvoyant à la même source gardent le même numéro.
   (Array.isArray(galleryItems) ? galleryItems : []).forEach((galleryItem) => {
     const marker = parseGalleryReferenceMarker(galleryItem?.sourceUrl);
     if (!marker?.key) return;
@@ -1720,7 +1757,16 @@ export default function CaseDetail(props) {
 
     const onClick = (e) => {
       const t = e.target;
-      if (!t || t.tagName !== 'IMG') return;
+      if (!t) return;
+
+      const citationLink = t.closest?.('a[href^="#cd-reference-"]');
+      if (citationLink) {
+        const match = String(citationLink.getAttribute('href') || '').match(/^#cd-reference-(\d+)$/);
+        if (match) flashReferenceEntry(Number(match[1]));
+        return;
+      }
+
+      if (t.tagName !== 'IMG') return;
       if (t.dataset?.noLightbox === '1') return;
       if (t.closest?.('.cd-child-card')) return;
 
@@ -1787,7 +1833,12 @@ export default function CaseDetail(props) {
   ]);
   const pathologyNumberedCredits = useMemo(() => {
     if (!isPathologyPage) return null;
-    return buildNumberedPathologyCredits(displayItem, visibleRelatedCases, pathologyGallery);
+    return buildNumberedPathologyCredits(
+      displayItem,
+      visibleRelatedCases,
+      pathologyGallery,
+      displayItem?.content || ''
+    );
   }, [isPathologyPage, displayItem, visibleRelatedCases, pathologyGallery]);
 
   const usesGalleryReferenceSystem = useMemo(() => {
@@ -1795,9 +1846,26 @@ export default function CaseDetail(props) {
     return pathologyGallery.some((galleryItem) => Boolean(parseGalleryReferenceMarker(galleryItem?.sourceUrl)));
   }, [isPathologyPage, pathologyGallery]);
 
+  const usesInlineCitationSystem = useMemo(() => {
+    if (!isPathologyPage) return false;
+    return extractInlineContentCitationKeys(displayItem?.content || '').length > 0;
+  }, [isPathologyPage, displayItem?.content]);
+
+  const usesPathologyReferenceSystem = usesGalleryReferenceSystem || usesInlineCitationSystem;
+
+  const renderedDisplayContent = useMemo(() => {
+    if (!isPathologyPage || !usesInlineCitationSystem) return displayItem?.content || '';
+    return renderInlineContentCitations(displayItem?.content || '', pathologyNumberedCredits);
+  }, [
+    isPathologyPage,
+    usesInlineCitationSystem,
+    displayItem?.content,
+    pathologyNumberedCredits,
+  ]);
+
   const showExtras = Boolean(
     creditsMarkdown ||
-    (usesGalleryReferenceSystem && pathologyNumberedCredits?.entries?.length)
+    (usesPathologyReferenceSystem && pathologyNumberedCredits?.entries?.length)
   );
 
   return (
@@ -1894,7 +1962,7 @@ export default function CaseDetail(props) {
             <div className="cd-entry-hero">
               <div className="cd-entry-body">
                 {displayItem?.content ? (
-                  <CaseMarkdown scopeKey={markdownScopeKey}>{displayItem.content}</CaseMarkdown>
+                  <CaseMarkdown scopeKey={markdownScopeKey}>{renderedDisplayContent}</CaseMarkdown>
                 ) : (
                   !displayItem && !error && <div className="cd-state">Chargement…</div>
                 )}
@@ -2160,7 +2228,7 @@ export default function CaseDetail(props) {
             <section className="cd-extras">
               <div className="cd-references cd-credits">
                 <h3>Sources et crédits</h3>
-                {isPathologyPage && usesGalleryReferenceSystem && pathologyNumberedCredits?.entries?.length ? (
+                {isPathologyPage && usesPathologyReferenceSystem && pathologyNumberedCredits?.entries?.length ? (
                   <NumberedCreditsList model={pathologyNumberedCredits} Markdown={CaseMarkdown} />
                 ) : (
                   <CaseMarkdown>{creditsMarkdown}</CaseMarkdown>
