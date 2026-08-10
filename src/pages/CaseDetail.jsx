@@ -586,11 +586,27 @@ function parseGalleryReferenceMarker(value) {
   return null;
 }
 
-function buildNumberedPathologyCredits(displayItem, relatedCases = []) {
+function collectGalleryReferenceRequests(galleryItems = []) {
+  const citations = new Set();
+  const cases = new Set();
+
+  (Array.isArray(galleryItems) ? galleryItems : []).forEach((galleryItem) => {
+    const marker = parseGalleryReferenceMarker(galleryItem?.sourceUrl);
+    if (!marker?.key) return;
+
+    if (marker.kind === 'citation') citations.add(marker.key);
+    if (marker.kind === 'case') cases.add(marker.key);
+  });
+
+  return { citations, cases };
+}
+
+function buildNumberedPathologyCredits(displayItem, relatedCases = [], galleryItems = []) {
   const entries = [];
   const seen = new Map();
   const citationNumbers = new Map();
   const caseNumbers = new Map();
+  const requested = collectGalleryReferenceRequests(galleryItems);
 
   const addEntry = (markdown, owner = null) => {
     const markers = extractOdontoCitationMarkers(markdown);
@@ -598,45 +614,76 @@ function buildNumberedPathologyCredits(displayItem, relatedCases = []) {
     if (!visibleMarkdown) return null;
 
     const key = normalizeCreditEntryKey(visibleMarkdown);
-    let number = seen.get(key);
+    let entry = seen.get(key);
 
-    if (!number) {
-      number = entries.length + 1;
-      seen.set(key, number);
-      entries.push({
-        number,
-        id: `cd-reference-${number}`,
+    if (!entry) {
+      entry = {
         markdown: visibleMarkdown,
-      });
+        citekeys: new Set(),
+        caseSlugs: new Set(),
+        number: null,
+        id: null,
+      };
+      seen.set(key, entry);
+      entries.push(entry);
     }
 
     markers.forEach((citekey) => {
-      if (citekey && !citationNumbers.has(citekey)) citationNumbers.set(citekey, number);
+      if (citekey) entry.citekeys.add(citekey);
     });
 
-    if (owner?.kind === 'case' && owner.slug && !caseNumbers.has(owner.slug)) {
-      caseNumbers.set(owner.slug, number);
+    if (owner?.kind === 'case' && owner.slug) {
+      entry.caseSlugs.add(owner.slug);
     }
 
-    return number;
+    return entry;
   };
 
+  // Les crédits propres à la fiche restent visibles, mais ils ne sont pas
+  // numérotés automatiquement simplement parce qu'ils existent.
   splitCreditsMarkdownEntries(getCreditsMarkdown(displayItem)).forEach((entry) => {
     addEntry(entry, { kind: 'pathology' });
   });
 
+  // Les crédits des cas associés restent eux aussi visibles. Seule la première
+  // entrée d'un cas peut devenir la cible de son image liée par "case:".
   (Array.isArray(relatedCases) ? relatedCases : []).forEach((caseItem) => {
     const slug = String(caseItem?.slug || '').trim();
     const caseEntries = splitCreditsMarkdownEntries(getCreditsMarkdown(caseItem));
+
     caseEntries.forEach((entry, index) => {
-      const number = addEntry(entry, index === 0 ? { kind: 'case', slug } : null);
-      if (index === 0 && slug && number && !caseNumbers.has(slug)) {
-        caseNumbers.set(slug, number);
-      }
+      addEntry(entry, index === 0 ? { kind: 'case', slug } : null);
     });
   });
 
-  return { entries, citationNumbers, caseNumbers };
+  // Deuxième passe : on attribue des numéros uniquement aux entrées réellement
+  // ciblées par une image de la galerie. La numérotation reste donc continue :
+  // une source textuelle non appelée dans le contenu demeure sans [n].
+  let nextNumber = 1;
+
+  entries.forEach((entry) => {
+    const requestedCitekeys = [...entry.citekeys].filter((citekey) => requested.citations.has(citekey));
+    const requestedCaseSlugs = [...entry.caseSlugs].filter((slug) => requested.cases.has(slug));
+
+    if (!requestedCitekeys.length && !requestedCaseSlugs.length) return;
+
+    entry.number = nextNumber++;
+    entry.id = `cd-reference-${entry.number}`;
+
+    requestedCitekeys.forEach((citekey) => {
+      if (!citationNumbers.has(citekey)) citationNumbers.set(citekey, entry.number);
+    });
+
+    requestedCaseSlugs.forEach((slug) => {
+      if (!caseNumbers.has(slug)) caseNumbers.set(slug, entry.number);
+    });
+  });
+
+  return {
+    entries: entries.map(({ citekeys, caseSlugs, ...entry }) => entry),
+    citationNumbers,
+    caseNumbers,
+  };
 }
 
 function galleryReferenceNumber(galleryItem, numberedCredits) {
@@ -654,19 +701,51 @@ function galleryReferenceNumber(galleryItem, numberedCredits) {
   return null;
 }
 
+function flashReferenceEntry(referenceNumber) {
+  if (!referenceNumber || typeof document === 'undefined') return;
+
+  const target = document.getElementById(`cd-reference-${referenceNumber}`);
+  if (!target) return;
+
+  target.classList.remove('is-reference-highlighted');
+  // Force un recalcul afin que l'animation reparte même si l'utilisateur
+  // reclique immédiatement sur le même numéro.
+  void target.offsetWidth;
+  target.classList.add('is-reference-highlighted');
+
+  window.setTimeout(() => {
+    target.classList.remove('is-reference-highlighted');
+  }, 2400);
+}
+
 function NumberedCreditsList({ model, Markdown }) {
   if (!model?.entries?.length) return null;
 
   return (
     <div className="cd-reference-list">
-      {model.entries.map((entry) => (
-        <div key={entry.id} id={entry.id} className="cd-reference-entry">
-          <span className="cd-reference-number" aria-hidden="true">[{entry.number}]</span>
-          <div className="cd-reference-body">
-            <Markdown>{entry.markdown}</Markdown>
+      {model.entries.map((entry, index) => {
+        const isNumbered = Boolean(entry.number && entry.id);
+
+        return (
+          <div
+            key={entry.id || `cd-reference-plain-${index}`}
+            id={isNumbered ? entry.id : undefined}
+            className={[
+              'cd-reference-entry',
+              isNumbered ? 'is-numbered' : 'is-unnumbered',
+            ].join(' ')}
+          >
+            {isNumbered && (
+              <span className="cd-reference-number" aria-hidden="true">
+                [{entry.number}]
+              </span>
+            )}
+            <div className="cd-reference-body">
+              <Markdown>{entry.markdown}</Markdown>
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -1675,8 +1754,8 @@ export default function CaseDetail(props) {
   ]);
   const pathologyNumberedCredits = useMemo(() => {
     if (!isPathologyPage) return null;
-    return buildNumberedPathologyCredits(displayItem, visibleRelatedCases);
-  }, [isPathologyPage, displayItem, visibleRelatedCases]);
+    return buildNumberedPathologyCredits(displayItem, visibleRelatedCases, pathologyGallery);
+  }, [isPathologyPage, displayItem, visibleRelatedCases, pathologyGallery]);
 
   const usesGalleryReferenceSystem = useMemo(() => {
     if (!isPathologyPage) return false;
@@ -1919,6 +1998,7 @@ export default function CaseDetail(props) {
                                   className="cd-gallery-reference-link"
                                   href={`#cd-reference-${referenceNumber}`}
                                   aria-label={`Voir la source ${referenceNumber}`}
+                                  onClick={() => flashReferenceEntry(referenceNumber)}
                                 >
                                   [{referenceNumber}]
                                 </a>
