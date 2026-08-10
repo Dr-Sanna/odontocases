@@ -193,6 +193,27 @@ function normalizeGalleryList(galleryRel, pathologyTitle = '') {
     .filter(Boolean);
 }
 
+function gallerySourceLabelFromUrl(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+
+  try {
+    const host = new URL(raw).hostname.toLowerCase().replace(/^www\./, '');
+
+    if (host === 'cneco.education' || host.endsWith('.cneco.education')) return 'CNECO';
+    if (host === 'commons.wikimedia.org' || host.endsWith('.commons.wikimedia.org')) {
+      return 'Wikimedia Commons';
+    }
+    if (host === 'societechirorale.com' || host.endsWith('.societechirorale.com')) {
+      return 'Société Française de Chirurgie Orale';
+    }
+
+    return host;
+  } catch {
+    return 'Source';
+  }
+}
+
 /* ===== Session cache helpers ===== */
 const SESSION_CACHE_VERSION = 2;
 const DOC_LIST_STALE_MS = 60_000;
@@ -1600,6 +1621,7 @@ export default function CaseDetail(props) {
               <div className="cd-pathology-gallery-grid">
                 {pathologyGallery.map((galleryItem, index) => {
                   const captionId = `cd-gallery-caption-${markdownScopeKey}-${index}`;
+                  const sourceLabel = gallerySourceLabelFromUrl(galleryItem.sourceUrl);
                   const hasCaption = Boolean(
                     galleryItem.title || galleryItem.caption || galleryItem.credit || galleryItem.sourceUrl
                   );
@@ -1633,12 +1655,19 @@ export default function CaseDetail(props) {
                           {galleryItem.caption && <span>{galleryItem.caption}</span>}
                           {(galleryItem.credit || galleryItem.sourceUrl) && (
                             <small className="cd-gallery-credit">
-                              {galleryItem.credit && <span>{galleryItem.credit}</span>}
-                              {galleryItem.credit && galleryItem.sourceUrl && <span aria-hidden="true"> · </span>}
+                              {galleryItem.credit && (
+                                <span className="cd-gallery-meta-row">
+                                  <span className="cd-gallery-meta-label">Crédit :</span>{' '}
+                                  <span>{galleryItem.credit}</span>
+                                </span>
+                              )}
                               {galleryItem.sourceUrl && (
-                                <a href={galleryItem.sourceUrl} target="_blank" rel="noreferrer">
-                                  Source
-                                </a>
+                                <span className="cd-gallery-meta-row">
+                                  <span className="cd-gallery-meta-label">Source :</span>{' '}
+                                  <a href={galleryItem.sourceUrl} target="_blank" rel="noreferrer">
+                                    {sourceLabel || 'Source'}
+                                  </a>
+                                </span>
                               )}
                             </small>
                           )}
