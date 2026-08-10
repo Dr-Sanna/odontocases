@@ -606,7 +606,6 @@ function buildNumberedPathologyCredits(displayItem, relatedCases = [], galleryIt
   const seen = new Map();
   const citationNumbers = new Map();
   const caseNumbers = new Map();
-  const requested = collectGalleryReferenceRequests(galleryItems);
 
   const addEntry = (markdown, owner = null) => {
     const markers = extractOdontoCitationMarkers(markdown);
@@ -639,14 +638,14 @@ function buildNumberedPathologyCredits(displayItem, relatedCases = [], galleryIt
     return entry;
   };
 
-  // Les crédits propres à la fiche restent visibles, mais ils ne sont pas
-  // numérotés automatiquement simplement parce qu'ils existent.
+  // Les crédits propres à la fiche restent visibles, mais ne reçoivent
+  // aucun numéro s'ils ne sont pas effectivement appelés par la galerie.
   splitCreditsMarkdownEntries(getCreditsMarkdown(displayItem)).forEach((entry) => {
     addEntry(entry, { kind: 'pathology' });
   });
 
-  // Les crédits des cas associés restent eux aussi visibles. Seule la première
-  // entrée d'un cas peut devenir la cible de son image liée par "case:".
+  // Les crédits des cas associés restent visibles. La première entrée d'un
+  // cas est la cible de l'image lorsque image-sources.yml utilise "case:".
   (Array.isArray(relatedCases) ? relatedCases : []).forEach((caseItem) => {
     const slug = String(caseItem?.slug || '').trim();
     const caseEntries = splitCreditsMarkdownEntries(getCreditsMarkdown(caseItem));
@@ -656,31 +655,65 @@ function buildNumberedPathologyCredits(displayItem, relatedCases = [], galleryIt
     });
   });
 
-  // Deuxième passe : on attribue des numéros uniquement aux entrées réellement
-  // ciblées par une image de la galerie. La numérotation reste donc continue :
-  // une source textuelle non appelée dans le contenu demeure sans [n].
+  const findEntryForGalleryMarker = (marker) => {
+    if (!marker?.key) return null;
+
+    if (marker.kind === 'citation') {
+      return entries.find((entry) => entry.citekeys.has(marker.key)) || null;
+    }
+
+    if (marker.kind === 'case') {
+      return entries.find((entry) => entry.caseSlugs.has(marker.key)) || null;
+    }
+
+    return null;
+  };
+
+  // V14 : la numérotation suit STRICTEMENT l'ordre visuel de la galerie,
+  // et non l'ordre interne dans lequel les crédits ont été assemblés.
+  //
+  // Exemple :
+  // galerie = Elsevier / SFCO / Wikimedia
+  // sources = [1] Elsevier / [2] SFCO / [3] Wikimedia
+  //
+  // Deux images renvoyant à la même source conservent naturellement le
+  // même numéro, car l'entrée n'est numérotée que lors de sa première
+  // apparition dans la galerie.
   let nextNumber = 1;
 
-  entries.forEach((entry) => {
-    const requestedCitekeys = [...entry.citekeys].filter((citekey) => requested.citations.has(citekey));
-    const requestedCaseSlugs = [...entry.caseSlugs].filter((slug) => requested.cases.has(slug));
+  (Array.isArray(galleryItems) ? galleryItems : []).forEach((galleryItem) => {
+    const marker = parseGalleryReferenceMarker(galleryItem?.sourceUrl);
+    if (!marker?.key) return;
 
-    if (!requestedCitekeys.length && !requestedCaseSlugs.length) return;
+    const entry = findEntryForGalleryMarker(marker);
+    if (!entry) return;
 
-    entry.number = nextNumber++;
-    entry.id = `cd-reference-${entry.number}`;
+    if (!entry.number) {
+      entry.number = nextNumber++;
+      entry.id = `cd-reference-${entry.number}`;
+    }
 
-    requestedCitekeys.forEach((citekey) => {
-      if (!citationNumbers.has(citekey)) citationNumbers.set(citekey, entry.number);
-    });
+    if (marker.kind === 'citation' && !citationNumbers.has(marker.key)) {
+      citationNumbers.set(marker.key, entry.number);
+    }
 
-    requestedCaseSlugs.forEach((slug) => {
-      if (!caseNumbers.has(slug)) caseNumbers.set(slug, entry.number);
-    });
+    if (marker.kind === 'case' && !caseNumbers.has(marker.key)) {
+      caseNumbers.set(marker.key, entry.number);
+    }
   });
 
+  // Les références sans numéro (par exemple une source textuelle qui
+  // n'est pas encore citée dans le contenu) restent en premier, dans leur
+  // ordre éditorial. Les références appelées par la galerie sont ensuite
+  // rangées selon leur numéro afin que « Sources et crédits » reflète
+  // exactement l'ordre des images.
+  const unnumberedEntries = entries.filter((entry) => !entry.number);
+  const numberedEntries = entries
+    .filter((entry) => entry.number)
+    .sort((a, b) => a.number - b.number);
+
   return {
-    entries: entries.map(({ citekeys, caseSlugs, ...entry }) => entry),
+    entries: [...unnumberedEntries, ...numberedEntries].map(({ citekeys, caseSlugs, ...entry }) => entry),
     citationNumbers,
     caseNumbers,
   };
