@@ -966,7 +966,17 @@
 .cd-pathology-gallery-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(190px, 250px));
-  grid-auto-rows: 1fr;
+  /*
+   * V20 : ne pas utiliser grid-auto-rows: 1fr.
+   * Avec 1fr, toutes les rangées implicites de la galerie prennent la même
+   * hauteur que la rangée la plus haute de toute la grille. Une légende longue
+   * en deuxième rangée étirait donc aussi inutilement les cartes de la première.
+   *
+   * En laissant les rangées en auto, chaque rangée calcule indépendamment sa
+   * hauteur d'après son contenu le plus haut. align-items: stretch conserve
+   * l'égalisation des cartes à l'intérieur d'une même rangée.
+   */
+  grid-auto-rows: auto;
   gap: 0.75rem;
   margin-top: 0.75rem;
   justify-content: start;
