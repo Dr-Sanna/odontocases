@@ -74,14 +74,25 @@ function appendSanitizeAttributes(schema, tagName, attributes) {
  * - la classe du séparateur <div class="callout-divider"></div>.
  */
 const caseMarkdownSanitizeSchema = appendSanitizeAttributes(
-  ckeditorSchema,
-  "div",
+  appendSanitizeAttributes(
+    ckeditorSchema,
+    "div",
+    [
+      "className",
+      "dataCallout",
+      "dataCalloutMetadata",
+      "data-callout",
+      "data-callout-metadata",
+    ]
+  ),
+  "img",
   [
-    "className",
-    "dataCallout",
-    "dataCalloutMetadata",
-    "data-callout",
-    "data-callout-metadata",
+    "dataOdontoCite",
+    "dataOdontoCredit",
+    "dataOdontoCaption",
+    "data-odonto-cite",
+    "data-odonto-credit",
+    "data-odonto-caption",
   ]
 );
 
@@ -543,6 +554,240 @@ function runRelayoutLoop(relayoutFn, durationMs = 420) {
 }
 
 /* =========================
+   Documentation — métadonnées iconographiques V22
+   ========================= */
+function referenceNumberForCitekey(referenceNumbers, citekey) {
+  if (!referenceNumbers || !citekey) return null;
+  if (referenceNumbers instanceof Map) return referenceNumbers.get(citekey) || null;
+  if (typeof referenceNumbers === "object") return referenceNumbers[citekey] || null;
+  return null;
+}
+
+function cleanupDocumentImageMetadata(rootEl) {
+  if (!rootEl) return;
+  rootEl
+    .querySelectorAll(
+      ".cd-doc-image-meta-generated, .cd-doc-image-generated-caption, .cd-doc-image-generated-figcaption"
+    )
+    .forEach((node) => node.remove());
+}
+
+function elementHasVisibleCaptionText(element) {
+  if (!element) return false;
+  const clone = element.cloneNode(true);
+  clone
+    .querySelectorAll?.(
+      ".cd-doc-image-meta-generated, .cd-doc-image-generated-caption, .cd-doc-image-generated-figcaption"
+    )
+    .forEach((node) => node.remove());
+  return Boolean(String(clone.textContent || "").trim());
+}
+
+function isLikelyStandaloneCaption(element) {
+  if (!element) return false;
+  if (element.tagName === "FIGCAPTION") return elementHasVisibleCaptionText(element);
+  if (element.classList?.contains("clx-step-caption")) return elementHasVisibleCaptionText(element);
+
+  if (element.tagName === "P" && !element.querySelector("img")) {
+    const text = String(element.textContent || "").trim();
+    if (!text) return false;
+
+    const significantChildren = Array.from(element.children || []).filter(
+      (child) => child.tagName !== "BR"
+    );
+
+    if (
+      significantChildren.length > 0 &&
+      significantChildren.every((child) => child.tagName === "EM" || child.tagName === "I")
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function imageVisualBlock(img) {
+  if (!img) return null;
+  const paragraph = img.closest("p");
+
+  if (paragraph && paragraph.querySelectorAll("img").length === 1) {
+    const textWithoutImage = String(paragraph.textContent || "").trim();
+    if (!textWithoutImage) return paragraph;
+  }
+
+  return img;
+}
+
+function createDocumentImageReferenceLink(referenceNumber) {
+  if (!referenceNumber) return null;
+
+  const link = document.createElement("a");
+  link.className = "cd-doc-image-reference-link";
+  link.href = `#cd-reference-${referenceNumber}`;
+  link.setAttribute("aria-label", `Voir la source ${referenceNumber}`);
+  link.textContent = `[${referenceNumber}]`;
+  return link;
+}
+
+function createDocumentImageCredit(credit, referenceNumber) {
+  if (!credit && !referenceNumber) return null;
+
+  const meta = document.createElement("div");
+  meta.className = "cd-doc-image-credit cd-doc-image-meta-generated";
+
+  if (credit) {
+    const author = document.createElement("span");
+    author.textContent = credit;
+    meta.appendChild(author);
+  }
+
+  const link = createDocumentImageReferenceLink(referenceNumber);
+  if (link) {
+    if (credit) meta.appendChild(document.createTextNode(" "));
+    meta.appendChild(link);
+  }
+
+  return meta;
+}
+
+function createFallbackCaption(caption) {
+  if (!caption) return null;
+
+  const node = document.createElement("div");
+  node.className = "cd-doc-image-caption-fallback cd-doc-image-generated-caption";
+  node.textContent = caption;
+  return node;
+}
+
+function decorateLesionPanelImage(img, registryCaption, credit, referenceNumber) {
+  // @panel lesions rend deux représentations de la même donnée :
+  // tableau desktop + cartes mobile. On décore chacune indépendamment.
+  const gallery =
+    img.closest(".clx-lesion-table-image .clx-image-gallery") ||
+    img.closest(".clx-lesion-image.clx-image-gallery");
+
+  if (!gallery) return false;
+
+  const host = gallery.closest(".clx-lesion-table-image") || gallery.parentElement;
+  if (!host) return false;
+
+  const fallback = createFallbackCaption(registryCaption);
+  const meta = createDocumentImageCredit(credit, referenceNumber);
+
+  // Le bloc auteur/légende est placé APRES la galerie d'image et non à
+  // l'intérieur de sa CSS grid : cela évite qu'il soit traité comme une
+  // deuxième image/colonne dans les tableaux de lésions.
+  let cursor = gallery;
+
+  if (fallback) {
+    cursor.insertAdjacentElement("afterend", fallback);
+    cursor = fallback;
+  }
+
+  if (meta) {
+    cursor.insertAdjacentElement("afterend", meta);
+  }
+
+  return true;
+}
+
+function decorateOneDocumentImage(img, referenceNumbers) {
+  const citekey = String(img?.dataset?.odontoCite || "").trim();
+  const credit = String(img?.dataset?.odontoCredit || "").trim();
+  const registryCaption = String(img?.dataset?.odontoCaption || "").trim();
+  const referenceNumber = referenceNumberForCitekey(referenceNumbers, citekey);
+
+  if (!credit && !registryCaption && !referenceNumber) return;
+
+  // Cas particulier explicitement géré : clinicalLayout @panel lesions.
+  if (decorateLesionPanelImage(img, registryCaption, credit, referenceNumber)) {
+    return;
+  }
+
+  const figure = img.closest("figure");
+
+  if (figure) {
+    let caption = Array.from(figure.children || []).find(
+      (child) => child.tagName === "FIGCAPTION"
+    );
+
+    if (caption) {
+      const hasExistingCaption = elementHasVisibleCaptionText(caption);
+
+      // Un @caption/@subcaption déjà présent reste toujours prioritaire.
+      if (!hasExistingCaption && registryCaption) {
+        const fallback = createFallbackCaption(registryCaption);
+        if (fallback) caption.appendChild(fallback);
+      }
+
+      const meta = createDocumentImageCredit(credit, referenceNumber);
+      if (meta) caption.appendChild(meta);
+      return;
+    }
+
+    caption = document.createElement("figcaption");
+    caption.className = "cd-doc-image-generated-figcaption";
+
+    const fallback = createFallbackCaption(registryCaption);
+    const meta = createDocumentImageCredit(credit, referenceNumber);
+
+    if (fallback) caption.appendChild(fallback);
+    if (meta) caption.appendChild(meta);
+
+    if (caption.childNodes.length) {
+      const imageContainer =
+        img.closest(".clx-step-image") ||
+        img.closest(".clx-step-image-markdown") ||
+        imageVisualBlock(img);
+
+      if (
+        imageContainer &&
+        imageContainer !== figure &&
+        imageContainer.parentElement === figure
+      ) {
+        imageContainer.insertAdjacentElement("afterend", caption);
+      } else {
+        figure.appendChild(caption);
+      }
+    }
+    return;
+  }
+
+  const visualBlock = imageVisualBlock(img);
+  const next = visualBlock?.nextElementSibling || null;
+  const existingCaption = isLikelyStandaloneCaption(next) ? next : null;
+  const meta = createDocumentImageCredit(credit, referenceNumber);
+
+  if (existingCaption) {
+    if (meta) existingCaption.insertAdjacentElement("afterend", meta);
+    return;
+  }
+
+  const fallback = createFallbackCaption(registryCaption);
+  let cursor = visualBlock;
+
+  if (fallback && cursor?.insertAdjacentElement) {
+    cursor.insertAdjacentElement("afterend", fallback);
+    cursor = fallback;
+  }
+  if (meta && cursor?.insertAdjacentElement) {
+    cursor.insertAdjacentElement("afterend", meta);
+  }
+}
+
+function decorateDocumentImages(rootEl, referenceNumbers) {
+  if (!rootEl) return;
+  cleanupDocumentImageMetadata(rootEl);
+
+  rootEl
+    .querySelectorAll(
+      "img[data-odonto-cite], img[data-odonto-credit], img[data-odonto-caption]"
+    )
+    .forEach((img) => decorateOneDocumentImage(img, referenceNumbers));
+}
+
+/* =========================
    Diagram injection helper
    ========================= */
 function textFromReactChildren(children) {
@@ -668,7 +913,7 @@ function renderClassificationDiagramFromCode(
 /* =========================
    Component (memoized)
    ========================= */
-const CaseMarkdown = memo(function CaseMarkdown({ children, scopeKey = "" }) {
+const CaseMarkdown = memo(function CaseMarkdown({ children, scopeKey = "", referenceNumbers = null }) {
   const containerRef = useRef(null);
 
   const source = useMemo(
@@ -864,6 +1109,17 @@ const CaseMarkdown = memo(function CaseMarkdown({ children, scopeKey = "" }) {
     ],
     []
   );
+
+  useEffect(() => {
+    const rootEl = containerRef.current;
+    if (!rootEl) return undefined;
+
+    decorateDocumentImages(rootEl, referenceNumbers);
+
+    return () => {
+      cleanupDocumentImageMetadata(rootEl);
+    };
+  }, [source, referenceNumbers]);
 
   useEffect(() => {
     let cancelled = false;

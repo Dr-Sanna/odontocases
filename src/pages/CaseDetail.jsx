@@ -504,6 +504,20 @@ function extractInlineContentCitationKeys(markdown) {
   return out;
 }
 
+function extractOrderedContentReferenceKeys(markdown) {
+  const text = String(markdown || '');
+  const out = [];
+  const re = /\[@([A-Za-z0-9_:.+\-]+)\]|data-odonto-cite=["']([^"']+)["']/g;
+  let match;
+
+  while ((match = re.exec(text))) {
+    const citekey = String(match[1] || match[2] || '').trim();
+    if (citekey) out.push(citekey);
+  }
+
+  return out;
+}
+
 function renderInlineContentCitations(markdown, numberedCredits) {
   const text = String(markdown || '');
   if (!text || !numberedCredits?.citationNumbers) return text;
@@ -762,6 +776,76 @@ function buildNumberedPathologyCredits(displayItem, relatedCases = [], galleryIt
     entries: [...unnumberedEntries, ...numberedEntries].map(({ citekeys, caseSlugs, ...entry }) => entry),
     citationNumbers,
     caseNumbers,
+  };
+}
+
+
+function buildNumberedDocumentationCredits(nodes = []) {
+  const orderedNodes = (Array.isArray(nodes) ? nodes : []).filter(Boolean);
+  const entries = [];
+  const seen = new Map();
+  const citationNumbers = new Map();
+
+  const addEntry = (markdown) => {
+    const markers = extractOdontoCitationMarkers(markdown);
+    const visibleMarkdown = stripOdontoCitationMarker(markdown).trim();
+    if (!visibleMarkdown) return null;
+
+    const key = normalizeCreditEntryKey(visibleMarkdown);
+    let entry = seen.get(key);
+
+    if (!entry) {
+      entry = {
+        markdown: visibleMarkdown,
+        citekeys: new Set(),
+        number: null,
+        id: null,
+      };
+      seen.set(key, entry);
+      entries.push(entry);
+    }
+
+    markers.forEach((citekey) => {
+      if (citekey) entry.citekeys.add(citekey);
+    });
+
+    return entry;
+  };
+
+  // Bibliographie commune : d'abord les crédits de l'ITEM, puis ceux des
+  // sections dans leur ordre éditorial.
+  orderedNodes.forEach((node) => {
+    splitCreditsMarkdownEntries(getCreditsMarkdown(node)).forEach(addEntry);
+  });
+
+  let nextNumber = 1;
+
+  // Numérotation commune : ordre réel de première apparition dans le contenu
+  // de l'ITEM, puis section 1, section 2, etc.
+  orderedNodes.forEach((node) => {
+    extractOrderedContentReferenceKeys(node?.content || '').forEach((citekey) => {
+      const entry = entries.find((candidate) => candidate.citekeys.has(citekey));
+      if (!entry) return;
+
+      if (!entry.number) {
+        entry.number = nextNumber++;
+        entry.id = `cd-reference-${entry.number}`;
+      }
+
+      if (!citationNumbers.has(citekey)) {
+        citationNumbers.set(citekey, entry.number);
+      }
+    });
+  });
+
+  const unnumberedEntries = entries.filter((entry) => !entry.number);
+  const numberedEntries = entries
+    .filter((entry) => entry.number)
+    .sort((a, b) => a.number - b.number);
+
+  return {
+    entries: [...unnumberedEntries, ...numberedEntries].map(({ citekeys, ...entry }) => entry),
+    citationNumbers,
   };
 }
 
@@ -1234,7 +1318,7 @@ export default function CaseDetail(props) {
         populate: {
           cover: { fields: ['url', 'formats', 'alternativeText', 'name'] },
           parent: {
-            fields: ['title', 'slug', 'level', 'credits', 'references', 'copyright'],
+            fields: ['title', 'slug', 'level', 'content', 'credits', 'references', 'copyright', 'sectionsHeading', 'order'],
             populate: {
               parent: {
                 fields: ['title', 'slug', 'level'],
@@ -1245,7 +1329,7 @@ export default function CaseDetail(props) {
             },
           },
         },
-        fields: ['title', 'slug', 'level', 'excerpt', 'content', 'updatedAt', 'credits', 'references', 'copyright', 'sectionsHeading'],
+        fields: ['title', 'slug', 'level', 'excerpt', 'content', 'updatedAt', 'credits', 'references', 'copyright', 'sectionsHeading', 'order'],
         pagination: { page: 1, pageSize: 1 },
       },
       options: signal ? { signal } : undefined,
@@ -1279,7 +1363,7 @@ export default function CaseDetail(props) {
         locale: 'all',
         publicationState: PUB_STATE,
         filters: { level: { $eq: 'section' }, parent: { slug: { $eq: itemSlugToLoad } } },
-        fields: ['title', 'slug', 'level', 'excerpt', 'updatedAt', 'order'],
+        fields: ['title', 'slug', 'level', 'excerpt', 'content', 'credits', 'references', 'copyright', 'updatedAt', 'order'],
         populate: { cover: { fields: ['url', 'formats'] } },
         sort: ['order:asc', 'title:asc'],
         pagination: { page: 1, pageSize: 500 },
@@ -1368,7 +1452,10 @@ export default function CaseDetail(props) {
           setItem(fullDoc);
           setDocNodeToSession(slugToLoad, fullDoc);
 
-          if (isDocItemPage && docItemSlug) {
+          if (docItemSlug) {
+            // V22 : l'ensemble des sections est chargé aussi sur une page
+            // de section, afin que toutes les pages d'un même ITEM partagent
+            // exactement la même bibliographie et la même numérotation.
             const secs = await loadDocSectionsForItem(docItemSlug, { signal: controller.signal, force: true });
             if (!ignore) setDocCurrentItemSections(secs);
           }
@@ -1823,16 +1910,65 @@ export default function CaseDetail(props) {
     return parent?.level === 'item' ? parent : null;
   }, [isDocNamespace, displayItem]);
 
+  const documentationScopeNodes = useMemo(() => {
+    if (!isDocNamespace) return [];
+
+    let itemNode = null;
+    let sections = Array.isArray(docCurrentItemSections)
+      ? [...docCurrentItemSections]
+      : [];
+
+    if (displayItem?.level === 'item') {
+      itemNode = displayItem;
+    } else if (displayItem?.level === 'section') {
+      itemNode = docParentItem;
+
+      // Le DocNode affiché est la version la plus complète / fraîche de la
+      // section courante : il remplace la copie issue de la liste des sections.
+      const currentSlug = String(displayItem?.slug || '').trim();
+      let replaced = false;
+
+      sections = sections.map((section) => {
+        if (String(section?.slug || '').trim() !== currentSlug) return section;
+        replaced = true;
+        return displayItem;
+      });
+
+      if (currentSlug && !replaced) sections.push(displayItem);
+    } else {
+      // subject/chapter : hors logique de bibliographie commune d'un ITEM.
+      return [displayItem].filter(Boolean);
+    }
+
+    sections = sortListSafe(
+      sections.filter((section) => section?.level === 'section' && section?.slug)
+    );
+
+    const ordered = [itemNode, ...sections].filter(Boolean);
+    const seenSlugs = new Set();
+
+    return ordered.filter((node) => {
+      const slug = String(node?.slug || '').trim();
+      if (!slug) return true;
+      if (seenSlugs.has(slug)) return false;
+      seenSlugs.add(slug);
+      return true;
+    });
+  }, [
+    isDocNamespace,
+    displayItem,
+    docParentItem,
+    docCurrentItemSections,
+  ]);
+
   const creditsMarkdown = useMemo(() => {
-    if (isDocNamespace && displayItem?.level === 'section') {
-      return mergeCreditsMarkdown(docParentItem, displayItem);
+    if (isDocNamespace && documentationScopeNodes.length) {
+      return mergeCreditsMarkdown(...documentationScopeNodes);
     }
 
     if (isPathologyPage) {
       // V19 : un cas simplement associé à une pathologie n'est pas, en soi,
-      // une source de la fiche. Ses crédits ne sont donc plus injectés ici.
-      // Ils restent disponibles pour une image de galerie explicitement liée
-      // au cas via image-sources.md -> colonne "Cas".
+      // une source de la fiche.
       return getCreditsMarkdown(displayItem);
     }
 
@@ -1840,9 +1976,10 @@ export default function CaseDetail(props) {
   }, [
     isDocNamespace,
     isPathologyPage,
-    docParentItem,
+    documentationScopeNodes,
     displayItem,
   ]);
+
   const pathologyNumberedCredits = useMemo(() => {
     if (!isPathologyPage) return null;
     return buildNumberedPathologyCredits(
@@ -1852,6 +1989,11 @@ export default function CaseDetail(props) {
       displayItem?.content || ''
     );
   }, [isPathologyPage, displayItem, visibleRelatedCases, pathologyGallery]);
+
+  const documentationNumberedCredits = useMemo(() => {
+    if (!isDocNamespace) return null;
+    return buildNumberedDocumentationCredits(documentationScopeNodes);
+  }, [isDocNamespace, documentationScopeNodes]);
 
   const usesGalleryReferenceSystem = useMemo(() => {
     if (!isPathologyPage) return false;
@@ -1865,19 +2007,39 @@ export default function CaseDetail(props) {
 
   const usesPathologyReferenceSystem = usesGalleryReferenceSystem || usesInlineCitationSystem;
 
+  const usesDocumentationReferenceSystem = useMemo(() => {
+    if (!isDocNamespace) return false;
+    return documentationScopeNodes.some(
+      (node) => extractOrderedContentReferenceKeys(node?.content || '').length > 0
+    );
+  }, [isDocNamespace, documentationScopeNodes]);
+
   const renderedDisplayContent = useMemo(() => {
-    if (!isPathologyPage || !usesInlineCitationSystem) return displayItem?.content || '';
-    return renderInlineContentCitations(displayItem?.content || '', pathologyNumberedCredits);
+    const raw = displayItem?.content || '';
+
+    if (isPathologyPage && usesInlineCitationSystem) {
+      return renderInlineContentCitations(raw, pathologyNumberedCredits);
+    }
+
+    if (isDocNamespace && usesDocumentationReferenceSystem) {
+      return renderInlineContentCitations(raw, documentationNumberedCredits);
+    }
+
+    return raw;
   }, [
     isPathologyPage,
+    isDocNamespace,
     usesInlineCitationSystem,
+    usesDocumentationReferenceSystem,
     displayItem?.content,
     pathologyNumberedCredits,
+    documentationNumberedCredits,
   ]);
 
   const showExtras = Boolean(
     creditsMarkdown ||
-    (usesPathologyReferenceSystem && pathologyNumberedCredits?.entries?.length)
+    (usesPathologyReferenceSystem && pathologyNumberedCredits?.entries?.length) ||
+    (usesDocumentationReferenceSystem && documentationNumberedCredits?.entries?.length)
   );
 
   return (
@@ -1974,7 +2136,16 @@ export default function CaseDetail(props) {
             <div className="cd-entry-hero">
               <div className="cd-entry-body">
                 {displayItem?.content ? (
-                  <CaseMarkdown scopeKey={markdownScopeKey}>{renderedDisplayContent}</CaseMarkdown>
+                  <CaseMarkdown
+                    scopeKey={markdownScopeKey}
+                    referenceNumbers={
+                      isDocNamespace
+                        ? documentationNumberedCredits?.citationNumbers
+                        : null
+                    }
+                  >
+                    {renderedDisplayContent}
+                  </CaseMarkdown>
                 ) : (
                   !displayItem && !error && <div className="cd-state">Chargement…</div>
                 )}
@@ -2242,6 +2413,8 @@ export default function CaseDetail(props) {
                 <h3>Sources et crédits</h3>
                 {isPathologyPage && usesPathologyReferenceSystem && pathologyNumberedCredits?.entries?.length ? (
                   <NumberedCreditsList model={pathologyNumberedCredits} Markdown={CaseMarkdown} />
+                ) : isDocNamespace && usesDocumentationReferenceSystem && documentationNumberedCredits?.entries?.length ? (
+                  <NumberedCreditsList model={documentationNumberedCredits} Markdown={CaseMarkdown} />
                 ) : (
                   <CaseMarkdown>{creditsMarkdown}</CaseMarkdown>
                 )}
