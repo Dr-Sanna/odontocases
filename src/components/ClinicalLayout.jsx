@@ -802,9 +802,198 @@ function LesionComparisonTable({ items, columns, title, groupIndex, panel }) {
   const rows = resolvePanelRows(panel).filter(
     (label) => items.some((item) => Boolean(itemFieldSource(item, label)))
   );
+  const tableRef = useRef(null);
+
+  useEffect(() => {
+    const table = tableRef.current;
+    if (!table) return undefined;
+
+    let frameId = 0;
+
+    const clearImageSizing = (image) => {
+      image.style.removeProperty("width");
+      image.style.removeProperty("height");
+      image.style.removeProperty("max-width");
+      image.style.removeProperty("max-height");
+      image.style.removeProperty("object-fit");
+      image.style.removeProperty("object-position");
+      image.style.removeProperty("justify-self");
+    };
+
+    const updateImageHeight = () => {
+      cancelAnimationFrame(frameId);
+
+      frameId = requestAnimationFrame(() => {
+        if (!table.isConnected) return;
+
+        const imageRow = table.querySelector(".clx-lesion-image-row");
+        if (!imageRow) return;
+
+        const images = Array.from(
+          imageRow.querySelectorAll(".clx-lesion-table-image .clx-image-gallery img")
+        );
+
+        if (!images.length) return;
+
+        /*
+         * Une seule hauteur commune est calculée pour toute la ligne
+         * "Illustration".
+         *
+         * Elle est déterminée à partir de données réelles :
+         * - largeur réellement disponible pour CHAQUE case de galerie ;
+         * - ratio intrinsèque de CHAQUE image ;
+         * - plafond visuel déjà défini par ClinicalLayout.css.
+         *
+         * Il n'y a donc aucun étirement, aucun crop et aucune hauteur
+         * arbitrairement devinée en CSS.
+         */
+        const entries = images
+          .map((image) => {
+            const gallery = image.closest(".clx-image-gallery");
+            if (!gallery) return null;
+
+            const naturalWidth =
+              image.naturalWidth || Number(image.getAttribute("width")) || 0;
+            const naturalHeight =
+              image.naturalHeight || Number(image.getAttribute("height")) || 0;
+
+            if (!(naturalWidth > 0) || !(naturalHeight > 0)) return null;
+
+            const galleryWidth =
+              gallery.getBoundingClientRect?.().width ||
+              gallery.clientWidth ||
+              0;
+
+            if (!(galleryWidth > 0)) return null;
+
+            const galleryColumns = Math.max(
+              1,
+              Number(gallery.dataset.galleryColumns) || 1
+            );
+
+            const galleryStyle = getComputedStyle(gallery);
+            const columnGap =
+              Number.parseFloat(galleryStyle.columnGap || galleryStyle.gap) || 0;
+
+            const slotWidth = Math.max(
+              0,
+              (galleryWidth - columnGap * (galleryColumns - 1)) / galleryColumns
+            );
+
+            if (!(slotWidth > 0)) return null;
+
+            const ratio = naturalWidth / naturalHeight;
+            const fitHeight = slotWidth / ratio;
+
+            /*
+             * Le plafond est mémorisé avant que les styles inline soient
+             * appliqués. Ainsi un recalcul après resize ne dépend jamais
+             * des valeurs injectées par le calcul précédent.
+             */
+            let ceiling = Number(image.dataset.clxLesionImageCeiling || 0);
+
+            if (!(ceiling > 0)) {
+              const computedMaxHeight =
+                Number.parseFloat(getComputedStyle(image).maxHeight) || 0;
+
+              ceiling = computedMaxHeight > 0 ? computedMaxHeight : Infinity;
+
+              if (Number.isFinite(ceiling)) {
+                image.dataset.clxLesionImageCeiling = String(ceiling);
+              }
+            }
+
+            return {
+              image,
+              ratio,
+              slotWidth,
+              fitHeight,
+              ceiling,
+            };
+          })
+          .filter(Boolean);
+
+        if (!entries.length) return;
+
+        const commonHeight = Math.min(
+          ...entries.map((entry) => entry.fitHeight),
+          ...entries.map((entry) => entry.ceiling)
+        );
+
+        if (!(Number.isFinite(commonHeight) && commonHeight > 0)) return;
+
+        const renderedHeight = Math.max(1, Math.floor(commonHeight));
+
+        entries.forEach(({ image, ratio, slotWidth }) => {
+          const renderedWidth = Math.min(slotWidth, renderedHeight * ratio);
+
+          image.style.setProperty(
+            "width",
+            `${Math.max(1, renderedWidth)}px`,
+            "important"
+          );
+          image.style.setProperty(
+            "height",
+            `${renderedHeight}px`,
+            "important"
+          );
+          image.style.setProperty("max-width", "none", "important");
+          image.style.setProperty("max-height", "none", "important");
+          image.style.setProperty("object-fit", "contain", "important");
+          image.style.setProperty(
+            "object-position",
+            "center center",
+            "important"
+          );
+          image.style.setProperty("justify-self", "center", "important");
+        });
+      });
+    };
+
+    const images = Array.from(
+      table.querySelectorAll(
+        ".clx-lesion-image-row .clx-lesion-table-image .clx-image-gallery img"
+      )
+    );
+
+    images.forEach((image) => {
+      if (!image.complete) {
+        image.addEventListener("load", updateImageHeight);
+      }
+    });
+
+    updateImageHeight();
+
+    let observer = null;
+    let onWindowResize = null;
+
+    if (typeof ResizeObserver !== "undefined") {
+      observer = new ResizeObserver(() => updateImageHeight());
+      observer.observe(table);
+    } else {
+      onWindowResize = updateImageHeight;
+      window.addEventListener("resize", onWindowResize);
+    }
+
+    return () => {
+      cancelAnimationFrame(frameId);
+      observer?.disconnect();
+
+      if (onWindowResize) {
+        window.removeEventListener("resize", onWindowResize);
+      }
+
+      images.forEach((image) => {
+        image.removeEventListener("load", updateImageHeight);
+        clearImageSizing(image);
+        delete image.dataset.clxLesionImageCeiling;
+      });
+    };
+  }, [items, columns]);
 
   return (
     <div
+      ref={tableRef}
       className="clx-lesion-table"
       data-columns={String(effectiveColumns)}
       style={tableStyle}
