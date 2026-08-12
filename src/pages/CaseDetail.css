@@ -1697,3 +1697,89 @@
   box-sizing: border-box;
   text-align: center;
 }
+
+
+/* ==========================================================================
+   Documentation V23 — @panel lesions / @gallery : crédit sous CHAQUE image
+   ========================================================================== */
+
+/*
+ * ReactMarkdown génère généralement un <p> autour de chaque image.
+ * ClinicalLayout applique déjà `display: contents` à ces <p>, donc
+ * .cd-doc-lesion-image-unit devient naturellement l'item réel de la CSS Grid.
+ */
+.clinical-layout .clx-image-gallery .cd-doc-lesion-image-unit {
+  display: grid;
+  grid-template-rows: var(--cd-doc-lesion-image-height, 12.5rem) auto auto;
+  align-items: stretch;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Même hauteur d'image pour toutes les illustrations d'une même galerie. */
+.clinical-layout .clx-image-gallery[data-gallery-columns="2"],
+.clinical-layout .clx-image-gallery[data-gallery-columns="3"],
+.clinical-layout .clx-image-gallery[data-gallery-columns="4"] {
+  --cd-doc-lesion-image-height: 11rem;
+}
+
+.clinical-layout
+  .clx-lesion-table[data-columns="2"]
+  .clx-image-gallery[data-gallery-columns="1"] {
+  --cd-doc-lesion-image-height: 13.5rem;
+}
+
+.clinical-layout .clx-image-gallery .cd-doc-lesion-image-unit > img {
+  display: block !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  margin: 0 !important;
+  object-fit: contain !important;
+}
+
+/* La légende éventuelle et l'auteur restent attachés à leur propre image. */
+.clinical-layout
+  .clx-image-gallery
+  .cd-doc-lesion-image-unit
+  > .cd-doc-image-caption-fallback,
+.clinical-layout
+  .clx-image-gallery
+  .cd-doc-lesion-image-unit
+  > .cd-doc-image-credit {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.clinical-layout
+  .clx-image-gallery
+  .cd-doc-lesion-image-unit
+  > .cd-doc-image-caption-fallback {
+  margin-top: 0.34rem;
+}
+
+.clinical-layout
+  .clx-image-gallery
+  .cd-doc-lesion-image-unit
+  > .cd-doc-image-credit {
+  margin-top: 0.28rem;
+  padding: 0 0.18rem 0.08rem;
+}
+
+/* Les anciennes règles V22 qui ciblaient un crédit placé après la galerie
+   ne doivent plus influer sur les unités V23. */
+.clinical-layout
+  .clx-lesion-table-image
+  > .cd-doc-image-caption-fallback,
+.clinical-layout
+  .clx-lesion-table-image
+  > .cd-doc-image-credit {
+  display: none;
+}

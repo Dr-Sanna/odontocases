@@ -661,32 +661,59 @@ function createFallbackCaption(caption) {
 }
 
 function decorateLesionPanelImage(img, registryCaption, credit, referenceNumber) {
-  // @panel lesions rend deux représentations de la même donnée :
-  // tableau desktop + cartes mobile. On décore chacune indépendamment.
+  // @panel lesions peut contenir plusieurs images via @gallery.
+  // V22 ajoutait les crédits après la galerie entière : avec @gallery 3,
+  // les trois auteurs se retrouvaient donc empilés sous la même colonne.
+  //
+  // V23 crée au contraire une unité visuelle PAR image et place son éventuelle
+  // légende + son auteur directement dans cette unité.
   const gallery =
     img.closest(".clx-lesion-table-image .clx-image-gallery") ||
     img.closest(".clx-lesion-image.clx-image-gallery");
 
   if (!gallery) return false;
 
-  const host = gallery.closest(".clx-lesion-table-image") || gallery.parentElement;
-  if (!host) return false;
+  let unit = img.closest(".cd-doc-lesion-image-unit");
 
-  const fallback = createFallbackCaption(registryCaption);
-  const meta = createDocumentImageCredit(credit, referenceNumber);
+  if (!unit || !gallery.contains(unit)) {
+    unit = document.createElement("span");
+    unit.className = "cd-doc-lesion-image-unit";
 
-  // Le bloc auteur/légende est placé APRES la galerie d'image et non à
-  // l'intérieur de sa CSS grid : cela évite qu'il soit traité comme une
-  // deuxième image/colonne dans les tableaux de lésions.
-  let cursor = gallery;
+    const parent = img.parentNode;
+    if (!parent) return false;
 
-  if (fallback) {
-    cursor.insertAdjacentElement("afterend", fallback);
-    cursor = fallback;
+    parent.insertBefore(unit, img);
+    unit.appendChild(img);
   }
 
-  if (meta) {
-    cursor.insertAdjacentElement("afterend", meta);
+  // Les helpers génériques créent des <div>. Dans une galerie Markdown,
+  // l'image est souvent dans un <p>; on utilise ici des <span> blocs afin de
+  // conserver une structure HTML propre à l'intérieur du paragraphe.
+  if (registryCaption) {
+    const fallback = document.createElement("span");
+    fallback.className =
+      "cd-doc-image-caption-fallback cd-doc-image-generated-caption";
+    fallback.textContent = registryCaption;
+    unit.appendChild(fallback);
+  }
+
+  if (credit || referenceNumber) {
+    const meta = document.createElement("span");
+    meta.className = "cd-doc-image-credit cd-doc-image-meta-generated";
+
+    if (credit) {
+      const author = document.createElement("span");
+      author.textContent = credit;
+      meta.appendChild(author);
+    }
+
+    const link = createDocumentImageReferenceLink(referenceNumber);
+    if (link) {
+      if (credit) meta.appendChild(document.createTextNode(" "));
+      meta.appendChild(link);
+    }
+
+    unit.appendChild(meta);
   }
 
   return true;
