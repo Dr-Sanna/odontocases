@@ -777,6 +777,11 @@
   color: inherit;
 }
 
+/* Ligne commune à toutes les lésions : le contenu fusionne toutes les colonnes d’affections. */
+.clinical-layout .clx-lesion-shared-cell {
+  grid-column: 2 / -1;
+}
+
 /* Repli mobile : chaque lésion redevient une carte autonome, car une colonne
    commune de libellés serait trop étroite sur téléphone. */
 .clinical-layout .clx-lesion-mobile {
@@ -857,6 +862,23 @@
   font-size: 0.78rem;
   line-height: 1.3;
   font-weight: 750;
+}
+
+.clinical-layout .clx-lesion-mobile-shared {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--clx-border);
+  border-radius: var(--sbt-radius);
+  background: var(--clx-surface);
+}
+
+.clinical-layout .clx-lesion-mobile-shared-section {
+  min-width: 0;
+  padding: 0.68rem 0.78rem 0.74rem;
+}
+
+.clinical-layout .clx-lesion-mobile-shared-section + .clx-lesion-mobile-shared-section {
+  border-top: 1px solid var(--clx-border-soft);
 }
 
 /* Le tableau comparatif reste actif sur tablette et dans les volets Obsidian.

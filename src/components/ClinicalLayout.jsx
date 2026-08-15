@@ -216,6 +216,7 @@ function createPanel(type, title, lineNumber) {
     joined: false,
     sharedTitle: "Contenu commun",
     sharedBody: createTextBlock(),
+    sharedFields: [],
     items: [],
     lineNumber,
   };
@@ -509,6 +510,22 @@ export function parseClinicalLayoutSource(source) {
         throw new ClinicalLayoutParseError("@orientation doit suivre un @item dans un panneau lesions.", lineNumber);
       }
       currentTarget = currentItem.orientation;
+      return;
+    }
+
+    const sharedFieldMatch = trimmed.match(/^@sharedField\s+(.+)$/i);
+    if (sharedFieldMatch) {
+      if (!currentPanel || currentPanel.type !== "lesions") {
+        throw new ClinicalLayoutParseError("@sharedField doit se trouver dans un panneau lesions.", lineNumber);
+      }
+      const label = cleanTitle(sharedFieldMatch[1]);
+      if (!label) {
+        throw new ClinicalLayoutParseError("@sharedField doit être suivi d’un intitulé.", lineNumber);
+      }
+      const field = { label, body: createTextBlock() };
+      currentPanel.sharedFields.push(field);
+      currentItem = null;
+      currentTarget = field.body;
       return;
     }
 
@@ -1050,6 +1067,21 @@ function LesionComparisonTable({ items, columns, title, groupIndex, panel }) {
           </div>
         );
       })}
+
+      {groupIndex === Math.ceil(panel.items.length / Math.max(1, panel.columns)) - 1
+        ? (panel.sharedFields || []).map((field, fieldIndex) => (
+            <div
+              className="clx-lesion-table-row clx-lesion-data-row clx-lesion-shared-row"
+              role="row"
+              key={`shared-field-${groupIndex}-${field.label}-${fieldIndex}`}
+            >
+              <div className="clx-lesion-row-label" role="rowheader">{field.label}</div>
+              <div className="clx-lesion-table-text clx-lesion-shared-cell" role="cell">
+                <MarkdownBlock source={markdownFromLines(field.body)} />
+              </div>
+            </div>
+          ))
+        : null}
     </div>
   );
 }
@@ -1113,6 +1145,16 @@ function LesionComparison({ panel }) {
             <ItemCard item={item} panelType="lesions" index={index} panel={panel} />
           </div>
         ))}
+        {(panel.sharedFields || []).length ? (
+          <div className="clx-lesion-mobile-shared">
+            {panel.sharedFields.map((field, fieldIndex) => (
+              <section className="clx-lesion-mobile-shared-section" key={`mobile-shared-${field.label}-${fieldIndex}`}>
+                <div className="clx-lesion-label">{field.label}</div>
+                <MarkdownBlock source={markdownFromLines(field.body)} />
+              </section>
+            ))}
+          </div>
+        ) : null}
       </div>
     </div>
   );
@@ -1611,7 +1653,7 @@ const ClinicalLayout = memo(function ClinicalLayout({ source }) {
         <strong>Données cliniques structurées invalides</strong>
         <div>{prefix}{String(parsed.error.message || parsed.error)}</div>
         <div className="clx-error-help">
-          Directives : @label, @intro, @footer, @panel (dont matrix, gallery et shared), @joined, @columns, @matrixDirection, @ratio, @panelIntro, @sharedTitle, @shared, @itemLabel, @rows, @item, @itemH4, @step, @stepH4, @figure, @figureH4, @layout, @connector, @gallery, @image, @caption, @subcaption, @field, @definition et @orientation.
+          Directives : @label, @intro, @footer, @panel (dont matrix, gallery et shared), @joined, @columns, @matrixDirection, @ratio, @panelIntro, @sharedTitle, @shared, @itemLabel, @rows, @item, @itemH4, @step, @stepH4, @figure, @figureH4, @layout, @connector, @gallery, @image, @caption, @subcaption, @field, @sharedField, @definition et @orientation.
         </div>
       </div>
     );
