@@ -20,14 +20,27 @@ const ROOT_DESC =
 
 const MEDICINE_ORAL_DESC = (
   <>
-    Items de médecine orale triés et résumés, issus du Référentiel internat chirurgie orale, en accès libre sur le{' '}
+    Items de médecine orale triés, synthétisés et adaptés à partir du{' '}
+    <em>Référentiel Internat Chirurgie Orale</em>. Certains passages et descriptions sont
+    reproduits ou cités à des fins pédagogiques et constituent la base bibliographique de l'atlas de pathologies orales. Ils restent la propriété de leurs auteurs et ayants
+    droit. Cette synthèse ne se substitue pas au référentiel original. Pour consulter le contenu
+    dans son intégralité, se reporter au{' '}
     <a
       className="doc-description-link"
       href="https://www.cneco.education/referentiel-internat-chirurgie-orale-copy-3/"
       target="_blank"
       rel="noreferrer"
     >
-      site du CNECO
+      référentiel sur le site du CNECO
+    </a>{' '}
+    ou à son{' '}
+    <a
+      className="doc-description-link"
+      href="https://www.information-dentaire.fr/produit/chirurgie-orale-3e-edition-referentiel-internat/"
+      target="_blank"
+      rel="noreferrer"
+    >
+      édition publiée chez Espace ID
     </a>
     .
   </>
