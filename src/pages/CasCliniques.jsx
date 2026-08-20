@@ -27,7 +27,8 @@ const STRAPI_QUIZ_TYPE = 'quiz';
 const STRAPI_PRESENTATION_TYPE = 'presentation';
 const RANDOM_KEY = 'random';
 
-const PAGE_SIZE = 150;
+const PAGE_SIZE = 100;
+const ATLAS_BATCH_SIZE = 100;
 const FALLBACK_PAGE_SIZE = 300;
 
 const CASES_ENDPOINT = import.meta.env.VITE_CASES_ENDPOINT || '/cases';
@@ -581,7 +582,9 @@ export default function CasCliniques() {
       return () => controller.abort();
     }
 
-    const cacheKey = `${isAtlasHub ? 'atlas' : 'cases'}:${tab}:${page}:${q}`;
+    const cacheKey = isAtlasHub
+      ? `atlas:${tab}:all:${q}`
+      : `cases:${tab}:${page}:${q}`;
     const cached = readListCache(cacheKey);
     const isBackgroundRefresh = Boolean(cached);
 
@@ -603,57 +606,81 @@ export default function CasCliniques() {
       setError('');
 
       try {
-        // Atlas => pathologies
+        // Atlas => toutes les pathologies, sans pagination côté interface.
+        // On récupère les pages Strapi par lots puis on les fusionne. Cela reste
+        // fiable même si le backend impose une limite maximale par requête.
         if (isAtlasHub && tab === ATLAS_KEY) {
-          const data = await strapiFetch(PATHO_ENDPOINT, {
-            params: {
-              populate: {
-                cover: { fields: ['url', 'formats'] },
-                badges: { fields: ['label', 'variant'] },
-              },
-              locale: 'all',
-              filters: pathoFilters,
-              // Atlas doit être trié par title alphabétique
-              sort: 'title:asc,slug:asc',
-              pagination: { page, pageSize: PAGE_SIZE },
-              fields: ['title', 'slug', 'excerpt', 'updatedAt'],
-              publicationState: 'live',
-            },
-            options: { signal: controller.signal },
-          });
+          const fetchAllPathologies = async (filters) => {
+            const all = [];
+            let currentPage = 1;
+            let pageCount = 1;
+            let reportedTotal = null;
 
-          if (ignore) return;
-
-          let list = Array.isArray(data?.data) ? data.data : [];
-          let normalized = list.map(normalizeNode).filter((it) => it?.slug);
-
-          if (q && normalized.length === 0) {
-            const fallback = await strapiFetch(PATHO_ENDPOINT, {
-              params: {
-                populate: {
-                  cover: { fields: ['url', 'formats'] },
-                  badges: { fields: ['label', 'variant'] },
+            do {
+              const data = await strapiFetch(PATHO_ENDPOINT, {
+                params: {
+                  populate: {
+                    cover: { fields: ['url', 'formats'] },
+                    badges: { fields: ['label', 'variant'] },
+                  },
+                  locale: 'all',
+                  filters,
+                  // Atlas trié alphabétiquement sur l'ensemble des lots.
+                  sort: 'title:asc,slug:asc',
+                  pagination: { page: currentPage, pageSize: ATLAS_BATCH_SIZE },
+                  fields: ['title', 'slug', 'excerpt', 'updatedAt'],
+                  publicationState: 'live',
                 },
-                locale: 'all',
-                filters: {},
-                sort: 'title:asc,slug:asc',
-                pagination: { page: 1, pageSize: FALLBACK_PAGE_SIZE },
-                fields: ['title', 'slug', 'excerpt', 'updatedAt'],
-                publicationState: 'live',
-              },
-              options: { signal: controller.signal },
-            });
+                options: { signal: controller.signal },
+              });
 
-            if (ignore) return;
-            const all = Array.isArray(fallback?.data) ? fallback.data : [];
-            normalized = all
+              if (ignore) return null;
+
+              const batch = Array.isArray(data?.data) ? data.data : [];
+              all.push(...batch);
+
+              const pagination = data?.meta?.pagination || {};
+              const metaPageCount = Number(pagination.pageCount);
+              const metaTotal = Number(pagination.total);
+
+              if (Number.isFinite(metaTotal)) reportedTotal = metaTotal;
+
+              if (Number.isFinite(metaPageCount) && metaPageCount > 0) {
+                pageCount = metaPageCount;
+              } else {
+                // Sécurité pour un backend qui ne renverrait pas pageCount.
+                pageCount = batch.length < ATLAS_BATCH_SIZE ? currentPage : currentPage + 1;
+              }
+
+              currentPage += 1;
+            } while (currentPage <= pageCount);
+
+            return {
+              data: all,
+              total: reportedTotal ?? all.length,
+            };
+          };
+
+          const result = await fetchAllPathologies(pathoFilters);
+          if (ignore || !result) return;
+
+          let normalized = result.data.map(normalizeNode).filter((it) => it?.slug);
+          let nextTotal = result.total;
+
+          // Recherche permissive historique : si le filtre Strapi ne trouve rien,
+          // on charge l'Atlas complet puis on applique la recherche côté client.
+          if (q && normalized.length === 0) {
+            const fallback = await fetchAllPathologies({});
+            if (ignore || !fallback) return;
+
+            normalized = fallback.data
               .map(normalizeNode)
               .filter((it) => it?.slug)
               .filter((it) => itemMatchesQuery(it, q));
+            nextTotal = normalized.length;
           }
 
           const nextItems = normalized.map((it) => ({ ...it, __entity: 'pathology' }));
-          const nextTotal = data?.meta?.pagination?.total ?? normalized.length ?? 0;
           setItems(nextItems);
           setTotal(nextTotal);
           writeListCache(cacheKey, nextItems, nextTotal);
@@ -1188,7 +1215,7 @@ export default function CasCliniques() {
                   </section>
                 )}
 
-                {pages > 1 && (
+                {!isAtlasHub && pages > 1 && (
                   <nav className="cc-pagination" aria-label="Pagination">
                     <button disabled={page <= 1} onClick={() => goPage(page - 1)} type="button">
                       Précédent
