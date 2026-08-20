@@ -27,7 +27,7 @@ const STRAPI_QUIZ_TYPE = 'quiz';
 const STRAPI_PRESENTATION_TYPE = 'presentation';
 const RANDOM_KEY = 'random';
 
-const PAGE_SIZE = 100;
+const PAGE_SIZE = 150;
 const FALLBACK_PAGE_SIZE = 300;
 
 const CASES_ENDPOINT = import.meta.env.VITE_CASES_ENDPOINT || '/cases';

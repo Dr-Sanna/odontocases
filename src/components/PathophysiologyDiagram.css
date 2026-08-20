@@ -273,3 +273,265 @@
     min-width: 44rem;
   }
 }
+
+/* ========================================================================== 
+   Pathophysiology Diagram — extensions alignées sur Definition Grid v2.8.42
+   - mode flexible (nombre variable de @step / @branch)
+   - groupes parallèles @group
+   - graphe libre @graph / @node / @edge
+   ========================================================================== */
+
+.pathophysiology-diagram.pdg-flexible .pdg-canvas,
+.pathophysiology-diagram.pdg-grouped .pdg-canvas {
+  min-width: var(--pdg-canvas-min-width, 46rem);
+}
+
+.pathophysiology-diagram.pdg-flexible .pdg-sequence {
+  grid-template-columns: repeat(var(--pdg-step-count, 1), minmax(0, 1fr));
+  gap: clamp(2.4rem, 6vw, 5.6rem);
+}
+
+.pathophysiology-diagram.pdg-flexible .pdg-sequence:empty {
+  display: none;
+}
+
+.pathophysiology-diagram.pdg-flexible .pdg-branches {
+  grid-template-columns: repeat(var(--pdg-branch-count, 1), minmax(0, 1fr));
+  gap: 0.72rem;
+  margin-top: 3.15rem;
+  min-height: 0;
+}
+
+.pathophysiology-diagram.pdg-flexible .pdg-branch-card:first-child,
+.pathophysiology-diagram.pdg-flexible .pdg-branch-card:last-child {
+  grid-column: auto;
+}
+
+.pathophysiology-diagram.pdg-flexible .pdg-balance-wrap + .pdg-branches {
+  margin-top: 0.75rem;
+}
+
+.pathophysiology-diagram.pdg-flexible .pdg-outcome-wrap {
+  margin-top: 0.85rem;
+}
+
+.pathophysiology-diagram.pdg-grouped .pdg-grouped-canvas {
+  display: block;
+  padding-top: 0.1rem;
+}
+
+.pathophysiology-diagram .pdg-groups,
+.pathophysiology-diagram .pdg-group,
+.pathophysiology-diagram .pdg-group-parent,
+.pathophysiology-diagram .pdg-group-branches {
+  position: relative;
+  z-index: 1;
+}
+
+.pathophysiology-diagram .pdg-groups {
+  display: grid;
+  grid-template-columns: repeat(var(--pdg-group-count, 1), minmax(0, 1fr));
+  gap: clamp(2.8rem, 5vw, 5rem);
+  align-items: start;
+  width: 100%;
+  min-width: 0;
+}
+
+.pathophysiology-diagram .pdg-group {
+  display: grid;
+  grid-template-rows: auto auto;
+  gap: 3rem;
+  min-width: 0;
+}
+
+.pathophysiology-diagram .pdg-group-parent {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+}
+
+.pathophysiology-diagram .pdg-group-card {
+  width: min(78%, 18rem);
+  border-color: color-mix(in srgb, var(--pdg-accent) 58%, var(--pdg-border));
+}
+
+.pathophysiology-diagram .pdg-group-card .pdg-card-title {
+  background: color-mix(in srgb, var(--pdg-accent) 10%, var(--pdg-surface));
+  color: var(--pdg-text);
+}
+
+.pathophysiology-diagram .pdg-group-branches {
+  display: grid;
+  grid-template-columns: repeat(
+    var(--pdg-group-branch-count, 1),
+    minmax(0, 1fr)
+  );
+  gap: 0.72rem;
+  align-items: stretch;
+  min-width: 0;
+}
+
+.pathophysiology-diagram.pdg-grouped .pdg-branch-card:first-child,
+.pathophysiology-diagram.pdg-grouped .pdg-branch-card:last-child {
+  grid-column: auto;
+}
+
+/* Graphe libre ------------------------------------------------------------ */
+
+.pathophysiology-diagram.pdg-graph.pdg-framed {
+  padding: 0.55rem 0.62rem 0.7rem;
+  border: 1px solid var(--pdg-border);
+  border-radius: 0;
+  background: var(--pdg-surface);
+}
+
+.pathophysiology-diagram.pdg-graph.pdg-title-plain .pdg-title {
+  margin: 0 0 0.72rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--pdg-text);
+  font-size: 0.93rem;
+  line-height: 1.22;
+  text-align: left;
+}
+
+.pathophysiology-diagram.pdg-graph .pdg-graph-canvas {
+  display: block;
+  min-width: var(--pdg-canvas-min-width, 46rem);
+  padding: 0.25rem 0.1rem 0.18rem;
+}
+
+.pathophysiology-diagram.pdg-graph .pdg-graph-grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(
+    var(--pdg-graph-columns, 12),
+    minmax(0, 1fr)
+  );
+  grid-auto-rows: auto;
+  column-gap: 0.78rem;
+  row-gap: var(--pdg-graph-row-gap, 2rem);
+  align-items: start;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0.12rem;
+}
+
+.pathophysiology-diagram.pdg-graph .pdg-graph-node-wrap {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.pathophysiology-diagram.pdg-graph .pdg-graph-card {
+  width: 100%;
+  min-height: 3rem;
+  border-radius: 0;
+}
+
+.pathophysiology-diagram.pdg-graph .pdg-graph-card .pdg-card-title {
+  min-height: 3rem;
+  padding: 0.45rem 0.58rem;
+  white-space: pre-line;
+  font-size: 0.9rem;
+  line-height: 1.16;
+}
+
+.pathophysiology-diagram.pdg-graph .pdg-graph-card .pdg-card-body {
+  padding: 0.18rem 0.62rem 0.5rem;
+  border-top: 0;
+  line-height: 1.22;
+}
+
+.pathophysiology-diagram.pdg-graph .pdg-graph-card .pdg-card-body ul,
+.pathophysiology-diagram.pdg-graph .pdg-graph-card .pdg-card-body ol {
+  margin-top: 0.05rem;
+}
+
+.pathophysiology-diagram.pdg-graph .pdg-graph-card .pdg-card-body ul {
+  padding-left: 1.05rem;
+}
+
+.pathophysiology-diagram.pdg-graph .pdg-graph-card .pdg-card-body li::marker {
+  font-size: 0.78em;
+}
+
+.pathophysiology-diagram.pdg-graph .pdg-tone-blue {
+  border-color: color-mix(in srgb, #159ed0 82%, var(--pdg-border));
+  background: color-mix(in srgb, #159ed0 16%, var(--pdg-surface));
+}
+
+.pathophysiology-diagram.pdg-graph .pdg-tone-blue-solid {
+  border-color: color-mix(in srgb, #159ed0 92%, var(--pdg-border));
+  background: #159ed0;
+}
+
+.pathophysiology-diagram.pdg-graph .pdg-tone-blue-solid .pdg-card-title,
+.pathophysiology-diagram.pdg-graph .pdg-tone-blue-solid .pdg-card-body {
+  color: #fff;
+}
+
+.pathophysiology-diagram.pdg-graph .pdg-tone-orange {
+  border-color: color-mix(in srgb, #e8891b 88%, var(--pdg-border));
+  background: color-mix(in srgb, #e8891b 25%, var(--pdg-surface));
+}
+
+.pathophysiology-diagram.pdg-graph .pdg-tone-yellow {
+  border-color: color-mix(in srgb, #d5b73f 55%, var(--pdg-border));
+  background: color-mix(in srgb, #d5b73f 14%, var(--pdg-surface));
+}
+
+.pathophysiology-diagram.pdg-graph .pdg-edge-blue {
+  stroke: #159ed0;
+}
+
+.pathophysiology-diagram.pdg-graph .pdg-edge-orange {
+  stroke: #e8891b;
+}
+
+.pathophysiology-diagram.pdg-graph .pdg-edge-yellow {
+  stroke: #d5b73f;
+}
+
+.pathophysiology-diagram .pdg-marker-blue {
+  fill: #159ed0;
+}
+
+.pathophysiology-diagram .pdg-marker-orange {
+  fill: #e8891b;
+}
+
+.pathophysiology-diagram .pdg-marker-yellow {
+  fill: #d5b73f;
+}
+
+/* Réserve un peu de place devant les cartes recevant une distribution
+   multiple ; la barre et les hampes verticales restent continues. */
+.pathophysiology-diagram.pdg-graph .pdg-graph-node-wrap.pdg-fanout-target {
+  padding-top: 0.55rem;
+}
+
+@container (max-width: 720px) {
+  .pathophysiology-diagram.pdg-flexible .pdg-canvas,
+  .pathophysiology-diagram.pdg-grouped .pdg-canvas,
+  .pathophysiology-diagram.pdg-graph .pdg-graph-canvas {
+    min-width: var(--pdg-canvas-min-width, 44rem);
+  }
+}
+
+@media (max-width: 720px) {
+  .pathophysiology-diagram.pdg-flexible .pdg-canvas,
+  .pathophysiology-diagram.pdg-grouped .pdg-canvas,
+  .pathophysiology-diagram.pdg-graph .pdg-graph-canvas {
+    min-width: var(--pdg-canvas-min-width, 44rem);
+  }
+}
