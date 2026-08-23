@@ -2752,3 +2752,229 @@ button.cdg-chip {
 .cdg .cdg-node[data-cdg-level="3"] > .cdg-list[data-layout="stack"] {
   gap: 2px !important;
 }
+
+/* =========================
+   Compatibilité Obsidian Classification Diagram Builder 0.12.10
+   ========================= */
+
+/* H3 pleine largeur : option graphique exportée par Obsidian. */
+.cdg.cdg-stretch-h3 .cdg-node[data-cdg-level="3"] {
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+.cdg.cdg-stretch-h3 .cdg-h3 {
+  display: flex !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  justify-content: stretch !important;
+}
+
+.cdg.cdg-stretch-h3 .cdg-chip-h3 {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+.cdg.cdg-stretch-h3 .cdg-chip-h3.cdg-align-left {
+  text-align: left !important;
+  justify-content: flex-start !important;
+}
+
+.cdg.cdg-stretch-h3 .cdg-chip-h3.cdg-align-center {
+  text-align: center !important;
+  justify-content: center !important;
+}
+
+.cdg.cdg-stretch-h3 .cdg-chip-h3.cdg-align-right {
+  text-align: right !important;
+  justify-content: flex-end !important;
+}
+
+/* Les lignes Standard respectent leur nombre propre de colonnes. Cela permet
+   notamment une ligne H3 pleine largeur sous une ligne en deux colonnes. */
+.cdg .cdg-standard-rows {
+  display: grid !important;
+  gap: 8px !important;
+  min-width: 0 !important;
+}
+
+.cdg .cdg-standard-rows > .cdg-standard-row {
+  display: grid !important;
+  grid-template-columns: repeat(var(--cdg-row-cols, 1), minmax(0, 1fr)) !important;
+  gap: var(--cdg-gap-group) !important;
+  min-width: 0 !important;
+}
+
+.cdg .cdg-standard-row-cell {
+  min-width: 0 !important;
+}
+
+.cdg .cdg-standard-row-cell > .cdg-node {
+  min-width: 0 !important;
+  width: 100% !important;
+}
+
+.cdg .cdg-standard-row-cell.is-empty {
+  min-height: 1px !important;
+  pointer-events: none !important;
+}
+
+/* Plusieurs rangées Standard de même largeur deviennent des colonnes
+   verticales indépendantes. La hauteur d'une puce sur deux lignes ne décale
+   donc plus la puce suivante de la colonne voisine. */
+.cdg .cdg-standard-column-group {
+  display: grid !important;
+  grid-template-columns: repeat(var(--cdg-row-cols, 2), minmax(0, 1fr)) !important;
+  gap: var(--cdg-gap-group) !important;
+  min-width: 0 !important;
+  align-items: start !important;
+}
+
+.cdg .cdg-standard-column {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  min-width: 0 !important;
+  align-items: stretch !important;
+}
+
+.cdg .cdg-standard-column-item {
+  min-width: 0 !important;
+  width: 100% !important;
+  margin: 0 !important;
+}
+
+.cdg .cdg-standard-column-item > .cdg-node {
+  min-width: 0 !important;
+  width: 100% !important;
+  margin: 0 !important;
+}
+
+.cdg .cdg-standard-column-item-leaf > .cdg-node > :is(.cdg-h2, .cdg-h3, .cdg-h4, .cdg-h5) {
+  margin-bottom: 0 !important;
+}
+
+/* H2 en grille : même structure que le plugin Obsidian 0.12.10.
+   Les H2 sont répartis par blocs contigus dans des colonnes indépendantes. */
+.cdg > .cdg-root-items[data-layout="grid"] {
+  display: grid !important;
+  grid-template-columns: repeat(var(--cdg-cols, 2), minmax(0, 1fr)) !important;
+  column-count: initial !important;
+  column-gap: 0 !important;
+  gap: 0 !important;
+  align-items: stretch !important;
+  position: relative !important;
+  margin-left: calc(-1 * var(--cdg-outer-pad-x)) !important;
+  margin-right: calc(-1 * var(--cdg-outer-pad-x)) !important;
+  margin-bottom: calc(-1 * var(--cdg-outer-pad-y)) !important;
+  padding: 0 !important;
+}
+
+/* Neutralise les anciens pseudo-séparateurs automatiques : la séparation
+   verticale est désormais commandée uniquement par showCenterDivider. */
+.cdg > .cdg-root-items[data-layout="grid"]::before,
+.cdg > .cdg-root-items[data-layout="grid"]::after {
+  display: none !important;
+  content: none !important;
+}
+
+.cdg > .cdg-root-items[data-layout="grid"] > .cdg-root-column {
+  min-width: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 14px !important;
+  padding: var(--cdg-h2-cell-pad-y) var(--cdg-outer-pad-x) !important;
+  margin: 0 !important;
+  border: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.cdg > .cdg-root-items[data-layout="grid"] > .cdg-root-column > .cdg-node {
+  min-width: 0 !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border-top: 0 !important;
+  border-left: 0 !important;
+}
+
+.cdg > .cdg-root-items[data-layout="grid"] > .cdg-root-column > .cdg-node + .cdg-node,
+.cdg:not(.cdg-no-borders) > .cdg-root-items[data-layout="grid"] > .cdg-root-column > .cdg-node + .cdg-node {
+  border-top: 0 !important;
+  border-left: 0 !important;
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+/* Séparateur central réel, exporté via showCenterDivider. */
+.cdg.cdg-center-divider > .cdg-root-items[data-layout="grid"][data-columns="2"] > .cdg-root-center-divider {
+  display: block !important;
+  position: absolute !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  left: 50% !important;
+  width: var(--cdg-separator-size, 1px) !important;
+  min-width: var(--cdg-separator-size, 1px) !important;
+  transform: translateX(-50%) !important;
+  background: var(--cdg-separator-color, rgba(2, 6, 23, 0.12)) !important;
+  border: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  pointer-events: none !important;
+  z-index: 8 !important;
+}
+
+/* Aucun ancien marqueur de cellule ne doit recréer une bordure. */
+.cdg > .cdg-root-items[data-layout="grid"] .cdg-root-col-separated,
+.cdg > .cdg-root-items[data-layout="grid"] .cdg-root-row-separated {
+  border-top: 0 !important;
+  border-left: 0 !important;
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+@media (max-width: 980px) {
+  .cdg > .cdg-root-items[data-layout="grid"] {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 14px !important;
+    padding: var(--cdg-h2-cell-pad-y) var(--cdg-outer-pad-x) !important;
+  }
+
+  .cdg > .cdg-root-items[data-layout="grid"] > .cdg-root-column {
+    display: contents !important;
+  }
+
+  .cdg.cdg-center-divider > .cdg-root-items[data-layout="grid"][data-columns="2"] > .cdg-root-center-divider {
+    display: none !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .cdg .cdg-standard-rows > .cdg-standard-row {
+    grid-template-columns: 1fr !important;
+  }
+
+  .cdg .cdg-standard-row-cell.is-empty {
+    display: none !important;
+  }
+
+  .cdg .cdg-standard-column-group {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+
+  .cdg .cdg-standard-column {
+    display: contents !important;
+  }
+
+  .cdg .cdg-standard-column-item {
+    order: var(--cdg-standard-order, 0);
+  }
+}
