@@ -6,13 +6,13 @@ const RESOURCES = [
   {
     name: 'CNECO',
     url: 'https://www.cneco.education/',
-    desc: "Plateforme de formation continue : cours, fiches et ressources en odonto-stomatologie.",
+    desc: "Collège National des Enseignants de Chirurgie Orale et Médecine Orale : documents pédagogiques complets.",
     tags: ['Cas cliniques', 'Documentation / fiches'],
   },
   {
     name: 'SFCO',
     url: 'https://societechirorale.com/',
-    desc: 'Société savante en chirurgie orale : ressources professionnelles, fiches et contenus.',
+    desc: 'Société Française de Chirurgie Orale : ressources professionnelles, fiches, recommandations, quiz et cas cliniques.',
     tags: ['Cas cliniques', 'Documentation / fiches', 'Quiz'],
   },
   {
@@ -30,7 +30,7 @@ const RESOURCES = [
   {
     name: 'Dentromatic',
     url: 'https://dentromatic.fr/',
-    desc: 'Aide pratique pour les conduites à tenir (urgences, traumatologie, prescriptions).',
+    desc: 'Aide pratique pour les conduites à tenir en traumatologie dentaire.',
     tags: ['Aide à la prescription', 'Traumatologie'],
   },
   {
@@ -54,11 +54,11 @@ const RESOURCES = [
   {
     name: 'DermNet',
     url: 'https://dermnetnz.org/topics',
-    desc: 'Encyclopédie dermatologique illustrée : fiches sur les dermatoses, maladies bulleuses et manifestations muqueuses.',
+    desc: 'Encyclopédie dermatologique illustrée.',
     tags: ['Dermatologie buccale', 'Pathologies', 'Documentation / fiches'],
   },
   {
-    name: 'Manuels MSD — Questionnaires',
+    name: 'Manuels MSD Questionnaires',
     url: 'https://www.msdmanuals.com/fr/professional/pages-with-widgets/questionnaires?mode=list',
     desc: 'Questionnaires (quiz) généraux en médecine : entraînement et auto-évaluation.',
     tags: ['Quiz', 'Médecine'],
