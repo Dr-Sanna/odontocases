@@ -119,7 +119,20 @@ function JoinedComparisonPanel({ panel }) {
   };
 
   panel.items.forEach((item, colIndex) => {
-    pushCell(<div className="clx-item-title" role="heading" aria-level="4">{item.title}</div>, "title", 0, colIndex);
+    const { level, hasExplicitLevel, props: headingProps } = explicitHeadingMeta(item);
+    pushCell(
+      <div
+        className="clx-item-title"
+        role="heading"
+        aria-level={String(hasExplicitLevel ? level : 4)}
+        {...headingProps}
+      >
+        {item.title}
+      </div>,
+      "title",
+      0,
+      colIndex
+    );
   });
   panel.items.forEach((item, colIndex) => {
     const { lead } = splitJoinedBody(item.body);
@@ -660,9 +673,23 @@ function MarkdownBlock({ source, className = "" }) {
   );
 }
 
+function explicitHeadingMeta(item) {
+  const level = Number(item?.headingLevel);
+  const hasExplicitLevel = level >= 2 && level <= 6;
+  return {
+    level,
+    hasExplicitLevel,
+    props: hasExplicitLevel
+      ? {
+          "data-clx-heading-title": item.title,
+          "data-clx-heading-level": String(level),
+        }
+      : {},
+  };
+}
+
 function ItemHeading({ item, className, defaultLevel = 4 }) {
-  const explicitLevel = Number(item?.headingLevel);
-  const hasExplicitLevel = explicitLevel >= 2 && explicitLevel <= 6;
+  const { level: explicitLevel, hasExplicitLevel, props: headingProps } = explicitHeadingMeta(item);
   const level = hasExplicitLevel ? explicitLevel : defaultLevel;
 
   if (hasExplicitLevel) {
@@ -670,7 +697,7 @@ function ItemHeading({ item, className, defaultLevel = 4 }) {
     return (
       <HeadingTag
         className={className}
-        data-clx-heading-title={item.title}
+        {...headingProps}
       >
         {item.title}
       </HeadingTag>
@@ -678,7 +705,7 @@ function ItemHeading({ item, className, defaultLevel = 4 }) {
   }
 
   return (
-    <div className={className} role="heading" aria-level={String(level)}>
+    <div className={className} role="heading" aria-level={String(level)} {...headingProps}>
       {item.title}
     </div>
   );
@@ -811,6 +838,15 @@ function chunkItems(items, size) {
     chunks.push(items.slice(index, index + safeSize));
   }
   return chunks;
+}
+
+function TableItemTitle({ item, className = "clx-lesion-column-title", role = "columnheader", extraKey = undefined }) {
+  const { props: headingProps } = explicitHeadingMeta(item);
+  return (
+    <div className={className} role={role} {...headingProps} key={extraKey}>
+      {item.title}
+    </div>
+  );
 }
 
 function LesionComparisonTable({ items, columns, title, groupIndex, panel }) {
@@ -1022,13 +1058,10 @@ function LesionComparisonTable({ items, columns, title, groupIndex, panel }) {
           {panel.itemLabel || "Lésion"}
         </div>
         {items.map((item, index) => (
-          <div
-            className="clx-lesion-column-title"
-            role="columnheader"
-            key={`title-${groupIndex}-${item.title}-${index}`}
-          >
-            {item.title}
-          </div>
+          <TableItemTitle
+            item={item}
+            extraKey={`title-${groupIndex}-${item.title}-${index}`}
+          />
         ))}
       </div>
 
@@ -1177,9 +1210,10 @@ function MatrixComparisonTable({ items, columns, title, groupIndex, panel }) {
       <div className="clx-lesion-table-row clx-lesion-title-row" role="row">
         <div className="clx-lesion-corner" role="columnheader">{panel.itemLabel || "Élément"}</div>
         {items.map((item, index) => (
-          <div className="clx-lesion-column-title" role="columnheader" key={`matrix-title-${groupIndex}-${item.title}-${index}`}>
-            {item.title}
-          </div>
+          <TableItemTitle
+            item={item}
+            extraKey={`matrix-title-${groupIndex}-${item.title}-${index}`}
+          />
         ))}
       </div>
 
@@ -1222,7 +1256,13 @@ function MatrixRowsTable({ panel }) {
 
       {panel.items.map((item, itemIndex) => (
         <div className="clx-lesion-table-row clx-lesion-data-row clx-matrix-data-row" role="row" key={`matrix-item-row-${item.title}-${itemIndex}`}>
-          <div className="clx-lesion-row-label clx-matrix-item-title" role="rowheader">{item.title}</div>
+          <div
+            className="clx-lesion-row-label clx-matrix-item-title"
+            role="rowheader"
+            {...explicitHeadingMeta(item).props}
+          >
+            {item.title}
+          </div>
           {rows.map((label, fieldIndex) => (
             <div className="clx-lesion-table-text" role="cell" key={`matrix-item-field-${item.title}-${label}-${fieldIndex}`}>
               <MarkdownBlock source={itemFieldSource(item, label)} />
