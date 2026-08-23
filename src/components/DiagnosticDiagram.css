@@ -226,7 +226,7 @@
 }
 
 .diagnostic-diagram .dd-section-title::after {
-  content: ": ";
+  content: " : ";
   color: var(--dd-muted);
   font-weight: 500;
 }
@@ -399,7 +399,7 @@
 }
 
 .diagnostic-diagram .dd-notes-title::after {
-  content: ":";
+  content: " :";
 }
 
 .diagnostic-diagram .dd-notes-list {
