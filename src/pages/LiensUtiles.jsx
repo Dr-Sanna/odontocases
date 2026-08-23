@@ -52,6 +52,12 @@ const RESOURCES = [
     tags: ['Dermatologie buccale', 'Cas cliniques', 'Documentation / fiches'],
   },
   {
+    name: 'DermNet',
+    url: 'https://dermnetnz.org/topics',
+    desc: 'Encyclopédie dermatologique illustrée : fiches sur les dermatoses, maladies bulleuses et manifestations muqueuses.',
+    tags: ['Dermatologie buccale', 'Pathologies', 'Documentation / fiches'],
+  },
+  {
     name: 'Manuels MSD — Questionnaires',
     url: 'https://www.msdmanuals.com/fr/professional/pages-with-widgets/questionnaires?mode=list',
     desc: 'Questionnaires (quiz) généraux en médecine : entraînement et auto-évaluation.',
