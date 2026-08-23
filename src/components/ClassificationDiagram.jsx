@@ -101,29 +101,62 @@ function scrollToElWithOffset(el) {
   window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
 }
 
+function isVisibleScrollTarget(el) {
+  if (!el || typeof el.getClientRects !== "function") return false;
+  if (el.getClientRects().length === 0) return false;
+
+  const style = window.getComputedStyle?.(el);
+  if (!style) return true;
+
+  return style.display !== "none" && style.visibility !== "hidden" && style.visibility !== "collapse";
+}
+
 function scrollToHeadingText(text) {
   const wanted = norm(text);
-  const headings = document.querySelectorAll(
-    [
-      ".cd-content h1",
-      ".cd-content h2",
-      ".cd-content h3",
-      ".cd-content h4",
-      ".cd-content h5",
-      ".cd-content h6",
-      ".cd-content .etg-entry-title",
-      ".cd-content [data-etiology-title]",
-      ".cd-content [data-clx-heading-title]",
-    ].join(", ")
+  const headings = Array.from(
+    document.querySelectorAll(
+      [
+        ".cd-content h1",
+        ".cd-content h2",
+        ".cd-content h3",
+        ".cd-content h4",
+        ".cd-content h5",
+        ".cd-content h6",
+        ".cd-content .etg-entry-title",
+        ".cd-content [data-etiology-title]",
+        ".cd-content [data-clx-heading-title]",
+        ".cd-content .clx-lesion-column-title",
+      ].join(", ")
+    )
   );
 
-  for (const h of headings) {
-    const candidate = h.getAttribute?.("data-etiology-title") || h.getAttribute?.("data-clx-heading-title") || h.textContent || "";
-    if (norm(candidate) === wanted) {
-      scrollToElWithOffset(h);
-      return true;
-    }
+  const matches = headings.filter((h) => {
+    const candidate =
+      h.getAttribute?.("data-etiology-title") ||
+      h.getAttribute?.("data-clx-heading-title") ||
+      h.textContent ||
+      "";
+    return norm(candidate) === wanted;
+  });
+
+  // Certains clinicalLayout rendent une version desktop et une version mobile.
+  // On privilégie toujours la cible réellement visible afin de ne pas scroller
+  // vers un H3 présent dans une branche masquée par CSS.
+  const visibleTarget = matches.find(isVisibleScrollTarget);
+  if (visibleTarget) {
+    scrollToElWithOffset(visibleTarget);
+    return true;
   }
+
+  // Repli : si aucune représentation du titre n'est visible, on rejoint le
+  // conteneur clinicalLayout correspondant plutôt qu'une cible display:none.
+  const hiddenTarget = matches[0];
+  const layoutFallback = hiddenTarget?.closest?.(".clinical-layout, .clx-panel");
+  if (layoutFallback) {
+    scrollToElWithOffset(layoutFallback);
+    return true;
+  }
+
   return false;
 }
 
