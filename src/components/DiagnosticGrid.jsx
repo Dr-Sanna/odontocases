@@ -78,6 +78,7 @@ export function parseDiagnosticGridSource(source) {
 
   let currentTarget = null;
   let currentMatrix = null;
+  let currentCard = null;
 
   lines.forEach((rawLine, index) => {
     const lineNumber = index + 1;
@@ -96,6 +97,7 @@ export function parseDiagnosticGridSource(source) {
       result.layout = layoutMatch[1].toLowerCase();
       currentTarget = null;
       currentMatrix = null;
+      currentCard = null;
       return;
     }
 
@@ -114,10 +116,29 @@ export function parseDiagnosticGridSource(source) {
           lineNumber
         );
       }
-      const card = { title, body: createTextBlock() };
+      const card = { title, body: createTextBlock(), layout: "compact" };
       result.cards.push(card);
       currentTarget = card.body;
       currentMatrix = null;
+      currentCard = card;
+      return;
+    }
+
+    const cardLayoutMatch = trimmed.match(/^@layout\s+(wide|compact)$/i);
+    if (cardLayoutMatch) {
+      if (!currentCard || currentMatrix || currentTarget !== currentCard.body) {
+        throw new DiagnosticGridParseError(
+          "@layout wide|compact doit être placé après un @card.",
+          lineNumber
+        );
+      }
+      if (markdownFromLines(currentCard.body)) {
+        throw new DiagnosticGridParseError(
+          "@layout wide|compact doit être placé avant le contenu de la carte.",
+          lineNumber
+        );
+      }
+      currentCard.layout = cardLayoutMatch[1].toLowerCase();
       return;
     }
 
@@ -151,6 +172,7 @@ export function parseDiagnosticGridSource(source) {
       };
       currentMatrix = result.matrix;
       currentTarget = null;
+      currentCard = null;
       return;
     }
 
@@ -341,8 +363,10 @@ function MarkdownBlock({ lines, className = "dxg-markdown" }) {
 }
 
 function DiagnosticCard({ card }) {
+  const cardClassName = `dxg-card${card.layout === "wide" ? " dxg-card-wide" : ""}`;
+
   return (
-    <article className="dxg-card" aria-label={card.title}>
+    <article className={cardClassName} aria-label={card.title}>
       <VisualHeading className="dxg-card-title" level={3}>
         {card.title}
       </VisualHeading>
@@ -427,8 +451,8 @@ function DiagnosticGridError({ error }) {
         {error?.message || "Erreur inconnue."}
       </div>
       <div className="dxg-error-help">
-        Directives disponibles : @layout clinical|cards, @card, @matrix,
-        @ratio, @criterion, @media et @caption.
+        Directives disponibles : @layout clinical|cards, @card, @layout wide|compact
+        après une carte, @matrix, @ratio, @criterion, @media et @caption.
       </div>
     </div>
   );
