@@ -1,6 +1,6 @@
 // src/components/ClassificationDiagram.jsx
 import { Link } from "react-router-dom";
-import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState, useCallback } from "react";
 import "./ClassificationDiagram.css";
 
 /* =========================
@@ -297,6 +297,9 @@ function cdgNormalizeHeadingConfig(value = {}) {
     showSkeletonTertiary: value?.showSkeletonTertiary !== false,
     showBorders: value?.showBorders !== false,
     showCenterDivider: value?.showCenterDivider === true,
+    showH2Separators: value?.showH2Separators === true,
+    numberH2: value?.numberH2 === true,
+    h2FullWidth: value?.h2FullWidth === true,
     stretchH3: value?.stretchH3 === true,
     levelStyles: { ...CDG_DEFAULT_LEVEL_STYLES, ...levelStyles },
     levelAlignments: {
@@ -783,6 +786,9 @@ export function resolveHeadingDrivenClassificationDiagramSpec(spec, headingTree)
     showSkeletonTertiary: config.showSkeletonTertiary,
     showBorders: config.showBorders,
     showCenterDivider: config.showCenterDivider,
+    showH2Separators: config.showH2Separators,
+    numberH2: config.numberH2,
+    h2FullWidth: config.h2FullWidth,
     stretchH3: config.stretchH3,
     visibleLevels: config.visibleLevels || undefined,
     layout: h2Style === "featured23" ? "featured23" : h2Style === "grid2" || h2Style === "grid3" || h2Style === "grid4" ? "grid" : "stack",
@@ -1481,6 +1487,7 @@ function NodeBlock({ node, depth = 2, path = "root", trainingOn, hidden, reveal,
   const labelHidden = trainingOn && hidden.has(labelId);
 
   const rootClasses = [`cdg-node`, `cdg-depth-${headingLevel}`];
+  if (!cdgNodeHasBody(node)) rootClasses.push("cdg-node-bodyless");
   if (customRowMode && Number(headingLevel) <= 4) rootClasses.push("cdg-h3-skeleton-node");
 
   return (
@@ -1694,6 +1701,74 @@ function NodeBlock({ node, depth = 2, path = "root", trainingOn, hidden, reveal,
   );
 }
 
+
+function cdgEstimateVisibleDiagramNodeWeight(node) {
+  if (!node) return 0;
+  let weight = node.hideSelf === true ? 0 : 1;
+  const add = (child) => { weight += cdgEstimateVisibleDiagramNodeWeight(child); };
+
+  if (Array.isArray(node.mixedRows) && node.mixedRows.length) {
+    node.mixedRows.forEach((row) => (Array.isArray(row?.nodes) ? row.nodes : []).forEach(add));
+  } else {
+    (Array.isArray(node.groups) ? node.groups : []).forEach(add);
+    (Array.isArray(node.items) ? node.items : []).forEach(add);
+    const childItems = Array.isArray(node?.children?.items) ? node.children.items : [];
+    childItems.forEach(add);
+  }
+
+  return Math.max(0.25, weight);
+}
+
+function cdgPartitionRootItemsByVisibleWeight(items, requestedColumns = 2) {
+  const list = Array.isArray(items) ? items : [];
+  const requested = Math.max(1, Math.floor(Number(requestedColumns) || 1));
+  if (!list.length) return Array.from({ length: requested }, () => []);
+  const columns = Math.min(requested, list.length);
+  if (columns <= 1) {
+    const out = [list.map((node, index) => ({ node, index }))];
+    while (out.length < requested) out.push([]);
+    return out;
+  }
+
+  const weights = list.map((node) => cdgEstimateVisibleDiagramNodeWeight(node));
+  const prefix = [0];
+  weights.forEach((weight) => prefix.push(prefix[prefix.length - 1] + weight));
+  const total = prefix[prefix.length - 1];
+  const dp = Array.from({ length: columns + 1 }, () => Array(list.length + 1).fill(Infinity));
+  const prev = Array.from({ length: columns + 1 }, () => Array(list.length + 1).fill(-1));
+  dp[0][0] = 0;
+
+  for (let c = 1; c <= columns; c += 1) {
+    for (let i = c; i <= list.length; i += 1) {
+      for (let j = c - 1; j < i; j += 1) {
+        if (!Number.isFinite(dp[c - 1][j])) continue;
+        const load = prefix[i] - prefix[j];
+        const worst = Math.max(dp[c - 1][j], load);
+        const currentPrev = prev[c][i];
+        const currentLoad = currentPrev >= 0 ? prefix[i] - prefix[currentPrev] : Infinity;
+        const target = total / columns;
+        const betterTie = Math.abs(load - target) < Math.abs(currentLoad - target) - 1e-9;
+        if (worst < dp[c][i] - 1e-9 || (Math.abs(worst - dp[c][i]) <= 1e-9 && betterTie)) {
+          dp[c][i] = worst;
+          prev[c][i] = j;
+        }
+      }
+    }
+  }
+
+  const cuts = [];
+  let i = list.length;
+  for (let c = columns; c > 0; c -= 1) {
+    const j = prev[c][i];
+    cuts.push([j, i]);
+    i = j;
+  }
+  cuts.reverse();
+  const out = cuts.map(([start, end]) => list.slice(start, end).map((node, index) => ({ node, index: start + index })));
+  while (out.length < requested) out.push([]);
+  return out;
+}
+
 /* =========================
    Root
    ========================= */
@@ -1710,6 +1785,9 @@ export default function ClassificationDiagram({
   showSkeletonTertiary,
   showBorders = true,
   showCenterDivider = false,
+  showH2Separators = false,
+  numberH2 = false,
+  h2FullWidth = false,
   stretchH3 = false,
 
   // ✅ ajouté : change quand tu changes d’item via la liste
@@ -1796,7 +1874,7 @@ export default function ClassificationDiagram({
       window.removeEventListener("resize", onResize);
       cleanupGeometry?.();
     };
-  }, [title, layout, left, right, items, rootColumns, trainingOn, maskLevel, revealed, skeletonPrimary, skeletonSecondary, skeletonTertiary, showCenterDivider, stretchH3]);
+  }, [title, layout, left, right, items, rootColumns, trainingOn, maskLevel, revealed, skeletonPrimary, skeletonSecondary, skeletonTertiary, showCenterDivider, showH2Separators, numberH2, h2FullWidth, stretchH3]);
 
   const canMinus = maskLevel < MAX_LEVEL || revealed.size > 0;
   const canPlus = maskLevel > MIN_LEVEL;
@@ -1808,6 +1886,9 @@ export default function ClassificationDiagram({
   if (!skeletonPrimary && !skeletonSecondary && !skeletonTertiary) rootClasses.push("cdg-no-skeleton");
   if (showBorders === false) rootClasses.push("cdg-no-borders");
   if (showCenterDivider === true) rootClasses.push("cdg-center-divider");
+  if (showH2Separators === true) rootClasses.push("cdg-h2-separators");
+  if (numberH2 === true) rootClasses.push("cdg-number-h2");
+  if (h2FullWidth === true) rootClasses.push("cdg-h2-full-width");
   if (stretchH3 === true) rootClasses.push("cdg-stretch-h3");
 
   return (
@@ -1893,18 +1974,25 @@ export default function ClassificationDiagram({
               </div>
 
               <div className="cdg-root-column cdg-root-feature-side" data-root-column="side">
+                {showH2Separators === true ? (
+                  <div className="cdg-root-h2-divider cdg-root-h2-divider-mobile-only" aria-hidden="true" />
+                ) : null}
                 {items.slice(1).map((n, offset) => {
                   const index = offset + 1;
                   return (
-                    <NodeBlock
-                      key={`root/node/${index}`}
-                      node={n}
-                      depth={2}
-                      path={`root/node/${index}`}
-                      trainingOn={trainingOn}
-                      hidden={hidden}
-                      reveal={reveal}
-                    />
+                    <Fragment key={`root/node/${index}`}>
+                      {showH2Separators === true && offset > 0 ? (
+                        <div className="cdg-root-h2-divider" aria-hidden="true" />
+                      ) : null}
+                      <NodeBlock
+                        node={n}
+                        depth={2}
+                        path={`root/node/${index}`}
+                        trainingOn={trainingOn}
+                        hidden={hidden}
+                        reveal={reveal}
+                      />
+                    </Fragment>
                   );
                 })}
               </div>
@@ -1916,39 +2004,29 @@ export default function ClassificationDiagram({
           ) : layout === "grid" ? (
             <>
               {(() => {
-                const itemCount = items.length;
-                const basePerColumn = Math.floor(itemCount / safeRootCols);
-                const remainder = itemCount % safeRootCols;
-                let sourceIndex = 0;
-                const columns = [];
-
-                for (let colIndex = 0; colIndex < safeRootCols; colIndex += 1) {
-                  const columnSize = basePerColumn + (colIndex < remainder ? 1 : 0);
-                  const columnItems = [];
-                  for (let localIndex = 0; localIndex < columnSize && sourceIndex < itemCount; localIndex += 1) {
-                    const currentIndex = sourceIndex;
-                    columnItems.push(
-                      <NodeBlock
-                        key={`root/node/${currentIndex}`}
-                        node={items[currentIndex]}
-                        depth={2}
-                        path={`root/node/${currentIndex}`}
-                        trainingOn={trainingOn}
-                        hidden={hidden}
-                        reveal={reveal}
-                      />
-                    );
-                    sourceIndex += 1;
-                  }
-
-                  columns.push(
-                    <div key={`root/column/${colIndex}`} className="cdg-root-column" data-root-column={String(colIndex + 1)}>
-                      {columnItems}
-                    </div>
-                  );
-                }
-
-                return columns;
+                const partitions = cdgPartitionRootItemsByVisibleWeight(items, safeRootCols);
+                return partitions.map((entries, colIndex) => (
+                  <div key={`root/column/${colIndex}`} className="cdg-root-column" data-root-column={String(colIndex + 1)}>
+                    {showH2Separators === true && colIndex > 0 && entries.length ? (
+                      <div className="cdg-root-h2-divider cdg-root-h2-divider-mobile-only" aria-hidden="true" />
+                    ) : null}
+                    {entries.map((entry, localIndex) => (
+                      <Fragment key={`root/node/${entry.index}`}>
+                        {showH2Separators === true && localIndex > 0 ? (
+                          <div className="cdg-root-h2-divider" aria-hidden="true" />
+                        ) : null}
+                        <NodeBlock
+                          node={entry.node}
+                          depth={2}
+                          path={`root/node/${entry.index}`}
+                          trainingOn={trainingOn}
+                          hidden={hidden}
+                          reveal={reveal}
+                        />
+                      </Fragment>
+                    ))}
+                  </div>
+                ));
               })()}
               {showCenterDivider === true && safeRootCols === 2 ? (
                 <div className="cdg-root-center-divider" aria-hidden="true" />

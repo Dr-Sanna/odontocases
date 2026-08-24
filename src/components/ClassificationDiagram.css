@@ -3071,3 +3071,125 @@ button.cdg-chip {
     display: none !important;
   }
 }
+
+/* =========================
+   v0.12.12 — équilibrage visible + séparateurs horizontaux H2
+   ========================= */
+.cdg.cdg-h2-separators > .cdg-root-items:is([data-layout="grid"], [data-layout="featured23"]) > .cdg-root-column {
+  gap: 0 !important;
+}
+
+.cdg.cdg-h2-separators .cdg-root-h2-divider {
+  display: block !important;
+  flex: 0 0 var(--cdg-separator-size, 1px) !important;
+  width: 100% !important;
+  height: var(--cdg-separator-size, 1px) !important;
+  min-height: var(--cdg-separator-size, 1px) !important;
+  margin: 7px 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: var(--cdg-separator-color, rgba(2, 6, 23, 0.12)) !important;
+  pointer-events: none !important;
+  box-sizing: border-box !important;
+}
+
+.cdg.cdg-h2-separators .cdg-root-h2-divider-mobile-only {
+  display: none !important;
+}
+
+@media (max-width: 980px) {
+  .cdg.cdg-h2-separators > .cdg-root-items:is([data-layout="grid"], [data-layout="featured23"]) {
+    gap: 0 !important;
+  }
+
+  .cdg.cdg-h2-separators .cdg-root-h2-divider-mobile-only {
+    display: block !important;
+  }
+}
+
+/* =========================
+   v0.12.13 — H2 numérotés / pleine largeur + séparateurs continus
+   ========================= */
+
+.cdg.cdg-h2-separators .cdg-root-h2-divider {
+  width: calc(100% + var(--cdg-outer-pad-x) + var(--cdg-outer-pad-x)) !important;
+  max-width: none !important;
+  margin: 7px calc(-1 * var(--cdg-outer-pad-x)) !important;
+}
+
+.cdg.cdg-h2-separators
+  > .cdg-root-items:is([data-layout="grid"], [data-layout="featured23"])
+  > .cdg-root-column
+  > .cdg-node.cdg-node-bodyless
+  > .cdg-h2 {
+  margin-bottom: 0 !important;
+}
+
+.cdg.cdg-number-h2 > .cdg-root-items,
+.cdg.cdg-number-h2 > .cdg-cols {
+  counter-reset: cdg-visible-h2;
+}
+
+.cdg.cdg-number-h2
+  > .cdg-root-items
+  .cdg-node[data-cdg-level="2"]
+  > .cdg-h2,
+.cdg.cdg-number-h2
+  > .cdg-cols
+  .cdg-node[data-cdg-level="2"]
+  > .cdg-h2 {
+  counter-increment: cdg-visible-h2;
+}
+
+.cdg.cdg-number-h2
+  > .cdg-root-items
+  .cdg-node[data-cdg-level="2"]
+  > .cdg-h2
+  > .cdg-chip-h2::before,
+.cdg.cdg-number-h2
+  > .cdg-cols
+  .cdg-node[data-cdg-level="2"]
+  > .cdg-h2
+  > .cdg-chip-h2::before {
+  content: counter(cdg-visible-h2) ".\00a0";
+  white-space: pre;
+}
+
+.cdg.cdg-h2-full-width .cdg-node[data-cdg-level="2"] > .cdg-h2 {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.cdg.cdg-h2-full-width
+  .cdg-node[data-cdg-level="2"]
+  > .cdg-h2
+  > .cdg-chip-h2 {
+  display: flex !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.cdg.cdg-h2-separators {
+  --cdg-h2-separator-gap: 10px;
+}
+
+.cdg.cdg-h2-separators
+  > .cdg-root-items:is([data-layout="grid"], [data-layout="featured23"])
+  > .cdg-root-column {
+  padding-top: var(--cdg-h2-separator-gap) !important;
+  padding-bottom: var(--cdg-h2-separator-gap) !important;
+}
+
+.cdg.cdg-h2-separators .cdg-root-h2-divider {
+  margin-top: var(--cdg-h2-separator-gap) !important;
+  margin-bottom: var(--cdg-h2-separator-gap) !important;
+}
+
+@media (max-width: 980px) {
+  .cdg.cdg-h2-separators
+    > .cdg-root-items:is([data-layout="grid"], [data-layout="featured23"]) {
+    padding-top: var(--cdg-h2-separator-gap) !important;
+    padding-bottom: var(--cdg-h2-separator-gap) !important;
+  }
+}
