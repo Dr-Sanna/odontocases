@@ -785,8 +785,8 @@ export function resolveHeadingDrivenClassificationDiagramSpec(spec, headingTree)
     showCenterDivider: config.showCenterDivider,
     stretchH3: config.stretchH3,
     visibleLevels: config.visibleLevels || undefined,
-    layout: h2Style === "grid2" || h2Style === "grid3" || h2Style === "grid4" ? "grid" : "stack",
-    rootColumns: cdgColumnsForStyle(h2Style, 2),
+    layout: h2Style === "featured23" ? "featured23" : h2Style === "grid2" || h2Style === "grid3" || h2Style === "grid4" ? "grid" : "stack",
+    rootColumns: h2Style === "featured23" ? 3 : cdgColumnsForStyle(h2Style, 2),
     items: roots.map((root, rootIndex) => cdgToNode(root, config, { roots, rootIndex })),
   };
   return diagram;
@@ -1875,11 +1875,45 @@ export default function ClassificationDiagram({
       {hasRootItems ? (
         <div
           className="cdg-root-items"
-          data-layout={layout === "grid" ? "grid" : "stack"}
-          data-columns={layout === "grid" ? String(safeRootCols) : undefined}
+          data-layout={layout === "grid" ? "grid" : layout === "featured23" ? "featured23" : "stack"}
+          data-columns={layout === "grid" ? String(safeRootCols) : layout === "featured23" ? "3" : undefined}
           style={layout === "grid" ? { "--cdg-cols": String(safeRootCols) } : undefined}
         >
-          {layout === "grid" ? (
+          {layout === "featured23" && items.length >= 2 ? (
+            <>
+              <div className="cdg-root-column cdg-root-feature-main" data-root-column="main">
+                <NodeBlock
+                  node={items[0]}
+                  depth={2}
+                  path="root/node/0"
+                  trainingOn={trainingOn}
+                  hidden={hidden}
+                  reveal={reveal}
+                />
+              </div>
+
+              <div className="cdg-root-column cdg-root-feature-side" data-root-column="side">
+                {items.slice(1).map((n, offset) => {
+                  const index = offset + 1;
+                  return (
+                    <NodeBlock
+                      key={`root/node/${index}`}
+                      node={n}
+                      depth={2}
+                      path={`root/node/${index}`}
+                      trainingOn={trainingOn}
+                      hidden={hidden}
+                      reveal={reveal}
+                    />
+                  );
+                })}
+              </div>
+
+              {showCenterDivider === true ? (
+                <div className="cdg-root-center-divider cdg-root-feature-divider" aria-hidden="true" />
+              ) : null}
+            </>
+          ) : layout === "grid" ? (
             <>
               {(() => {
                 const itemCount = items.length;
