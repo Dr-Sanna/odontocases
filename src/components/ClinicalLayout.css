@@ -1686,3 +1686,9 @@
   line-height: inherit !important;
   text-align: inherit !important;
 }
+
+
+/* clinicalLayout — item de grille composé uniquement d'un @itemH2-H6 */
+.clinical-layout .clx-panel-grid .clx-item-title:only-child {
+  margin-bottom: 0;
+}

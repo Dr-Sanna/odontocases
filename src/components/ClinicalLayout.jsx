@@ -623,7 +623,14 @@ export function parseClinicalLayoutSource(source) {
     panel.items.forEach((item) => {
       if (panel.type === "lesions") {
         const rows = resolvePanelRows(panel);
+        const hasIndividualRows = rows.length > 0;
+        const hasSharedFieldContent = (panel.sharedFields || []).some(
+          (field) => Boolean(markdownFromLines(field.body))
+        );
         const hasFieldContent = rows.some((row) => Boolean(itemFieldSource(item, row)));
+        // Autorise un tableau lesions « shared-only » : titres de pathologies
+        // sans @field individuel, suivis d’un ou plusieurs @sharedField.
+        if (!hasIndividualRows && hasSharedFieldContent) return;
         if (!hasFieldContent) {
           throw new ClinicalLayoutParseError(`Ajoute au moins un @field à l’élément « ${item.title} ».`, item.lineNumber);
         }
@@ -656,6 +663,9 @@ export function parseClinicalLayoutSource(source) {
         return;
       }
       if (!markdownFromLines(item.body)) {
+        const isExplicitHeadingOnlyGridItem =
+          panel.type === "grid" && Number(item.headingLevel) >= 2 && Number(item.headingLevel) <= 6;
+        if (isExplicitHeadingOnlyGridItem) return;
         throw new ClinicalLayoutParseError(`L’élément « ${item.title} » est vide.`, item.lineNumber);
       }
     });
