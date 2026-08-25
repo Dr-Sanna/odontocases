@@ -421,6 +421,8 @@ export function parseClinicalLayoutSource(source) {
         fieldLabels: {},
         fieldOrder: [],
         galleryColumns: 1,
+        subcolumnCount: 0,
+        subcolumns: [],
         connector: "",
         lineNumber,
       };
@@ -461,6 +463,8 @@ export function parseClinicalLayoutSource(source) {
         fieldLabels: {},
         fieldOrder: [],
         galleryColumns: 1,
+        subcolumnCount: 0,
+        subcolumns: [],
         connector: "",
         lineNumber,
       };
@@ -555,6 +559,30 @@ export function parseClinicalLayoutSource(source) {
       return;
     }
 
+    const subcolumnsMatch = trimmed.match(/^@subcolumns\s+([1-4])$/i);
+    if (subcolumnsMatch) {
+      if (!currentPanel || currentPanel.type !== "grid" || !currentItem) {
+        throw new ClinicalLayoutParseError("@subcolumns doit suivre un @item dans un panneau grid.", lineNumber);
+      }
+      currentItem.subcolumnCount = Number(subcolumnsMatch[1]);
+      currentItem.subcolumns = [];
+      currentTarget = null;
+      return;
+    }
+
+    if (/^@subcolumn\s*$/i.test(trimmed)) {
+      if (!currentPanel || currentPanel.type !== "grid" || !currentItem || !currentItem.subcolumnCount) {
+        throw new ClinicalLayoutParseError("@subcolumn doit suivre @subcolumns dans un @item d’un panneau grid.", lineNumber);
+      }
+      if (currentItem.subcolumns.length >= currentItem.subcolumnCount) {
+        throw new ClinicalLayoutParseError(`@subcolumns ${currentItem.subcolumnCount} n’autorise que ${currentItem.subcolumnCount} @subcolumn.`, lineNumber);
+      }
+      const subcolumn = createTextBlock();
+      currentItem.subcolumns.push(subcolumn);
+      currentTarget = subcolumn;
+      return;
+    }
+
     const connectorMatch = trimmed.match(/^@connector\s+(.+)$/i);
     if (connectorMatch) {
       if (!currentPanel || currentPanel.type !== "steps" || !currentItem) {
@@ -568,12 +596,16 @@ export function parseClinicalLayoutSource(source) {
       return;
     }
 
-    const layoutMatch = trimmed.match(/^@layout\s+(wide|compact)$/i);
+    const layoutMatch = trimmed.match(/^@layout\s+(wide|compact|span2|span3)$/i);
     if (layoutMatch) {
       if (!currentItem) {
         throw new ClinicalLayoutParseError("@layout doit suivre un @item ou un @step.", lineNumber);
       }
-      currentItem.layout = layoutMatch[1].toLowerCase();
+      const layout = layoutMatch[1].toLowerCase();
+      if ((layout === "span2" || layout === "span3") && currentPanel?.type !== "grid") {
+        throw new ClinicalLayoutParseError("@layout span2|span3 est réservé aux @panel grid.", lineNumber);
+      }
+      currentItem.layout = layout;
       currentTarget = currentItem.body;
       return;
     }
@@ -621,6 +653,28 @@ export function parseClinicalLayoutSource(source) {
       );
     }
     panel.items.forEach((item) => {
+      const subcolumns = Array.isArray(item.subcolumns) ? item.subcolumns : [];
+      const hasSubcolumns = subcolumns.length > 0;
+      if (item.subcolumnCount) {
+        if (panel.type !== "grid") {
+          throw new ClinicalLayoutParseError("@subcolumns est réservé aux @panel grid.", item.lineNumber);
+        }
+        if (subcolumns.length !== item.subcolumnCount) {
+          throw new ClinicalLayoutParseError(
+            `L’élément « ${item.title} » attend ${item.subcolumnCount} @subcolumn, mais en contient ${subcolumns.length}.`,
+            item.lineNumber
+          );
+        }
+        if (subcolumns.some((column) => !markdownFromLines(column))) {
+          throw new ClinicalLayoutParseError(`Chaque @subcolumn de « ${item.title} » doit contenir du texte.`, item.lineNumber);
+        }
+      }
+      if (item.layout === "span2" && Number(panel.columns) < 2) {
+        throw new ClinicalLayoutParseError(`@layout span2 nécessite au moins 2 colonnes pour « ${item.title} ».`, item.lineNumber);
+      }
+      if (item.layout === "span3" && Number(panel.columns) < 3) {
+        throw new ClinicalLayoutParseError(`@layout span3 nécessite au moins 3 colonnes pour « ${item.title} ».`, item.lineNumber);
+      }
       if (panel.type === "lesions") {
         const rows = resolvePanelRows(panel);
         const hasIndividualRows = rows.length > 0;
@@ -662,7 +716,7 @@ export function parseClinicalLayoutSource(source) {
         }
         return;
       }
-      if (!markdownFromLines(item.body)) {
+      if (!markdownFromLines(item.body) && !hasSubcolumns) {
         const isExplicitHeadingOnlyGridItem =
           panel.type === "grid" && Number(item.headingLevel) >= 2 && Number(item.headingLevel) <= 6;
         if (isExplicitHeadingOnlyGridItem) return;
@@ -777,7 +831,7 @@ function ItemCard({ item, panelType, index, panel = null }) {
   const classes = [
     "clx-item",
     `clx-item-${panelType}`,
-    item.layout === "wide" ? "clx-item-wide" : "clx-item-compact",
+    item.layout === "wide" ? "clx-item-wide" : item.layout === "span2" ? "clx-item-span2" : item.layout === "span3" ? "clx-item-span3" : "clx-item-compact",
     hasStepImage ? "clx-item-has-media" : "",
   ].filter(Boolean).join(" ");
 
@@ -832,10 +886,29 @@ function ItemCard({ item, panelType, index, panel = null }) {
     );
   }
 
+  const subcolumns = Array.isArray(item.subcolumns) ? item.subcolumns : [];
+  const hasSubcolumns = subcolumns.length > 0;
+
   return (
     <article className={classes}>
       <ItemHeading item={item} className="clx-item-title" />
-      <MarkdownBlock source={markdownFromLines(item.body)} className="clx-item-body" />
+      {markdownFromLines(item.body) ? (
+        <MarkdownBlock source={markdownFromLines(item.body)} className="clx-item-body" />
+      ) : null}
+      {hasSubcolumns ? (
+        <div
+          className="clx-item-subcolumns"
+          style={{ "--clx-subcolumns": String(item.subcolumnCount || subcolumns.length || 1) }}
+        >
+          {subcolumns.map((column, columnIndex) => (
+            <MarkdownBlock
+              source={markdownFromLines(column)}
+              className="clx-item-subcolumn"
+              key={`${item.title}:subcolumn:${columnIndex}`}
+            />
+          ))}
+        </div>
+      ) : null}
     </article>
   );
 }
@@ -1670,6 +1743,8 @@ function Panel({ panel }) {
             const slotClass = [
               "clx-item-slot",
               item.layout === "wide" ? "clx-item-slot-wide" : "",
+              item.layout === "span2" ? "clx-item-slot-span2" : "",
+              item.layout === "span3" ? "clx-item-slot-span3" : "",
               isMedia ? "clx-media-slot" : "",
               isMedia && index === 0 ? "clx-media-slot-content" : "",
               isMedia && index === 1 ? "clx-media-slot-visual" : "",
@@ -1703,7 +1778,7 @@ const ClinicalLayout = memo(function ClinicalLayout({ source }) {
         <strong>Données cliniques structurées invalides</strong>
         <div>{prefix}{String(parsed.error.message || parsed.error)}</div>
         <div className="clx-error-help">
-          Directives : @label, @intro, @footer, @panel (dont matrix, gallery et shared), @joined, @columns, @matrixDirection, @ratio, @panelIntro, @sharedTitle, @shared, @itemLabel, @rows, @item, @itemH4, @step, @stepH4, @figure, @figureH4, @layout, @connector, @gallery, @image, @caption, @subcaption, @field, @sharedField, @definition et @orientation.
+          Directives : @label, @intro, @footer, @panel (dont matrix, gallery et shared), @joined, @columns, @matrixDirection, @ratio, @panelIntro, @sharedTitle, @shared, @itemLabel, @rows, @item, @itemH4, @step, @stepH4, @figure, @figureH4, @layout, @subcolumns, @subcolumn, @connector, @gallery, @image, @caption, @subcaption, @field, @sharedField, @definition et @orientation.
         </div>
       </div>
     );
