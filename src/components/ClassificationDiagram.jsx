@@ -2028,9 +2028,19 @@ export default function ClassificationDiagram({
                   </div>
                 ));
               })()}
-              {showCenterDivider === true && safeRootCols === 2 ? (
-                <div className="cdg-root-center-divider" aria-hidden="true" />
-              ) : null}
+              {showCenterDivider === true && safeRootCols >= 2
+                ? Array.from({ length: safeRootCols - 1 }, (_, dividerOffset) => {
+                    const dividerIndex = dividerOffset + 1;
+                    return (
+                      <div
+                        className="cdg-root-center-divider"
+                        aria-hidden="true"
+                        key={`root/divider/${dividerIndex}`}
+                        style={{ "--cdg-divider-index": String(dividerIndex) }}
+                      />
+                    );
+                  })
+                : null}
             </>
           ) : (
             items.map((n, i) => (
