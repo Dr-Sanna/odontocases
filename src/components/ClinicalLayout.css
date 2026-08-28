@@ -331,8 +331,9 @@
 .clinical-layout .clx-steps {
   --clx-step-image-max-height: clamp(17rem, 26vw, 21rem);
   --clx-step-image-height: var(--clx-step-image-max-height);
+  --clx-step-header-min-height: 3.55rem;
   display: flex;
-  align-items: stretch;
+  align-items: flex-start;
   gap: 0.65rem;
   min-width: 0;
 }
@@ -346,12 +347,13 @@
   display: flex;
   flex: 1 1 0;
   flex-direction: column;
+  align-self: flex-start;
   min-width: 0;
   padding: 0;
-  overflow: visible;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
+  overflow: hidden;
+  border: 1px solid var(--clx-border);
+  border-radius: var(--sbt-radius);
+  background: var(--clx-surface);
 }
 
 .clinical-layout .clx-item-steps.clx-item-wide {
@@ -362,13 +364,24 @@
   flex-grow: 1;
 }
 
+.clinical-layout .clx-item-steps.clx-step-title-only .clx-step-header {
+  border-bottom: 0;
+}
+
 .clinical-layout .clx-step-header {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: 0.65rem;
   min-width: 0;
-  padding: 0 0.12rem;
+  min-height: var(--clx-step-header-min-height);
+  padding: 0.56rem 0.68rem;
+  border: 0;
+  background: var(--clx-surface-soft);
+}
+
+.clinical-layout .clx-item-steps.clx-step-has-content .clx-step-header {
+  border-bottom: 1px solid var(--clx-border-soft);
 }
 
 .clinical-layout .clx-step-number {
@@ -379,7 +392,7 @@
   height: 1.75rem;
   border: 1px solid var(--clx-accent);
   border-radius: 999px;
-  background: var(--clx-surface);
+  background: var(--clx-surface-soft);
   color: var(--clx-accent-strong);
   font-size: 0.78rem;
   line-height: 1;
@@ -400,7 +413,8 @@
 }
 
 .clinical-layout .clx-step-body {
-  margin-top: 0.62rem;
+  margin: 0;
+  padding: 0.62rem 0.72rem 0.68rem;
   color: var(--clx-text);
 }
 
@@ -411,11 +425,21 @@
   grid-template-rows: var(--clx-step-image-height) auto;
   width: 100%;
   min-width: 0;
-  margin: 0.72rem 0 0;
+  margin: 0;
   overflow: hidden;
-  border: 1px solid var(--clx-border-soft);
+  border: 0;
   border-radius: 0;
   background: var(--clx-surface);
+}
+
+.clinical-layout .clx-item-steps.clx-step-has-body .clx-step-figure {
+  border-top: 1px solid var(--clx-border-soft);
+}
+
+.clinical-layout .clx-step-body figure,
+.clinical-layout .clx-step-body figure.image {
+  margin-top: 0.62rem;
+  border: 1px solid var(--clx-border-soft);
 }
 
 .clinical-layout .clx-step-image {
@@ -503,9 +527,12 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  align-self: flex-start;
   gap: 0.32rem;
   flex: 0 0 auto;
   min-width: 0.8rem;
+  min-height: var(--clx-step-header-min-height);
+  padding: 0;
   color: var(--clx-accent-strong);
   font-size: 1rem;
   font-weight: 700;
@@ -577,10 +604,19 @@
   .clinical-layout .clx-steps {
     --clx-step-image-max-height: clamp(14rem, 62vw, 19rem);
     --clx-step-image-height: var(--clx-step-image-max-height);
+    --clx-step-header-min-height: 0rem;
     flex-direction: column;
+    align-items: stretch;
+  }
+
+  .clinical-layout .clx-item-steps {
+    width: 100%;
+    flex: 0 0 auto;
   }
 
   .clinical-layout .clx-step-arrow {
+    align-self: stretch;
+    width: 100%;
     min-height: 2.3rem;
     transform: none;
   }
@@ -623,10 +659,19 @@
   .clinical-layout .clx-steps {
     --clx-step-image-max-height: clamp(14rem, 62vw, 19rem);
     --clx-step-image-height: var(--clx-step-image-max-height);
+    --clx-step-header-min-height: 0rem;
     flex-direction: column;
+    align-items: stretch;
+  }
+
+  .clinical-layout .clx-item-steps {
+    width: 100%;
+    flex: 0 0 auto;
   }
 
   .clinical-layout .clx-step-arrow {
+    align-self: stretch;
+    width: 100%;
     min-height: 2.3rem;
     transform: none;
   }

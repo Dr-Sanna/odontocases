@@ -599,9 +599,9 @@ function cdgFilterLocalRules(nodes, localRules) {
     const hideSelf = Boolean(key && rule?.hideSelf === true);
 
     if (hideChildren) {
-      const promoted = [];
-      children.forEach((child) => promoted.push(...(Array.isArray(child?.children) ? child.children : [])));
-      children = promoted;
+      // hideChildren masque toute la descendance du titre ciblé : les enfants
+      // directs et leurs propres descendants ne sont jamais promus.
+      children = [];
     }
 
     // Les feuilles masquées sont retirées avant le calcul des grilles afin

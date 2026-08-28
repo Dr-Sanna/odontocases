@@ -699,9 +699,8 @@ export function parseClinicalLayoutSource(source) {
         return;
       }
       if (panel.type === "steps") {
-        if (!markdownFromLines(item.body) && !markdownFromLines(item.image)) {
-          throw new ClinicalLayoutParseError(`L’étape « ${item.title} » doit contenir du texte ou une @image.`, item.lineNumber);
-        }
+        // Un step peut être un simple jalon : son titre suffit.
+        // Le texte descriptif et l’image sont tous deux facultatifs.
         return;
       }
       if (panel.type === "gallery") {
@@ -827,12 +826,18 @@ function LesionImageBlock({ item, className = "" }) {
 }
 
 function ItemCard({ item, panelType, index, panel = null }) {
+  const hasStepBody = panelType === "steps" && Boolean(markdownFromLines(item.body));
   const hasStepImage = panelType === "steps" && Boolean(markdownFromLines(item.image));
+  const hasStepContent = panelType === "steps" && (hasStepBody || hasStepImage);
   const classes = [
     "clx-item",
     `clx-item-${panelType}`,
     item.layout === "wide" ? "clx-item-wide" : item.layout === "span2" ? "clx-item-span2" : item.layout === "span3" ? "clx-item-span3" : "clx-item-compact",
     hasStepImage ? "clx-item-has-media" : "",
+    panelType === "steps" && hasStepBody ? "clx-step-has-body" : "",
+    panelType === "steps" && hasStepImage ? "clx-step-has-media" : "",
+    panelType === "steps" && hasStepContent ? "clx-step-has-content" : "",
+    panelType === "steps" && !hasStepContent ? "clx-step-title-only" : "",
   ].filter(Boolean).join(" ");
 
   if (panelType === "steps") {
