@@ -2199,15 +2199,20 @@ export default function CaseDetail(props) {
   }, [isPathologyPage, displayItem, visibleRelatedCases, pathologyGallery]);
 
   /*
-   * Source commune des groupes d'images.
+   * Fusion partielle des groupes d'images.
    *
-   * On ne fusionne la ligne de source que lorsque :
-   * - au moins deux cartes du même groupe sont réellement côte à côte ;
-   * - toutes ces cartes renvoient exactement à la même source ;
-   * - leur libellé de crédit est également identique.
+   * Trois sous-zones sont évaluées séparément :
+   * - la légende (caption) ;
+   * - le crédit auteur ;
+   * - la/les référence(s).
    *
-   * En cas de doute (sources différentes, retour à la ligne...), les sources
-   * individuelles restent affichées : aucune information n'est donc masquée.
+   * Cela permet notamment de gérer le cas spécifique :
+   * - mêmes images de groupe,
+   * - même légende,
+   * - même auteur,
+   * - mais plusieurs références bibliographiques distinctes.
+   *
+   * Exemple de rendu voulu : "Gzzz [2] [3]".
    */
   const pathologyGallerySharedSources = useMemo(() => {
     const byStartIndex = new Map();
@@ -2236,6 +2241,7 @@ export default function CaseDetail(props) {
             kind: 'bibliographic',
             credit,
             referenceNumber,
+            visibleSourceUrl,
           },
         };
       }
@@ -2265,12 +2271,6 @@ export default function CaseDetail(props) {
       const members = pathologyGallery.slice(run.startIndex, run.endIndex + 1);
       if (members.length < 2) return;
 
-      const descriptors = members.map(describeSource);
-      const first = descriptors[0];
-      if (!first || descriptors.some((descriptor) => !descriptor || descriptor.signature !== first.signature)) {
-        return;
-      }
-
       const captionModels = members.map((item) => ({
         title: String(item?.title || '').trim(),
         caption: String(item?.caption || '').trim(),
@@ -2287,9 +2287,70 @@ export default function CaseDetail(props) {
       );
       const hasSharedCaptionColumns = Boolean(hasAllCaptionCopy && !hasSharedCaption);
 
+      const descriptors = members.map(describeSource);
+      const exactFirst = descriptors[0];
+      const hasExactSharedSource = Boolean(
+        exactFirst && descriptors.every((descriptor) => descriptor && descriptor.signature === exactFirst.signature)
+      );
+
+      let sharedSourceModel = null;
+
+      if (hasExactSharedSource) {
+        if (exactFirst.model.kind === 'bibliographic') {
+          const referenceNumbers = [];
+          const seenNumbers = new Set();
+          descriptors.forEach((descriptor) => {
+            const value = Number(descriptor?.model?.referenceNumber) || 0;
+            if (!value || seenNumbers.has(value)) return;
+            seenNumbers.add(value);
+            referenceNumbers.push(value);
+          });
+
+          sharedSourceModel = {
+            kind: 'bibliographic',
+            credit: exactFirst.model.credit,
+            referenceNumbers,
+          };
+        } else {
+          sharedSourceModel = { ...exactFirst.model };
+        }
+      } else {
+        const allBibliographic = descriptors.every((descriptor) => descriptor?.model?.kind === 'bibliographic');
+
+        if (allBibliographic) {
+          const normalizedCredit = String(descriptors[0]?.model?.credit || '').trim().toLocaleLowerCase('fr');
+          const sameCredit = descriptors.every(
+            (descriptor) => String(descriptor?.model?.credit || '').trim().toLocaleLowerCase('fr') === normalizedCredit
+          );
+
+          if (sameCredit) {
+            const displayCredit = String(descriptors[0]?.model?.credit || '').trim();
+            const referenceNumbers = [];
+            const seenNumbers = new Set();
+
+            descriptors.forEach((descriptor) => {
+              const value = Number(descriptor?.model?.referenceNumber) || 0;
+              if (!value || seenNumbers.has(value)) return;
+              seenNumbers.add(value);
+              referenceNumbers.push(value);
+            });
+
+            if (displayCredit || referenceNumbers.length) {
+              sharedSourceModel = {
+                kind: 'bibliographic',
+                credit: displayCredit,
+                referenceNumbers,
+              };
+            }
+          }
+        }
+      }
+
+      if (!sharedSourceModel) return;
+
       const shared = {
         ...run,
-        ...first.model,
+        ...sharedSourceModel,
         // Permet au rendu de distinguer :
         // - source seule : une seule séparation image -> zone grise ;
         // - légende + source : une seconde séparation légende -> auteur/source.
@@ -2747,16 +2808,23 @@ export default function CaseDetail(props) {
                               className="cd-gallery-credit cd-gallery-credit-compact cd-gallery-shared-source-content"
                             >
                               {sharedSource.credit && <span>{sharedSource.credit}</span>}
-                              {sharedSource.referenceNumber && (
+                              {(Array.isArray(sharedSource.referenceNumbers)
+                                ? sharedSource.referenceNumbers
+                                : sharedSource.referenceNumber
+                                  ? [sharedSource.referenceNumber]
+                                  : []
+                              ).map((referenceNumber, refIndex) => (
                                 <a
+                                  key={`${referenceNumber}-${refIndex}`}
                                   className="cd-gallery-reference-link"
-                                  href={`#cd-reference-${sharedSource.referenceNumber}`}
-                                  aria-label={`Voir la source ${sharedSource.referenceNumber}`}
-                                  onClick={() => flashReferenceEntry(sharedSource.referenceNumber)}
+                                  href={`#cd-reference-${referenceNumber}`}
+                                  aria-label={`Voir la source ${referenceNumber}`}
+                                  onClick={() => flashReferenceEntry(referenceNumber)}
+                                  style={!sharedSource.credit && refIndex === 0 ? { marginLeft: 0 } : undefined}
                                 >
-                                  [{sharedSource.referenceNumber}]
+                                  [{referenceNumber}]
                                 </a>
-                              )}
+                              ))}
                             </small>
                           ) : (
                             <small
