@@ -964,6 +964,7 @@
 }
 
 .cd-pathology-gallery-grid {
+  --cd-gallery-image-h: 190px;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(190px, 250px));
   /*
@@ -977,13 +978,61 @@
    * l'égalisation des cartes à l'intérieur d'une même rangée.
    */
   grid-auto-rows: auto;
-  gap: 0.75rem;
+  --cd-gallery-gap: 0.75rem;
+  gap: var(--cd-gallery-gap);
   margin-top: 0.75rem;
   justify-content: start;
   align-items: stretch;
 }
 
+/*
+ * Le gap de la grille reste réservé entre deux cas différents.
+ * Pour deux images réellement côte à côte d'un même groupe, chaque carte
+ * s'étend de la moitié du gap vers l'intérieur du groupe. Les deux cartes
+ * se rejoignent donc exactement au milieu du gap initial : la zone image
+ * gagne légèrement en largeur et il n'existe plus aucun vide entre elles.
+ *
+ * La bordure gauche de la carte suivante devient l'unique séparateur vertical.
+ * La bordure droite de la carte précédente est supprimée afin d'éviter tout
+ * dédoublement. Cette géométrie place aussi le séparateur exactement au même
+ * axe que les colonnes de captions communes.
+ */
+.cd-gallery-item-wrap {
+  position: relative;
+  min-width: 0;
+  height: 100%;
+  --cd-gallery-expand-left: 0px;
+  --cd-gallery-expand-right: 0px;
+}
+
+.cd-gallery-item-wrap.is-linked-prev {
+  --cd-gallery-expand-left: calc(var(--cd-gallery-gap) / 2);
+}
+
+.cd-gallery-item-wrap.is-linked-next {
+  --cd-gallery-expand-right: calc(var(--cd-gallery-gap) / 2);
+}
+
+.cd-gallery-item-wrap .cd-gallery-item {
+  width: calc(100% + var(--cd-gallery-expand-left) + var(--cd-gallery-expand-right));
+  margin-left: calc(-1 * var(--cd-gallery-expand-left));
+}
+
+/* Une seule bordure entre deux cartes du même groupe. */
+.cd-gallery-item-wrap.is-linked-next .cd-gallery-item {
+  border-right: 0;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.cd-gallery-item-wrap.is-linked-prev .cd-gallery-item {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
 .cd-gallery-item {
+  position: relative;
+  z-index: 1;
   min-width: 0;
   height: 100%;
   margin: 0;
@@ -997,6 +1046,7 @@
 }
 
 .cd-gallery-image-button {
+  position: relative;
   display: block;
   flex: 0 0 auto;
   width: 100%;
@@ -1016,29 +1066,88 @@
 .cd-gallery-image {
   display: block;
   width: 100%;
-  height: 190px;
+  height: var(--cd-gallery-image-h);
   margin: 0;
   object-fit: contain;
   background: var(--ifm-background-surface-color);
 }
 
 .cd-gallery-caption {
-  display: grid;
+  display: flex;
   flex: 1 1 auto;
-  align-content: start;
-  gap: 0.25rem;
+  flex-direction: column;
   min-height: 2.55rem;
   margin: 0;
-  padding: 0.58rem 0.72rem 0.64rem;
+  padding: 0;
+  border-top: 1px solid var(--ifm-toc-border-color);
   text-align: left;
   font-size: 0.9rem;
   line-height: 1.35;
   background: color-mix(in srgb, var(--ifm-background-color) 92%, var(--ifm-font-color-base));
 }
 
+/*
+ * Quand la zone de caption est rendue une seule fois à l'échelle du groupe,
+ * c'est cette bande commune qui porte la séparation image/caption. On retire
+ * donc la bordure des figcaptions individuels cachés pour ne jamais obtenir
+ * deux traits superposés.
+ */
+.cd-gallery-item.has-shared-caption-area .cd-gallery-caption {
+  border-top: 0;
+}
+
+/*
+ * Partie propre à l'image : titre et/ou légende.
+ * Le padding qui était auparavant porté par tout le figcaption est maintenant
+ * porté par ce bloc afin de pouvoir séparer proprement légende et auteur.
+ */
+.cd-gallery-caption-copy {
+  display: grid;
+  flex: 1 1 auto;
+  align-content: start;
+  gap: 0.25rem;
+  min-width: 0;
+  padding: 0.58rem 0.72rem 0.52rem;
+}
+
+/*
+ * Quand toutes les images d'un même groupe portent exactement la même
+ * légende, les copies individuelles restent dans le flux uniquement pour
+ * préserver la hauteur de la rangée. La légende commune les recouvre ensuite
+ * sur toute la largeur du groupe.
+ */
+.cd-gallery-caption-copy.is-shared-caption-placeholder {
+  visibility: hidden;
+  pointer-events: none;
+}
+
 .cd-gallery-title {
   display: block;
   font-weight: 650;
+}
+
+/*
+ * Ligne auteur/source.
+ * - avec une légende : une vraie bordure de 1 px sépare les deux zones ;
+ * - sans légende : aucune seconde bordure n'est ajoutée, la seule séparation
+ *   reste celle du figcaption contre l'image.
+ */
+.cd-gallery-source-row {
+  display: block;
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  min-width: 0;
+  margin: 0;
+  padding: 0.52rem 0.72rem 0.58rem;
+}
+
+.cd-gallery-caption.has-caption-copy .cd-gallery-source-row {
+  border-top: 1px solid var(--ifm-toc-border-color);
+}
+
+.cd-gallery-caption:not(.has-caption-copy) .cd-gallery-source-row {
+  flex: 1 1 auto;
+  padding: 0.58rem 0.72rem 0.64rem;
 }
 
 .cd-gallery-credit {
@@ -1102,28 +1211,145 @@
   margin-top: 0.05rem;
 }
 
+.cd-gallery-source-row.cd-gallery-credit-legacy {
+  margin-top: 0;
+}
+
+/*
+ * Les lignes individuelles restent dans le flux pour réserver exactement la
+ * hauteur du pied de carte. La source commune vient simplement les recouvrir.
+ */
+.cd-gallery-source-row.is-shared-source-placeholder {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/*
+ * Source commune d'un groupe d'images.
+ * Avec des légendes, elle ne recouvre que le pied auteur/source et laisse les
+ * légendes visibles. Sans légende, elle occupe toute la zone grise comme dans
+ * la version précédente. Dans les deux cas, sa bordure supérieure est la même
+ * vraie bordure de 1 px que partout ailleurs.
+ */
+.cd-gallery-shared-source {
+  position: absolute;
+  z-index: 4;
+  left: 1px;
+  bottom: 1px;
+  box-sizing: border-box;
+  min-width: 0;
+  border-top: 1px solid var(--ifm-toc-border-color);
+  background: color-mix(in srgb, var(--ifm-background-color) 92%, var(--ifm-font-color-base));
+}
+
+.cd-gallery-shared-source.is-source-only {
+  top: var(--cd-gallery-image-h);
+}
+
+/*
+ * Toute zone de légende commune au groupe commence juste sous les images et
+ * se termine sur la source commune. Elle masque ainsi le gap de la grille dans
+ * la partie documentaire, sans toucher à la séparation entre les images.
+ *
+ * - has-shared-caption         : une légende identique sur toute la largeur ;
+ * - has-shared-caption-columns : plusieurs légendes dans une même bande,
+ *   séparées uniquement par une bordure verticale de 1 px.
+ */
+.cd-gallery-shared-source.has-shared-caption,
+.cd-gallery-shared-source.has-shared-caption-columns {
+  top: var(--cd-gallery-image-h);
+  display: flex;
+  flex-direction: column;
+}
+
+.cd-gallery-shared-caption-copy {
+  display: grid;
+  flex: 1 1 auto;
+  align-content: start;
+  gap: 0.25rem;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding: 0.58rem 0.72rem 0.52rem;
+  text-align: left;
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+
+.cd-gallery-shared-caption-columns {
+  display: grid;
+  flex: 1 1 auto;
+  grid-template-columns: repeat(var(--cd-gallery-caption-columns, 2), minmax(0, 1fr));
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  text-align: left;
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+
+.cd-gallery-shared-caption-column {
+  display: grid;
+  align-content: start;
+  gap: 0.25rem;
+  box-sizing: border-box;
+  min-width: 0;
+  padding: 0.58rem 0.72rem 0.52rem;
+}
+
+.cd-gallery-shared-caption-column + .cd-gallery-shared-caption-column {
+  border-left: 1px solid var(--ifm-toc-border-color);
+}
+
+.cd-gallery-shared-source.has-shared-caption .cd-gallery-shared-source-content,
+.cd-gallery-shared-source.has-shared-caption-columns .cd-gallery-shared-source-content {
+  flex: 0 0 auto;
+  border-top: 1px solid var(--ifm-toc-border-color);
+}
+
+.cd-gallery-shared-source-content {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0.52rem 0.72rem 0.58rem;
+  text-align: left;
+}
+
+.cd-gallery-shared-source.is-source-only .cd-gallery-shared-source-content {
+  padding: 0.58rem 0.72rem 0.64rem;
+}
+
 @media (max-width: 980px) {
   .cd-pathology-gallery-grid {
+    --cd-gallery-image-h: clamp(150px, 22vw, 210px);
     grid-template-columns: repeat(3, minmax(0, 1fr));
     justify-content: stretch;
-  }
-
-  .cd-gallery-image {
-    height: clamp(150px, 22vw, 210px);
   }
 }
 
 @media (max-width: 560px) {
   .cd-pathology-gallery-grid {
+    --cd-gallery-image-h: clamp(135px, 38vw, 190px);
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.6rem;
+    --cd-gallery-gap: 0.6rem;
+    gap: var(--cd-gallery-gap);
   }
 
-  .cd-gallery-image {
-    height: clamp(135px, 38vw, 190px);
+  .cd-gallery-caption-copy,
+  .cd-gallery-shared-caption-copy,
+  .cd-gallery-shared-caption-column {
+    padding: 0.55rem 0.6rem 0.5rem;
   }
 
-  .cd-gallery-caption {
+  .cd-gallery-source-row,
+  .cd-gallery-shared-source-content {
+    padding: 0.48rem 0.6rem 0.55rem;
+  }
+
+  .cd-gallery-caption:not(.has-caption-copy) .cd-gallery-source-row,
+  .cd-gallery-shared-source.is-source-only .cd-gallery-shared-source-content {
     padding: 0.55rem 0.6rem 0.65rem;
   }
 }

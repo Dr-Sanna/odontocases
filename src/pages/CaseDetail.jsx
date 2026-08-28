@@ -193,8 +193,199 @@ function normalizeGalleryList(galleryRel, pathologyTitle = '') {
     .filter(Boolean);
 }
 
-function galleryInternalSourcePath(value) {
+function decodeGalleryMetadataValue(value) {
+  try {
+    return decodeURIComponent(String(value || ''));
+  } catch {
+    return String(value || '');
+  }
+}
+
+function galleryGroupKeyFromSourceUrl(value) {
   const raw = String(value || '').trim();
+  if (!raw) return '';
+
+  const hashIndex = raw.indexOf('#');
+  if (hashIndex === -1) return '';
+
+  const fragment = raw.slice(hashIndex + 1);
+  const groupPart = fragment
+    .split('&')
+    .find((part) => /^odonto-group=/i.test(part));
+
+  if (!groupPart) return '';
+  const encoded = groupPart.slice(groupPart.indexOf('=') + 1);
+  return decodeGalleryMetadataValue(encoded).trim();
+}
+
+function normalizeGalleryGroupIdentity(value) {
+  return String(value || '').trim().toLocaleLowerCase('fr');
+}
+
+function gallerySourceUrlWithoutGroupMetadata(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+
+  const hashIndex = raw.indexOf('#');
+  if (hashIndex === -1) return raw;
+
+  const base = raw.slice(0, hashIndex);
+  const fragmentParts = raw
+    .slice(hashIndex + 1)
+    .split('&')
+    .filter(Boolean)
+    .filter((part) => !/^odonto-group=/i.test(part));
+
+  return fragmentParts.length ? `${base}#${fragmentParts.join('&')}` : base;
+}
+
+function isBibliographicGalleryMarker(marker) {
+  return marker?.kind === 'citation' || marker?.kind === 'case';
+}
+
+function buildGalleryGroupLabels(galleryItems = []) {
+  const counts = new Map();
+  const order = [];
+
+  (Array.isArray(galleryItems) ? galleryItems : []).forEach((item) => {
+    const identity = normalizeGalleryGroupIdentity(
+      galleryGroupKeyFromSourceUrl(item?.sourceUrl)
+    );
+    if (!identity) return;
+
+    if (!counts.has(identity)) order.push(identity);
+    counts.set(identity, (counts.get(identity) || 0) + 1);
+  });
+
+  const labels = new Map();
+  let nextCaseNumber = 1;
+
+  order.forEach((identity) => {
+    // Un groupe composé d'une seule image ne reçoit aucun marquage visuel.
+    if ((counts.get(identity) || 0) < 2) return;
+    labels.set(identity, `Cas ${nextCaseNumber++}`);
+  });
+
+  return labels;
+}
+
+function useGalleryGroupRowLinks(galleryItems = [], groupLabels = new Map()) {
+  const gridRef = useRef(null);
+  const [linkedNextIndexes, setLinkedNextIndexes] = useState([]);
+  const [linkedRuns, setLinkedRuns] = useState([]);
+
+  useEffect(() => {
+    const grid = gridRef.current;
+    if (!grid) {
+      setLinkedNextIndexes([]);
+      setLinkedRuns([]);
+      return undefined;
+    }
+
+    let raf = 0;
+
+    const compute = () => {
+      raf = 0;
+      const cards = Array.from(grid.children);
+      const next = [];
+
+      for (let index = 0; index < galleryItems.length - 1; index += 1) {
+        const currentGroup = normalizeGalleryGroupIdentity(
+          galleryGroupKeyFromSourceUrl(galleryItems[index]?.sourceUrl)
+        );
+        const followingGroup = normalizeGalleryGroupIdentity(
+          galleryGroupKeyFromSourceUrl(galleryItems[index + 1]?.sourceUrl)
+        );
+
+        if (!currentGroup || currentGroup !== followingGroup || !groupLabels.has(currentGroup)) {
+          continue;
+        }
+
+        const currentCard = cards[index];
+        const followingCard = cards[index + 1];
+        if (!currentCard || !followingCard) continue;
+
+        const currentRect = currentCard.getBoundingClientRect();
+        const followingRect = followingCard.getBoundingClientRect();
+
+        // Le raccord n'existe que lorsque les cartes sont réellement côte à côte.
+        // Si le groupe passe à la ligne, les cartes restent autonomes.
+        if (Math.abs(currentRect.top - followingRect.top) <= 2) next.push(index);
+      }
+
+      const nextSet = new Set(next);
+      const runs = [];
+      let index = 0;
+
+      while (index < cards.length - 1) {
+        if (!nextSet.has(index)) {
+          index += 1;
+          continue;
+        }
+
+        const startIndex = index;
+        let endIndex = index + 1;
+        while (nextSet.has(endIndex)) endIndex += 1;
+
+        const firstRect = cards[startIndex]?.getBoundingClientRect?.();
+        const lastRect = cards[endIndex]?.getBoundingClientRect?.();
+        if (firstRect && lastRect) {
+          runs.push({
+            startIndex,
+            endIndex,
+            width: Math.max(0, lastRect.right - firstRect.left),
+          });
+        }
+
+        index = endIndex + 1;
+      }
+
+      setLinkedNextIndexes((previous) => {
+        if (previous.length === next.length && previous.every((value, i) => value === next[i])) {
+          return previous;
+        }
+        return next;
+      });
+
+      setLinkedRuns((previous) => {
+        const same = previous.length === runs.length && previous.every((run, i) => {
+          const candidate = runs[i];
+          return run.startIndex === candidate.startIndex &&
+            run.endIndex === candidate.endIndex &&
+            Math.abs(run.width - candidate.width) < 0.5;
+        });
+        return same ? previous : runs;
+      });
+    };
+
+    const schedule = () => {
+      if (raf) cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(compute);
+    };
+
+    schedule();
+
+    let observer = null;
+    if (typeof ResizeObserver !== 'undefined') {
+      observer = new ResizeObserver(schedule);
+      observer.observe(grid);
+      Array.from(grid.children).forEach((child) => observer.observe(child));
+    }
+
+    window.addEventListener('resize', schedule);
+
+    return () => {
+      if (raf) cancelAnimationFrame(raf);
+      observer?.disconnect();
+      window.removeEventListener('resize', schedule);
+    };
+  }, [galleryItems, groupLabels]);
+
+  return { gridRef, linkedNextIndexes, linkedRuns };
+}
+
+function galleryInternalSourcePath(value) {
+  const raw = gallerySourceUrlWithoutGroupMetadata(value);
   if (!raw || !raw.startsWith('/')) return '';
   return raw;
 }
@@ -214,7 +405,7 @@ function galleryCaseSlugFromSourceUrl(value) {
 }
 
 function gallerySourceLabelFromUrl(value, relatedCases = []) {
-  const raw = String(value || '').trim();
+  const raw = gallerySourceUrlWithoutGroupMetadata(value);
   if (!raw) return '';
 
   const caseSlug = galleryCaseSlugFromSourceUrl(raw);
@@ -604,28 +795,34 @@ function splitCreditsMarkdownEntries(markdown) {
 }
 
 function parseGalleryReferenceMarker(value) {
-  const raw = String(value || '').trim();
+  const group = galleryGroupKeyFromSourceUrl(value);
+  const raw = gallerySourceUrlWithoutGroupMetadata(value);
+
+  if (!raw) {
+    return group ? { kind: 'group', key: '', group } : null;
+  }
+
   if (!raw.startsWith('#odonto-')) return null;
 
   const cite = raw.match(/^#odonto-cite=([^#&]+)$/i);
   if (cite) {
-    try {
-      return { kind: 'citation', key: decodeURIComponent(cite[1]) };
-    } catch {
-      return { kind: 'citation', key: cite[1] };
-    }
+    return {
+      kind: 'citation',
+      key: decodeGalleryMetadataValue(cite[1]),
+      group,
+    };
   }
 
   const caseMatch = raw.match(/^#odonto-case=([^#&]+)$/i);
   if (caseMatch) {
-    try {
-      return { kind: 'case', key: decodeURIComponent(caseMatch[1]) };
-    } catch {
-      return { kind: 'case', key: caseMatch[1] };
-    }
+    return {
+      kind: 'case',
+      key: decodeGalleryMetadataValue(caseMatch[1]),
+      group,
+    };
   }
 
-  return null;
+  return group ? { kind: 'group', key: '', group } : null;
 }
 
 function collectGalleryReferenceRequests(galleryItems = []) {
@@ -1563,6 +1760,17 @@ export default function CaseDetail(props) {
     return Array.isArray(displayItem?.gallery) ? displayItem.gallery : [];
   }, [isPathologyPage, displayItem?.gallery]);
 
+  const pathologyGalleryGroupLabels = useMemo(
+    () => buildGalleryGroupLabels(pathologyGallery),
+    [pathologyGallery]
+  );
+
+  const {
+    gridRef: pathologyGalleryGridRef,
+    linkedNextIndexes: pathologyGalleryLinkedNextIndexes,
+    linkedRuns: pathologyGalleryLinkedRuns,
+  } = useGalleryGroupRowLinks(pathologyGallery, pathologyGalleryGroupLabels);
+
   const pathologyAliases = useMemo(() => {
     if (!isPathologyPage) return [];
     return normalizeAliasesList(displayItem?.aliases, displayItem?.title || displayItem?.slug || '');
@@ -1990,6 +2198,126 @@ export default function CaseDetail(props) {
     );
   }, [isPathologyPage, displayItem, visibleRelatedCases, pathologyGallery]);
 
+  /*
+   * Source commune des groupes d'images.
+   *
+   * On ne fusionne la ligne de source que lorsque :
+   * - au moins deux cartes du même groupe sont réellement côte à côte ;
+   * - toutes ces cartes renvoient exactement à la même source ;
+   * - leur libellé de crédit est également identique.
+   *
+   * En cas de doute (sources différentes, retour à la ligne...), les sources
+   * individuelles restent affichées : aucune information n'est donc masquée.
+   */
+  const pathologyGallerySharedSources = useMemo(() => {
+    const byStartIndex = new Map();
+    const startIndexByMember = new Map();
+
+    const describeSource = (galleryItem) => {
+      const visibleSourceUrl = gallerySourceUrlWithoutGroupMetadata(galleryItem?.sourceUrl);
+      if (!visibleSourceUrl) return null;
+
+      const marker = parseGalleryReferenceMarker(galleryItem?.sourceUrl);
+      const isBibliographicMarker = isBibliographicGalleryMarker(marker);
+      const credit = String(galleryItem?.credit || '').trim();
+
+      if (isBibliographicMarker) {
+        const referenceNumber = galleryReferenceNumber(galleryItem, pathologyNumberedCredits);
+        if (!credit && !referenceNumber) return null;
+
+        return {
+          signature: JSON.stringify([
+            'bibliographic',
+            visibleSourceUrl,
+            credit,
+            referenceNumber || null,
+          ]),
+          model: {
+            kind: 'bibliographic',
+            credit,
+            referenceNumber,
+          },
+        };
+      }
+
+      const sourceLabel = gallerySourceLabelFromUrl(visibleSourceUrl, visibleRelatedCases);
+      const internalSourcePath = galleryInternalSourcePath(visibleSourceUrl);
+
+      return {
+        signature: JSON.stringify([
+          'legacy',
+          visibleSourceUrl,
+          credit,
+          sourceLabel,
+          internalSourcePath,
+        ]),
+        model: {
+          kind: 'legacy',
+          credit,
+          sourceUrl: visibleSourceUrl,
+          sourceLabel,
+          internalSourcePath,
+        },
+      };
+    };
+
+    (Array.isArray(pathologyGalleryLinkedRuns) ? pathologyGalleryLinkedRuns : []).forEach((run) => {
+      const members = pathologyGallery.slice(run.startIndex, run.endIndex + 1);
+      if (members.length < 2) return;
+
+      const descriptors = members.map(describeSource);
+      const first = descriptors[0];
+      if (!first || descriptors.some((descriptor) => !descriptor || descriptor.signature !== first.signature)) {
+        return;
+      }
+
+      const captionModels = members.map((item) => ({
+        title: String(item?.title || '').trim(),
+        caption: String(item?.caption || '').trim(),
+      }));
+      const firstCaption = captionModels[0];
+      const hasAnyCaptionCopy = captionModels.some((item) => Boolean(item.title || item.caption));
+      const hasAllCaptionCopy = captionModels.every((item) => Boolean(item.title || item.caption));
+      const hasSharedCaption = Boolean(
+        hasAllCaptionCopy &&
+        firstCaption &&
+        captionModels.every(
+          (item) => item.title === firstCaption.title && item.caption === firstCaption.caption
+        )
+      );
+      const hasSharedCaptionColumns = Boolean(hasAllCaptionCopy && !hasSharedCaption);
+
+      const shared = {
+        ...run,
+        ...first.model,
+        // Permet au rendu de distinguer :
+        // - source seule : une seule séparation image -> zone grise ;
+        // - légende + source : une seconde séparation légende -> auteur/source.
+        hasCaptionCopy: hasAnyCaptionCopy,
+        // Si toutes les cartes du run affichent exactement la même légende,
+        // celle-ci est rendue une seule fois sur toute la largeur du groupe.
+        sharedCaption: hasSharedCaption ? firstCaption : null,
+        // Si toutes les cartes possèdent une légende mais que celles-ci diffèrent,
+        // React construit une seule bande commune divisée en colonnes de même largeur.
+        // Une carte sans légende conserve le rendu individuel afin de ne jamais
+        // fabriquer artificiellement une colonne vide.
+        captionColumns: hasSharedCaptionColumns ? captionModels : null,
+      };
+      byStartIndex.set(run.startIndex, shared);
+
+      for (let index = run.startIndex; index <= run.endIndex; index += 1) {
+        startIndexByMember.set(index, run.startIndex);
+      }
+    });
+
+    return { byStartIndex, startIndexByMember };
+  }, [
+    pathologyGallery,
+    pathologyGalleryLinkedRuns,
+    pathologyNumberedCredits,
+    visibleRelatedCases,
+  ]);
+
   const documentationNumberedCredits = useMemo(() => {
     if (!isDocNamespace) return null;
     return buildNumberedDocumentationCredits(documentationScopeNodes);
@@ -1997,7 +2325,9 @@ export default function CaseDetail(props) {
 
   const usesGalleryReferenceSystem = useMemo(() => {
     if (!isPathologyPage) return false;
-    return pathologyGallery.some((galleryItem) => Boolean(parseGalleryReferenceMarker(galleryItem?.sourceUrl)));
+    return pathologyGallery.some((galleryItem) =>
+      isBibliographicGalleryMarker(parseGalleryReferenceMarker(galleryItem?.sourceUrl))
+    );
   }, [isPathologyPage, pathologyGallery]);
 
   const usesInlineCitationSystem = useMemo(() => {
@@ -2226,28 +2556,66 @@ export default function CaseDetail(props) {
                 Galerie
               </h2>
 
-              <div className="cd-pathology-gallery-grid">
+              <div ref={pathologyGalleryGridRef} className="cd-pathology-gallery-grid">
                 {pathologyGallery.map((galleryItem, index) => {
                   const captionId = `cd-gallery-caption-${markdownScopeKey}-${index}`;
                   const referenceMarker = parseGalleryReferenceMarker(galleryItem.sourceUrl);
+                  const isBibliographicMarker = isBibliographicGalleryMarker(referenceMarker);
                   const referenceNumber = galleryReferenceNumber(galleryItem, pathologyNumberedCredits);
-                  const sourceLabel = referenceMarker
+                  const isLinkedNext = pathologyGalleryLinkedNextIndexes.includes(index);
+                  const isLinkedPrev = pathologyGalleryLinkedNextIndexes.includes(index - 1);
+                  const sharedSourceOwnerIndex = pathologyGallerySharedSources.startIndexByMember.get(index);
+                  const belongsToSharedSource = Number.isInteger(sharedSourceOwnerIndex);
+                  const sharedSourceModel = belongsToSharedSource
+                    ? pathologyGallerySharedSources.byStartIndex.get(sharedSourceOwnerIndex) || null
+                    : null;
+                  const belongsToSharedCaption = Boolean(sharedSourceModel?.sharedCaption);
+                  const belongsToSharedCaptionColumns = Boolean(sharedSourceModel?.captionColumns);
+                  const belongsToSharedCaptionArea = belongsToSharedCaption || belongsToSharedCaptionColumns;
+                  const sharedSource = pathologyGallerySharedSources.byStartIndex.get(index) || null;
+                  const sharedSourceId = belongsToSharedSource
+                    ? `cd-gallery-shared-source-${markdownScopeKey}-${sharedSourceOwnerIndex}`
+                    : '';
+                  const sharedCaptionId = belongsToSharedCaption
+                    ? `cd-gallery-shared-caption-${markdownScopeKey}-${sharedSourceOwnerIndex}`
+                    : '';
+                  const sharedCaptionColumnId = belongsToSharedCaptionColumns
+                    ? `cd-gallery-shared-caption-${markdownScopeKey}-${sharedSourceOwnerIndex}-${index}`
+                    : '';
+                  const sharedSourceContentId = belongsToSharedSource
+                    ? `cd-gallery-shared-source-content-${markdownScopeKey}-${sharedSourceOwnerIndex}`
+                    : '';
+                  const visibleSourceUrl = gallerySourceUrlWithoutGroupMetadata(galleryItem.sourceUrl);
+                  const sourceLabel = isBibliographicMarker
                     ? ''
-                    : gallerySourceLabelFromUrl(galleryItem.sourceUrl, visibleRelatedCases);
-                  const internalSourcePath = referenceMarker
+                    : gallerySourceLabelFromUrl(visibleSourceUrl, visibleRelatedCases);
+                  const internalSourcePath = isBibliographicMarker
                     ? ''
-                    : galleryInternalSourcePath(galleryItem.sourceUrl);
-                  const hasBibliographicFooter = Boolean(referenceMarker && (galleryItem.credit || referenceNumber));
-                  const hasLegacySource = Boolean(!referenceMarker && galleryItem.sourceUrl);
-                  const hasCaption = Boolean(
-                    galleryItem.title ||
-                    galleryItem.caption ||
-                    hasBibliographicFooter ||
-                    hasLegacySource
+                    : galleryInternalSourcePath(visibleSourceUrl);
+                  const hasBibliographicFooter = Boolean(
+                    isBibliographicMarker && (galleryItem.credit || referenceNumber)
                   );
+                  const hasLegacySource = Boolean(!isBibliographicMarker && visibleSourceUrl);
+                  const hasCaptionCopy = Boolean(galleryItem.title || galleryItem.caption);
+                  const hasSourceFooter = Boolean(hasBibliographicFooter || hasLegacySource);
+                  const hasCaption = Boolean(hasCaptionCopy || hasSourceFooter);
+                  const itemKey = galleryItem.id ?? `${galleryItem.imageUrl}-${index}`;
+                  const describedBy = [
+                    hasCaption && !belongsToSharedCaptionArea ? captionId : '',
+                    sharedCaptionId,
+                    sharedCaptionColumnId,
+                    sharedSourceContentId,
+                  ]
+                    .filter(Boolean)
+                    .join(' ') || undefined;
 
                   return (
-                    <figure key={galleryItem.id ?? `${galleryItem.imageUrl}-${index}`} className="cd-gallery-item">
+                    <div
+                      key={itemKey}
+                      className={`cd-gallery-item-wrap${isLinkedPrev ? ' is-linked-prev' : ''}${isLinkedNext ? ' is-linked-next' : ''}`}
+                      data-gallery-index={index}
+                    >
+                      <figure className={`cd-gallery-item${belongsToSharedCaptionArea ? ' has-shared-caption-area' : ''}`}>
                       <button
                         type="button"
                         className="cd-gallery-image-button"
@@ -2258,7 +2626,7 @@ export default function CaseDetail(props) {
                           })
                         }
                         aria-label={`Agrandir ${galleryItem.alt || `l’image ${index + 1}`}`}
-                        aria-describedby={hasCaption ? captionId : undefined}
+                        aria-describedby={describedBy}
                       >
                         <img
                           className="cd-gallery-image"
@@ -2270,12 +2638,25 @@ export default function CaseDetail(props) {
                       </button>
 
                       {hasCaption && (
-                        <figcaption id={captionId} className="cd-gallery-caption">
-                          {galleryItem.title && <strong className="cd-gallery-title">{galleryItem.title}</strong>}
-                          {galleryItem.caption && <span>{galleryItem.caption}</span>}
+                        <figcaption
+                          id={captionId}
+                          className={`cd-gallery-caption${hasCaptionCopy ? ' has-caption-copy' : ''}${hasSourceFooter ? ' has-source-footer' : ''}`}
+                        >
+                          {hasCaptionCopy && (
+                            <div
+                              className={`cd-gallery-caption-copy${belongsToSharedCaptionArea ? ' is-shared-caption-placeholder' : ''}`}
+                              aria-hidden={belongsToSharedCaptionArea || undefined}
+                            >
+                              {galleryItem.title && <strong className="cd-gallery-title">{galleryItem.title}</strong>}
+                              {galleryItem.caption && <span>{galleryItem.caption}</span>}
+                            </div>
+                          )}
 
                           {hasBibliographicFooter && (
-                            <small className="cd-gallery-credit cd-gallery-credit-compact">
+                            <small
+                              className={`cd-gallery-source-row cd-gallery-credit cd-gallery-credit-compact${belongsToSharedSource ? ' is-shared-source-placeholder' : ''}`}
+                              aria-hidden={belongsToSharedSource || undefined}
+                            >
                               {galleryItem.credit && <span>{galleryItem.credit}</span>}
                               {referenceNumber && (
                                 <a
@@ -2290,8 +2671,11 @@ export default function CaseDetail(props) {
                             </small>
                           )}
 
-                          {!referenceMarker && galleryItem.sourceUrl && (
-                            <small className="cd-gallery-credit cd-gallery-credit-legacy">
+                          {hasLegacySource && (
+                            <small
+                              className={`cd-gallery-source-row cd-gallery-credit cd-gallery-credit-legacy${belongsToSharedSource ? ' is-shared-source-placeholder' : ''}`}
+                              aria-hidden={belongsToSharedSource || undefined}
+                            >
                               {galleryItem.credit && (
                                 <span className="cd-gallery-meta-row">
                                   <span className="cd-gallery-meta-label">Crédit :</span>{' '}
@@ -2303,7 +2687,7 @@ export default function CaseDetail(props) {
                                 {internalSourcePath ? (
                                   <Link to={internalSourcePath}>{sourceLabel || 'Cas clinique'}</Link>
                                 ) : (
-                                  <a href={galleryItem.sourceUrl} target="_blank" rel="noreferrer">
+                                  <a href={visibleSourceUrl} target="_blank" rel="noreferrer">
                                     {sourceLabel || 'Source'}
                                   </a>
                                 )}
@@ -2312,7 +2696,96 @@ export default function CaseDetail(props) {
                           )}
                         </figcaption>
                       )}
-                    </figure>
+                      </figure>
+
+                      {sharedSource && (
+                        <div
+                          id={`cd-gallery-shared-source-${markdownScopeKey}-${index}`}
+                          className={`cd-gallery-shared-source${sharedSource.sharedCaption ? ' has-shared-caption' : sharedSource.captionColumns ? ' has-shared-caption-columns' : sharedSource.hasCaptionCopy ? ' has-caption-copy' : ' is-source-only'}`}
+                          style={{ width: `${Math.max(0, sharedSource.width - 2)}px` }}
+                        >
+                          {sharedSource.sharedCaption && (
+                            <div
+                              id={`cd-gallery-shared-caption-${markdownScopeKey}-${index}`}
+                              className="cd-gallery-shared-caption-copy"
+                            >
+                              {sharedSource.sharedCaption.title && (
+                                <strong className="cd-gallery-title">{sharedSource.sharedCaption.title}</strong>
+                              )}
+                              {sharedSource.sharedCaption.caption && (
+                                <span>{sharedSource.sharedCaption.caption}</span>
+                              )}
+                            </div>
+                          )}
+
+                          {sharedSource.captionColumns && (
+                            <div
+                              className="cd-gallery-shared-caption-columns"
+                              style={{ '--cd-gallery-caption-columns': sharedSource.captionColumns.length }}
+                            >
+                              {sharedSource.captionColumns.map((captionModel, columnIndex) => {
+                                const memberIndex = index + columnIndex;
+                                return (
+                                  <div
+                                    key={`${memberIndex}-${captionModel.title}-${captionModel.caption}`}
+                                    id={`cd-gallery-shared-caption-${markdownScopeKey}-${index}-${memberIndex}`}
+                                    className="cd-gallery-shared-caption-column"
+                                  >
+                                    {captionModel.title && (
+                                      <strong className="cd-gallery-title">{captionModel.title}</strong>
+                                    )}
+                                    {captionModel.caption && <span>{captionModel.caption}</span>}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+
+                          {sharedSource.kind === 'bibliographic' ? (
+                            <small
+                              id={`cd-gallery-shared-source-content-${markdownScopeKey}-${index}`}
+                              className="cd-gallery-credit cd-gallery-credit-compact cd-gallery-shared-source-content"
+                            >
+                              {sharedSource.credit && <span>{sharedSource.credit}</span>}
+                              {sharedSource.referenceNumber && (
+                                <a
+                                  className="cd-gallery-reference-link"
+                                  href={`#cd-reference-${sharedSource.referenceNumber}`}
+                                  aria-label={`Voir la source ${sharedSource.referenceNumber}`}
+                                  onClick={() => flashReferenceEntry(sharedSource.referenceNumber)}
+                                >
+                                  [{sharedSource.referenceNumber}]
+                                </a>
+                              )}
+                            </small>
+                          ) : (
+                            <small
+                              id={`cd-gallery-shared-source-content-${markdownScopeKey}-${index}`}
+                              className="cd-gallery-credit cd-gallery-credit-legacy cd-gallery-shared-source-content"
+                            >
+                              {sharedSource.credit && (
+                                <span className="cd-gallery-meta-row">
+                                  <span className="cd-gallery-meta-label">Crédit :</span>{' '}
+                                  <span>{sharedSource.credit}</span>
+                                </span>
+                              )}
+                              <span className="cd-gallery-meta-row">
+                                <span className="cd-gallery-meta-label">Source :</span>{' '}
+                                {sharedSource.internalSourcePath ? (
+                                  <Link to={sharedSource.internalSourcePath}>
+                                    {sharedSource.sourceLabel || 'Cas clinique'}
+                                  </Link>
+                                ) : (
+                                  <a href={sharedSource.sourceUrl} target="_blank" rel="noreferrer">
+                                    {sharedSource.sourceLabel || 'Source'}
+                                  </a>
+                                )}
+                              </span>
+                            </small>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
               </div>

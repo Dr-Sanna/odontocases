@@ -3220,3 +3220,53 @@ button.cdg-chip {
     display: none !important;
   }
 }
+
+
+/* =========================
+   v0.12.15 — H3 principal 2/3 + pile latérale 1/3
+   ========================= */
+
+/* Dans chaque branche H2, le premier H3 occupe les deux tiers de la largeur
+   et tous les H3 suivants s'empilent indépendamment dans le tiers droit. */
+.cdg .cdg-h3-featured23 {
+  display: grid !important;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) !important;
+  gap: var(--cdg-gap-group, 12px) !important;
+  align-items: start !important;
+  min-width: 0 !important;
+  width: 100% !important;
+}
+
+.cdg .cdg-h3-featured23-column {
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.cdg .cdg-h3-featured23-main {
+  display: block !important;
+}
+
+.cdg .cdg-h3-featured23-side {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 5px !important;
+}
+
+.cdg .cdg-h3-featured23-column > .cdg-node {
+  min-width: 0 !important;
+  width: 100% !important;
+  margin: 0 !important;
+}
+
+@media (max-width: 720px) {
+  .cdg .cdg-h3-featured23 {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+
+  .cdg .cdg-h3-featured23-column {
+    display: contents !important;
+  }
+}

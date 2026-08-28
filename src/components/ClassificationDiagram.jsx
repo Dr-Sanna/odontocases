@@ -216,7 +216,7 @@ function cdgNormalizePresetRecord(value) {
   return output;
 }
 
-const CDG_LOCAL_LEVEL_STYLES = new Set(["stack", "grid2", "grid3", "grid4"]);
+const CDG_LOCAL_LEVEL_STYLES = new Set(["stack", "grid2", "grid3", "grid4", "featured23"]);
 
 function cdgNormalizeLevelStyle(value, fallback = null) {
   const wanted = String(value || "");
@@ -734,6 +734,9 @@ function cdgToNode(node, config, context = {}) {
     output.mixedItems = "customRows";
     output.diagramPreset = preset;
     output.skeletonStyle = preset;
+    if (level === 2 && preset === "standard" && manualStyle === "featured23") {
+      output.childGroupLayout = "featured23";
+    }
     output.mixedRows = rows
       .map((row) => ({
         columns: row.columns,
@@ -904,6 +907,33 @@ function collectDirectSkeletonChips(node) {
       out.push({ row, slot, chip, rowIndex, slotIndex, side, chipRect });
     });
   });
+
+  if (!out.length) {
+    const featured = node.querySelector(":scope > .cdg-h3-featured23");
+    const featuredColumns = featured
+      ? Array.from(featured.children || []).filter((child) => child.classList?.contains("cdg-h3-featured23-column"))
+      : [];
+    let featuredIndex = 0;
+    featuredColumns.forEach((column) => {
+      const side = column.classList?.contains("cdg-h3-featured23-main") ? "left" : "right";
+      Array.from(column.children || [])
+        .filter((child) => child.classList?.contains("cdg-node"))
+        .forEach((childNode) => {
+          const chip = firstDirectHeadingChip(childNode);
+          if (!chip) return;
+          const chipRect = rectRelativeTo(chip.getBoundingClientRect(), parentRect);
+          out.push({
+            row: featured,
+            slot: childNode,
+            chip,
+            rowIndex: 0,
+            slotIndex: featuredIndex++,
+            side,
+            chipRect,
+          });
+        });
+    });
+  }
 
   if (!out.length) {
     const balanced = node.querySelector(":scope > .cdg-balanced-columns");
@@ -1478,7 +1508,11 @@ function NodeBlock({ node, depth = 2, path = "root", trainingOn, hidden, reveal,
   const groups = Array.isArray(node?.groups) ? node.groups : [];
   const customRowMode = node.mixedItems === "customRows" && Array.isArray(node.mixedRows);
   const diagramPreset = normalizeDiagramPreset(node.diagramPreset || node.skeletonStyle || "standard");
-  const standardColumnMode = customRowMode && diagramPreset === "standard";
+  const featured23Nodes = customRowMode && diagramPreset === "standard" && node.childGroupLayout === "featured23"
+    ? node.mixedRows.flatMap((row) => (Array.isArray(row?.nodes) ? row.nodes : [])).filter(Boolean)
+    : [];
+  const featured23ColumnMode = featured23Nodes.length >= 2;
+  const standardColumnMode = customRowMode && diagramPreset === "standard" && !featured23ColumnMode;
   const standardSegments = standardColumnMode ? cdgStandardRowSegments(node.mixedRows) : [];
 
   const itemChip = itemChipClass(headingLevel);
@@ -1510,7 +1544,33 @@ function NodeBlock({ node, depth = 2, path = "root", trainingOn, hidden, reveal,
       ) : null}
 
       {customRowMode ? (
-        standardColumnMode ? (
+        featured23ColumnMode ? (
+          <div className="cdg-h3-featured23" data-layout="featured23">
+            <div className="cdg-h3-featured23-column cdg-h3-featured23-main">
+              <NodeBlock
+                node={featured23Nodes[0]}
+                depth={featured23Nodes[0]?.level || Math.min(headingLevel + 1, 6)}
+                path={`${path}/featured23/node/0`}
+                trainingOn={trainingOn}
+                hidden={hidden}
+                reveal={reveal}
+              />
+            </div>
+            <div className="cdg-h3-featured23-column cdg-h3-featured23-side">
+              {featured23Nodes.slice(1).map((childNode, sideIndex) => (
+                <NodeBlock
+                  key={`${path}/featured23/node/${sideIndex + 1}`}
+                  node={childNode}
+                  depth={childNode?.level || Math.min(headingLevel + 1, 6)}
+                  path={`${path}/featured23/node/${sideIndex + 1}`}
+                  trainingOn={trainingOn}
+                  hidden={hidden}
+                  reveal={reveal}
+                />
+              ))}
+            </div>
+          </div>
+        ) : standardColumnMode ? (
           <div className="cdg-mixed-rows cdg-mixed-rows-custom cdg-standard-rows">
             {standardSegments.map((segment, segmentIndex) => {
               if (segment.type === "row") {
