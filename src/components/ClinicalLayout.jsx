@@ -602,8 +602,8 @@ export function parseClinicalLayoutSource(source) {
         throw new ClinicalLayoutParseError("@layout doit suivre un @item ou un @step.", lineNumber);
       }
       const layout = layoutMatch[1].toLowerCase();
-      if ((layout === "span2" || layout === "span3") && currentPanel?.type !== "grid") {
-        throw new ClinicalLayoutParseError("@layout span2|span3 est réservé aux @panel grid.", lineNumber);
+      if ((layout === "span2" || layout === "span3") && !["grid", "profiles", "comparison"].includes(currentPanel?.type)) {
+        throw new ClinicalLayoutParseError("@layout span2|span3 est réservé aux @panel grid, profiles ou comparison.", lineNumber);
       }
       currentItem.layout = layout;
       currentTarget = currentItem.body;
@@ -652,6 +652,22 @@ export function parseClinicalLayoutSource(source) {
         panel.lineNumber
       );
     }
+    const hasSpanLayout = panel.items.some((item) => item.layout === "span2" || item.layout === "span3");
+    if (panel.type === "comparison" && hasSpanLayout) {
+      if (panel.joined) {
+        throw new ClinicalLayoutParseError(
+          "@layout span2|span3 n’est pas compatible avec @joined dans un panneau comparison.",
+          panel.lineNumber
+        );
+      }
+      if (panel.items.some((item) => Boolean(markdownFromLines(item.image)))) {
+        throw new ClinicalLayoutParseError(
+          "@layout span2|span3 n’est pas compatible avec un panneau comparison illustré.",
+          panel.lineNumber
+        );
+      }
+    }
+
     panel.items.forEach((item) => {
       const subcolumns = Array.isArray(item.subcolumns) ? item.subcolumns : [];
       const hasSubcolumns = subcolumns.length > 0;

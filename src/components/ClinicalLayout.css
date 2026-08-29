@@ -181,6 +181,14 @@
   grid-column: 1 / -1;
 }
 
+.clinical-layout :is(.clx-panel-comparison, .clx-panel-profiles) .clx-item-slot-span2 {
+  grid-column: span 2;
+}
+
+.clinical-layout :is(.clx-panel-comparison, .clx-panel-profiles) .clx-item-slot-span3 {
+  grid-column: span 3;
+}
+
 .clinical-layout :is(.clx-panel-comparison, .clx-panel-profiles) .clx-item {
   height: 100%;
   overflow: hidden;
@@ -577,7 +585,7 @@
     grid-template-columns: 1fr;
   }
 
-  .clinical-layout .clx-panel-grid :is(.clx-item-slot-wide, .clx-item-slot-span2, .clx-item-slot-span3) {
+  .clinical-layout :is(.clx-panel-grid, .clx-panel-profiles, .clx-panel-comparison) :is(.clx-item-slot-wide, .clx-item-slot-span2, .clx-item-slot-span3) {
     grid-column: 1 / -1;
   }
 
@@ -632,7 +640,7 @@
     grid-template-columns: 1fr;
   }
 
-  .clinical-layout .clx-panel-grid :is(.clx-item-slot-wide, .clx-item-slot-span2, .clx-item-slot-span3) {
+  .clinical-layout :is(.clx-panel-grid, .clx-panel-profiles, .clx-panel-comparison) :is(.clx-item-slot-wide, .clx-item-slot-span2, .clx-item-slot-span3) {
     grid-column: 1 / -1;
   }
 
