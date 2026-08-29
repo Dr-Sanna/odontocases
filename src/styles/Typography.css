@@ -408,11 +408,18 @@
    - Le contenu envoyé par API peut contenir un <img> direct dans .casedetail.
    On cible donc toutes les images hors tableaux, pas seulement p > img.
 */
-.casedetail img:not(table img) {
+/*
+ * Règle générique des images de contenu.
+ *
+ * La galerie Atlas possède une géométrie propre (hauteur fixe, largeur 100 %,
+ * absence de marge) et doit rester totalement indépendante de cette règle.
+ * La lightbox possède elle aussi ses propres dimensions et son propre rayon.
+ */
+.casedetail img:not(table img):not(.cd-gallery-image):not(.lb-img) {
   display: block;
   margin: 12px auto;
   cursor: zoom-in;
-  border-radius: 8px;
+  border-radius: 0;
   max-width: 100%;
   width: auto;
   height: auto;
@@ -421,7 +428,7 @@
 }
 
 /* Image HTML directe, sans paragraphe parent */
-.casedetail img:not(table img):not(p img) {
+.casedetail img:not(table img):not(.cd-gallery-image):not(.lb-img):not(p img) {
   margin-bottom: var(--ifm-paragraph-margin-bottom);
 }
 
@@ -433,7 +440,12 @@
 /* =========================
    CAPTIONS (global)
    ========================= */
-:where(.casedetail) figcaption {
+/*
+ * Les figcaptions de contenu gardent leur style typographique global.
+ * La galerie Atlas est exclue : ses zones caption/source sont un composant UI
+ * avec des hauteurs, bordures et opacités propres.
+ */
+:where(.casedetail) figcaption:not(.cd-gallery-caption) {
   margin-top: 0.35rem;
   font-size: 0.9em;
   opacity: 0.85;

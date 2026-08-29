@@ -1059,16 +1059,24 @@
   outline-offset: -2px;
 }
 
-.cd-gallery-image {
+/*
+ * Reset local volontaire : une image de galerie ne doit jamais hériter des
+ * règles génériques de Typography.css appliquées aux images de l'article.
+ * Elle remplit exactement la zone image de la carte, sans marge ni arrondi.
+ */
+.casedetail .cd-pathology-gallery .cd-gallery-image {
   display: block;
   width: 100%;
+  max-width: 100%;
   height: var(--cd-gallery-image-h);
+  max-height: none;
   margin: 0;
+  border-radius: 0;
   object-fit: contain;
   background: var(--ifm-background-surface-color);
 }
 
-.cd-gallery-caption {
+.casedetail .cd-pathology-gallery .cd-gallery-caption {
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
@@ -1079,6 +1087,7 @@
   text-align: left;
   font-size: 0.9rem;
   line-height: 1.35;
+  opacity: 1;
   background: color-mix(in srgb, var(--ifm-background-color) 92%, var(--ifm-font-color-base));
 }
 
@@ -1088,7 +1097,7 @@
  * donc la bordure des figcaptions individuels cachés pour ne jamais obtenir
  * deux traits superposés.
  */
-.cd-gallery-item.has-shared-caption-area .cd-gallery-caption {
+.casedetail .cd-pathology-gallery .cd-gallery-item.has-shared-caption-area .cd-gallery-caption {
   border-top: 0;
 }
 
@@ -1137,11 +1146,11 @@
   padding: 0.52rem 0.72rem 0.58rem;
 }
 
-.cd-gallery-caption.has-caption-copy .cd-gallery-source-row {
+.casedetail .cd-pathology-gallery .cd-gallery-caption.has-caption-copy .cd-gallery-source-row {
   border-top: 1px solid var(--ifm-toc-border-color);
 }
 
-.cd-gallery-caption:not(.has-caption-copy) .cd-gallery-source-row {
+.casedetail .cd-pathology-gallery .cd-gallery-caption:not(.has-caption-copy) .cd-gallery-source-row {
   flex: 1 1 auto;
   padding: 0.58rem 0.72rem 0.64rem;
 }
@@ -1344,7 +1353,7 @@
     padding: 0.48rem 0.6rem 0.55rem;
   }
 
-  .cd-gallery-caption:not(.has-caption-copy) .cd-gallery-source-row,
+  .casedetail .cd-pathology-gallery .cd-gallery-caption:not(.has-caption-copy) .cd-gallery-source-row,
   .cd-gallery-shared-source.is-source-only .cd-gallery-shared-source-content {
     padding: 0.55rem 0.6rem 0.65rem;
   }
