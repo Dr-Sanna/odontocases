@@ -1,5 +1,5 @@
 /* =========================
-   GLOBAL
+   ARTICLE TYPOGRAPHY — VARIABLES
    ========================= */
 :root {
   --ifm-heading-color: inherit;
@@ -35,9 +35,14 @@
 }
 
 /* =========================
-   HEADINGS
+   CASEDETAIL — HEADINGS
    ========================= */
-h1, h2, h3, h4, h5, h6 {
+/*
+ * .casedetail est la racine typographique de l’article.
+ * :where() limite le périmètre sans augmenter la spécificité :
+ * les composants d’interface peuvent donc conserver leurs styles propres.
+ */
+:where(.casedetail) :is(h1, h2, h3, h4, h5, h6) {
   color: var(--ifm-heading-color);
   font-family: var(--ifm-heading-font-family);
   font-weight: var(--ifm-heading-font-weight);
@@ -45,11 +50,11 @@ h1, h2, h3, h4, h5, h6 {
   margin: var(--ifm-heading-margin-top) 0 var(--ifm-heading-margin-bottom) 0;
 }
 
-.cd-content h1 {
+:where(.casedetail) h1 {
   margin-bottom: 1.5rem;
 }
 
-h2 {
+:where(.casedetail) h2 {
   font-size: var(--ifm-h2-font-size);
   margin-bottom: 0.5rem;
   margin-top: calc(var(--ifm-h2-vertical-rhythm-top) * var(--ifm-leading));
@@ -59,7 +64,7 @@ h2 {
   padding-bottom: 0.45rem;
 }
 
-h2::after {
+:where(.casedetail) h2::after {
   content: "";
   display: block;
 
@@ -79,67 +84,70 @@ h2::after {
   opacity: 0.3;
 }
 
-h3 {
+:where(.casedetail) h3 {
   font-size: var(--ifm-h3-font-size);
   margin-bottom: 0.5rem;
   margin-top: calc(var(--ifm-h3-vertical-rhythm-top) * var(--ifm-leading));
 }
 
-.cd-copyright h3, .cd-references h3 {
-  margin-bottom: var(--ifm-paragraph-margin-bottom);
-}
 
-h4 {
+:where(.casedetail) h4 {
   font-size: var(--ifm-h4-font-size);
   margin-top: calc(var(--ifm-heading-vertical-rhythm-top) * var(--ifm-leading));
   margin-bottom: 0.5rem;
 }
 
-h5 {
+:where(.casedetail) h5 {
   font-size: var(--ifm-h5-font-size);
   margin-top: calc(var(--ifm-heading-vertical-rhythm-top) * var(--ifm-leading));
   margin-bottom: 0.5rem;
 }
 
+:where(.casedetail) h6 {
+  font-size: var(--ifm-h6-font-size);
+  margin-top: calc(var(--ifm-heading-vertical-rhythm-top) * var(--ifm-leading));
+  margin-bottom: 0.5rem;
+}
+
 /* =========================
-   LISTS
+   CASEDETAIL — LISTS
    ========================= */
-ul, ol {
+:where(.casedetail) :is(ul, ol) {
   margin: 0 0 var(--ifm-list-margin);
   padding-left: var(--ifm-list-left-padding);
   margin-bottom: var(--ifm-leading);
 }
 
-li + li {
+:where(.casedetail) li + li {
   margin-top: var(--ifm-list-item-margin);
 }
 
-li > ul,
-li > ol {
+:where(.casedetail) li > ul,
+:where(.casedetail) li > ol {
   margin-top: 0;
   margin-bottom: 0;
 }
 
-.cd-content td > ul:last-child,
-.cd-content td > ol:last-child {
+.casedetail td > ul:last-child,
+.casedetail td > ol:last-child {
   margin-bottom: 0 !important;
 }
 
 
 /* =========================
-   CONTENT
+   CASEDETAIL — CONTENT
    ========================= */
-.cd-content p {
+:where(.casedetail) p {
   margin: 0 0 var(--ifm-paragraph-margin-bottom);
 }
 
-.cd-content code {
+:where(.casedetail) code {
   background: #f6f8fa;
   padding: 0.1em 0.3em;
   border-radius: 4px;
 }
 
-.cd-content pre code {
+:where(.casedetail) pre code {
   display: block;
   padding: 12px;
   border-radius: 8px;
@@ -149,23 +157,19 @@ li > ol {
 }
 
 /* Links content et copyright */
-.cd-content a,
-.cd-references a,
-.cd-copyright a {
+:where(.casedetail) a {
   color: var(--ifm-color-primary);
   text-decoration: none;
 }
 
-.cd-content a:hover,
-.cd-references a:hover,
-.cd-copyright a:hover {
+:where(.casedetail) a:hover {
   text-decoration: underline;
 }
 
 /* =========================
    TABLES CKEditor + Markdown
    ========================= */
-.cd-content {
+.casedetail {
   --cd-table-border: rgba(0, 0, 0, 0.12);
 
   /* Teintes issues de la palette primaire du site. */
@@ -186,7 +190,7 @@ li > ol {
   --cd-table-padding: 0.5em 0.5em;
 }
 
-[data-theme="dark"] .cd-content {
+[data-theme="dark"] .casedetail {
   --cd-table-border: rgba(255, 255, 255, 0.14);
   --cd-table-bg-head: color-mix(
     in srgb,
@@ -202,11 +206,11 @@ li > ol {
   --cd-table-code-bg: rgba(255, 255, 255, 0.08);
 }
 
-.cd-content figure.table {
+.casedetail figure.table {
   margin: 0.9em 0;
 }
 
-.cd-content table:not(.cd-imgtable) {
+.casedetail table:not(.cd-imgtable) {
   width: 100%;
   max-width: 100%;
   border-collapse: collapse;
@@ -216,28 +220,28 @@ li > ol {
   table-layout: auto;
 }
 
-.cd-content table:not(.cd-imgtable).ck-table-resized {
+.casedetail table:not(.cd-imgtable).ck-table-resized {
   table-layout: fixed;
 }
 
-.cd-content table:not(.cd-imgtable) thead {
+.casedetail table:not(.cd-imgtable) thead {
   display: table-header-group;
 }
 
-.cd-content table:not(.cd-imgtable) tbody {
+.casedetail table:not(.cd-imgtable) tbody {
   display: table-row-group;
 }
 
-.cd-content table:not(.cd-imgtable) tfoot {
+.casedetail table:not(.cd-imgtable) tfoot {
   display: table-footer-group;
 }
 
-.cd-content table:not(.cd-imgtable) tr {
+.casedetail table:not(.cd-imgtable) tr {
   display: table-row;
 }
 
-.cd-content table:not(.cd-imgtable) th,
-.cd-content table:not(.cd-imgtable) td {
+.casedetail table:not(.cd-imgtable) th,
+.casedetail table:not(.cd-imgtable) td {
   display: table-cell;
   border: 1px solid var(--cd-table-border);
   padding: var(--cd-table-padding);
@@ -247,7 +251,7 @@ li > ol {
   line-height: 1.5;
 }
 
-.cd-content table:not(.cd-imgtable) th {
+.casedetail table:not(.cd-imgtable) th {
   background: var(--cd-table-bg-head);
   color: var(--cd-table-heading-color);
   padding: 0.65em 0.75em;
@@ -257,26 +261,26 @@ li > ol {
   letter-spacing: 0.025em;
 }
 
-.cd-content table:not(.cd-imgtable) strong,
-.cd-content table:not(.cd-imgtable) th strong,
-.cd-content table:not(.cd-imgtable) td strong {
+.casedetail table:not(.cd-imgtable) strong,
+.casedetail table:not(.cd-imgtable) th strong,
+.casedetail table:not(.cd-imgtable) td strong {
   font-weight: 600;
 }
 
-.cd-content table:not(.cd-imgtable) code {
+.casedetail table:not(.cd-imgtable) code {
   background: var(--cd-table-code-bg);
   border-radius: 6px;
   padding: 0.15em 0.35em;
   font-size: 90%;
 }
 
-.cd-content table:not(.cd-imgtable) td p,
-.cd-content table:not(.cd-imgtable) th p {
+.casedetail table:not(.cd-imgtable) td p,
+.casedetail table:not(.cd-imgtable) th p {
   margin: 0;
 }
 
-.cd-content table:not(.cd-imgtable) td p:not(:last-child),
-.cd-content table:not(.cd-imgtable) th p:not(:last-child) {
+.casedetail table:not(.cd-imgtable) td p:not(:last-child),
+.casedetail table:not(.cd-imgtable) th p:not(:last-child) {
   margin-bottom: 0.5em;
 }
 
@@ -286,7 +290,7 @@ li > ol {
    - TH en capitales
    - H4 dans une cellule = même aspect qu'un TH, sans capitales
    ========================= */
-.cd-content table:not(.cd-imgtable) th {
+.casedetail table:not(.cd-imgtable) th {
   background: var(--cd-table-bg-head) !important;
   color: var(--cd-table-heading-color) !important;
   padding: 0.65em 0.75em !important;
@@ -297,7 +301,7 @@ li > ol {
   text-transform: uppercase !important;
 }
 
-.cd-content table:not(.cd-imgtable) :is(td, th):has(h4) {
+.casedetail table:not(.cd-imgtable) :is(td, th):has(h4) {
   background: var(--cd-table-bg-title) !important;
   padding: 0.6em 0.7em !important;
   font-weight: 600 !important;
@@ -307,30 +311,30 @@ li > ol {
 }
 
 /* Cas direct : <td><h4>...</h4></td> */
-.cd-content table:not(.cd-imgtable) :is(td, th):has(> h4) {
+.casedetail table:not(.cd-imgtable) :is(td, th):has(> h4) {
   height: 1px;
 }
 
-.cd-content table:not(.cd-imgtable) :is(td, th):has(> h4) > h4 {
+.casedetail table:not(.cd-imgtable) :is(td, th):has(> h4) > h4 {
   height: 100%;
 }
 
 /* Cas enveloppé : <td><p><h4>...</h4></p></td> ou wrappers similaires */
-.cd-content table:not(.cd-imgtable) :is(td, th):has(h4) > :where(p, div) {
+.casedetail table:not(.cd-imgtable) :is(td, th):has(h4) > :where(p, div) {
   margin: 0 !important;
   text-align: center !important;
   text-transform: none !important;
 }
 
-.cd-content table:not(.cd-imgtable) :is(td, th):has(> p > h4) > p,
-.cd-content table:not(.cd-imgtable) :is(td, th):has(> div > h4) > div {
+.casedetail table:not(.cd-imgtable) :is(td, th):has(> p > h4) > p,
+.casedetail table:not(.cd-imgtable) :is(td, th):has(> div > h4) > div {
   min-height: 100%;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
 }
 
-.cd-content table:not(.cd-imgtable) :is(td, th) h4 {
+.casedetail table:not(.cd-imgtable) :is(td, th) h4 {
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -356,7 +360,7 @@ li > ol {
    - interligne interne conservé
    - espace entre deux éléments = espace entre deux paragraphes du tableau
    ========================= */
-.cd-content table:not(.cd-imgtable) :is(td, th) :is(ul, ol) {
+.casedetail table:not(.cd-imgtable) :is(td, th) :is(ul, ol) {
   margin: 0 !important;
   padding-left: 0 !important;
   line-height: 1.5 !important;
@@ -365,34 +369,34 @@ li > ol {
   word-break: break-word;
 }
 
-.cd-content table:not(.cd-imgtable) :is(td, th) ul {
+.casedetail table:not(.cd-imgtable) :is(td, th) ul {
   list-style: none !important;
 }
 
-.cd-content table:not(.cd-imgtable) :is(td, th) ul > li::before {
+.casedetail table:not(.cd-imgtable) :is(td, th) ul > li::before {
   content: "– ";
 }
 
-.cd-content table:not(.cd-imgtable) :is(td, th) ol {
+.casedetail table:not(.cd-imgtable) :is(td, th) ol {
   list-style-position: inside !important;
 }
 
-.cd-content table:not(.cd-imgtable) :is(td, th) li {
+.casedetail table:not(.cd-imgtable) :is(td, th) li {
   margin: 0 !important;
   padding: 0 !important;
   line-height: 1.5 !important;
 }
 
-.cd-content table:not(.cd-imgtable) :is(td, th) li + li {
+.casedetail table:not(.cd-imgtable) :is(td, th) li + li {
   margin-top: 0.5em !important;
 }
 
-.cd-content table:not(.cd-imgtable) :is(td, th) li > p {
+.casedetail table:not(.cd-imgtable) :is(td, th) li > p {
   margin: 0 !important;
   line-height: inherit !important;
 }
 
-.cd-content table:not(.cd-imgtable) :is(td, th) li > p:not(:last-child) {
+.casedetail table:not(.cd-imgtable) :is(td, th) li > p:not(:last-child) {
   margin-bottom: 0.5em !important;
 }
 
@@ -401,10 +405,10 @@ li > ol {
    =========================
    Important :
    - CKEditor enrobe souvent les images dans <p><img></p>.
-   - Le contenu envoyé par API peut contenir un <img> direct dans .cd-content.
+   - Le contenu envoyé par API peut contenir un <img> direct dans .casedetail.
    On cible donc toutes les images hors tableaux, pas seulement p > img.
 */
-.cd-content img:not(table img) {
+.casedetail img:not(table img) {
   display: block;
   margin: 12px auto;
   cursor: zoom-in;
@@ -417,19 +421,19 @@ li > ol {
 }
 
 /* Image HTML directe, sans paragraphe parent */
-.cd-content > img:not(table img) {
+.casedetail img:not(table img):not(p img) {
   margin-bottom: var(--ifm-paragraph-margin-bottom);
 }
 
 /* Paragraphe contenant seulement une image : garde le même rythme visuel */
-.cd-content p:has(> img:only-child) {
+.casedetail p:has(> img:only-child) {
   margin-bottom: var(--ifm-paragraph-margin-bottom);
 }
 
 /* =========================
    CAPTIONS (global)
    ========================= */
-figcaption {
+:where(.casedetail) figcaption {
   margin-top: 0.35rem;
   font-size: 0.9em;
   opacity: 0.85;
@@ -460,7 +464,7 @@ figcaption {
    ========================= */
 
 /* bordures desktop pour les tableaux d’images */
-.cd-content table.cd-imgtable {
+.casedetail table.cd-imgtable {
   width: 100%;
   max-width: 100%;
   border-collapse: collapse;
@@ -470,24 +474,24 @@ figcaption {
   table-layout: auto;
 }
 
-.cd-content table.cd-imgtable thead {
+.casedetail table.cd-imgtable thead {
   display: table-header-group;
 }
 
-.cd-content table.cd-imgtable tbody {
+.casedetail table.cd-imgtable tbody {
   display: table-row-group;
 }
 
-.cd-content table.cd-imgtable tfoot {
+.casedetail table.cd-imgtable tfoot {
   display: table-footer-group;
 }
 
-.cd-content table.cd-imgtable tr {
+.casedetail table.cd-imgtable tr {
   display: table-row;
 }
 
-.cd-content table.cd-imgtable th,
-.cd-content table.cd-imgtable td {
+.casedetail table.cd-imgtable th,
+.casedetail table.cd-imgtable td {
   display: table-cell;
   border: 1px solid var(--cd-table-border) !important;
   padding: var(--cd-table-padding);
@@ -505,14 +509,14 @@ figcaption {
 
 
 /* centre uniquement les cellules qui contiennent une image */
-.cd-content table.cd-imgtable td:has(img) {
+.casedetail table.cd-imgtable td:has(img) {
   text-align: center;
   padding-top: 0.35rem;
   padding-bottom: 0.35rem;
 }
 
 /* H4 utilisés comme en-têtes dans les tableaux d’images */
-.cd-content table.cd-imgtable th {
+.casedetail table.cd-imgtable th {
   background: var(--cd-table-bg-head) !important;
   color: var(--cd-table-heading-color) !important;
   padding: 0.65em 0.75em !important;
@@ -523,7 +527,7 @@ figcaption {
   text-transform: uppercase !important;
 }
 
-.cd-content table.cd-imgtable :is(td, th):has(> h4) {
+.casedetail table.cd-imgtable :is(td, th):has(> h4) {
   background: var(--cd-table-bg-title) !important;
   padding: 0.6em 0.7em !important;
   text-align: center !important;
@@ -532,7 +536,7 @@ figcaption {
   text-transform: none !important;
 }
 
-.cd-content table.cd-imgtable :is(td, th) > h4 {
+.casedetail table.cd-imgtable :is(td, th) > h4 {
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -551,14 +555,14 @@ figcaption {
 }
 
 /* Pas de marge résiduelle sous le dernier paragraphe d’une cellule */
-.cd-content table.cd-imgtable td > p:last-child,
-.cd-content table.cd-imgtable th > p:last-child {
+.casedetail table.cd-imgtable td > p:last-child,
+.casedetail table.cd-imgtable th > p:last-child {
   margin-bottom: 0;
 }
 
 /* figure shrink-to-fit par défaut (important pour 1 colonne) */
-.cd-content table td figure.image,
-.cd-content table td figure.cd-figure {
+.casedetail table td figure.image,
+.casedetail table td figure.cd-figure {
   margin: 0 !important;
 
   display: inline-flex !important;
@@ -581,7 +585,7 @@ figcaption {
 }
 
 /* image dans le slot */
-.cd-content table td .cd-imgslot > img {
+.casedetail table td .cd-imgslot > img {
   display: block !important;
   margin: 0 auto !important;
 
@@ -602,8 +606,8 @@ figcaption {
    AJOUT IMPORTANT (compat)
    si images directes dans td sans figure
    ========================= */
-.cd-content table td > img,
-.cd-content table td > p > img {
+.casedetail table td > img,
+.casedetail table td > p > img {
   display: block !important;
   margin: 0 auto !important;
 
@@ -621,13 +625,13 @@ figcaption {
 }
 
 /* Compat Obsidian/API : si une image de tableau arrive dans <p>, le paragraphe ne doit pas créer d'espacement parasite */
-.cd-content table td > p:has(> img:only-child) {
+.casedetail table td > p:has(> img:only-child) {
   margin: 0 !important;
 }
 
 /* captions tables: base wrap propre */
-.cd-content table td figure.image > figcaption,
-.cd-content table td figure.cd-figure > figcaption {
+.casedetail table td figure.image > figcaption,
+.casedetail table td figure.cd-figure > figcaption {
   hyphens: none !important;
   word-break: normal !important;
   overflow-wrap: break-word !important;
@@ -638,8 +642,8 @@ figcaption {
 }
 
 /* titre centré */
-.cd-content table td figure.image > figcaption > strong,
-.cd-content table td figure.cd-figure > figcaption > strong {
+.casedetail table td figure.image > figcaption > strong,
+.casedetail table td figure.cd-figure > figcaption > strong {
   display: block !important;
   width: 100% !important;
   text-align: center !important;
@@ -648,41 +652,41 @@ figcaption {
   margin: 0.15rem 0 0.35rem 0 !important;
 }
 
-.cd-content table td figure.image > figcaption > strong + br,
-.cd-content table td figure.cd-figure > figcaption > strong + br {
+.casedetail table td figure.image > figcaption > strong + br,
+.casedetail table td figure.cd-figure > figcaption > strong + br {
   display: none !important;
 }
 
 /* 2–4 colonnes: figure prend toute la largeur du TD => caption "libre" */
-.cd-content table tr[data-cd-cols]:not([data-cd-cols="1"]) td figure.image,
-.cd-content table tr[data-cd-cols]:not([data-cd-cols="1"]) td figure.cd-figure {
+.casedetail table tr[data-cd-cols]:not([data-cd-cols="1"]) td figure.image,
+.casedetail table tr[data-cd-cols]:not([data-cd-cols="1"]) td figure.cd-figure {
   display: flex !important;
   width: 100% !important;
   max-width: 100% !important;
 }
 
-.cd-content table tr[data-cd-cols]:not([data-cd-cols="1"]) td figure.image > figcaption,
-.cd-content table tr[data-cd-cols]:not([data-cd-cols="1"]) td figure.cd-figure > figcaption {
+.casedetail table tr[data-cd-cols]:not([data-cd-cols="1"]) td figure.image > figcaption,
+.casedetail table tr[data-cd-cols]:not([data-cd-cols="1"]) td figure.cd-figure > figcaption {
   width: 100% !important;
   max-width: none !important;
 }
 
 /* 1 colonne: le JS force max-width du figcaption = largeur image réelle */
-.cd-content table tr[data-cd-cols="1"] td figure.image > figcaption,
-.cd-content table tr[data-cd-cols="1"] td figure.cd-figure > figcaption {
+.casedetail table tr[data-cd-cols="1"] td figure.image > figcaption,
+.casedetail table tr[data-cd-cols="1"] td figure.cd-figure > figcaption {
   width: 100% !important;
 }
 
-.cd-content table figure.image img:hover,
-.cd-content table figure.cd-figure img:hover,
-.cd-content table td > img:hover,
-.cd-content table td > p > img:hover {
+.casedetail table figure.image img:hover,
+.casedetail table figure.cd-figure img:hover,
+.casedetail table td > img:hover,
+.casedetail table td > p > img:hover {
   cursor: zoom-in;
 }
 
 /* caption sous l’image, largeur = largeur du figure (donc image), texte à gauche */
-.cd-content table td figure.image > figcaption,
-.cd-content table td figure.cd-figure > figcaption {
+.casedetail table td figure.image > figcaption,
+.casedetail table td figure.cd-figure > figcaption {
   align-self: stretch !important;   /* clé: étire la légende à la largeur du figure (= image) */
   text-align: left !important;
   padding-left: 0 !important;
@@ -691,8 +695,8 @@ figcaption {
 }
 
 /* seul le strong est centré */
-.cd-content table td figure.image > figcaption > strong,
-.cd-content table td figure.cd-figure > figcaption > strong {
+.casedetail table td figure.image > figcaption > strong,
+.casedetail table td figure.cd-figure > figcaption > strong {
   display: block !important;
   width: 100% !important;
   text-align: center !important;
@@ -716,21 +720,21 @@ figcaption {
     --cd-grid-border: rgba(255, 255, 255, 0.14);
   }
 
-  .cd-content table.cd-imgtable {
+  .casedetail table.cd-imgtable {
     width: 100% !important;
     display: block !important;
     overflow-x: visible !important;
   }
 
-  .cd-content table.cd-imgtable thead,
-  .cd-content table.cd-imgtable tbody,
-  .cd-content table.cd-imgtable tfoot {
+  .casedetail table.cd-imgtable thead,
+  .casedetail table.cd-imgtable tbody,
+  .casedetail table.cd-imgtable tfoot {
     display: block !important;
     width: 100% !important;
   }
 
   /* Chaque ligne devient une grille (sans gap) + bordure externe gauche */
-  .cd-content table.cd-imgtable tr {
+  .casedetail table.cd-imgtable tr {
     display: grid !important;
     width: 100% !important;
     gap: 0 !important;
@@ -744,23 +748,23 @@ figcaption {
   }
 
   /* bordure extérieure haute (une seule fois) */
-  .cd-content table.cd-imgtable tbody tr:first-child {
+  .casedetail table.cd-imgtable tbody tr:first-child {
     border-top: 1px solid var(--cd-grid-border) !important;
   }
 
   /* 2 cellules => 2 colonnes */
-  .cd-content table.cd-imgtable tr:has(> td:nth-child(2)) {
+  .casedetail table.cd-imgtable tr:has(> td:nth-child(2)) {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 
   /* 3+ cellules => 3 colonnes max */
-  .cd-content table.cd-imgtable tr:has(> td:nth-child(3)) {
+  .casedetail table.cd-imgtable tr:has(> td:nth-child(3)) {
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
   }
 
   /* Cellules : pas de double bordure (droite + bas uniquement) */
-  .cd-content table.cd-imgtable td,
-  .cd-content table.cd-imgtable th {
+  .casedetail table.cd-imgtable td,
+  .casedetail table.cd-imgtable th {
     width: 100% !important;
     padding: 0.5rem !important;
 
@@ -774,8 +778,8 @@ figcaption {
   }
 
   /* Figure pleine hauteur */
-  .cd-content table.cd-imgtable td figure.image,
-  .cd-content table.cd-imgtable td figure.cd-figure {
+  .casedetail table.cd-imgtable td figure.image,
+  .casedetail table.cd-imgtable td figure.cd-figure {
     display: flex !important;
     flex-direction: column !important;
     height: 100% !important;
@@ -785,10 +789,10 @@ figcaption {
   }
 
   /* Images : hauteur uniforme */
-  .cd-content table.cd-imgtable td figure.image > img,
-  .cd-content table.cd-imgtable td figure.cd-figure > img,
-  .cd-content table.cd-imgtable td > img,
-  .cd-content table.cd-imgtable td > p > img {
+  .casedetail table.cd-imgtable td figure.image > img,
+  .casedetail table.cd-imgtable td figure.cd-figure > img,
+  .casedetail table.cd-imgtable td > img,
+  .casedetail table.cd-imgtable td > p > img {
     width: 100% !important;
     height: clamp(140px, 22vw, 210px) !important;
 
@@ -801,23 +805,23 @@ figcaption {
   }
 
   /* Caption alignée en bas */
-    .cd-content table.cd-imgtable td figure.image > figcaption,
-  .cd-content table.cd-imgtable td figure.cd-figure > figcaption {
+    .casedetail table.cd-imgtable td figure.image > figcaption,
+  .casedetail table.cd-imgtable td figure.cd-figure > figcaption {
     margin-top: 0.5rem !important;   /* au lieu de auto */
   }
 }
 
 @media (max-width: 560px) {
   /* Max 2 colonnes */
-  .cd-content table.cd-imgtable tr:has(> td:nth-child(3)) {
+  .casedetail table.cd-imgtable tr:has(> td:nth-child(3)) {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 
   /* Un peu plus haut sur très petit écran */
-  .cd-content table.cd-imgtable td figure.image > img,
-  .cd-content table.cd-imgtable td figure.cd-figure > img,
-  .cd-content table.cd-imgtable td > img,
-  .cd-content table.cd-imgtable td > p > img {
+  .casedetail table.cd-imgtable td figure.image > img,
+  .casedetail table.cd-imgtable td figure.cd-figure > img,
+  .casedetail table.cd-imgtable td > img,
+  .casedetail table.cd-imgtable td > p > img {
     height: clamp(150px, 35vw, 260px) !important;
   }
 }
@@ -825,8 +829,8 @@ figcaption {
 @media (max-width: 980px) {
 
   /* ✅ réserve une hauteur identique pour le titre de caption */
-  .cd-content table.cd-imgtable td figure.image > figcaption > strong,
-  .cd-content table.cd-imgtable td figure.cd-figure > figcaption > strong {
+  .casedetail table.cd-imgtable td figure.image > figcaption > strong,
+  .casedetail table.cd-imgtable td figure.cd-figure > figcaption > strong {
     display: -webkit-box !important;
     -webkit-box-orient: vertical !important;
     -webkit-line-clamp: 2 !important;  /* 1 ou 2 selon ton rendu */
@@ -866,14 +870,14 @@ figcaption {
    CELLULES — alignement centré renforcé
    Classe HTML : text-center
    ========================= */
-.cd-content table :is(td, th).text-center {
+.casedetail table :is(td, th).text-center {
   text-align: center !important;
   vertical-align: middle !important;
   font-weight: 600 !important;
 }
 
 /* Les wrappers internes héritent explicitement du centrage. */
-.cd-content table :is(td, th).text-center > :where(p, div) {
+.casedetail table :is(td, th).text-center > :where(p, div) {
   text-align: inherit !important;
   font-weight: inherit !important;
 }

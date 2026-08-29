@@ -725,10 +725,6 @@
 
 .qa-a { overflow: visible; max-height: none; opacity: 1; transition: none; }
 
-.qa-a p { margin-top: 0; margin-bottom: var(--ifm-paragraph-margin-bottom); }
-
-.qa-a p:last-child,
-.qa-a ul:last-child { margin-bottom: 0; }
 
 /* =========================
    Extras
@@ -814,7 +810,7 @@
 /* =========================
    Mode sombre (compléments)
    ========================= */
-[data-theme="dark"] .cd-content code { background: #1e1e20; }
+[data-theme="dark"] .casedetail code { background: #1e1e20; }
 
 [data-theme="dark"] .qa-item {
   background: #122033;
@@ -1707,7 +1703,7 @@
   opacity: 1;
 }
 
-.cd-content :is(h2, h3, h4, h5)[id] {
+.casedetail :is(h2, h3, h4, h5)[id] {
   scroll-margin-top: calc(var(--ifm-navbar-height) + 1.5rem);
 }
 
