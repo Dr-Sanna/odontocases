@@ -1,3 +1,4 @@
+
 /* Diagnostic Diagram — rendu React compact, autonome et isolé */
 
 .diagnostic-diagram,
@@ -7,23 +8,17 @@
 
 .cd-content .diagnostic-diagram,
 .diagnostic-diagram {
-  --dd-accent: var(--ifm-color-primary);
+  --dd-accent: var(--doc-accent);
   --dd-accent-text: var(
     --ifm-color-primary-contrast-foreground,
     var(--ifm-font-color-base)
   );
-  --dd-border: var(--ifm-toc-border-color, rgba(2, 6, 23, 0.12));
-  --dd-border-strong: color-mix(
-    in srgb,
-    var(--ifm-font-color-base) 24%,
-    var(--dd-border)
-  );
-  --dd-surface: var(
-    --ifm-background-surface-color,
-    var(--ifm-background-color)
-  );
-  --dd-surface-alt: var(--ifm-background-color);
-  --dd-text: var(--ifm-font-color-base);
+  --dd-border: var(--doc-border-outer);
+  --dd-border-soft: var(--doc-border-inner);
+  --dd-border-strong: var(--doc-border-outer);
+  --dd-surface: var(--doc-surface);
+  --dd-surface-alt: var(--doc-surface-soft);
+  --dd-text: var(--doc-text);
   --dd-muted: var(
     --ifm-color-content-secondary,
     color-mix(in srgb, var(--ifm-font-color-base) 62%, transparent)
@@ -115,7 +110,7 @@
   display: block;
   margin: 0;
   padding: 0.28rem 0.48rem;
-  border: 1px solid color-mix(in srgb, var(--dd-accent) 68%, var(--dd-border));
+  border: 1px solid var(--dd-border);
   border-radius: 0.38rem;
   background: var(--dd-accent);
   color: var(--dd-accent-text);
@@ -164,7 +159,7 @@
   margin: 0;
   padding: 0;
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--dd-accent) 54%, var(--dd-border));
+  border: 1px solid var(--dd-border);
   border-radius: 0.42rem;
   background: var(--dd-surface);
 }
@@ -174,8 +169,7 @@
   margin: 0;
   padding: 0.28rem 0.42rem;
   border: 0;
-  border-bottom: 1px solid
-    color-mix(in srgb, var(--dd-accent) 32%, var(--dd-border));
+  border-bottom: 1px solid var(--dd-border-soft);
   background: var(--dd-accent-soft);
   color: var(--dd-text);
   font-size: 11.5px;
@@ -210,7 +204,7 @@
 }
 
 .diagnostic-diagram .dd-section + .dd-section {
-  border-top: 1px solid color-mix(in srgb, var(--dd-border) 68%, transparent);
+  border-top: 1px solid var(--dd-border-soft);
 }
 
 .diagnostic-diagram .dd-section-title {
@@ -327,15 +321,14 @@
   margin: 0;
   padding: 0;
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--dd-followup) 68%, var(--dd-border));
+  border: 1px solid var(--dd-border);
   border-radius: 0.44rem;
   background: var(--dd-followup-soft);
 }
 
 .diagnostic-diagram .dd-followup-title {
   border: 0;
-  border-bottom: 1px solid
-    color-mix(in srgb, var(--dd-followup) 55%, var(--dd-border));
+  border-bottom: 1px solid var(--dd-border-soft);
   border-radius: 0;
   background: color-mix(in srgb, var(--dd-followup) 88%, var(--dd-surface));
   color: var(
@@ -359,13 +352,11 @@
 }
 
 .diagnostic-diagram .dd-section--followup:nth-child(even) {
-  border-left: 1px solid
-    color-mix(in srgb, var(--dd-followup) 27%, var(--dd-border));
+  border-left: 1px solid var(--dd-border-soft);
 }
 
 .diagnostic-diagram .dd-section--followup:nth-child(n + 3) {
-  border-top: 1px solid
-    color-mix(in srgb, var(--dd-followup) 27%, var(--dd-border));
+  border-top: 1px solid var(--dd-border-soft);
 }
 
 .diagnostic-diagram .dd-section--followup .dd-section-title {
@@ -381,7 +372,7 @@
 .diagnostic-diagram .dd-notes {
   margin: 0.38rem 0 0;
   padding: 0.28rem 0.42rem;
-  border-left: 2px solid var(--dd-border-strong);
+  border-left: 1px solid var(--dd-border);
   background: color-mix(in srgb, var(--dd-surface-alt) 58%, transparent);
   font-size: 9.8px;
   line-height: 1.22;
@@ -464,7 +455,6 @@
   }
 
   .diagnostic-diagram .dd-section--followup:nth-child(n + 2) {
-    border-top: 1px solid
-      color-mix(in srgb, var(--dd-followup) 27%, var(--dd-border));
+    border-top: 1px solid var(--dd-border-soft);
   }
 }

@@ -4,10 +4,12 @@
 
 :root {
   --cdg-chip-hover-brightness: 0.985;
-  --cdg-chip-hover-border: rgba(2, 6, 23, 0.14);
+  --cdg-border: var(--doc-border-outer, rgba(92, 92, 92, 0.26));
+  --cdg-border-soft: var(--doc-border-inner, rgba(92, 92, 92, 0.17));
+  --cdg-chip-hover-border: var(--cdg-border);
   --cdg-chip-hover-shadow: none;
 
-  --cdg-line-color: rgba(2, 6, 23, 0.10);
+  --cdg-line-color: var(--cdg-border-soft);
 
   --cdg-gap-col: 14px;
   --cdg-gap-group: 12px;
@@ -23,9 +25,9 @@
 html[data-theme="light"],
 body[data-theme="light"] {
   --cdg-chip-hover-brightness: 0.97;
-  --cdg-chip-hover-border: rgba(2, 6, 23, 0.14);
+  --cdg-chip-hover-border: var(--cdg-border);
   --cdg-chip-hover-shadow: none;
-  --cdg-line-color: rgba(2, 6, 23, 0.10);
+  --cdg-line-color: var(--cdg-border-soft);
 }
 
 /* Dark */
@@ -33,9 +35,9 @@ body[data-theme="light"] {
 html[data-theme="dark"],
 body[data-theme="dark"] {
   --cdg-chip-hover-brightness: 1.18;
-  --cdg-chip-hover-border: rgba(148, 163, 184, 0.22);
+  --cdg-chip-hover-border: var(--cdg-border);
   --cdg-chip-hover-shadow: none;
-  --cdg-line-color: rgba(148, 163, 184, 0.22);
+  --cdg-line-color: var(--cdg-border-soft);
 }
 
 /* police Docusaurus */
@@ -53,7 +55,7 @@ button.cdg-chip {
   padding: 10px 12px;
   border-radius: 12px;
   background: var(--ifm-background-surface-color);
-  border: 1px solid rgba(2, 6, 23, 0.08);
+  border: 1px solid var(--cdg-border);
 }
 
 /* offset navbar fixe (Docusaurus) */
@@ -225,7 +227,7 @@ button.cdg-chip {
   color: var(--ifm-alert-foreground-color);
   background: var(--ifm-alert-background-color);
 
-  border: 1px solid rgba(2, 6, 23, 0.08);
+  border: 1px solid var(--cdg-border);
   text-decoration: none;
 
   cursor: pointer;
@@ -296,7 +298,7 @@ button.cdg-chip {
   padding: 0.22rem 0.55rem;
   opacity: 0.98;
 
-  border-color: rgba(59, 130, 246, 0.25);
+  border-color: var(--cdg-border);
 }
 
 /* H6 : encore un cran plus discret */
@@ -311,7 +313,7 @@ button.cdg-chip {
   padding: 0.20rem 0.52rem;
   opacity: 0.96;
 
-  border-color: rgba(59, 130, 246, 0.22);
+  border-color: var(--cdg-border);
 }
 
 /* Alignement horizontal global des puces. Les règles spécifiques des arbres,
@@ -2921,7 +2923,7 @@ button.cdg-chip {
   width: var(--cdg-separator-size, 1px) !important;
   min-width: var(--cdg-separator-size, 1px) !important;
   transform: translateX(-50%) !important;
-  background: var(--cdg-separator-color, rgba(2, 6, 23, 0.12)) !important;
+  background: var(--cdg-separator-color, var(--doc-border-inner, rgba(92, 92, 92, 0.17))) !important;
   border: 0 !important;
   margin: 0 !important;
   padding: 0 !important;
@@ -3047,7 +3049,7 @@ button.cdg-chip {
   width: var(--cdg-separator-size, 1px) !important;
   min-width: var(--cdg-separator-size, 1px) !important;
   transform: translateX(-50%) !important;
-  background: var(--cdg-separator-color, rgba(2, 6, 23, 0.12)) !important;
+  background: var(--cdg-separator-color, var(--doc-border-inner, rgba(92, 92, 92, 0.17))) !important;
   border: 0 !important;
   margin: 0 !important;
   padding: 0 !important;
@@ -3088,7 +3090,7 @@ button.cdg-chip {
   margin: 7px 0 !important;
   padding: 0 !important;
   border: 0 !important;
-  background: var(--cdg-separator-color, rgba(2, 6, 23, 0.12)) !important;
+  background: var(--cdg-separator-color, var(--doc-border-inner, rgba(92, 92, 92, 0.17))) !important;
   pointer-events: none !important;
   box-sizing: border-box !important;
 }
@@ -3207,7 +3209,7 @@ button.cdg-chip {
   width: var(--cdg-separator-size, 1px) !important;
   min-width: var(--cdg-separator-size, 1px) !important;
   transform: translateX(-50%) !important;
-  background: var(--cdg-separator-color, rgba(2, 6, 23, 0.12)) !important;
+  background: var(--cdg-separator-color, var(--doc-border-inner, rgba(92, 92, 92, 0.17))) !important;
   border: 0 !important;
   margin: 0 !important;
   padding: 0 !important;
@@ -3270,3 +3272,628 @@ button.cdg-chip {
     display: contents !important;
   }
 }
+
+/* ==========================================================================
+   CONTRAT FINAL DU CADRE ET DES SÉPARATEURS — ClassificationDiagram
+   --------------------------------------------------------------------------
+   Objectifs :
+   - toutes les bordures structurelles rejoignent physiquement le cadre ;
+   - cadre externe = bordure documentaire externe ;
+   - séparation titre / contenu = même bordure que le cadre externe ;
+   - séparateurs situés après le titre = bordure documentaire interne ;
+   - le padding horizontal est porté par les cellules, et non par .cdg :
+     cela évite les séparateurs raccourcis compensés par des marges négatives.
+   ========================================================================== */
+
+.cdg {
+  --cdg-outer-pad-x: 12px;
+  --cdg-outer-pad-y: 10px;
+  --cdg-h2-cell-pad-y: 16px;
+
+  --cdg-separator-color: var(--doc-border-inner);
+  --cdg-separator-size: var(--doc-border-width, 1px);
+
+  --cdg-title-separator-color: var(--doc-border-outer);
+  --cdg-title-separator-size: var(--doc-border-width, 1px);
+
+  padding: 0 !important;
+  border: var(--doc-border-outer-rule) !important;
+  border-radius: var(--doc-radius) !important;
+  overflow: hidden;
+  box-shadow: none;
+}
+
+/* L'option "sans bordures" continue de neutraliser le cadre. */
+.cdg.cdg-no-borders {
+  border-color: transparent !important;
+}
+
+/* --------------------------------------------------------------------------
+   Titre du diagramme
+   --------------------------------------------------------------------------
+   Le trait situé sous le titre appartient visuellement au cadre principal :
+   il emploie donc la bordure EXTERNE, et va réellement de bord à bord.
+   -------------------------------------------------------------------------- */
+.cdg > .cdg-root,
+.cdg > .cdg-root.cdg-root--with-controls,
+.cdg > .cdg-root--with-controls {
+  width: 100% !important;
+  margin: 0 !important;
+  padding:
+    calc(var(--cdg-outer-pad-y) + 2px)
+    var(--cdg-outer-pad-x)
+    var(--cdg-outer-pad-y)
+    var(--cdg-outer-pad-x) !important;
+  border: 0 !important;
+  border-bottom:
+    var(--cdg-title-separator-size)
+    solid
+    var(--cdg-title-separator-color) !important;
+  box-sizing: border-box !important;
+}
+
+.cdg > .cdg-root--with-controls .cdg-root-controls,
+.cdg > .cdg-root.cdg-root--with-controls .cdg-root-controls {
+  right: var(--cdg-outer-pad-x) !important;
+}
+
+/* --------------------------------------------------------------------------
+   H2 empilés
+   --------------------------------------------------------------------------
+   Le conteneur occupe toute la largeur du cadre. Le padding est déplacé dans
+   chaque cellule ; le border-top d'une cellule peut donc toucher les deux
+   bords externes sans compensation par marge négative.
+   -------------------------------------------------------------------------- */
+.cdg > .cdg-root-items[data-layout="stack"] {
+  width: 100% !important;
+  gap: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.cdg > .cdg-root-items[data-layout="stack"] > .cdg-node {
+  width: 100% !important;
+  margin: 0 !important;
+  padding:
+    var(--cdg-h2-cell-pad-y)
+    var(--cdg-outer-pad-x) !important;
+  box-sizing: border-box !important;
+}
+
+.cdg:not(.cdg-no-borders)
+  > .cdg-root-items[data-layout="stack"]
+  > .cdg-node
+  + .cdg-node {
+  border-top:
+    var(--cdg-separator-size)
+    solid
+    var(--cdg-separator-color) !important;
+}
+
+.cdg.cdg-no-borders
+  > .cdg-root-items[data-layout="stack"]
+  > .cdg-node
+  + .cdg-node {
+  border-top-color: transparent !important;
+}
+
+/* --------------------------------------------------------------------------
+   H2 en grille et variante featured23
+   --------------------------------------------------------------------------
+   Ces zones sont elles aussi bord à bord. Les colonnes portent l'espacement
+   interne ; les séparateurs dédiés utilisent la bordure douce.
+   -------------------------------------------------------------------------- */
+.cdg > .cdg-root-items[data-layout="grid"],
+.cdg > .cdg-root-items[data-layout="featured23"] {
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.cdg > .cdg-root-items[data-layout="grid"] > .cdg-root-column,
+.cdg > .cdg-root-items[data-layout="featured23"] > .cdg-root-column {
+  padding:
+    var(--cdg-h2-cell-pad-y)
+    var(--cdg-outer-pad-x) !important;
+  box-sizing: border-box !important;
+}
+
+/* Les séparateurs verticaux explicites utilisent toujours la bordure interne. */
+.cdg.cdg-center-divider
+  > .cdg-root-items[data-layout="grid"]
+  > .cdg-root-center-divider,
+.cdg.cdg-center-divider
+  > .cdg-root-items[data-layout="featured23"]
+  > .cdg-root-feature-divider {
+  background: var(--cdg-separator-color) !important;
+}
+
+/* Séparateurs H2 horizontaux : largeur réelle du cadre, sans gap latéral. */
+.cdg.cdg-h2-separators .cdg-root-h2-divider {
+  width: calc(
+    100% + var(--cdg-outer-pad-x) + var(--cdg-outer-pad-x)
+  ) !important;
+  max-width: none !important;
+  margin-left: calc(-1 * var(--cdg-outer-pad-x)) !important;
+  margin-right: calc(-1 * var(--cdg-outer-pad-x)) !important;
+  background: var(--cdg-separator-color) !important;
+}
+
+/* --------------------------------------------------------------------------
+   Layout legacy gauche / droite
+   -------------------------------------------------------------------------- */
+.cdg > .cdg-cols {
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.cdg > .cdg-cols > .cdg-col {
+  padding:
+    var(--cdg-h2-cell-pad-y)
+    var(--cdg-outer-pad-x) !important;
+  box-sizing: border-box !important;
+}
+
+.cdg:not(.cdg-no-borders)
+  > .cdg-cols:not([data-layout="stack"])
+  > .cdg-col
+  + .cdg-col {
+  border-left:
+    var(--cdg-separator-size)
+    solid
+    var(--cdg-separator-color) !important;
+}
+
+.cdg:not(.cdg-no-borders)
+  > .cdg-cols[data-layout="stack"]
+  > .cdg-col
+  + .cdg-col {
+  border-top:
+    var(--cdg-separator-size)
+    solid
+    var(--cdg-separator-color) !important;
+}
+
+/* --------------------------------------------------------------------------
+   Responsive
+   --------------------------------------------------------------------------
+   Lorsque les colonnes deviennent une pile, le séparateur horizontal reste
+   bord à bord : le padding doit rester sur chaque cellule et non sur le parent.
+   -------------------------------------------------------------------------- */
+@media (max-width: 980px) {
+  .cdg > .cdg-root-items[data-layout="grid"],
+  .cdg > .cdg-root-items[data-layout="featured23"] {
+    padding: 0 !important;
+  }
+
+  .cdg > .cdg-root-items[data-layout="grid"] > .cdg-root-column,
+  .cdg > .cdg-root-items[data-layout="featured23"] > .cdg-root-column {
+    padding:
+      var(--cdg-h2-cell-pad-y)
+      var(--cdg-outer-pad-x) !important;
+  }
+}
+
+/* ==========================================================================
+   AJUSTEMENTS D'ALIGNEMENT — titre et H2 sans contenu
+   ========================================================================== */
+
+/* Bouton "Entraînement" :
+   centrage vertical réel dans toute la zone de titre, indépendamment
+   du padding appliqué au header du diagramme. */
+.cdg > .cdg-root--with-controls .cdg-root-controls,
+.cdg > .cdg-root.cdg-root--with-controls .cdg-root-controls {
+  top: 50% !important;
+  right: var(--cdg-outer-pad-x) !important;
+  transform: translateY(-50%) !important;
+}
+
+/* Un H2 sans aucun contenu enfant ne doit pas conserver la marge basse
+   normalement prévue entre le H2 et ses puces. Avec le padding vertical
+   symétrique de la cellule, la puce se retrouve ainsi réellement centrée. */
+.cdg
+  > .cdg-root-items[data-layout="stack"]
+  > .cdg-node.cdg-node-bodyless
+  > .cdg-h2 {
+  margin-bottom: 0 !important;
+}
+
+/* Sur mobile les contrôles repassent dans le flux : on annule alors
+   le positionnement vertical absolu. */
+@media (max-width: 720px) {
+  .cdg > .cdg-root--with-controls .cdg-root-controls,
+  .cdg > .cdg-root.cdg-root--with-controls .cdg-root-controls {
+    top: auto !important;
+    right: auto !important;
+    transform: none !important;
+  }
+}
+
+/* ==========================================================================
+   SÉPARATEURS VERTICAUX H2 — TRACKS DÉDIÉS
+   --------------------------------------------------------------------------
+   Contrat graphique :
+   - épaisseur : --doc-border-width ;
+   - couleur   : --doc-border-inner ;
+   - aucune border-left sur les colonnes ;
+   - aucun gap utilisé comme faux séparateur ;
+   - aucun positionnement à 50 % / translateX.
+
+   Le séparateur possède son propre track CSS Grid de largeur EXACTE.
+   Il ne peut donc ni se dédoubler, ni hériter d'une autre bordure, ni varier
+   d'épaisseur selon la largeur fractionnaire des colonnes.
+   ========================================================================== */
+
+/* Base commune : aucun mécanisme concurrent ne dessine une séparation. */
+.cdg.cdg-center-divider
+  > .cdg-root-items[data-layout="grid"] {
+  gap: 0 !important;
+  column-gap: 0 !important;
+  background: transparent !important;
+}
+
+.cdg.cdg-center-divider
+  > .cdg-root-items[data-layout="grid"]
+  > .cdg-root-column {
+  border-left: 0 !important;
+  border-right: 0 !important;
+}
+
+/* 2 groupes H2 : contenu | 1px | contenu */
+.cdg:not(.cdg-no-borders).cdg-center-divider
+  > .cdg-root-items[data-layout="grid"][data-columns="2"] {
+  grid-template-columns:
+    minmax(0, 1fr)
+    var(--doc-border-width)
+    minmax(0, 1fr) !important;
+}
+
+.cdg.cdg-center-divider
+  > .cdg-root-items[data-layout="grid"][data-columns="2"]
+  > .cdg-root-column[data-root-column="1"] {
+  grid-column: 1 !important;
+}
+
+.cdg.cdg-center-divider
+  > .cdg-root-items[data-layout="grid"][data-columns="2"]
+  > .cdg-root-column[data-root-column="2"] {
+  grid-column: 3 !important;
+}
+
+.cdg:not(.cdg-no-borders).cdg-center-divider
+  > .cdg-root-items[data-layout="grid"][data-columns="2"]
+  > .cdg-root-center-divider[style*="--cdg-divider-index: 1"] {
+  display: block !important;
+  position: static !important;
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  width: auto !important;
+  min-width: 0 !important;
+  height: auto !important;
+  min-height: 100% !important;
+  inset: auto !important;
+  transform: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: var(--doc-border-inner) !important;
+  pointer-events: none !important;
+  z-index: auto !important;
+}
+
+/* 3 groupes H2 : contenu | 1px | contenu | 1px | contenu */
+.cdg:not(.cdg-no-borders).cdg-center-divider
+  > .cdg-root-items[data-layout="grid"][data-columns="3"] {
+  grid-template-columns:
+    minmax(0, 1fr)
+    var(--doc-border-width)
+    minmax(0, 1fr)
+    var(--doc-border-width)
+    minmax(0, 1fr) !important;
+}
+
+.cdg.cdg-center-divider
+  > .cdg-root-items[data-layout="grid"][data-columns="3"]
+  > .cdg-root-column[data-root-column="1"] {
+  grid-column: 1 !important;
+}
+
+.cdg.cdg-center-divider
+  > .cdg-root-items[data-layout="grid"][data-columns="3"]
+  > .cdg-root-column[data-root-column="2"] {
+  grid-column: 3 !important;
+}
+
+.cdg.cdg-center-divider
+  > .cdg-root-items[data-layout="grid"][data-columns="3"]
+  > .cdg-root-column[data-root-column="3"] {
+  grid-column: 5 !important;
+}
+
+.cdg:not(.cdg-no-borders).cdg-center-divider
+  > .cdg-root-items[data-layout="grid"][data-columns="3"]
+  > .cdg-root-center-divider[style*="--cdg-divider-index: 1"] {
+  display: block !important;
+  position: static !important;
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  width: auto !important;
+  min-width: 0 !important;
+  height: auto !important;
+  min-height: 100% !important;
+  inset: auto !important;
+  transform: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: var(--doc-border-inner) !important;
+  pointer-events: none !important;
+  z-index: auto !important;
+}
+
+.cdg:not(.cdg-no-borders).cdg-center-divider
+  > .cdg-root-items[data-layout="grid"][data-columns="3"]
+  > .cdg-root-center-divider[style*="--cdg-divider-index: 2"] {
+  display: block !important;
+  position: static !important;
+  grid-column: 4 !important;
+  grid-row: 1 !important;
+  width: auto !important;
+  min-width: 0 !important;
+  height: auto !important;
+  min-height: 100% !important;
+  inset: auto !important;
+  transform: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: var(--doc-border-inner) !important;
+  pointer-events: none !important;
+  z-index: auto !important;
+}
+
+/* 4 groupes H2 : même principe, avec trois tracks structurels de 1px. */
+.cdg:not(.cdg-no-borders).cdg-center-divider
+  > .cdg-root-items[data-layout="grid"][data-columns="4"] {
+  grid-template-columns:
+    minmax(0, 1fr)
+    var(--doc-border-width)
+    minmax(0, 1fr)
+    var(--doc-border-width)
+    minmax(0, 1fr)
+    var(--doc-border-width)
+    minmax(0, 1fr) !important;
+}
+
+.cdg.cdg-center-divider
+  > .cdg-root-items[data-layout="grid"][data-columns="4"]
+  > .cdg-root-column[data-root-column="1"] { grid-column: 1 !important; }
+
+.cdg.cdg-center-divider
+  > .cdg-root-items[data-layout="grid"][data-columns="4"]
+  > .cdg-root-column[data-root-column="2"] { grid-column: 3 !important; }
+
+.cdg.cdg-center-divider
+  > .cdg-root-items[data-layout="grid"][data-columns="4"]
+  > .cdg-root-column[data-root-column="3"] { grid-column: 5 !important; }
+
+.cdg.cdg-center-divider
+  > .cdg-root-items[data-layout="grid"][data-columns="4"]
+  > .cdg-root-column[data-root-column="4"] { grid-column: 7 !important; }
+
+.cdg:not(.cdg-no-borders).cdg-center-divider
+  > .cdg-root-items[data-layout="grid"][data-columns="4"]
+  > .cdg-root-center-divider[style*="--cdg-divider-index: 1"] {
+  display: block !important;
+  position: static !important;
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  width: auto !important;
+  min-width: 0 !important;
+  min-height: 100% !important;
+  inset: auto !important;
+  transform: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: var(--doc-border-inner) !important;
+  z-index: auto !important;
+}
+
+.cdg:not(.cdg-no-borders).cdg-center-divider
+  > .cdg-root-items[data-layout="grid"][data-columns="4"]
+  > .cdg-root-center-divider[style*="--cdg-divider-index: 2"] {
+  display: block !important;
+  position: static !important;
+  grid-column: 4 !important;
+  grid-row: 1 !important;
+  width: auto !important;
+  min-width: 0 !important;
+  min-height: 100% !important;
+  inset: auto !important;
+  transform: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: var(--doc-border-inner) !important;
+  z-index: auto !important;
+}
+
+.cdg:not(.cdg-no-borders).cdg-center-divider
+  > .cdg-root-items[data-layout="grid"][data-columns="4"]
+  > .cdg-root-center-divider[style*="--cdg-divider-index: 3"] {
+  display: block !important;
+  position: static !important;
+  grid-column: 6 !important;
+  grid-row: 1 !important;
+  width: auto !important;
+  min-width: 0 !important;
+  min-height: 100% !important;
+  inset: auto !important;
+  transform: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: var(--doc-border-inner) !important;
+  z-index: auto !important;
+}
+
+/* Variante featured23 : 2fr | 1px | 1fr. */
+.cdg:not(.cdg-no-borders).cdg-center-divider
+  > .cdg-root-items[data-layout="featured23"] {
+  grid-template-columns:
+    minmax(0, 2fr)
+    var(--doc-border-width)
+    minmax(0, 1fr) !important;
+  gap: 0 !important;
+  background: transparent !important;
+}
+
+.cdg.cdg-center-divider
+  > .cdg-root-items[data-layout="featured23"]
+  > .cdg-root-feature-main {
+  grid-column: 1 !important;
+  border-right: 0 !important;
+}
+
+.cdg.cdg-center-divider
+  > .cdg-root-items[data-layout="featured23"]
+  > .cdg-root-feature-side {
+  grid-column: 3 !important;
+  border-left: 0 !important;
+}
+
+.cdg:not(.cdg-no-borders).cdg-center-divider
+  > .cdg-root-items[data-layout="featured23"]
+  > .cdg-root-feature-divider {
+  display: block !important;
+  position: static !important;
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  width: auto !important;
+  min-width: 0 !important;
+  min-height: 100% !important;
+  inset: auto !important;
+  transform: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: var(--doc-border-inner) !important;
+  z-index: auto !important;
+}
+
+/* Mode sans bordures : aucun track séparateur visible. */
+.cdg.cdg-no-borders.cdg-center-divider
+  > .cdg-root-items[data-layout="grid"]
+  > .cdg-root-center-divider,
+.cdg.cdg-no-borders.cdg-center-divider
+  > .cdg-root-items[data-layout="featured23"]
+  > .cdg-root-feature-divider {
+  display: none !important;
+}
+
+/* En dessous du breakpoint, le composant repasse en pile et les tracks
+   dédiés sont neutralisés. */
+@media (max-width: 980px) {
+  .cdg.cdg-center-divider
+    > .cdg-root-items[data-layout="grid"],
+  .cdg.cdg-center-divider
+    > .cdg-root-items[data-layout="featured23"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  .cdg.cdg-center-divider
+    > .cdg-root-items[data-layout="grid"]
+    > .cdg-root-column,
+  .cdg.cdg-center-divider
+    > .cdg-root-items[data-layout="featured23"]
+    > .cdg-root-column {
+    grid-column: auto !important;
+  }
+
+  .cdg.cdg-center-divider
+    > .cdg-root-items[data-layout="grid"]
+    > .cdg-root-center-divider,
+  .cdg.cdg-center-divider
+    > .cdg-root-items[data-layout="featured23"]
+    > .cdg-root-feature-divider {
+    display: none !important;
+  }
+}
+
+/* ==========================================================================
+   HIÉRARCHIE D'ESPACEMENT — groupes H3 / enfants H4
+   --------------------------------------------------------------------------
+   Logique globale du diagramme Standard :
+   - éléments appartenant au même groupe : espacement court ;
+   - passage au groupe H3 suivant : espacement plus grand.
+
+   Cela évite qu'un H3 soit visuellement plus éloigné de ses propres H4 que
+   du H3 suivant.
+   ========================================================================== */
+
+.cdg {
+  --cdg-space-within-group: 4px;
+  --cdg-space-between-groups: 12px;
+}
+
+/* H3 possédant des H4 : le titre reste proche de ses propres enfants. */
+.cdg
+  .cdg-depth-3.cdg-h3-skeleton-node[data-diagram-preset="standard"]
+  > .cdg-h3 {
+  margin-bottom: var(--cdg-space-within-group) !important;
+}
+
+/* Un H3 feuille n'a pas besoin d'une marge interne sous son titre :
+   l'espacement avec le H3 suivant est entièrement porté par le parent. */
+.cdg
+  .cdg-depth-3.cdg-node-bodyless
+  > .cdg-h3 {
+  margin-bottom: 0 !important;
+}
+
+/* Même principe pour les H4 feuilles : leur séparation est gérée par
+   le conteneur de fratrie, pas par une marge résiduelle sur chaque titre. */
+.cdg
+  .cdg-depth-4.cdg-node-bodyless
+  > .cdg-h4 {
+  margin-bottom: 0 !important;
+}
+
+/* Au niveau H2, chaque ligne représente un groupe H3 distinct :
+   c'est ici que l'espacement inter-groupes doit être marqué. */
+.cdg
+  .cdg-depth-2.cdg-h3-skeleton-node[data-diagram-preset="standard"]
+  > .cdg-mixed-rows.cdg-standard-rows {
+  row-gap: var(--cdg-space-between-groups) !important;
+}
+
+/* Lorsque le rendu Standard transforme plusieurs lignes en colonnes
+   indépendantes, conserver exactement le même espacement inter-groupes. */
+.cdg
+  .cdg-depth-2.cdg-h3-skeleton-node[data-diagram-preset="standard"]
+  > .cdg-mixed-rows
+  > .cdg-standard-column-group
+  > .cdg-standard-column {
+  gap: var(--cdg-space-between-groups) !important;
+}
+
+/* À l'intérieur d'un H3, les H4 appartiennent au même groupe :
+   leur espacement reste volontairement plus compact. */
+.cdg
+  .cdg-depth-3.cdg-h3-skeleton-node[data-diagram-preset="standard"]
+  > .cdg-mixed-rows.cdg-standard-rows {
+  row-gap: var(--cdg-space-within-group) !important;
+}
+
+.cdg
+  .cdg-depth-3.cdg-h3-skeleton-node[data-diagram-preset="standard"]
+  > .cdg-mixed-rows
+  > .cdg-standard-column-group
+  > .cdg-standard-column {
+  gap: var(--cdg-space-within-group) !important;
+}
+

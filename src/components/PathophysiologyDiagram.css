@@ -1,6 +1,5 @@
 /* src/components/PathophysiologyDiagram.css */
 
-@import "./StructuredBlocksTheme.css";
 
 .pathophysiology-diagram,
 .pathophysiology-diagram * {
@@ -8,14 +7,14 @@
 }
 
 .pathophysiology-diagram {
-  --pdg-accent: var(--sbt-accent);
-  --pdg-accent-strong: var(--sbt-accent-strong);
-  --pdg-border: var(--sbt-border);
-  --pdg-border-soft: var(--sbt-border-soft);
-  --pdg-surface: var(--sbt-surface);
-  --pdg-surface-soft: var(--sbt-surface-soft);
-  --pdg-text: var(--sbt-text);
-  --pdg-muted: var(--sbt-muted);
+  --pdg-accent: var(--doc-accent);
+  --pdg-accent-strong: var(--doc-accent-strong);
+  --pdg-border: var(--doc-border-outer);
+  --pdg-border-soft: var(--doc-border-inner);
+  --pdg-surface: var(--doc-surface);
+  --pdg-surface-soft: var(--doc-surface-soft);
+  --pdg-text: var(--doc-text);
+  --pdg-muted: var(--doc-muted);
 
   container-type: inline-size;
   width: 100%;
@@ -226,7 +225,7 @@
 
 .pathophysiology-diagram .pdg-outcome-card {
   width: min(49%, 30rem);
-  border-color: color-mix(in srgb, var(--pdg-accent) 74%, var(--pdg-border));
+  border-color: var(--pdg-border);
   border-radius: 0;
 }
 
@@ -240,7 +239,7 @@
 .pathophysiology-diagram.pdg-error {
   padding: 0.8rem 0.9rem;
   border: 1px solid color-mix(in srgb, var(--ifm-color-danger) 42%, transparent);
-  border-radius: var(--sbt-radius);
+  border-radius: var(--doc-radius);
   background: color-mix(
     in srgb,
     var(--ifm-color-danger) 7%,
@@ -352,7 +351,7 @@
 
 .pathophysiology-diagram .pdg-group-card {
   width: min(78%, 18rem);
-  border-color: color-mix(in srgb, var(--pdg-accent) 58%, var(--pdg-border));
+  border-color: var(--pdg-border);
 }
 
 .pathophysiology-diagram .pdg-group-card .pdg-card-title {
@@ -466,12 +465,12 @@
 }
 
 .pathophysiology-diagram.pdg-graph .pdg-tone-blue {
-  border-color: color-mix(in srgb, #159ed0 82%, var(--pdg-border));
+  border-color: var(--pdg-border);
   background: color-mix(in srgb, #159ed0 16%, var(--pdg-surface));
 }
 
 .pathophysiology-diagram.pdg-graph .pdg-tone-blue-solid {
-  border-color: color-mix(in srgb, #159ed0 92%, var(--pdg-border));
+  border-color: var(--pdg-border);
   background: #159ed0;
 }
 
@@ -481,12 +480,12 @@
 }
 
 .pathophysiology-diagram.pdg-graph .pdg-tone-orange {
-  border-color: color-mix(in srgb, #e8891b 88%, var(--pdg-border));
+  border-color: var(--pdg-border);
   background: color-mix(in srgb, #e8891b 25%, var(--pdg-surface));
 }
 
 .pathophysiology-diagram.pdg-graph .pdg-tone-yellow {
-  border-color: color-mix(in srgb, #d5b73f 55%, var(--pdg-border));
+  border-color: var(--pdg-border);
   background: color-mix(in srgb, #d5b73f 14%, var(--pdg-surface));
 }
 

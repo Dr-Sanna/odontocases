@@ -1,7 +1,6 @@
 /* src/components/SectorGrid.css */
 
 
-@import "./StructuredBlocksTheme.css";
 
 .sector-grid,
 .sector-grid * {
@@ -9,14 +8,14 @@
 }
 
 .sector-grid {
-  --sg-accent: var(--sbt-accent);
-  --sg-accent-strong: var(--sbt-accent-strong);
-  --sg-border: var(--sbt-border);
-  --sg-border-soft: var(--sbt-border-soft);
-  --sg-surface: var(--sbt-surface);
-  --sg-surface-soft: var(--sbt-surface-soft);
-  --sg-text: var(--sbt-text);
-  --sg-muted: var(--sbt-muted);
+  --sg-accent: var(--doc-accent);
+  --sg-accent-strong: var(--doc-accent-strong);
+  --sg-border: var(--doc-border-outer);
+  --sg-border-soft: var(--doc-border-inner);
+  --sg-surface: var(--doc-surface);
+  --sg-surface-soft: var(--doc-surface-soft);
+  --sg-text: var(--doc-text);
+  --sg-muted: var(--doc-muted);
   --sg-column-gap: var(--sbt-gap);
   --sg-card-gap: var(--sbt-gap);
 
@@ -94,7 +93,7 @@
   padding: 0;
   overflow: hidden;
   border: 1px solid var(--sg-border);
-  border-radius: var(--sbt-radius);
+  border-radius: var(--doc-radius);
   background: var(--sg-surface);
   box-shadow: none;
 }

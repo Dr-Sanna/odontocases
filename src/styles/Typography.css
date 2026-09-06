@@ -1,3 +1,4 @@
+
 /* =========================
    ARTICLE TYPOGRAPHY — VARIABLES
    ========================= */
@@ -167,237 +168,181 @@
 }
 
 /* =========================
-   TABLES CKEditor + Markdown
+   TABLEAUX HTML / MARKDOWN — STYLE DOCUMENTAIRE GLOBAL
+   ---------------------------------------------------
+   Référence graphique : ClinicalLayout / panel lesions.
+   Les callouts disposant de tableaux spécialisés restent surchargés dans
+   Callouts.css et ne sont pas redéfinis ici.
    ========================= */
 .casedetail {
-  --cd-table-border: rgba(0, 0, 0, 0.12);
-
-  /* Teintes issues de la palette primaire du site. */
-  --cd-table-bg-head: color-mix(
-    in srgb,
-    var(--ifm-color-primary) 8%,
-    var(--ifm-background-surface-color)
-  );
-  --cd-table-bg-title: color-mix(
-    in srgb,
-    var(--ifm-color-primary) 4%,
-    var(--ifm-background-surface-color)
-  );
-  --cd-table-heading-color: var(--ifm-color-primary-darkest);
-
+  --cd-table-border: var(--doc-table-border-outer);
+  --cd-table-border-soft: var(--doc-table-border-inner);
+  --cd-table-bg: var(--doc-table-surface);
+  --cd-table-bg-head: var(--doc-table-heading-bg);
+  --cd-table-bg-title: var(--doc-table-heading-bg);
+  --cd-table-heading-color: var(--doc-table-heading-color);
+  --cd-table-radius: var(--doc-table-radius);
+  --cd-table-font-size: var(--doc-table-font-size);
+  --cd-table-padding: var(--doc-table-cell-padding);
+  --cd-table-heading-padding: var(--doc-table-heading-padding);
   --cd-table-code-bg: #f6f8fa;
-  --cd-table-font-size: 0.9em;
-  --cd-table-padding: 0.5em 0.5em;
 }
 
 [data-theme="dark"] .casedetail {
-  --cd-table-border: rgba(255, 255, 255, 0.14);
-  --cd-table-bg-head: color-mix(
-    in srgb,
-    var(--ifm-color-primary) 14%,
-    var(--ifm-background-surface-color)
-  );
-  --cd-table-bg-title: color-mix(
-    in srgb,
-    var(--ifm-color-primary) 7%,
-    var(--ifm-background-surface-color)
-  );
-  --cd-table-heading-color: var(--ifm-color-primary-lightest);
-  --cd-table-code-bg: rgba(255, 255, 255, 0.08);
+  --cd-table-code-bg: color-mix(in srgb, #ffffff 7%, transparent);
 }
 
 .casedetail figure.table {
   margin: 0.9em 0;
 }
 
-.casedetail table:not(.cd-imgtable) {
+/* Le cadre externe est unique et plus marqué ; les séparateurs sont plus doux. */
+.casedetail table:not(.cd-imgtable),
+.casedetail table.cd-imgtable {
   width: 100%;
   max-width: 100%;
-  border-collapse: collapse;
-  border-spacing: 0;
   margin: 1em 0 var(--ifm-paragraph-margin-bottom);
+  overflow: hidden;
   border: 1px solid var(--cd-table-border);
+  border-radius: var(--cd-table-radius);
+  border-collapse: separate;
+  border-spacing: 0;
   table-layout: auto;
+  background: var(--cd-table-bg);
+  color: var(--doc-text);
 }
 
-.casedetail table:not(.cd-imgtable).ck-table-resized {
+.casedetail table:not(.cd-imgtable).ck-table-resized,
+.casedetail table.cd-imgtable.ck-table-resized {
   table-layout: fixed;
 }
 
-.casedetail table:not(.cd-imgtable) thead {
-  display: table-header-group;
-}
-
-.casedetail table:not(.cd-imgtable) tbody {
-  display: table-row-group;
-}
-
-.casedetail table:not(.cd-imgtable) tfoot {
-  display: table-footer-group;
-}
-
-.casedetail table:not(.cd-imgtable) tr {
-  display: table-row;
-}
-
-.casedetail table:not(.cd-imgtable) th,
-.casedetail table:not(.cd-imgtable) td {
+.casedetail table:not(.cd-imgtable) :is(th, td),
+.casedetail table.cd-imgtable :is(th, td) {
   display: table-cell;
-  border: 1px solid var(--cd-table-border);
+  min-width: 0;
   padding: var(--cd-table-padding);
+  border: 0;
+  border-right: 1px solid var(--cd-table-border-soft);
+  border-bottom: 1px solid var(--cd-table-border-soft);
+  background: var(--cd-table-bg);
+  color: var(--doc-text);
   vertical-align: top;
   text-align: left;
   font-size: var(--cd-table-font-size);
-  line-height: 1.5;
+  line-height: var(--sbt-body-line);
 }
 
-.casedetail table:not(.cd-imgtable) th {
+.casedetail table:not(.cd-imgtable) tr > :last-child,
+.casedetail table.cd-imgtable tr > :last-child {
+  border-right: 0;
+}
+
+.casedetail table:not(.cd-imgtable) tbody:last-child tr:last-child > td,
+.casedetail table.cd-imgtable tbody:last-child tr:last-child > td,
+.casedetail table:not(.cd-imgtable) tfoot tr:last-child > td,
+.casedetail table.cd-imgtable tfoot tr:last-child > td {
+  border-bottom: 0;
+}
+
+/* En-têtes de colonnes ET en-têtes de lignes : même traitement graphique.
+   Un <th> placé dans le <tbody> est un en-tête de ligne sémantique ; il doit
+   donc reprendre la même surface et le même vert typographique que le THEAD. */
+.casedetail table:not(.cd-imgtable) :is(thead th, tbody th),
+.casedetail table.cd-imgtable :is(thead th, tbody th) {
+  padding: var(--cd-table-heading-padding);
   background: var(--cd-table-bg-head);
   color: var(--cd-table-heading-color);
-  padding: 0.65em 0.75em;
-  font-weight: 600;
-  text-align: center;
   vertical-align: middle;
-  letter-spacing: 0.025em;
+  text-align: center;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: normal;
+  text-transform: none;
 }
 
-.casedetail table:not(.cd-imgtable) strong,
-.casedetail table:not(.cd-imgtable) th strong,
-.casedetail table:not(.cd-imgtable) td strong {
-  font-weight: 600;
-}
-
-.casedetail table:not(.cd-imgtable) code {
-  background: var(--cd-table-code-bg);
-  border-radius: 6px;
-  padding: 0.15em 0.35em;
-  font-size: 90%;
-}
-
-.casedetail table:not(.cd-imgtable) td p,
-.casedetail table:not(.cd-imgtable) th p {
-  margin: 0;
-}
-
-.casedetail table:not(.cd-imgtable) td p:not(:last-child),
-.casedetail table:not(.cd-imgtable) th p:not(:last-child) {
-  margin-bottom: 0.5em;
-}
-
-
-/* =========================
-   TABLES — alignement avec Obsidian
-   - TH en capitales
-   - H4 dans une cellule = même aspect qu'un TH, sans capitales
-   ========================= */
-.casedetail table:not(.cd-imgtable) th {
-  background: var(--cd-table-bg-head) !important;
-  color: var(--cd-table-heading-color) !important;
-  padding: 0.65em 0.75em !important;
-  font-weight: 600 !important;
-  text-align: center !important;
-  vertical-align: middle !important;
-  letter-spacing: 0.025em !important;
-  text-transform: uppercase !important;
-}
-
-.casedetail table:not(.cd-imgtable) :is(td, th):has(h4) {
+/* Un heading placé dans une cellule devient un véritable en-tête interne. */
+.casedetail table:not(.cd-imgtable) :is(td, th):has(:is(h2, h3, h4, h5, h6)),
+.casedetail table.cd-imgtable :is(td, th):has(:is(h2, h3, h4, h5, h6)) {
+  padding: var(--cd-table-heading-padding) !important;
   background: var(--cd-table-bg-title) !important;
-  padding: 0.6em 0.7em !important;
-  font-weight: 600 !important;
-  text-align: center !important;
+  color: var(--cd-table-heading-color) !important;
   vertical-align: middle !important;
-  text-transform: none !important;
-}
-
-/* Cas direct : <td><h4>...</h4></td> */
-.casedetail table:not(.cd-imgtable) :is(td, th):has(> h4) {
-  height: 1px;
-}
-
-.casedetail table:not(.cd-imgtable) :is(td, th):has(> h4) > h4 {
-  height: 100%;
-}
-
-/* Cas enveloppé : <td><p><h4>...</h4></p></td> ou wrappers similaires */
-.casedetail table:not(.cd-imgtable) :is(td, th):has(h4) > :where(p, div) {
-  margin: 0 !important;
   text-align: center !important;
-  text-transform: none !important;
 }
 
-.casedetail table:not(.cd-imgtable) :is(td, th):has(> p > h4) > p,
-.casedetail table:not(.cd-imgtable) :is(td, th):has(> div > h4) > div {
-  min-height: 100%;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-}
-
-.casedetail table:not(.cd-imgtable) :is(td, th) h4 {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
+.casedetail table:not(.cd-imgtable) :is(td, th) :is(h2, h3, h4, h5, h6),
+.casedetail table.cd-imgtable :is(td, th) :is(h2, h3, h4, h5, h6) {
+  display: block !important;
   width: 100% !important;
   margin: 0 !important;
   padding: 0 !important;
-  color: inherit !important;
+  border: 0 !important;
   background: transparent !important;
+  color: inherit !important;
   font-family: inherit !important;
-  font-size: inherit !important;
-  line-height: inherit !important;
-  font-weight: 600 !important;
+  font-size: var(--sbt-title-size) !important;
+  line-height: 1.3 !important;
+  font-weight: 700 !important;
+  letter-spacing: normal !important;
   text-align: center !important;
-  letter-spacing: 0.01em !important;
   text-transform: none !important;
 }
 
+.casedetail table :is(td, th) h2::after {
+  display: none !important;
+}
 
-/* =========================
-   TABLES — listes alignées avec Obsidian
-   - pas d'indentation dans les cellules
-   - puces UL remplacées par des tirets
-   - interligne interne conservé
-   - espace entre deux éléments = espace entre deux paragraphes du tableau
-   ========================= */
-.casedetail table:not(.cd-imgtable) :is(td, th) :is(ul, ol) {
+.casedetail table :is(td, th) > :where(p, div):has(:is(h2, h3, h4, h5, h6)) {
   margin: 0 !important;
-  padding-left: 0 !important;
-  line-height: 1.5 !important;
-  white-space: normal !important;
+  text-align: center !important;
+}
+
+.casedetail table:not(.cd-imgtable) strong,
+.casedetail table.cd-imgtable strong {
+  font-weight: 600;
+}
+
+.casedetail table:not(.cd-imgtable) code,
+.casedetail table.cd-imgtable code {
+  padding: 0.15em 0.35em;
+  border-radius: 6px;
+  background: var(--cd-table-code-bg);
+  font-size: 90%;
+}
+
+.casedetail table :is(td, th) p {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.casedetail table :is(td, th) p:not(:last-child) {
+  margin-bottom: 0.5em;
+}
+
+/* Listes internes calquées sur les blocs structurés : indentation classique,
+   rythme compact et marqueurs verts, sans remplacement par des tirets. */
+.casedetail table :is(td, th) :is(ul, ol) {
+  margin: 0.1rem 0 0.45rem;
+  padding-left: 1.2rem;
+  line-height: inherit;
+  white-space: normal;
   overflow-wrap: anywhere;
   word-break: break-word;
 }
 
-.casedetail table:not(.cd-imgtable) :is(td, th) ul {
-  list-style: none !important;
+.casedetail table :is(td, th) li {
+  margin: 0;
+  padding: 0;
+  line-height: inherit;
 }
 
-.casedetail table:not(.cd-imgtable) :is(td, th) ul > li::before {
-  content: "– ";
+.casedetail table :is(td, th) li + li {
+  margin-top: 0.2rem;
 }
 
-.casedetail table:not(.cd-imgtable) :is(td, th) ol {
-  list-style-position: inside !important;
-}
-
-.casedetail table:not(.cd-imgtable) :is(td, th) li {
-  margin: 0 !important;
-  padding: 0 !important;
-  line-height: 1.5 !important;
-}
-
-.casedetail table:not(.cd-imgtable) :is(td, th) li + li {
-  margin-top: 0.5em !important;
-}
-
-.casedetail table:not(.cd-imgtable) :is(td, th) li > p {
-  margin: 0 !important;
-  line-height: inherit !important;
-}
-
-.casedetail table:not(.cd-imgtable) :is(td, th) li > p:not(:last-child) {
-  margin-bottom: 0.5em !important;
+.casedetail table :is(td, th) li::marker {
+  color: var(--cd-table-heading-color);
 }
 
 /* =========================
@@ -475,95 +420,14 @@
    TABLEAUX D’IMAGES (vh/vw)
    ========================= */
 
-/* bordures desktop pour les tableaux d’images */
-.casedetail table.cd-imgtable {
-  width: 100%;
-  max-width: 100%;
-  border-collapse: collapse;
-  border-spacing: 0;
-  margin: 1em 0 var(--ifm-paragraph-margin-bottom);
-  border: 1px solid var(--cd-table-border) !important;
-  table-layout: auto;
-}
+/* Le cadre, les séparateurs et les headings héritent désormais du style
+   documentaire global défini plus haut. */
 
-.casedetail table.cd-imgtable thead {
-  display: table-header-group;
-}
-
-.casedetail table.cd-imgtable tbody {
-  display: table-row-group;
-}
-
-.casedetail table.cd-imgtable tfoot {
-  display: table-footer-group;
-}
-
-.casedetail table.cd-imgtable tr {
-  display: table-row;
-}
-
-.casedetail table.cd-imgtable th,
-.casedetail table.cd-imgtable td {
-  display: table-cell;
-  border: 1px solid var(--cd-table-border) !important;
-  padding: var(--cd-table-padding);
-  vertical-align: top;
-  text-align: left;
-  font-size: var(--cd-table-font-size);
-  line-height: 1.5;
-}
-
-/*
- * Les tableaux contenant des images gardent une typographie de tableau
- * normale. Seules les cellules qui contiennent effectivement une image
- * sont centrées par la règle dédiée située juste après.
- */
-
-
-/* centre uniquement les cellules qui contiennent une image */
+/* Centre uniquement les cellules qui contiennent une image. */
 .casedetail table.cd-imgtable td:has(img) {
   text-align: center;
   padding-top: 0.35rem;
   padding-bottom: 0.35rem;
-}
-
-/* H4 utilisés comme en-têtes dans les tableaux d’images */
-.casedetail table.cd-imgtable th {
-  background: var(--cd-table-bg-head) !important;
-  color: var(--cd-table-heading-color) !important;
-  padding: 0.65em 0.75em !important;
-  font-weight: 600 !important;
-  text-align: center !important;
-  vertical-align: middle !important;
-  letter-spacing: 0.025em !important;
-  text-transform: uppercase !important;
-}
-
-.casedetail table.cd-imgtable :is(td, th):has(> h4) {
-  background: var(--cd-table-bg-title) !important;
-  padding: 0.6em 0.7em !important;
-  text-align: center !important;
-  vertical-align: middle !important;
-  font-weight: 600 !important;
-  text-transform: none !important;
-}
-
-.casedetail table.cd-imgtable :is(td, th) > h4 {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  width: 100% !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  color: inherit !important;
-  background: transparent !important;
-  font-family: inherit !important;
-  font-size: inherit !important;
-  line-height: inherit !important;
-  font-weight: 600 !important;
-  text-align: center !important;
-  letter-spacing: 0.01em !important;
-  text-transform: none !important;
 }
 
 /* Pas de marge résiduelle sous le dernier paragraphe d’une cellule */
@@ -724,18 +588,12 @@
    ========================= */
 
 @media (max-width: 980px) {
-  /* Couleur bordure cohérente avec ton style */
-  :root {
-    --cd-grid-border: rgba(0, 0, 0, 0.12);
-  }
-  [data-theme="dark"] {
-    --cd-grid-border: rgba(255, 255, 255, 0.14);
-  }
-
   .casedetail table.cd-imgtable {
     width: 100% !important;
     display: block !important;
-    overflow-x: visible !important;
+    overflow: hidden !important;
+    border: 1px solid var(--cd-table-border) !important;
+    border-radius: var(--cd-table-radius) !important;
   }
 
   .casedetail table.cd-imgtable thead,
@@ -745,23 +603,14 @@
     width: 100% !important;
   }
 
-  /* Chaque ligne devient une grille (sans gap) + bordure externe gauche */
+  /* Chaque ligne devient une grille sans recréer de cadre extérieur. */
   .casedetail table.cd-imgtable tr {
     display: grid !important;
     width: 100% !important;
     gap: 0 !important;
     align-items: stretch !important;
-
-    /* 1 cellule => 100% */
     grid-template-columns: 1fr !important;
-
-    /* bordure extérieure gauche */
-    border-left: 1px solid var(--cd-grid-border) !important;
-  }
-
-  /* bordure extérieure haute (une seule fois) */
-  .casedetail table.cd-imgtable tbody tr:first-child {
-    border-top: 1px solid var(--cd-grid-border) !important;
+    border: 0 !important;
   }
 
   /* 2 cellules => 2 colonnes */
@@ -781,12 +630,20 @@
     padding: 0.5rem !important;
 
     border: 0 !important;
-    border-right: 1px solid var(--cd-grid-border) !important;
-    border-bottom: 1px solid var(--cd-grid-border) !important;
+    border-right: 1px solid var(--cd-table-border-soft) !important;
+    border-bottom: 1px solid var(--cd-table-border-soft) !important;
 
     display: flex !important;
     flex-direction: column !important;
     height: 100% !important;
+  }
+
+  .casedetail table.cd-imgtable tr > :last-child {
+    border-right: 0 !important;
+  }
+
+  .casedetail table.cd-imgtable tbody tr:last-child > td {
+    border-bottom: 0 !important;
   }
 
   /* Figure pleine hauteur */
@@ -829,6 +686,10 @@
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 
+  .casedetail table.cd-imgtable tr:has(> td:nth-child(3)) > td:nth-child(2n) {
+    border-right: 0 !important;
+  }
+
   /* Un peu plus haut sur très petit écran */
   .casedetail table.cd-imgtable td figure.image > img,
   .casedetail table.cd-imgtable td figure.cd-figure > img,
@@ -856,18 +717,17 @@
 
 .cd-figure:has(> table.cd-imgtable + figcaption) > table.cd-imgtable {
   margin-bottom: 0 !important;
+  border-radius: var(--cd-table-radius) var(--cd-table-radius) 0 0 !important;
 }
 
 .cd-figure > table.cd-imgtable + figcaption.cd-figcaption {
-  border: 1px solid rgba(0, 0, 0, 0.12) ; /* ou une couleur fixe */
-  border-top: none;
-  padding: 0.5rem 0.75rem;
-  margin-top: 0 !important;
   display: block;
-}
-
-[data-theme="dark"] .cd-figure > table.cd-imgtable + figcaption.cd-figcaption {
-    border-color: rgba(255, 255, 255, 0.14);
+  margin-top: 0 !important;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--cd-table-border);
+  border-top: 0;
+  border-radius: 0 0 var(--cd-table-radius) var(--cd-table-radius);
+  background: var(--cd-table-bg);
 }
 
 /* =========================

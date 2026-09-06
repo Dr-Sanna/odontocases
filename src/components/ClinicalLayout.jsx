@@ -93,7 +93,18 @@ function JoinedComparisonPanel({ panel }) {
   const columns = Math.max(1, Number(panel.columns) || panel.items.length || 1);
   const tableStyle = { "--clx-columns": String(columns) };
   const cells = [];
-  const joinedRowCount = 3;
+
+  /*
+   * On prépare une seule fois le découpage de chaque colonne.
+   * Si aucun item ne possède de contenu après son premier bloc Markdown,
+   * la troisième rangée "body" n'existe pas du tout dans le DOM.
+   *
+   * Cela évite la fausse "case vide" qui apparaissait sous une comparaison
+   * composée uniquement d'un titre + une seule ligne/phrase de contenu.
+   */
+  const joinedBodies = panel.items.map((item) => splitJoinedBody(item.body));
+  const hasBodyRow = joinedBodies.some(({ rest }) => Boolean(rest));
+  const joinedRowCount = hasBodyRow ? 3 : 2;
 
   const pushCell = (content, kind, rowIndex, colIndex) => {
     const empty = content === null || content === undefined;
@@ -135,13 +146,26 @@ function JoinedComparisonPanel({ panel }) {
     );
   });
   panel.items.forEach((item, colIndex) => {
-    const { lead } = splitJoinedBody(item.body);
-    pushCell(lead ? <MarkdownBlock source={lead} className="clx-joined-lead-markdown" /> : null, "meta", 1, colIndex);
+    const { lead } = joinedBodies[colIndex];
+    pushCell(
+      lead ? <MarkdownBlock source={lead} className="clx-joined-lead-markdown" /> : null,
+      "meta",
+      1,
+      colIndex
+    );
   });
-  panel.items.forEach((item, colIndex) => {
-    const { rest } = splitJoinedBody(item.body);
-    pushCell(rest ? <MarkdownBlock source={rest} className="clx-joined-body-markdown" /> : null, "body", 2, colIndex);
-  });
+
+  if (hasBodyRow) {
+    panel.items.forEach((item, colIndex) => {
+      const { rest } = joinedBodies[colIndex];
+      pushCell(
+        rest ? <MarkdownBlock source={rest} className="clx-joined-body-markdown" /> : null,
+        "body",
+        2,
+        colIndex
+      );
+    });
+  }
 
   return <div className="clx-joined-table" data-columns={String(columns)} style={tableStyle}>{cells}</div>;
 }
@@ -1079,7 +1103,9 @@ function LesionComparisonTable({ items, columns, title, groupIndex, panel }) {
 
         if (!(Number.isFinite(commonHeight) && commonHeight > 0)) return;
 
-        const renderedHeight = Math.max(1, Math.floor(commonHeight));
+        // Conserver la valeur subpixel exacte évite qu'une image qui devrait
+        // remplir son cadre perde ~1 px après arrondi vers le bas.
+        const renderedHeight = Math.max(1, commonHeight);
 
         entries.forEach(({ image, ratio, slotWidth }) => {
           const renderedWidth = Math.min(slotWidth, renderedHeight * ratio);
@@ -1457,6 +1483,14 @@ function StepSequence({ panel, panelStyle }) {
         if (!sequence.isConnected) return;
 
         /*
+         * La hauteur des légendes/auteurs est recalculée à chaque passe à
+         * partir de leur hauteur intrinsèque. On retire d'abord l'ancienne
+         * valeur commune pour permettre à une légende de rétrécir après un
+         * resize ou une modification de contenu.
+         */
+        sequence.style.removeProperty("--clx-step-caption-height");
+
+        /*
          * On calcule la plus grande hauteur commune permettant à
          * toutes les images de conserver leur ratio sans dépasser la largeur
          * de leur cadre. La hauteur visible des images devient donc identique,
@@ -1492,7 +1526,9 @@ function StepSequence({ panel, panelStyle }) {
         );
 
         if (Number.isFinite(commonHeight) && commonHeight > 0) {
-          const nextHeight = Math.max(1, Math.floor(commonHeight));
+          // Ne pas arrondir vers le bas : la largeur recalculée à partir du
+          // ratio doit pouvoir retomber exactement sur celle du cadre.
+          const nextHeight = Math.max(1, commonHeight);
           const currentHeight = Number.parseFloat(
             sequence.style.getPropertyValue("--clx-step-image-height")
           );
@@ -1510,6 +1546,33 @@ function StepSequence({ panel, panelStyle }) {
             image.style.setProperty("object-position", "center center", "important");
           });
         }
+
+        /*
+         * Même principe pour les zones caption + auteur :
+         * on mesure toutes les légendes après insertion éventuelle des crédits
+         * générés par CaseMarkdown, puis on applique la plus grande hauteur à
+         * toutes les cartes de la séquence.
+         */
+        const captions = Array.from(
+          sequence.querySelectorAll(".clx-item-steps.clx-step-has-media .clx-step-caption")
+        );
+
+        if (captions.length) {
+          const commonCaptionHeight = Math.max(
+            ...captions.map((caption) => {
+              const rectHeight = caption.getBoundingClientRect?.().height || 0;
+              const scrollHeight = caption.scrollHeight || 0;
+              return Math.max(rectHeight, scrollHeight);
+            })
+          );
+
+          if (Number.isFinite(commonCaptionHeight) && commonCaptionHeight > 0) {
+            sequence.style.setProperty(
+              "--clx-step-caption-height",
+              `${Math.ceil(commonCaptionHeight)}px`
+            );
+          }
+        }
       });
     };
 
@@ -1521,7 +1584,21 @@ function StepSequence({ panel, panelStyle }) {
     updateImageHeight();
 
     let observer = null;
+    let mutationObserver = null;
     let onWindowResize = null;
+
+    /*
+     * Les crédits d'image peuvent être ajoutés au DOM après le premier rendu.
+     * On recalcule alors la hauteur commune des zones légende + auteur.
+     */
+    if (typeof MutationObserver !== "undefined") {
+      mutationObserver = new MutationObserver(() => updateImageHeight());
+      mutationObserver.observe(sequence, {
+        childList: true,
+        subtree: true,
+        characterData: true,
+      });
+    }
 
     if (typeof ResizeObserver !== "undefined") {
       let lastWidth = sequence.getBoundingClientRect?.().width || sequence.clientWidth || 0;
@@ -1540,6 +1617,7 @@ function StepSequence({ panel, panelStyle }) {
     return () => {
       cancelAnimationFrame(frameId);
       observer?.disconnect();
+      mutationObserver?.disconnect();
       if (onWindowResize) window.removeEventListener("resize", onWindowResize);
       images.forEach((image) => image.removeEventListener("load", updateImageHeight));
     };
@@ -1605,7 +1683,9 @@ function GalleryPanel({ panel, panelStyle }) {
           ...entries.map((entry) => entry.maxHeight)
         );
         if (Number.isFinite(commonHeight) && commonHeight > 0) {
-          const nextHeight = Math.max(1, Math.floor(commonHeight));
+          // Ne pas arrondir vers le bas : la largeur recalculée à partir du
+          // ratio doit pouvoir retomber exactement sur celle du cadre.
+          const nextHeight = Math.max(1, commonHeight);
           gallery.style.setProperty("--clx-step-image-height", `${nextHeight}px`);
 
           entries.forEach(({ image, frameWidth, ratio }) => {
@@ -1723,6 +1803,47 @@ function SharedPanel({ panel }) {
   );
 }
 
+
+function clinicalGridItemSpan(item, columns) {
+  const safeColumns = Math.max(1, Number(columns) || 1);
+  if (item?.layout === "wide") return safeColumns;
+  if (item?.layout === "span3") return Math.min(3, safeColumns);
+  if (item?.layout === "span2") return Math.min(2, safeColumns);
+  return 1;
+}
+
+function clinicalGridSlotMeta(items, columns) {
+  const safeColumns = Math.max(1, Number(columns) || 1);
+  let row = 1;
+  let column = 1;
+
+  return (Array.isArray(items) ? items : []).map((item) => {
+    const span = clinicalGridItemSpan(item, safeColumns);
+
+    if (column + span - 1 > safeColumns) {
+      row += 1;
+      column = 1;
+    }
+
+    const meta = {
+      row,
+      column,
+      span,
+      hasTopBorder: row > 1,
+      hasLeftBorder: column > 1,
+    };
+
+    column += span;
+
+    if (column > safeColumns) {
+      row += 1;
+      column = 1;
+    }
+
+    return meta;
+  });
+}
+
 function Panel({ panel }) {
   const isSteps = panel.type === "steps";
   const isMedia = panel.type === "media";
@@ -1730,6 +1851,11 @@ function Panel({ panel }) {
   const isMatrix = panel.type === "matrix";
   const isGallery = panel.type === "gallery";
   const isShared = panel.type === "shared";
+  const gridSlotMeta =
+    panel.type === "grid"
+      ? clinicalGridSlotMeta(panel.items, panel.columns)
+      : null;
+
   const panelStyle = {
     "--clx-columns": String(panel.columns),
     "--clx-media-main": `${panel.ratio?.[0] || 65}fr`,
@@ -1759,8 +1885,14 @@ function Panel({ panel }) {
       ) : isShared ? (
         <SharedPanel panel={panel} />
       ) : (
-        <div className="clx-items" style={panelStyle}>
+        <div
+          className="clx-items"
+          style={panelStyle}
+          data-columns={panel.type === "grid" ? String(panel.columns) : undefined}
+          data-grid-borders={panel.type === "grid" ? "true" : undefined}
+        >
           {panel.items.map((item, index) => {
+            const gridMeta = gridSlotMeta?.[index] || null;
             const slotClass = [
               "clx-item-slot",
               item.layout === "wide" ? "clx-item-slot-wide" : "",
@@ -1772,7 +1904,14 @@ function Panel({ panel }) {
             ].filter(Boolean).join(" ");
 
             return (
-              <div className={slotClass} key={`${item.title}-${index}`}>
+              <div
+                className={slotClass}
+                key={`${item.title}-${index}`}
+                data-grid-row={gridMeta ? String(gridMeta.row) : undefined}
+                data-grid-column={gridMeta ? String(gridMeta.column) : undefined}
+                data-grid-top={gridMeta?.hasTopBorder ? "true" : undefined}
+                data-grid-left={gridMeta?.hasLeftBorder ? "true" : undefined}
+              >
                 <ItemCard item={item} panelType={panel.type} index={index} panel={panel} />
               </div>
             );

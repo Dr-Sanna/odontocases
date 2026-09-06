@@ -5,18 +5,19 @@
  * import "./DiagnosticOrientationTable.css";
  */
 
+
 .cd-content table.def-table.diagnostic-orientation-table,
 table.def-table.diagnostic-orientation-table {
-  --dot-accent: var(--sbt-accent, hsl(142 34.34% 48.375%));
-  --dot-accent-strong: var(--sbt-accent-strong, hsl(143 34% 45%));
-  --dot-border: var(--sbt-border, #d5d5d5);
-  --dot-border-soft: var(--sbt-border-soft, #e3e3e3);
-  --dot-surface: var(--sbt-surface, #fff);
-  --dot-surface-soft: var(--sbt-surface-soft, #fcfbfa);
-  --dot-surface-strong: var(--sbt-surface-strong, #faf9f8);
-  --dot-category-bg: color-mix(in srgb, var(--dot-accent) 5.5%, var(--dot-surface-strong));
-  --dot-text: var(--sbt-text, #222);
-  --dot-radius: var(--sbt-radius, 9px);
+  --dot-accent: var(--doc-accent, hsl(142 34.34% 48.375%));
+  --dot-accent-strong: var(--doc-accent-strong, hsl(143 34% 45%));
+  --dot-border: var(--doc-border-outer, #d5d5d5);
+  --dot-border-soft: var(--doc-border-inner, #e3e3e3);
+  --dot-surface: var(--doc-surface, #fff);
+  --dot-surface-soft: var(--doc-surface-soft, #fcfbfa);
+  --dot-surface-strong: var(--doc-surface-strong, #faf9f8);
+  --dot-category-bg: var(--doc-surface-soft, #fcfbfa);
+  --dot-text: var(--doc-text, #222);
+  --dot-radius: var(--doc-radius, 9px);
 
   width: 100% !important;
   max-width: 100% !important;
@@ -64,8 +65,8 @@ table.def-table.diagnostic-orientation-table tbody tr:last-child > td {
 table.def-table.diagnostic-orientation-table thead th {
   padding-block: 0.5rem !important;
   vertical-align: middle !important;
-  background: var(--dot-surface-strong) !important;
-  color: var(--dot-text) !important;
+  background: var(--dot-surface-soft) !important;
+  color: var(--dot-accent-strong) !important;
   font-size: 0.91rem !important;
   line-height: 1.2 !important;
   font-weight: 750 !important;
@@ -78,8 +79,8 @@ table.def-table.diagnostic-orientation-table thead th {
 .cd-content table.def-table.diagnostic-orientation-table thead th:last-child,
 table.def-table.diagnostic-orientation-table thead th:nth-last-child(2),
 table.def-table.diagnostic-orientation-table thead th:last-child {
-  background: var(--dot-surface-strong) !important;
-  color: var(--dot-text) !important;
+  background: var(--dot-surface-soft) !important;
+  color: var(--dot-accent-strong) !important;
 }
 
 .cd-content table.def-table.diagnostic-orientation-table :is(thead th, tbody td):nth-last-child(2),
@@ -133,7 +134,8 @@ table.def-table.diagnostic-orientation-table p + p {
   margin-top: 0.18rem !important;
 }
 
-/* Bordures épaisses enregistrées par le plugin sur chaque cellule. */
+/* Séparateurs explicites enregistrés par le plugin : même épaisseur globale,
+   mais teinte externe plus marquée pour conserver leur rôle de repère. */
 .cd-content table.def-table.diagnostic-orientation-table :is(td, th).cell-border-top,
 .cd-content table.def-table.diagnostic-orientation-table :is(td, th).cell-border-bottom,
 .cd-content table.def-table.diagnostic-orientation-table :is(td, th).cell-border-left,
@@ -151,22 +153,22 @@ table.def-table.diagnostic-orientation-table :is(td, th).cell-border-right {
 
 .cd-content table.def-table.diagnostic-orientation-table :is(td, th).cell-border-top,
 table.def-table.diagnostic-orientation-table :is(td, th).cell-border-top {
-  --dot-cell-top: 2px;
+  --dot-cell-top: 1px;
 }
 
 .cd-content table.def-table.diagnostic-orientation-table :is(td, th).cell-border-right,
 table.def-table.diagnostic-orientation-table :is(td, th).cell-border-right {
-  --dot-cell-right: 2px;
+  --dot-cell-right: 1px;
 }
 
 .cd-content table.def-table.diagnostic-orientation-table :is(td, th).cell-border-bottom,
 table.def-table.diagnostic-orientation-table :is(td, th).cell-border-bottom {
-  --dot-cell-bottom: 2px;
+  --dot-cell-bottom: 1px;
 }
 
 .cd-content table.def-table.diagnostic-orientation-table :is(td, th).cell-border-left,
 table.def-table.diagnostic-orientation-table :is(td, th).cell-border-left {
-  --dot-cell-left: 2px;
+  --dot-cell-left: 1px;
 }
 
 .cd-content table.def-table.diagnostic-orientation-table :is(td, th).cell-border-top::after,
@@ -184,7 +186,7 @@ table.def-table.diagnostic-orientation-table :is(td, th).cell-border-left::after
   pointer-events: none;
   box-sizing: border-box;
   border-style: solid;
-  border-color: color-mix(in srgb, var(--dot-accent) 42%, var(--dot-border));
+  border-color: var(--dot-border);
   border-width: var(--dot-cell-top) var(--dot-cell-right) var(--dot-cell-bottom) var(--dot-cell-left);
 }
 

@@ -1,7 +1,6 @@
 /* Definition Grid v1.6 — comparaison mieux équilibrée et séparateurs internes adoucis */
 
 
-@import "./StructuredBlocksTheme.css";
 
 .definition-grid,
 .definition-grid * {
@@ -10,19 +9,19 @@
 
 .cd-content .definition-grid,
 .definition-grid {
-  --dfg-accent: var(--sbt-accent);
-  --dfg-accent-strong: var(--sbt-accent-strong);
-  --dfg-border: var(--sbt-border);
-  --dfg-border-soft: var(--sbt-border-soft);
-  --dfg-surface: var(--sbt-surface);
-  --dfg-surface-soft: var(--sbt-surface-soft);
-  --dfg-surface-softer: color-mix(in srgb, var(--sbt-surface-soft) 48%, var(--sbt-surface));
-  --dfg-comparison-bg: var(--sbt-surface-soft);
-  --dfg-divider-line: var(--sbt-border);
+  --dfg-accent: var(--doc-accent);
+  --dfg-accent-strong: var(--doc-accent-strong);
+  --dfg-border: var(--doc-border-outer);
+  --dfg-border-soft: var(--doc-border-inner);
+  --dfg-surface: var(--doc-surface);
+  --dfg-surface-soft: var(--doc-surface-soft);
+  --dfg-surface-softer: color-mix(in srgb, var(--doc-surface-soft) 48%, var(--doc-surface));
+  --dfg-comparison-bg: var(--doc-surface-soft);
+  --dfg-divider-line: var(--doc-border-inner);
   --dfg-underline-line: var(--sbt-underline);
-  --dfg-inner-divider-line: var(--sbt-border-soft);
-  --dfg-text: var(--sbt-text);
-  --dfg-muted: var(--sbt-muted);
+  --dfg-inner-divider-line: var(--doc-border-inner);
+  --dfg-text: var(--doc-text);
+  --dfg-muted: var(--doc-muted);
 
   --dfg-font-body: var(--sbt-body-size);
   --dfg-font-body-emphasis: var(--sbt-body-size);
@@ -107,7 +106,7 @@
   padding: 0;
   overflow: hidden;
   border: 1px solid var(--dfg-border);
-  border-radius: var(--sbt-radius);
+  border-radius: var(--doc-radius);
   background: var(--dfg-surface);
   box-shadow: none;
 }
@@ -359,7 +358,7 @@
   margin: 0.64rem 0 0;
   padding: 0.58rem 0.62rem 0.18rem;
   border: 0;
-  border-radius: var(--sbt-radius);
+  border-radius: var(--doc-radius);
   background: var(--dfg-comparison-bg);
 }
 

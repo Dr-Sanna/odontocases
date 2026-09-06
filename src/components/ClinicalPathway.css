@@ -1,7 +1,6 @@
 /* src/components/ClinicalPathway.css */
 
 
-@import "./StructuredBlocksTheme.css";
 
 .clinical-pathway,
 .clinical-pathway * {
@@ -9,15 +8,15 @@
 }
 
 .clinical-pathway {
-  --cpg-accent: var(--sbt-accent);
-  --cpg-accent-strong: var(--sbt-accent-strong);
-  --cpg-border: var(--sbt-border);
-  --cpg-border-soft: var(--sbt-border-soft);
-  --cpg-surface: var(--sbt-surface);
-  --cpg-surface-soft: var(--sbt-surface-soft);
-  --cpg-surface-strong: var(--sbt-surface-strong);
-  --cpg-text: var(--sbt-text);
-  --cpg-muted: var(--sbt-muted);
+  --cpg-accent: var(--doc-accent);
+  --cpg-accent-strong: var(--doc-accent-strong);
+  --cpg-border: var(--doc-border-outer);
+  --cpg-border-soft: var(--doc-border-inner);
+  --cpg-surface: var(--doc-surface);
+  --cpg-surface-soft: var(--doc-surface-soft);
+  --cpg-surface-strong: var(--doc-surface-strong);
+  --cpg-text: var(--doc-text);
+  --cpg-muted: var(--doc-muted);
 
   container-type: inline-size;
   display: grid;
@@ -129,7 +128,7 @@
   justify-content: center;
   width: 2rem;
   height: 2rem;
-  border: 1.5px solid var(--cpg-accent);
+  border: 1px solid var(--cpg-border);
   border-radius: 999px;
   color: var(--cpg-accent-strong);
   background: var(--cpg-surface);
@@ -143,7 +142,7 @@
   min-width: 0;
   padding: 0.8rem 0.95rem;
   border: 1px solid var(--cpg-border);
-  border-radius: var(--sbt-radius);
+  border-radius: var(--doc-radius);
   background: var(--cpg-surface);
 }
 
@@ -205,7 +204,7 @@
   min-width: 0;
   padding: 0.8rem 0.95rem;
   border: 1px solid var(--cpg-border);
-  border-radius: var(--sbt-radius);
+  border-radius: var(--doc-radius);
   background: var(--cpg-surface);
 }
 
@@ -255,7 +254,7 @@
 .clinical-pathway .cpg-orientation-table {
   overflow: hidden;
   border: 1px solid var(--cpg-border);
-  border-radius: var(--sbt-radius);
+  border-radius: var(--doc-radius);
   background: var(--cpg-surface);
 }
 
@@ -268,7 +267,7 @@
 
 .clinical-pathway .cpg-orientation-header {
   background: var(--cpg-surface-soft);
-  border-bottom: 1px solid var(--cpg-border);
+  border-bottom: 1px solid var(--cpg-border-soft);
 }
 
 .clinical-pathway .cpg-orientation-row + .cpg-orientation-row {
@@ -306,7 +305,7 @@
   display: block;
   padding: 0.8rem 0.9rem;
   border: 1px solid color-mix(in srgb, var(--ifm-color-danger) 42%, transparent);
-  border-radius: var(--sbt-radius);
+  border-radius: var(--doc-radius);
   background: color-mix(
     in srgb,
     var(--ifm-color-danger) 7%,
@@ -405,3 +404,229 @@
     border-top: 1px solid var(--cpg-border-soft);
   }
 }
+
+/* ==========================================================================
+   DÉCISION / BRANCHES — séparation du cadre et des connecteurs
+   --------------------------------------------------------------------------
+   Le trait horizontal de branche (.cpg-branches::before) était placé
+   immédiatement après la carte de décision. Visuellement, il se collait à la
+   bordure basse de la carte et pouvait donner l'impression d'une bordure
+   doublée / plus épaisse.
+
+   Contrat :
+   - cadres de cartes = bordure documentaire externe ;
+   - connecteurs de flux = bordure documentaire interne ;
+   - un petit espace réel sépare la carte de la barre de branchement ;
+   - un trait vertical relie explicitement la décision à cette barre.
+   ========================================================================== */
+
+.clinical-pathway {
+  --cpg-connector-size: var(--doc-border-width);
+  --cpg-connector-color: var(--doc-border-inner);
+  --cpg-decision-branch-gap: 0.72rem;
+}
+
+.clinical-pathway .cpg-step-card,
+.clinical-pathway .cpg-decision,
+.clinical-pathway .cpg-branch,
+.clinical-pathway .cpg-orientation-table {
+  border: var(--doc-border-outer-rule);
+}
+
+/* La décision devient le point d'ancrage du connecteur vertical. */
+.clinical-pathway .cpg-decision {
+  position: relative;
+}
+
+/* Connecteur vertical entre la question et la barre horizontale. */
+.clinical-pathway .cpg-decision::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: var(--cpg-connector-size);
+  height: var(--cpg-decision-branch-gap);
+  background: var(--cpg-connector-color);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+/* La barre horizontale ne touche plus directement la bordure basse
+   de la question. */
+.clinical-pathway .cpg-branches {
+  margin-top: var(--cpg-decision-branch-gap);
+}
+
+/* Tous les connecteurs du branchement utilisent la bordure interne douce. */
+.clinical-pathway .cpg-branches::before {
+  height: var(--cpg-connector-size);
+  background: var(--cpg-connector-color);
+}
+
+.clinical-pathway .cpg-branch::before {
+  width: var(--cpg-connector-size);
+  background: var(--cpg-connector-color);
+}
+
+/* Les autres séparateurs structurels internes utilisent eux aussi
+   explicitement la règle globale douce. */
+.clinical-pathway .cpg-note {
+  border-top: var(--doc-border-inner-rule);
+}
+
+.clinical-pathway .cpg-orientation-header {
+  border-bottom: var(--doc-border-inner-rule);
+}
+
+.clinical-pathway .cpg-orientation-row + .cpg-orientation-row {
+  border-top: var(--doc-border-inner-rule);
+}
+
+.clinical-pathway .cpg-orientation-action {
+  border-left: var(--doc-border-inner-rule);
+}
+
+/* En vue étroite le branchement est empilé et les connecteurs sont masqués. */
+@container (max-width: 720px) {
+  .clinical-pathway .cpg-decision::after {
+    display: none;
+  }
+
+  .clinical-pathway .cpg-branches {
+    margin-top: 0;
+  }
+
+  .clinical-pathway .cpg-orientation-action {
+    border-left: 0;
+    border-top: var(--doc-border-inner-rule);
+  }
+}
+
+@media (max-width: 720px) {
+  .clinical-pathway .cpg-decision::after {
+    display: none;
+  }
+
+  .clinical-pathway .cpg-branches {
+    margin-top: 0;
+  }
+
+  .clinical-pathway .cpg-orientation-action {
+    border-left: 0;
+    border-top: var(--doc-border-inner-rule);
+  }
+}
+
+/* ==========================================================================
+   BRANCHEMENT SVG — mécanisme canonique
+   --------------------------------------------------------------------------
+   Les connecteurs décision → branches ne sont plus dessinés avec des
+   pseudo-éléments CSS. Un SVG mesure les positions réelles de la décision
+   et de chaque carte puis trace un seul path continu.
+
+   Cela garantit :
+   - une seule épaisseur : --doc-border-width ;
+   - une seule couleur : --doc-border-inner ;
+   - des jonctions géométriquement exactes ;
+   - aucun double trait / chevauchement / sous-pixel dû aux pseudo-éléments.
+   ========================================================================== */
+
+.clinical-pathway {
+  --cpg-branch-connector-height: 1.5rem;
+}
+
+/* On neutralise complètement les anciens connecteurs CSS. */
+.clinical-pathway .cpg-decision::after,
+.clinical-pathway .cpg-branches::before,
+.clinical-pathway .cpg-branch::before {
+  content: none !important;
+  display: none !important;
+}
+
+/* Le conteneur commence immédiatement après la décision.
+   Son padding supérieur réserve exactement la zone du SVG. */
+.clinical-pathway .cpg-branches {
+  position: relative;
+  margin-top: 0 !important;
+  padding-top: var(--cpg-branch-connector-height);
+}
+
+/* SVG superposé uniquement dans la zone réservée au branchement. */
+.clinical-pathway .cpg-branch-connector {
+  position: absolute;
+  inset: 0 0 auto 0;
+  display: block;
+  width: 100%;
+  height: var(--cpg-branch-connector-height);
+  overflow: visible;
+  pointer-events: none;
+}
+
+/* Le path utilise strictement les tokens documentaires globaux.
+   vector-effect empêche toute variation d'épaisseur lors du rendu SVG. */
+.clinical-pathway .cpg-branch-connector-path {
+  fill: none;
+  stroke: var(--doc-border-inner);
+  stroke-width: var(--doc-border-width);
+  vector-effect: non-scaling-stroke;
+  stroke-linecap: butt;
+  stroke-linejoin: miter;
+  shape-rendering: crispEdges;
+}
+
+/* Les cadres restent indépendants du connecteur. */
+.clinical-pathway .cpg-step-card,
+.clinical-pathway .cpg-decision,
+.clinical-pathway .cpg-branch,
+.clinical-pathway .cpg-orientation-table {
+  border: var(--doc-border-outer-rule);
+}
+
+/* Séparateurs internes documentaires. */
+.clinical-pathway .cpg-note {
+  border-top: var(--doc-border-inner-rule);
+}
+
+.clinical-pathway .cpg-orientation-header {
+  border-bottom: var(--doc-border-inner-rule);
+}
+
+.clinical-pathway .cpg-orientation-row + .cpg-orientation-row {
+  border-top: var(--doc-border-inner-rule);
+}
+
+.clinical-pathway .cpg-orientation-action {
+  border-left: var(--doc-border-inner-rule);
+}
+
+/* En disposition mobile les branches s'empilent : pas de branchement SVG. */
+@container (max-width: 720px) {
+  .clinical-pathway .cpg-branch-connector {
+    display: none;
+  }
+
+  .clinical-pathway .cpg-branches {
+    padding-top: 0;
+  }
+
+  .clinical-pathway .cpg-orientation-action {
+    border-left: 0;
+    border-top: var(--doc-border-inner-rule);
+  }
+}
+
+@media (max-width: 720px) {
+  .clinical-pathway .cpg-branch-connector {
+    display: none;
+  }
+
+  .clinical-pathway .cpg-branches {
+    padding-top: 0;
+  }
+
+  .clinical-pathway .cpg-orientation-action {
+    border-left: 0;
+    border-top: var(--doc-border-inner-rule);
+  }
+}
+

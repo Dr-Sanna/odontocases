@@ -1,7 +1,6 @@
 /* src/components/DiagnosticGrid.css */
 
 
-@import "./StructuredBlocksTheme.css";
 
 .diagnostic-grid,
 .diagnostic-grid * {
@@ -9,14 +8,14 @@
 }
 
 .diagnostic-grid {
-  --dxg-accent: var(--sbt-accent);
-  --dxg-accent-strong: var(--sbt-accent-strong);
-  --dxg-border: var(--sbt-border);
-  --dxg-border-soft: var(--sbt-border-soft);
-  --dxg-surface: var(--sbt-surface);
-  --dxg-surface-soft: var(--sbt-surface-soft);
-  --dxg-text: var(--sbt-text);
-  --dxg-muted: var(--sbt-muted);
+  --dxg-accent: var(--doc-accent);
+  --dxg-accent-strong: var(--doc-accent-strong);
+  --dxg-border: var(--doc-border-outer);
+  --dxg-border-soft: var(--doc-border-inner);
+  --dxg-surface: var(--doc-surface);
+  --dxg-surface-soft: var(--doc-surface-soft);
+  --dxg-text: var(--doc-text);
+  --dxg-muted: var(--doc-muted);
 
   container-type: inline-size;
   display: block;
@@ -76,7 +75,7 @@
   padding: 0;
   overflow: hidden;
   border: 1px solid var(--dxg-border);
-  border-radius: var(--sbt-radius);
+  border-radius: var(--doc-radius);
   background: var(--dxg-surface);
 }
 
@@ -90,7 +89,7 @@
 .diagnostic-grid.dxg-layout-clinical .dxg-card {
   overflow: hidden;
   border: 1px solid var(--dxg-border);
-  border-radius: var(--sbt-radius);
+  border-radius: var(--doc-radius);
 }
 
 .diagnostic-grid.dxg-layout-cards .dxg-card + .dxg-card {
@@ -205,13 +204,13 @@
   padding: 0;
   overflow: hidden;
   border: 1px solid var(--dxg-border);
-  border-radius: var(--sbt-radius);
+  border-radius: var(--doc-radius);
   background: var(--dxg-surface);
 }
 
 .diagnostic-grid .dxg-matrix-title {
   padding: 0.58rem 0.78rem;
-  border-bottom: 1px solid var(--dxg-border);
+  border-bottom: 1px solid var(--dxg-border-soft);
   font-size: var(--sbt-title-size);
   line-height: 1.18;
   text-align: left;

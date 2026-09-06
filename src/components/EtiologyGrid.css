@@ -1,7 +1,6 @@
 /* src/components/EtiologyGrid.css */
 
 
-@import "./StructuredBlocksTheme.css";
 
 .etiology-grid,
 .etiology-grid * {
@@ -9,15 +8,15 @@
 }
 
 .etiology-grid {
-  --etg-accent: var(--sbt-accent);
-  --etg-accent-strong: var(--sbt-accent-strong);
-  --etg-border: var(--sbt-border);
-  --etg-border-soft: var(--sbt-border-soft);
-  --etg-surface: var(--sbt-surface);
-  --etg-surface-soft: var(--sbt-surface-soft);
-  --etg-surface-strong: var(--sbt-surface-strong);
-  --etg-text: var(--sbt-text);
-  --etg-muted: var(--sbt-muted);
+  --etg-accent: var(--doc-accent);
+  --etg-accent-strong: var(--doc-accent-strong);
+  --etg-border: var(--doc-border-outer);
+  --etg-border-soft: var(--doc-border-inner);
+  --etg-surface: var(--doc-surface);
+  --etg-surface-soft: var(--doc-surface-soft);
+  --etg-surface-strong: var(--doc-surface-strong);
+  --etg-text: var(--doc-text);
+  --etg-muted: var(--doc-muted);
 
   display: grid;
   grid-template-columns: repeat(var(--etg-grid-columns, 2), minmax(0, 1fr));
@@ -67,7 +66,7 @@
   margin: 0;
   padding: 0.8rem 0.95rem;
   border: 1px solid var(--etg-border);
-  border-radius: var(--sbt-radius);
+  border-radius: var(--doc-radius);
   background: var(--etg-surface);
   color: var(--etg-text);
   font-family: var(--ifm-font-family-base);
@@ -129,7 +128,7 @@
   gap: 0;
   margin: -0.8rem -0.95rem 0.68rem;
   border-bottom: 1px solid var(--etg-border-soft);
-  border-radius: var(--sbt-radius) var(--sbt-radius) 0 0;
+  border-radius: var(--doc-radius) var(--doc-radius) 0 0;
   background: var(--etg-surface-soft);
 }
 
@@ -219,8 +218,8 @@
   overflow: hidden;
   margin: 0;
   padding: 0;
-  border: 1px solid var(--etg-border-soft);
-  border-radius: var(--sbt-radius);
+  border: 1px solid var(--etg-border);
+  border-radius: var(--doc-radius);
   background: var(--etg-surface-soft);
 }
 
@@ -259,8 +258,8 @@
   min-width: 0;
   margin: 0;
   padding: 0.46rem 0.52rem;
-  border: 1px solid var(--etg-border-soft);
-  border-radius: var(--sbt-radius);
+  border: 1px solid var(--etg-border);
+  border-radius: var(--doc-radius);
   background: var(--etg-surface);
 }
 

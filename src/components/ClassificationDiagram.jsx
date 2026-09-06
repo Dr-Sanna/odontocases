@@ -7,9 +7,19 @@ import "./ClassificationDiagram.css";
    Utils
    ========================= */
 function norm(s) {
+  /*
+   * IMPORTANT : cette normalisation doit rester strictement identique à celle
+   * du plugin Obsidian Classification Diagram Builder. Les clés locales H2/H3
+   * sont calculées à partir du texte normalisé des titres ; une différence de
+   * ponctuation typographique (’ vs ', “ vs ", –/— vs -) suffit sinon à rendre
+   * localRules orphelin côté React.
+   */
   return String(s || "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[’‘`´]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/[–—]/g, "-")
     .replace(/\s+/g, " ")
     .trim()
     .toLowerCase();

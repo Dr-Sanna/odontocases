@@ -1,0 +1,111 @@
+/*
+ * StructuredBlocksTheme.css
+ * --------------------------------------------------------------------------
+ * Source globale des valeurs graphiques partagées par toute la
+ * documentation OdontoCases. Chargée une seule fois depuis styles/index.css.
+ *
+ * Référence visuelle : ClinicalLayout / panel lesions.
+ * - bordure externe : légèrement plus marquée ;
+ * - séparateurs internes : plus clairs ;
+ * - surfaces neutres en clair comme en sombre ;
+ * - le vert reste réservé au texte et aux traits d’accent décoratifs ; les
+ *   cadres, séparateurs structurels et fonds restent neutres.
+ *
+ * Les variables --sbt-* historiques sont conservées comme alias afin que les
+ * composants existants restent compatibles tout en dépendant d'une seule
+ * palette globale.
+ */
+
+:root {
+  /* -----------------------------------------------------------------------
+     Tokens documentaires canoniques
+     ----------------------------------------------------------------------- */
+  --doc-accent: hsl(142 34.34% 48.375%);
+  --doc-accent-strong: hsl(143 34% 45%);
+  --doc-accent-soft: color-mix(in srgb, var(--doc-accent) 10%, transparent);
+
+  /* Valeurs reprises du panel lesions de ClinicalLayout. */
+  --doc-border-width: 1px;
+  --doc-border-outer: color-mix(in srgb, #5c5c5c 26%, transparent);
+  --doc-border-inner: color-mix(in srgb, #5c5c5c 17%, transparent);
+  --doc-border-outer-rule: var(--doc-border-width) solid var(--doc-border-outer);
+  --doc-border-inner-rule: var(--doc-border-width) solid var(--doc-border-inner);
+
+  --doc-surface: #ffffff;
+  --doc-surface-soft: color-mix(in srgb, #f9f8f7 58%, #ffffff);
+  --doc-surface-strong: color-mix(in srgb, #f9f8f7 82%, #ffffff);
+
+  --doc-text: #222222;
+  --doc-muted: #5c5c5c;
+
+  --doc-radius: 0.55rem;
+  --doc-radius-soft: 0.6rem;
+
+  /* Tableaux HTML/Markdown : mêmes principes que panel lesions. */
+  --doc-table-border-outer: var(--doc-border-outer);
+  --doc-table-border-inner: var(--doc-border-inner);
+  --doc-table-surface: var(--doc-surface);
+  --doc-table-heading-bg: var(--doc-surface-soft);
+  --doc-table-heading-bg-strong: var(--doc-surface-strong);
+  --doc-table-heading-color: var(--doc-accent-strong);
+  --doc-table-radius: var(--doc-radius);
+  --doc-table-font-size: 0.9em;
+  --doc-table-cell-padding: 0.58em 0.72em;
+  --doc-table-heading-padding: 0.62em 0.78em;
+
+  /* -----------------------------------------------------------------------
+     Compatibilité : anciens tokens Structured Blocks
+     ----------------------------------------------------------------------- */
+  --sbt-accent: var(--doc-accent);
+  --sbt-accent-strong: var(--doc-accent-strong);
+  --sbt-accent-soft: var(--doc-accent-soft);
+
+  --sbt-border: var(--doc-border-outer);
+  --sbt-border-soft: var(--doc-border-inner);
+  --sbt-underline: color-mix(in srgb, var(--doc-accent) 56%, transparent);
+
+  --sbt-surface: var(--doc-surface);
+  --sbt-surface-soft: var(--doc-surface-soft);
+  --sbt-surface-strong: var(--doc-surface-strong);
+
+  --sbt-text: var(--doc-text);
+  --sbt-muted: var(--doc-muted);
+
+  --sbt-radius: var(--doc-radius);
+  --sbt-radius-soft: var(--doc-radius-soft);
+  --sbt-gap: 0.85rem;
+  --sbt-section-gap: 1.15rem;
+
+  --sbt-body-size: 0.87rem;
+  --sbt-body-line: 1.45;
+  --sbt-small-size: 0.82rem;
+  --sbt-small-line: 1.4;
+  --sbt-label-size: 0.76rem;
+  --sbt-title-size: 0.95rem;
+  --sbt-section-title-size: 1rem;
+}
+
+[data-theme="dark"] {
+  --doc-accent: var(--ifm-color-primary);
+  --doc-accent-strong: var(--ifm-color-primary-lightest);
+  --doc-accent-soft: color-mix(in srgb, var(--ifm-color-primary) 10%, transparent);
+
+  /* Neutre uniquement : aucun mélange avec la couleur primaire. */
+  --doc-border-outer: color-mix(in srgb, #ffffff 24%, transparent);
+  --doc-border-inner: color-mix(in srgb, #ffffff 14%, transparent);
+
+  --doc-surface: var(--ifm-background-surface-color);
+  --doc-surface-soft: color-mix(
+    in srgb,
+    #ffffff 4%,
+    var(--ifm-background-surface-color)
+  );
+  --doc-surface-strong: color-mix(
+    in srgb,
+    #ffffff 7%,
+    var(--ifm-background-surface-color)
+  );
+
+  --doc-text: var(--ifm-font-color-base);
+  --doc-muted: var(--ifm-color-emphasis-700, var(--ifm-font-color-base));
+}

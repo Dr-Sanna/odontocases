@@ -1,4 +1,4 @@
-import { memo, useMemo } from "react";
+import { memo, useLayoutEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -333,6 +333,136 @@ function ClinicalBranch({ branch }) {
   );
 }
 
+
+function ClinicalBranchConnector() {
+  const svgRef = useRef(null);
+  const [pathData, setPathData] = useState("");
+
+  useLayoutEffect(() => {
+    const svg = svgRef.current;
+    const branches = svg?.closest?.(".cpg-branches");
+    if (!svg || !branches) return undefined;
+
+    let frameId = 0;
+
+    const update = () => {
+      cancelAnimationFrame(frameId);
+      frameId = requestAnimationFrame(() => {
+        if (!branches.isConnected) return;
+
+        const panel = branches.closest(".cpg-flow-panel");
+        const decision = panel?.querySelector(":scope > .cpg-decision");
+        const cards = Array.from(
+          branches.querySelectorAll(":scope > .cpg-branch")
+        );
+
+        if (!decision || !cards.length) {
+          setPathData("");
+          return;
+        }
+
+        const branchesRect = branches.getBoundingClientRect();
+        const decisionRect = decision.getBoundingClientRect();
+        const cardRects = cards.map((card) => card.getBoundingClientRect());
+
+        if (!(branchesRect.width > 0)) return;
+
+        // Toutes les coordonnées sont calculées dans le même repère SVG,
+        // en pixels CSS réels : aucune approximation en pourcentage.
+        //
+        // Pour un trait de 1 CSS px, deux coordonnées fractionnaires différentes
+        // peuvent toutefois être rasterisées différemment. On aligne donc
+        // chaque axe sur la grille de pixels physiques en tenant compte du DPR
+        // et de la largeur de trait documentaire réellement calculée.
+        const computed = window.getComputedStyle(svg);
+        const strokeWidthCss =
+          Number.parseFloat(computed.getPropertyValue("--doc-border-width")) || 1;
+        const dpr = window.devicePixelRatio || 1;
+        const physicalStrokeWidth = Math.max(
+          1,
+          Math.round(strokeWidthCss * dpr)
+        );
+
+        const snapStrokeCoord = (value) => {
+          const physical = value * dpr;
+          const snappedPhysical =
+            physicalStrokeWidth % 2 === 1
+              ? Math.floor(physical) + 0.5
+              : Math.round(physical);
+          return snappedPhysical / dpr;
+        };
+
+        const startX = snapStrokeCoord(
+          decisionRect.left + decisionRect.width / 2 - branchesRect.left
+        );
+
+        const targets = cardRects.map((rect) =>
+          snapStrokeCoord(
+            rect.left + rect.width / 2 - branchesRect.left
+          )
+        );
+
+        // Le bas du SVG correspond exactement au bord supérieur des cartes.
+        const rawEndY = Math.max(
+          1,
+          Math.min(...cardRects.map((rect) => rect.top - branchesRect.top))
+        );
+        const endY = snapStrokeCoord(rawEndY);
+        const junctionY = snapStrokeCoord(rawEndY / 2);
+
+        const minX = Math.min(...targets);
+        const maxX = Math.max(...targets);
+
+        const segments = [
+          `M ${startX} 0 V ${junctionY}`,
+          `M ${minX} ${junctionY} H ${maxX}`,
+          ...targets.map((x) => `M ${x} ${junctionY} V ${endY}`),
+        ];
+
+        setPathData(segments.join(" "));
+      });
+    };
+
+    update();
+
+    let resizeObserver = null;
+    let onWindowResize = null;
+
+    if (typeof ResizeObserver !== "undefined") {
+      resizeObserver = new ResizeObserver(update);
+      resizeObserver.observe(branches);
+
+      const panel = branches.closest(".cpg-flow-panel");
+      const decision = panel?.querySelector(":scope > .cpg-decision");
+      if (decision) resizeObserver.observe(decision);
+
+      branches
+        .querySelectorAll(":scope > .cpg-branch")
+        .forEach((card) => resizeObserver.observe(card));
+    } else {
+      onWindowResize = update;
+      window.addEventListener("resize", onWindowResize);
+    }
+
+    return () => {
+      cancelAnimationFrame(frameId);
+      resizeObserver?.disconnect();
+      if (onWindowResize) window.removeEventListener("resize", onWindowResize);
+    };
+  }, []);
+
+  return (
+    <svg
+      ref={svgRef}
+      className="cpg-branch-connector"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path className="cpg-branch-connector-path" d={pathData} />
+    </svg>
+  );
+}
+
 function ClinicalOrientation({ orientation }) {
   return (
     <div className="cpg-orientation-row" role="row">
@@ -427,6 +557,7 @@ const ClinicalPathway = memo(function ClinicalPathway({ source = "" }) {
               className="cpg-branches"
               style={{ "--cpg-branch-count": data.branches.length }}
             >
+              <ClinicalBranchConnector />
               {data.branches.map((branch, index) => (
                 <ClinicalBranch branch={branch} key={`${branch.key}-${index}`} />
               ))}

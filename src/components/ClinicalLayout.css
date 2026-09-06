@@ -1,6 +1,5 @@
 /* src/components/ClinicalLayout.css */
 
-@import "./StructuredBlocksTheme.css";
 
 .clinical-layout,
 .clinical-layout * {
@@ -8,16 +7,16 @@
 }
 
 .clinical-layout {
-  --clx-accent: var(--sbt-accent);
-  --clx-accent-strong: var(--sbt-accent-strong);
-  --clx-accent-soft: var(--sbt-accent-soft);
-  --clx-border: var(--sbt-border);
-  --clx-border-soft: var(--sbt-border-soft);
-  --clx-surface: var(--sbt-surface);
-  --clx-surface-soft: var(--sbt-surface-soft);
-  --clx-surface-strong: var(--sbt-surface-strong);
-  --clx-text: var(--sbt-text);
-  --clx-muted: var(--sbt-muted);
+  --clx-accent: var(--doc-accent);
+  --clx-accent-strong: var(--doc-accent-strong);
+  --clx-accent-soft: var(--doc-accent-soft);
+  --clx-border: var(--doc-border-outer);
+  --clx-border-soft: var(--doc-border-inner);
+  --clx-surface: var(--doc-surface);
+  --clx-surface-soft: var(--doc-surface-soft);
+  --clx-surface-strong: var(--doc-surface-strong);
+  --clx-text: var(--doc-text);
+  --clx-muted: var(--doc-muted);
 
   container-type: inline-size;
   display: grid;
@@ -69,8 +68,8 @@
 
 .clinical-layout .clx-footer {
   padding: 0.7rem 0.8rem;
-  border-left: 3px solid var(--clx-accent);
-  border-radius: 0 var(--sbt-radius) var(--sbt-radius) 0;
+  border-left: 1px solid var(--clx-border);
+  border-radius: 0 var(--doc-radius) var(--doc-radius) 0;
   background: var(--clx-surface-soft);
   color: var(--clx-muted);
 }
@@ -100,11 +99,21 @@
 .clinical-layout .clx-panel-grid .clx-items {
   display: grid;
   grid-template-columns: repeat(var(--clx-columns, 2), minmax(0, 1fr));
-  gap: 1px;
+
+  /*
+   * Même logique que @panel lesions :
+   * - cadre externe = bordure documentaire externe ;
+   * - espaces de grille = séparateurs documentaires internes.
+   *
+   * Le séparateur est produit par le gap laissant apparaître le background
+   * du conteneur : celui-ci doit donc utiliser --clx-border-soft, et non
+   * --clx-border.
+   */
+  gap: var(--doc-border-width);
   overflow: hidden;
-  border: 1px solid var(--clx-border);
-  border-radius: var(--sbt-radius-soft);
-  background: var(--clx-border);
+  border: var(--doc-border-outer-rule);
+  border-radius: var(--doc-radius);
+  background: var(--clx-border-soft);
 }
 
 .clinical-layout .clx-panel-grid .clx-item-slot {
@@ -193,7 +202,7 @@
   height: 100%;
   overflow: hidden;
   border: 1px solid var(--clx-border);
-  border-radius: var(--sbt-radius);
+  border-radius: var(--doc-radius);
   background: var(--clx-surface);
 }
 
@@ -218,7 +227,7 @@
   display: grid !important;
   grid-template-columns: repeat(var(--clx-columns, 2), minmax(0, 1fr)) !important;
   border: 1px solid var(--clx-border) !important;
-  border-radius: var(--sbt-radius) !important;
+  border-radius: var(--doc-radius) !important;
   overflow: hidden !important;
   background: var(--clx-surface) !important;
 }
@@ -229,7 +238,7 @@
 }
 
 .clinical-layout .clx-joined-cell:not(.clx-joined-first-col) {
-  border-left: 1px solid var(--clx-border) !important;
+  border-left: 1px solid var(--clx-border-soft) !important;
 }
 
 .clinical-layout .clx-joined-cell:not(.clx-joined-first-row) {
@@ -360,7 +369,7 @@
   padding: 0;
   overflow: hidden;
   border: 1px solid var(--clx-border);
-  border-radius: var(--sbt-radius);
+  border-radius: var(--doc-radius);
   background: var(--clx-surface);
 }
 
@@ -398,7 +407,7 @@
   justify-content: center;
   width: 1.75rem;
   height: 1.75rem;
-  border: 1px solid var(--clx-accent);
+  border: 1px solid var(--clx-border);
   border-radius: 999px;
   background: var(--clx-surface-soft);
   color: var(--clx-accent-strong);
@@ -447,7 +456,7 @@
 .clinical-layout .clx-step-body figure,
 .clinical-layout .clx-step-body figure.image {
   margin-top: 0.62rem;
-  border: 1px solid var(--clx-border-soft);
+  border: 1px solid var(--clx-border);
 }
 
 .clinical-layout .clx-step-image {
@@ -569,7 +578,7 @@
   display: block;
   padding: 0.8rem 0.9rem;
   border: 1px solid color-mix(in srgb, var(--ifm-color-danger) 42%, transparent);
-  border-radius: var(--sbt-radius);
+  border-radius: var(--doc-radius);
   background: color-mix(in srgb, var(--ifm-color-danger) 7%, var(--ifm-background-surface-color));
 }
 
@@ -697,7 +706,7 @@
   gap: 1px;
   overflow: hidden;
   border: 1px solid var(--clx-border);
-  border-radius: var(--sbt-radius);
+  border-radius: var(--doc-radius);
   background: var(--clx-border);
 }
 
@@ -746,7 +755,7 @@
   max-width: min(100%, 18rem);
   max-height: 18rem;
   margin: 0 auto;
-  border-radius: calc(var(--sbt-radius) - 0.12rem);
+  border-radius: calc(var(--doc-radius) - 0.12rem);
   object-fit: contain;
 }
 
@@ -798,7 +807,7 @@
   min-width: 0;
   overflow: hidden;
   border: 1px solid var(--clx-border);
-  border-radius: var(--sbt-radius);
+  border-radius: var(--doc-radius);
   background: var(--clx-surface);
 }
 
@@ -923,7 +932,7 @@
   min-width: 0;
   overflow: hidden;
   border: 1px solid var(--clx-border);
-  border-radius: var(--sbt-radius);
+  border-radius: var(--doc-radius);
   background: var(--clx-surface);
 }
 
@@ -991,7 +1000,7 @@
   min-width: 0;
   overflow: hidden;
   border: 1px solid var(--clx-border);
-  border-radius: var(--sbt-radius);
+  border-radius: var(--doc-radius);
   background: var(--clx-surface);
 }
 
@@ -1280,9 +1289,9 @@
 .clx.clinical-layout .clx-shared-card {
   min-width: 0 !important;
   overflow: hidden !important;
-  border: 1px solid var(--clx-border, var(--sbt-border)) !important;
-  border-radius: var(--sbt-radius, 0.55rem) !important;
-  background: var(--clx-surface, var(--sbt-surface)) !important;
+  border: 1px solid var(--clx-border, var(--doc-border-outer)) !important;
+  border-radius: var(--doc-radius, 0.55rem) !important;
+  background: var(--clx-surface, var(--doc-surface)) !important;
   box-shadow: none !important;
 }
 
@@ -1291,9 +1300,9 @@
   margin: 0 !important;
   padding: 0.58rem 0.78rem !important;
   border: 0 !important;
-  border-bottom: 1px solid var(--clx-border-soft, var(--sbt-border-soft)) !important;
-  background: var(--clx-surface-soft, var(--sbt-surface-soft)) !important;
-  color: var(--clx-accent-strong, var(--sbt-accent-strong)) !important;
+  border-bottom: 1px solid var(--clx-border-soft, var(--doc-border-inner)) !important;
+  background: var(--clx-surface-soft, var(--doc-surface-soft)) !important;
+  color: var(--clx-accent-strong, var(--doc-accent-strong)) !important;
   font-family: var(--font-interface) !important;
   font-size: var(--sbt-title-size, 0.95rem) !important;
   line-height: 1.3 !important;
@@ -1313,12 +1322,12 @@
   display: grid !important;
   grid-template-columns: minmax(10.5rem, 0.92fr) minmax(0, 1.08fr) !important;
   min-width: 0 !important;
-  background: var(--clx-surface, var(--sbt-surface)) !important;
+  background: var(--clx-surface, var(--doc-surface)) !important;
 }
 
 .clinical-layout .clx-shared-row + .clx-shared-row,
 .clx.clinical-layout .clx-shared-row + .clx-shared-row {
-  border-top: 1px solid var(--clx-border-soft, var(--sbt-border-soft)) !important;
+  border-top: 1px solid var(--clx-border-soft, var(--doc-border-inner)) !important;
 }
 
 .clinical-layout .clx-shared-item-title,
@@ -1336,11 +1345,11 @@
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  border-right: 1px solid var(--clx-border-soft, var(--sbt-border-soft)) !important;
+  border-right: 1px solid var(--clx-border-soft, var(--doc-border-inner)) !important;
   background: color-mix(
     in srgb,
-    var(--clx-surface-soft, var(--sbt-surface-soft)) 58%,
-    var(--clx-surface, var(--sbt-surface))
+    var(--clx-surface-soft, var(--doc-surface-soft)) 58%,
+    var(--clx-surface, var(--doc-surface))
   ) !important;
   text-align: center !important;
 }
@@ -1352,7 +1361,7 @@
   padding: 0 !important;
   border: 0 !important;
   background: transparent !important;
-  color: var(--clx-accent-strong, var(--sbt-accent-strong)) !important;
+  color: var(--clx-accent-strong, var(--doc-accent-strong)) !important;
   font-family: var(--font-interface) !important;
   font-size: var(--sbt-title-size, 0.95rem) !important;
   line-height: 1.32 !important;
@@ -1368,12 +1377,12 @@
   flex-direction: column !important;
   align-items: stretch !important;
   justify-content: center !important;
-  color: var(--clx-text, var(--sbt-text)) !important;
+  color: var(--clx-text, var(--doc-text)) !important;
 }
 
 .clinical-layout .clx-shared-common,
 .clx.clinical-layout .clx-shared-common {
-  color: var(--clx-text, var(--sbt-text)) !important;
+  color: var(--clx-text, var(--doc-text)) !important;
 }
 
 .clinical-layout .clx-shared-card .clx-markdown > :first-child,
@@ -1421,7 +1430,7 @@
   .clx.clinical-layout .clx-shared-item-title {
     justify-content: flex-start !important;
     border-right: 0 !important;
-    border-bottom: 1px solid var(--clx-border-soft, var(--sbt-border-soft)) !important;
+    border-bottom: 1px solid var(--clx-border-soft, var(--doc-border-inner)) !important;
     text-align: left !important;
   }
 }
@@ -1815,3 +1824,493 @@
 .clinical-layout .clx-panel-grid .clx-item-title:only-child {
   margin-bottom: 0;
 }
+
+/* ==========================================================================
+   CONTRAT FINAL DE BORDURES DOCUMENTAIRES
+   --------------------------------------------------------------------------
+   Cette section est volontairement placée en fin de fichier afin de prendre
+   le pas sur les anciens correctifs historiques de ClinicalLayout.
+
+   Référence visuelle : @panel lesions
+   - cadre externe : --doc-border-outer-rule
+   - séparateurs internes : --doc-border-inner-rule / --doc-border-inner
+   - rayon : --doc-radius
+   - aucune ombre ou teinte d'accent sur les bordures structurelles
+   ========================================================================== */
+
+/* @panel grid
+   Les séparateurs sont fabriqués par le gap : le background du conteneur
+   représente donc la bordure interne. */
+.clinical-layout .clx-panel-grid .clx-items {
+  gap: var(--doc-border-width);
+  border: var(--doc-border-outer-rule);
+  border-radius: var(--doc-radius);
+  background: var(--doc-border-inner);
+  /*
+   * Important : --doc-border-outer est semi-transparent.
+   * Le fond servant aux séparateurs ne doit donc pas être peint sous
+   * la bordure externe, sinon les deux teintes se composent et le cadre
+   * paraît artificiellement plus foncé que @panel lesions.
+   */
+  background-clip: padding-box;
+  box-shadow: none;
+  outline: 0;
+}
+
+/* @panel lesions : expression explicite du même contrat global. */
+.clinical-layout .clx-lesion-table {
+  border: var(--doc-border-outer-rule);
+  border-radius: var(--doc-radius);
+  box-shadow: none;
+  outline: 0;
+}
+
+.clinical-layout .clx-lesion-table-row + .clx-lesion-table-row {
+  border-top: var(--doc-border-inner-rule);
+}
+
+.clinical-layout .clx-lesion-table-row > * + * {
+  border-left: var(--doc-border-inner-rule);
+}
+
+/* @panel gallery
+   Chaque illustration (image + légende) devient un encadré autonome utilisant
+   la même bordure externe que @panel lesions.
+   Exception graphique volontaire : ces encadrés d'image restent à angles droits. */
+.clinical-layout .clx-panel-gallery .clx-gallery-item > .clx-step-figure,
+.clx.clinical-layout .clx-panel-gallery .clx-gallery-item > .clx-step-figure {
+  border: var(--doc-border-outer-rule);
+  border-radius: 0;
+  background: var(--doc-surface);
+  box-shadow: none;
+  outline: 0;
+}
+
+/* La séparation image / légende reste une bordure interne.
+   !important est nécessaire ici car l'ancien bloc captions emploie déjà
+   !important sur border et border-top. */
+.clinical-layout .clx-panel-gallery .clx-gallery-item .clx-step-caption,
+.clx.clinical-layout .clx-panel-gallery .clx-gallery-item .clx-step-caption {
+  border: 0 !important;
+  border-top: var(--doc-border-inner-rule) !important;
+}
+
+/* ==========================================================================
+   STEPS AVEC IMAGE — cadre carré + captions homogènes
+   --------------------------------------------------------------------------
+   Exception graphique volontaire :
+   - les cartes @panel steps contenant une image restent à angles droits ;
+   - la bordure structurelle suit le contrat documentaire global ;
+   - toutes les zones caption + auteur d'une même séquence utilisent la
+     hauteur commune calculée par ClinicalLayout.jsx.
+   ========================================================================== */
+
+.clinical-layout .clx-item-steps.clx-step-has-media,
+.clx.clinical-layout .clx-item-steps.clx-step-has-media {
+  border: var(--doc-border-outer-rule) !important;
+  border-radius: 0 !important;
+}
+
+/* L'image conserve la hauteur commune existante ; la deuxième rangée reçoit
+   exactement la hauteur commune des captions calculée en JS. */
+.clinical-layout
+  .clx-item-steps.clx-step-has-media
+  > .clx-step-figure,
+.clx.clinical-layout
+  .clx-item-steps.clx-step-has-media
+  > .clx-step-figure {
+  grid-template-rows:
+    var(--clx-step-image-height)
+    var(--clx-step-caption-height, auto) !important;
+  border-radius: 0 !important;
+}
+
+/* Caption + auteur : même hauteur réelle pour toutes les cartes de la séquence. */
+.clinical-layout
+  .clx-item-steps.clx-step-has-media
+  .clx-step-caption,
+.clx.clinical-layout
+  .clx-item-steps.clx-step-has-media
+  .clx-step-caption {
+  box-sizing: border-box !important;
+  height: var(--clx-step-caption-height, auto) !important;
+  min-height: var(--clx-step-caption-height, 3.25rem) !important;
+  border: 0 !important;
+  border-top: var(--doc-border-inner-rule) !important;
+  border-radius: 0 !important;
+}
+
+/* ==========================================================================
+   @panel media — bordures documentaires standardisées
+   --------------------------------------------------------------------------
+   Ancienne implémentation :
+   - gap: 1px ;
+   - border: 1px solid var(--clx-border) ;
+   - background: var(--clx-border).
+
+   Comme le gap laisse apparaître le background du conteneur, le séparateur
+   vertical utilisait en réalité la couleur de bordure EXTERNE, donc plus
+   sombre que les séparateurs internes du reste de la documentation.
+
+   Contrat corrigé :
+   - cadre externe = --doc-border-outer-rule ;
+   - séparateur interne = --doc-border-inner ;
+   - largeur = --doc-border-width.
+   ========================================================================== */
+
+.clinical-layout .clx-panel-media .clx-items {
+  gap: var(--doc-border-width) !important;
+  border: var(--doc-border-outer-rule) !important;
+  border-radius: var(--doc-radius) !important;
+  background: var(--doc-border-inner) !important;
+  /*
+   * Même correction que pour @panel grid : le fond du gap interne est
+   * volontairement plus clair, mais ne doit jamais se superposer sous
+   * la bordure externe semi-transparente.
+   */
+  background-clip: padding-box !important;
+  box-shadow: none !important;
+  outline: 0 !important;
+}
+
+.clinical-layout .clx-panel-media .clx-item-title {
+  border-bottom: var(--doc-border-inner-rule) !important;
+}
+
+/* ==========================================================================
+   @panel grid simple — séparateurs réels, sans gap
+   --------------------------------------------------------------------------
+   Le gap de 1 px peut être rasterisé sur deux rangées de pixels lorsque la
+   frontière de ligne tombe sur une coordonnée verticale fractionnaire.
+   C'est ce qui peut faire paraître un séparateur horizontal plus épais que
+   les vraies bordures de @panel lesions.
+
+   Pour les grilles ordinaires (sans wide/span2/span3), on n'utilise donc plus
+   le gap comme faux trait :
+   - cadre externe : --doc-border-outer-rule ;
+   - séparateurs : vraies border-top / border-left utilisant
+     --doc-border-inner-rule ;
+   - aucune bordure doublée.
+   ========================================================================== */
+
+.clinical-layout
+  .clx-panel-grid
+  .clx-items[data-simple-grid="true"] {
+  gap: 0 !important;
+  background: var(--clx-surface-soft) !important;
+  background-clip: padding-box !important;
+}
+
+/* On neutralise d'abord toute bordure structurelle éventuelle portée
+   historiquement par les cellules. */
+.clinical-layout
+  .clx-panel-grid
+  .clx-items[data-simple-grid="true"]
+  > .clx-item-slot {
+  border: 0 !important;
+}
+
+/* 2 colonnes */
+.clinical-layout
+  .clx-panel-grid
+  .clx-items[data-simple-grid="true"][data-columns="2"]
+  > .clx-item-slot:nth-child(n + 3) {
+  border-top: var(--doc-border-inner-rule) !important;
+}
+
+.clinical-layout
+  .clx-panel-grid
+  .clx-items[data-simple-grid="true"][data-columns="2"]
+  > .clx-item-slot:nth-child(2n) {
+  border-left: var(--doc-border-inner-rule) !important;
+}
+
+/* 3 colonnes */
+.clinical-layout
+  .clx-panel-grid
+  .clx-items[data-simple-grid="true"][data-columns="3"]
+  > .clx-item-slot:nth-child(n + 4) {
+  border-top: var(--doc-border-inner-rule) !important;
+}
+
+.clinical-layout
+  .clx-panel-grid
+  .clx-items[data-simple-grid="true"][data-columns="3"]
+  > .clx-item-slot:not(:nth-child(3n + 1)) {
+  border-left: var(--doc-border-inner-rule) !important;
+}
+
+/* 4 colonnes */
+.clinical-layout
+  .clx-panel-grid
+  .clx-items[data-simple-grid="true"][data-columns="4"]
+  > .clx-item-slot:nth-child(n + 5) {
+  border-top: var(--doc-border-inner-rule) !important;
+}
+
+.clinical-layout
+  .clx-panel-grid
+  .clx-items[data-simple-grid="true"][data-columns="4"]
+  > .clx-item-slot:not(:nth-child(4n + 1)) {
+  border-left: var(--doc-border-inner-rule) !important;
+}
+
+/* Une seule colonne : uniquement les séparateurs horizontaux. */
+.clinical-layout
+  .clx-panel-grid
+  .clx-items[data-simple-grid="true"][data-columns="1"]
+  > .clx-item-slot
+  + .clx-item-slot {
+  border-top: var(--doc-border-inner-rule) !important;
+}
+
+/* En vue étroite la grille devient une seule colonne, quelle que soit sa
+   valeur desktop : on retire les séparateurs verticaux et on garde un unique
+   border-top entre les éléments. */
+@container (max-width: 44rem) {
+  .clinical-layout
+    .clx-panel-grid
+    .clx-items[data-simple-grid="true"]
+    > .clx-item-slot {
+    border-left: 0 !important;
+    border-top: 0 !important;
+  }
+
+  .clinical-layout
+    .clx-panel-grid
+    .clx-items[data-simple-grid="true"]
+    > .clx-item-slot
+    + .clx-item-slot {
+    border-top: var(--doc-border-inner-rule) !important;
+  }
+}
+
+/* ==========================================================================
+   @panel media — séparateur vertical réel
+   --------------------------------------------------------------------------
+   Le séparateur gauche/droite n'est plus fabriqué par un gap + background.
+   Comme pour les grilles simples, cette technique pouvait produire un trait
+   visuellement plus épais selon la position subpixel de la séparation.
+
+   Contrat final :
+   - cadre externe : --doc-border-outer-rule ;
+   - séparation gauche/droite : UNE seule vraie bordure interne ;
+   - aucun gap structurel ;
+   - aucune superposition de bordures.
+   ========================================================================== */
+
+.clinical-layout .clx-panel-media .clx-items {
+  gap: 0 !important;
+  border: var(--doc-border-outer-rule) !important;
+  background: var(--doc-surface) !important;
+  background-clip: padding-box !important;
+}
+
+/* Neutralise toute éventuelle bordure historique portée par les slots. */
+.clinical-layout .clx-panel-media .clx-item-slot {
+  border: 0 !important;
+}
+
+/* Un seul séparateur réel entre contenu et visuel. */
+.clinical-layout .clx-panel-media .clx-media-slot-visual {
+  border-left: var(--doc-border-inner-rule) !important;
+}
+
+/* En disposition verticale, le séparateur devient horizontal. */
+@container (max-width: 760px) {
+  .clinical-layout .clx-panel-media .clx-media-slot-visual {
+    border-left: 0 !important;
+    border-top: var(--doc-border-inner-rule) !important;
+  }
+}
+
+@media (max-width: 800px) {
+  .clinical-layout .clx-panel-media .clx-media-slot-visual {
+    border-left: 0 !important;
+    border-top: var(--doc-border-inner-rule) !important;
+  }
+}
+
+/* ==========================================================================
+   @panel grid — mécanisme canonique pour TOUTES les dispositions
+   --------------------------------------------------------------------------
+   Les grilles contenant wide/span2/span3 utilisaient encore l'ancien
+   gap + background, contrairement aux grilles simples. ClinicalLayout.jsx
+   calcule maintenant explicitement la position de chaque cellule.
+
+   Contrat unique :
+   - aucun gap utilisé comme bordure ;
+   - cadre externe = --doc-border-outer-rule ;
+   - chaque frontière interne est dessinée UNE seule fois avec
+     --doc-border-inner-rule.
+   ========================================================================== */
+
+.clinical-layout
+  .clx-panel-grid
+  .clx-items[data-grid-borders="true"] {
+  gap: 0 !important;
+  border: var(--doc-border-outer-rule) !important;
+  border-radius: var(--doc-radius) !important;
+  background: var(--clx-surface-soft) !important;
+  background-clip: padding-box !important;
+  box-shadow: none !important;
+  outline: 0 !important;
+}
+
+.clinical-layout
+  .clx-panel-grid
+  .clx-items[data-grid-borders="true"]
+  > .clx-item-slot {
+  border: 0 !important;
+}
+
+.clinical-layout
+  .clx-panel-grid
+  .clx-items[data-grid-borders="true"]
+  > .clx-item-slot[data-grid-top="true"] {
+  border-top: var(--doc-border-inner-rule) !important;
+}
+
+.clinical-layout
+  .clx-panel-grid
+  .clx-items[data-grid-borders="true"]
+  > .clx-item-slot[data-grid-left="true"] {
+  border-left: var(--doc-border-inner-rule) !important;
+}
+
+/* Séparateurs des sous-colonnes = bordure interne documentaire standard. */
+.clinical-layout
+  .clx-panel-grid
+  .clx-item-subcolumn
+  + .clx-item-subcolumn {
+  border-left: var(--doc-border-inner-rule) !important;
+}
+
+/* Si du texte introductif précède les sous-colonnes, ajouter une vraie
+   respiration verticale plutôt qu'un <br> décoratif. */
+.clinical-layout
+  .clx-panel-grid
+  .clx-item-body
+  + .clx-item-subcolumns {
+  margin-top: var(--sbt-gap) !important;
+}
+
+@container (max-width: 44rem) {
+  .clinical-layout
+    .clx-panel-grid
+    .clx-items[data-grid-borders="true"]
+    > .clx-item-slot {
+    border-left: 0 !important;
+    border-top: 0 !important;
+  }
+
+  .clinical-layout
+    .clx-panel-grid
+    .clx-items[data-grid-borders="true"]
+    > .clx-item-slot
+    + .clx-item-slot {
+    border-top: var(--doc-border-inner-rule) !important;
+  }
+}
+
+/* ==========================================================================
+   @panel gallery — captions automatiques identiques aux @caption
+   --------------------------------------------------------------------------
+   CaseMarkdown ajoute désormais .clx-step-caption aux figcaptions générés
+   depuis la table des sources d'images. Ce bloc neutralise les styles
+   génériques du fallback pour reproduire exactement l'aspect d'un @caption
+   manuel : fond, bordure, typographie, centrage et crédit.
+   ========================================================================== */
+
+.clinical-layout
+  .clx-panel-gallery
+  .clx-step-caption.cd-doc-image-generated-figcaption {
+  display: grid !important;
+  place-items: center !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0.58rem 0.72rem !important;
+  border: 0 !important;
+  border-top: var(--doc-border-inner-rule) !important;
+  border-radius: 0 !important;
+  background: var(--clx-surface-soft) !important;
+  color: var(--clx-muted) !important;
+  font-family: inherit !important;
+  font-size: var(--sbt-small-size) !important;
+  font-style: normal !important;
+  line-height: var(--sbt-small-line) !important;
+  text-align: center !important;
+}
+
+/* Même apparence que le paragraphe contenu dans un @caption manuel. */
+.clinical-layout
+  .clx-panel-gallery
+  .clx-step-caption.cd-doc-image-generated-figcaption
+  > .cd-doc-image-caption-fallback {
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  color: inherit !important;
+  font: inherit !important;
+  font-weight: inherit !important;
+  line-height: inherit !important;
+  text-align: center !important;
+}
+
+/* Même placement de l'auteur/référence que dans un @caption manuel. */
+.clinical-layout
+  .clx-panel-gallery
+  .clx-step-caption.cd-doc-image-generated-figcaption
+  > .cd-doc-image-credit {
+  width: 100% !important;
+  margin-top: 0.34rem !important;
+  padding: 0 !important;
+  color: var(--clx-muted) !important;
+  font: inherit !important;
+  font-size: 0.8rem !important;
+  font-weight: 400 !important;
+  line-height: 1.25 !important;
+  text-align: center !important;
+  opacity: 0.78 !important;
+}
+
+
+/* ==========================================================================
+   @panel lesions — rythme vertical compact des images en tableau
+   --------------------------------------------------------------------------
+   Les captions/auteurs sont déjà contenus dans la cellule : on conserve donc
+   uniquement le padding structurel minimal de la cellule, sans ajouter de
+   fond ni de bordure autour de l'image ou de sa légende.
+   ========================================================================== */
+
+.clinical-layout .clx-lesion-table-image {
+  padding-top: 0.42rem !important;
+  padding-bottom: 0.42rem !important;
+}
+
+/* La galerie ne doit jamais introduire de marge verticale parasite. */
+.clinical-layout .clx-lesion-table-image .clx-image-gallery {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  align-content: start !important;
+}
+
+/* Une unité image + caption + auteur occupe uniquement sa hauteur utile. */
+.clinical-layout
+  .clx-lesion-table-image
+  .cd-doc-lesion-image-unit {
+  align-self: start !important;
+  height: max-content !important;
+  min-height: 0 !important;
+}
+
+/* Les images seules et les images légendées partagent le même point de départ
+   et n'héritent d'aucune marge verticale externe. */
+.clinical-layout
+  .clx-lesion-table-image
+  .cd-doc-lesion-image-unit
+  > img {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+

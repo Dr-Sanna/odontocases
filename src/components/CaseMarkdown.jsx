@@ -754,7 +754,21 @@ function decorateOneDocumentImage(img, referenceNumbers) {
     }
 
     caption = document.createElement("figcaption");
-    caption.className = "cd-doc-image-generated-figcaption";
+
+    /*
+     * Dans ClinicalLayout, une légende générée automatiquement doit utiliser
+     * exactement le même composant visuel qu'une légende écrite avec
+     * @caption. Sans la classe clx-step-caption, elle échappe aux règles de
+     * fond, bordure, hauteur et typographie du panel gallery.
+     */
+    const isClinicalStepFigure = Boolean(
+      figure.matches(".clx-step-figure") &&
+      figure.closest(".clinical-layout")
+    );
+
+    caption.className = isClinicalStepFigure
+      ? "clx-step-caption cd-doc-image-generated-figcaption"
+      : "cd-doc-image-generated-figcaption";
 
     const fallback = createFallbackCaption(registryCaption);
     const meta = createDocumentImageCredit(credit, referenceNumber);

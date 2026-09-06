@@ -1,7 +1,6 @@
 /* src/components/ClinicalEvolution.css */
 
 
-@import "./StructuredBlocksTheme.css";
 
 .clinical-evolution,
 .clinical-evolution * {
@@ -9,15 +8,15 @@
 }
 
 .clinical-evolution {
-  --cev-accent: var(--sbt-accent);
-  --cev-accent-strong: var(--sbt-accent-strong);
-  --cev-accent-soft: var(--sbt-accent-soft);
-  --cev-border: var(--sbt-border);
-  --cev-border-soft: var(--sbt-border-soft);
-  --cev-surface: var(--sbt-surface);
-  --cev-surface-soft: var(--sbt-surface-soft);
-  --cev-text: var(--sbt-text);
-  --cev-muted: var(--sbt-muted);
+  --cev-accent: var(--doc-accent);
+  --cev-accent-strong: var(--doc-accent-strong);
+  --cev-accent-soft: var(--doc-accent-soft);
+  --cev-border: var(--doc-border-outer);
+  --cev-border-soft: var(--doc-border-inner);
+  --cev-surface: var(--doc-surface);
+  --cev-surface-soft: var(--doc-surface-soft);
+  --cev-text: var(--doc-text);
+  --cev-muted: var(--doc-muted);
 
   container-type: inline-size;
   display: grid;
@@ -80,7 +79,7 @@
 }
 
 .clinical-evolution .cev-overview-item + .cev-overview-item {
-  border-left: 1px solid var(--cev-border);
+  border-left: 1px solid var(--cev-border-soft);
 }
 
 .clinical-evolution .cev-overview-header {
@@ -168,7 +167,7 @@
   justify-content: center;
   width: 1.45rem;
   height: 1.45rem;
-  border: 1.5px solid var(--cev-accent);
+  border: 1px solid var(--cev-border);
   border-radius: 999px;
   background: var(--cev-surface);
   color: var(--cev-accent-strong);

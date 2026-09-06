@@ -1,5 +1,7 @@
 /* index.css */
 
+@import "./styles/StructuredBlocksTheme.css";
+
 /* ✅ Box-sizing global */
 *,
 *::before,

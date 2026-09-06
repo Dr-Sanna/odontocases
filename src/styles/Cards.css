@@ -24,6 +24,11 @@
   box-shadow: var(--card-shadow-hover);
   border: var(--card-border-hover);
   cursor: pointer;
+  text-decoration: none;
+}
+
+.ui-card:focus-visible {
+  text-decoration: none;
 }
 
 @media (hover: none), (pointer: coarse) {
