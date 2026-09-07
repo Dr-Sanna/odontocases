@@ -588,64 +588,44 @@
 
 /* =========================
    Alias de pathologie Atlas
-   - bandeau informatif plus léger qu’un callout
-   - aucune répétition du style des badges d’entête
+   - métadonnée typographique simple, sans encadré
+   - flux inline naturel pour éviter qu'une longue liste bascule en bloc
    ========================= */
 .cd-aliases {
-  display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 0.3rem 0.25em;
-
-  width: fit-content;
+  display: block;
+  width: 100%;
   max-width: 100%;
-  margin-top: 0.35rem;
-  padding: 0.48rem 0.75rem;
+  margin-top: 0;
+  padding: 0;
 
-  border-left: 3px solid color-mix(in srgb, var(--ifm-color-primary) 68%, transparent);
-  border-radius: 0 0.5rem 0.5rem 0;
-  background: color-mix(in srgb, var(--ifm-color-primary) 7%, transparent);
+  border: 0;
+  background: transparent;
 
   font-size: 0.94rem;
-  line-height: 1.45;
+  line-height: 1.55;
 }
 
 .cd-aliases-label {
-  flex: 0 0 auto;
-  font-weight: 650;
-  color: color-mix(in srgb, var(--ifm-font-color-base) 78%, var(--ifm-color-primary));
+  display: inline;
+  margin-right: 0.3em;
+  font-weight: 600;
+  color: var(--ifm-color-primary);
 }
 
 .cd-aliases-list {
-  display: inline-flex;
-  flex-wrap: wrap;
-  min-width: 0;
-  gap: 0.18rem 0;
+  display: inline;
 }
 
 .cd-alias {
+  display: inline;
   font-style: italic;
-  color: color-mix(in srgb, var(--ifm-font-color-base) 86%, transparent);
+  color: var(--ifm-color-emphasis-700);
 }
 
 .cd-alias:not(:last-child)::after {
-  content: "/";
-  display: inline-block;
-  margin: 0 0.45rem;
-  opacity: 0.72;
+  content: " / ";
+  opacity: 0.65;
   font-style: normal;
-}
-
-@media (max-width: 560px) {
-  .cd-aliases {
-    display: block;
-    width: 100%;
-  }
-
-  .cd-aliases-label {
-    display: block;
-    margin-bottom: 0.18rem;
-  }
 }
 
 /* =========================
