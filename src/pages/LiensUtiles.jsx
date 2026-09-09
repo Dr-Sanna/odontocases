@@ -58,6 +58,12 @@ const RESOURCES = [
     tags: ['Dermatologie buccale', 'Pathologies', 'Documentation / fiches'],
   },
   {
+    name: 'Iconographie dermatologique (Paris Descartes)',
+    url: 'https://archives.uness.fr/sites/umvf/wikinu/wikinu_dermatologie_icono.php',
+    desc: "Galerie d’images d’affections dermatologiques réalisée par le Dr Philippe Franceschini (Université Paris Descartes).",
+    tags: ['Dermatologie buccale', 'Pathologies', 'Iconographie'],
+  },
+  {
     name: 'Manuels MSD Questionnaires',
     url: 'https://www.msdmanuals.com/fr/professional/pages-with-widgets/questionnaires?mode=list',
     desc: 'Questionnaires (quiz) généraux en médecine : entraînement et auto-évaluation.',
