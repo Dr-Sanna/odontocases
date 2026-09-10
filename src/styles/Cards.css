@@ -86,8 +86,11 @@
   white-space: nowrap;
 }
 
-/* La hiérarchie Catégorie / Sous-catégorie de l’Atlas est définie dans
-   CasCliniques.css. Le style partagé conserve ici uniquement la base commune. */
+/* Atlas conserve sa hiérarchie propre lorsqu'aucune règle Atlas historique
+   plus spécifique n'est déjà présente dans CasCliniques.css. */
+.cc-groups--atlas .resource-group-title {
+  font-weight: 800;
+}
 
 /* Source unique pour le trait de séparation.
    Le header et le texte utilisent une hauteur de ligne entière de 24 px ;
