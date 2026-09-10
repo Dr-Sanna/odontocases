@@ -64,15 +64,13 @@ const ATLAS_SUBCATEGORY_ORDER = {
     'Accroissements et hyperplasies gingivales',
   ],
   'Kystes des maxillaires': [
-    'Kystes odontogènes du développement',
-    'Kystes non odontogènes du développement',
+    'Kystes du développement',
     'Kystes odontogènes inflammatoires',
     'Kystes liés à l’éruption',
   ],
   // Compatibilité pendant la migration vers deux grandes catégories.
   'Kystes et pseudokystes des maxillaires': [
-    'Kystes odontogènes du développement',
-    'Kystes non odontogènes du développement',
+    'Kystes du développement',
     'Kystes odontogènes inflammatoires',
     'Kystes liés à l’éruption',
     'Pseudokystes et cavités osseuses',
@@ -213,6 +211,7 @@ function normalizeClassifications(value) {
     .map((entry) => ({
       category: String(entry?.category || '').trim(),
       subcategory: String(entry?.subcategory || '').trim(),
+      subdivision: String(entry?.subdivision || '').trim(),
     }))
     .filter((entry) => entry.category);
 }
@@ -260,11 +259,12 @@ function buildAtlasCategorySections(items) {
     const classifications = normalizeClassifications(item?.classification);
     const targets = classifications.length
       ? classifications
-      : [{ category: UNCLASSIFIED_ATLAS_CATEGORY, subcategory: '' }];
+      : [{ category: UNCLASSIFIED_ATLAS_CATEGORY, subcategory: '', subdivision: '' }];
 
     for (const classification of targets) {
       const categoryLabel = classification.category || UNCLASSIFIED_ATLAS_CATEGORY;
       const subcategoryLabel = classification.subcategory || '';
+      const subdivisionLabel = classification.subdivision || '';
 
       if (!categories.has(categoryLabel)) {
         categories.set(categoryLabel, {
@@ -287,13 +287,30 @@ function buildAtlasCategorySections(items) {
         category.subcategories.set(subcategoryLabel, {
           key: `${categoryLabel}::${subcategoryLabel}`,
           label: subcategoryLabel,
+          directItems: [],
+          directSeen: new Set(),
+          subdivisions: new Map(),
+        });
+      }
+
+      const subcategory = category.subcategories.get(subcategoryLabel);
+
+      if (!subdivisionLabel) {
+        pushUniqueAtlasItem(subcategory.directItems, subcategory.directSeen, item);
+        continue;
+      }
+
+      if (!subcategory.subdivisions.has(subdivisionLabel)) {
+        subcategory.subdivisions.set(subdivisionLabel, {
+          key: `${categoryLabel}::${subcategoryLabel}::${subdivisionLabel}`,
+          label: subdivisionLabel,
           items: [],
           seen: new Set(),
         });
       }
 
-      const subcategory = category.subcategories.get(subcategoryLabel);
-      pushUniqueAtlasItem(subcategory.items, subcategory.seen, item);
+      const subdivision = subcategory.subdivisions.get(subdivisionLabel);
+      pushUniqueAtlasItem(subdivision.items, subdivision.seen, item);
     }
   }
 
@@ -310,7 +327,15 @@ function buildAtlasCategorySections(items) {
           .map((subcategory) => ({
             key: subcategory.key,
             label: subcategory.label,
-            items: subcategory.items.sort(compareByTitleAsc),
+            directItems: subcategory.directItems.sort(compareByTitleAsc),
+            subdivisions: Array.from(subcategory.subdivisions.values())
+              // L'ordre d'apparition est conservé pour permettre des couples
+              // pédagogiques comme « Odontogènes » puis « Non odontogènes ».
+              .map((subdivision) => ({
+                key: subdivision.key,
+                label: subdivision.label,
+                items: subdivision.items.sort(compareByTitleAsc),
+              })),
           })),
       };
     });
@@ -861,7 +886,7 @@ export default function CasCliniques() {
                     badges: { fields: ['label', 'variant'] },
                     // `atlasBadges` est la relation dédiée aux badges visibles sur les cartes de l'Atlas.
                     atlasBadges: { fields: ['label', 'variant'] },
-                    classification: { fields: ['category', 'subcategory'] },
+                    classification: { fields: ['category', 'subcategory', 'subdivision'] },
                   },
                   locale: 'all',
                   filters,
@@ -1079,7 +1104,7 @@ export default function CasCliniques() {
     }));
   }, [isAtlasHub, tab, atlasVisibleItems]);
 
-  // Atlas : classification pédagogique Catégorie > Sous-catégorie.
+  // Atlas : classification pédagogique Catégorie > Sous-catégorie > Subdivision facultative.
   // Une même pathologie peut apparaître dans plusieurs branches si plusieurs
   // composants `classification` sont présents dans Strapi.
   const atlasCategorySections = useMemo(() => {
@@ -1295,23 +1320,101 @@ export default function CasCliniques() {
 
     return (
       <div className="atlas-ui-subcategory-stack">
-        {subcategories.map((subcategory) => (
-          <section
-            key={subcategory.key}
-            className="atlas-ui-subcategory-panel"
-            aria-label={subcategory.label}
-          >
-            <div className="atlas-ui-subcategory-heading">
-              <h3 className="atlas-ui-subcategory-title">{subcategory.label}</h3>
-            </div>
+        {subcategories.map((subcategory) => {
+          const directItems = Array.isArray(subcategory?.directItems) ? subcategory.directItems : [];
+          const subdivisions = Array.isArray(subcategory?.subdivisions) ? subcategory.subdivisions : [];
+          const hasSubdivisions = subdivisions.length > 0;
 
-            <div
-              className={`atlas-ui-lesion-grid atlas-ui-lesion-grid--panel atlas-ui-lesion-grid--${view}`}
+          // En desktop / vue Liste, la partie droite du cartouche de sous-catégorie
+          // reprend les subdivisions. Leur hauteur relative suit approximativement
+          // le nombre de rangées de lésions (3 lésions par rangée).
+          const subdivisionRows = [];
+          if (directItems.length > 0 && hasSubdivisions) {
+            subdivisionRows.push({
+              key: `${subcategory.key}::__direct__`,
+              label: '',
+              rowWeight: Math.max(1, Math.ceil(directItems.length / 3)),
+              isDirect: true,
+            });
+          }
+          for (const subdivision of subdivisions) {
+            subdivisionRows.push({
+              key: subdivision.key,
+              label: subdivision.label,
+              rowWeight: Math.max(1, Math.ceil((subdivision.items?.length || 0) / 3)),
+              isDirect: false,
+            });
+          }
+
+          const subdivisionTemplateRows = subdivisionRows.length
+            ? subdivisionRows.map((row) => `${row.rowWeight}fr`).join(' ')
+            : undefined;
+
+          return (
+            <section
+              key={subcategory.key}
+              className={`atlas-ui-subcategory-panel ${
+                hasSubdivisions ? 'atlas-ui-subcategory-panel--has-subdivisions' : ''
+              }`}
+              aria-label={subcategory.label}
             >
-              {subcategory.items.map(renderItem)}
-            </div>
-          </section>
-        ))}
+              <div
+                className="atlas-ui-subcategory-heading"
+                style={
+                  subdivisionTemplateRows
+                    ? { '--atlas-ui-subdivision-template-rows': subdivisionTemplateRows }
+                    : undefined
+                }
+              >
+                <div className="atlas-ui-subcategory-main">
+                  <h3 className="atlas-ui-subcategory-title">{subcategory.label}</h3>
+                </div>
+
+                {subdivisionRows.length > 0 && (
+                  <div className="atlas-ui-subcategory-subdivision-rail" aria-label="Subdivisions">
+                    {subdivisionRows.map((row) => (
+                      <div
+                        key={row.key}
+                        className={`atlas-ui-subcategory-subdivision-segment ${
+                          row.isDirect ? 'atlas-ui-subcategory-subdivision-segment--direct' : ''
+                        }`}
+                        aria-hidden={row.isDirect ? 'true' : undefined}
+                      >
+                        {row.label}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="atlas-ui-subcategory-content">
+                {directItems.length > 0 && (
+                  <div
+                    className={`atlas-ui-lesion-grid atlas-ui-lesion-grid--panel atlas-ui-lesion-grid--${view}`}
+                  >
+                    {directItems.map(renderItem)}
+                  </div>
+                )}
+
+                {subdivisions.map((subdivision) => (
+                  <section
+                    key={subdivision.key}
+                    className="atlas-ui-subdivision-block"
+                    aria-label={`${subcategory.label} — ${subdivision.label}`}
+                  >
+                    <h4 className="atlas-ui-subdivision-title">{subdivision.label}</h4>
+
+                    <div
+                      className={`atlas-ui-lesion-grid atlas-ui-lesion-grid--panel atlas-ui-lesion-grid--${view}`}
+                    >
+                      {subdivision.items.map(renderItem)}
+                    </div>
+                  </section>
+                ))}
+              </div>
+            </section>
+          );
+        })}
       </div>
     );
   };

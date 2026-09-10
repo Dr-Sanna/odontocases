@@ -543,11 +543,14 @@
   /* Bandeau Atlas : bleu uni et totalement opaque.
      Aucune transparence / aucun dégradé : l'illustration de fond ne transparaît pas. */
   background: #dcecfb;
-  box-shadow: none;
+  /* Même ombre que les callouts du site : on réutilise directement
+     la variable Docusaurus employée par .cd-callout. */
+  box-shadow: var(--ifm-alert-shadow);
 }
 
 [data-theme='dark'] .atlas-ui-category-heading {
   background: #26425d;
+  box-shadow: var(--ifm-alert-shadow);
 }
 
 .atlas-ui-category-title {
@@ -616,6 +619,32 @@
   opacity: 0.92;
 }
 
+.atlas-ui-subcategory-main,
+.atlas-ui-subcategory-content,
+.atlas-ui-subdivision-block {
+  min-width: 0;
+}
+
+.atlas-ui-subcategory-content {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.atlas-ui-subcategory-subdivision-rail {
+  display: none;
+}
+
+.atlas-ui-subdivision-title {
+  margin: 0 1px 8px;
+
+  color: var(--ifm-color-emphasis-650);
+  font-size: 0.86rem;
+  font-weight: 620;
+  line-height: 1.3;
+  opacity: 0.82;
+}
+
 /* Nouvelle composition uniquement pour le mode Liste. */
 .atlas-ui-taxonomy--list .atlas-ui-subcategory-panel {
   display: grid;
@@ -632,21 +661,78 @@
   align-self: stretch;
 
   display: flex;
-  align-items: center;
+  align-items: stretch;
   min-width: 0;
   box-sizing: border-box;
 
   margin: 0;
-  padding: 12px 14px;
+  padding: 0;
   min-height: 0;
   aspect-ratio: auto;
 
   border: 0;
   border-radius: 10px;
+  overflow: hidden;
 
-  /* Inversion de la hiérarchie chromatique : la catégorie est la plus soutenue,
-     la sous-catégorie utilise maintenant le bleu le plus clair. */
+  /* La sous-catégorie reste volontairement plus claire que la catégorie. */
   background: #e8f2fc;
+}
+
+.atlas-ui-taxonomy--list .atlas-ui-subcategory-main {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  flex: 1 1 auto;
+  padding: 12px 14px;
+}
+
+/*
+ * Lorsqu'une sous-catégorie possède un 3e niveau, le cartouche bleu devient
+ * lui-même un petit tableau :
+ *
+ *   [ Kystes du développement | Odontogènes     ]
+ *   [                         | Non odontogènes ]
+ *
+ * Le grand intitulé reste unique ; les subdivisions occupent une colonne
+ * interne à droite. Les cartes de lésions ne changent pas.
+ */
+.atlas-ui-taxonomy--list
+  .atlas-ui-subcategory-panel--has-subdivisions
+  .atlas-ui-subcategory-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1.18fr) minmax(92px, 0.82fr);
+}
+
+.atlas-ui-taxonomy--list .atlas-ui-subcategory-subdivision-rail {
+  display: grid;
+  grid-template-rows: var(--atlas-ui-subdivision-template-rows, 1fr);
+  min-width: 0;
+
+  border-left: 1px solid rgba(49, 89, 121, 0.12);
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.atlas-ui-taxonomy--list .atlas-ui-subcategory-subdivision-segment {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  padding: 9px 10px;
+
+  color: #436987;
+  font-size: 0.78rem;
+  font-weight: 650;
+  line-height: 1.22;
+  overflow-wrap: anywhere;
+}
+
+.atlas-ui-taxonomy--list
+  .atlas-ui-subcategory-subdivision-segment
+  + .atlas-ui-subcategory-subdivision-segment {
+  border-top: 1px solid rgba(49, 89, 121, 0.12);
+}
+
+.atlas-ui-taxonomy--list .atlas-ui-subcategory-subdivision-segment--direct {
+  color: transparent;
 }
 
 .atlas-ui-taxonomy--list .atlas-ui-subcategory-title {
@@ -663,6 +749,21 @@
 
 [data-theme='dark'] .atlas-ui-taxonomy--list .atlas-ui-subcategory-title {
   color: #d7e9f8;
+}
+
+[data-theme='dark'] .atlas-ui-taxonomy--list .atlas-ui-subcategory-subdivision-rail {
+  border-left-color: rgba(215, 233, 248, 0.12);
+  background: rgba(255, 255, 255, 0.025);
+}
+
+[data-theme='dark'] .atlas-ui-taxonomy--list .atlas-ui-subcategory-subdivision-segment {
+  color: #bad6ec;
+}
+
+[data-theme='dark'] .atlas-ui-taxonomy--list
+  .atlas-ui-subcategory-subdivision-segment
+  + .atlas-ui-subcategory-subdivision-segment {
+  border-top-color: rgba(215, 233, 248, 0.12);
 }
 
 
@@ -684,8 +785,36 @@
   gap: 9px;
 }
 
-.atlas-ui-taxonomy--list .atlas-ui-lesion-grid--panel.atlas-ui-lesion-grid--list {
+.atlas-ui-taxonomy--list .atlas-ui-subcategory-content {
   grid-column: 2 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  min-width: 0;
+}
+
+.atlas-ui-taxonomy--list .atlas-ui-subdivision-block {
+  min-width: 0;
+}
+
+.atlas-ui-taxonomy--list .atlas-ui-subdivision-title {
+  /* En desktop Liste, le libellé est déjà affiché dans le cartouche bleu
+     de gauche ; on évite donc de le répéter à droite. */
+  display: none;
+}
+
+.atlas-ui-taxonomy--list .atlas-ui-lesion-grid--panel.atlas-ui-lesion-grid--list {
+  grid-column: auto;
+}
+
+/* En vue Cartes, le troisième niveau est indiqué sobrement au-dessus
+   de sa propre grille : le cartouche segmenté n'existe qu'en vue Liste. */
+.atlas-ui-taxonomy--cards .atlas-ui-subcategory-content {
+  gap: 18px;
+}
+
+.atlas-ui-taxonomy--cards .atlas-ui-subdivision-title {
+  display: block;
 }
 
 /* Vue cartes : quatre cartes par ligne sur grand écran. */
@@ -977,6 +1106,28 @@
     grid-template-columns: minmax(170px, 0.72fr) repeat(2, minmax(0, 1fr));
   }
 
+  /* À cette largeur la grille de lésions passe à 2 colonnes ; on affiche donc
+     les subdivisions au-dessus de leurs lésions plutôt que de forcer un
+     alignement artificiel dans le cartouche de gauche. */
+  .atlas-ui-taxonomy--list
+    .atlas-ui-subcategory-panel--has-subdivisions
+    .atlas-ui-subcategory-heading {
+    display: flex;
+  }
+
+  .atlas-ui-taxonomy--list .atlas-ui-subcategory-subdivision-rail {
+    display: none;
+  }
+
+  .atlas-ui-taxonomy--list .atlas-ui-subdivision-title {
+    display: block;
+    margin-bottom: 7px;
+  }
+
+  .atlas-ui-taxonomy--list .atlas-ui-subcategory-content {
+    gap: 14px;
+  }
+
   .atlas-ui-taxonomy--list .atlas-ui-lesion-grid--panel.atlas-ui-lesion-grid--list {
     grid-column: 2 / -1;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -998,6 +1149,10 @@
     margin: 0 0 9px;
     aspect-ratio: auto;
     min-height: 56px;
+  }
+
+  .atlas-ui-taxonomy--list .atlas-ui-subcategory-content {
+    width: 100%;
   }
 
   .atlas-ui-taxonomy--list .atlas-ui-lesion-grid--panel.atlas-ui-lesion-grid--list,
