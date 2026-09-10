@@ -506,9 +506,9 @@
 }
 
 .atlas-ui-category {
-  /* Alignement commun : le contenu sous le bandeau commence exactement
-     au même niveau que le texte du titre de catégorie. */
-  --atlas-ui-category-content-indent: 17px;
+  /* Le bandeau conserve son padding interne, mais le contenu situé dessous
+     n'est plus indenté : sous-catégories et cartes repartent du bord de la grille. */
+  --atlas-ui-category-heading-padding-inline: 17px;
 
   min-width: 0;
   margin: 0 0 clamp(48px, 4.5vw, 62px);
@@ -536,18 +536,18 @@
   box-sizing: border-box;
 
   margin: 0 0 22px;
-  padding: 12px var(--atlas-ui-category-content-indent) 13px;
+  padding: 12px var(--atlas-ui-category-heading-padding-inline) 13px;
 
   border: 0;
   border-radius: 12px;
   /* Bandeau Atlas : bleu uni et totalement opaque.
      Aucune transparence / aucun dégradé : l'illustration de fond ne transparaît pas. */
-  background: #e8f2fc;
+  background: #dcecfb;
   box-shadow: none;
 }
 
 [data-theme='dark'] .atlas-ui-category-heading {
-  background: #20344b;
+  background: #26425d;
 }
 
 .atlas-ui-category-title {
@@ -561,21 +561,28 @@
   opacity: 0.98;
 }
 
-/* ---------- Sous-catégories pleine largeur ---------- */
+/* ---------- Sous-catégories ---------- */
 
 /*
- * Test de disposition : il n'y a plus deux colonnes de sous-catégories.
- * Chaque sous-catégorie occupe toute la largeur disponible, puis les lésions
- * sont réparties dans une grille compacte de quatre cartes par ligne.
+ * Vue Cartes : on conserve exactement la présentation validée jusque-là
+ * (titre de sous-catégorie simple au-dessus de sa grille).
+ *
+ * Vue Liste : la ligne conserve quatre entités visuelles :
+ *   [ sous-catégorie ] [ lésion ] [ lésion ] [ lésion ]
+ *
+ * La première entité est volontairement plus étroite. Les trois colonnes de
+ * lésions se partagent le reste de la largeur sans modifier l'apparence des
+ * cartes. Si les lésions passent sur plusieurs lignes, le cartouche de
+ * sous-catégorie s'étire verticalement sur toute la hauteur du groupe.
  */
 .atlas-ui-subcategory-stack {
   display: flex;
   flex-direction: column;
-  gap: clamp(24px, 2.2vw, 34px);
+  gap: clamp(18px, 1.8vw, 26px);
 
   min-width: 0;
   box-sizing: border-box;
-  padding-left: var(--atlas-ui-category-content-indent);
+  padding-left: 0;
 }
 
 .atlas-ui-subcategory-panel {
@@ -609,6 +616,55 @@
   opacity: 0.92;
 }
 
+/* Nouvelle composition uniquement pour le mode Liste. */
+.atlas-ui-taxonomy--list .atlas-ui-subcategory-panel {
+  display: grid;
+
+  /* La carte de sous-catégorie est volontairement plus étroite qu'une carte
+     de lésion. Les trois colonnes de lésions se partagent le reste. */
+  grid-template-columns: minmax(180px, 0.72fr) repeat(3, minmax(0, 1fr));
+  gap: 9px;
+  align-items: stretch;
+}
+
+.atlas-ui-taxonomy--list .atlas-ui-subcategory-heading {
+  grid-column: 1;
+  align-self: stretch;
+
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  box-sizing: border-box;
+
+  margin: 0;
+  padding: 12px 14px;
+  min-height: 0;
+  aspect-ratio: auto;
+
+  border: 0;
+  border-radius: 10px;
+
+  /* Inversion de la hiérarchie chromatique : la catégorie est la plus soutenue,
+     la sous-catégorie utilise maintenant le bleu le plus clair. */
+  background: #e8f2fc;
+}
+
+.atlas-ui-taxonomy--list .atlas-ui-subcategory-title {
+  color: #315979;
+  font-size: 0.94rem;
+  font-weight: 680;
+  line-height: 1.28;
+  opacity: 1;
+}
+
+[data-theme='dark'] .atlas-ui-taxonomy--list .atlas-ui-subcategory-heading {
+  background: #20344b;
+}
+
+[data-theme='dark'] .atlas-ui-taxonomy--list .atlas-ui-subcategory-title {
+  color: #d7e9f8;
+}
+
 
 /* ---------- Grilles de lésions ---------- */
 
@@ -620,12 +676,16 @@
 }
 
 /*
- * Chaque sous-catégorie est pleine largeur et reçoit trois colonnes égales.
- * Les cartes sont ainsi plus larges, tout en conservant une densité confortable.
+ * En vue Liste regroupée par catégorie, la sous-catégorie occupe la première
+ * des quatre unités. Sa grille de lésions occupe les trois unités restantes.
  */
 .atlas-ui-lesion-grid--panel.atlas-ui-lesion-grid--list {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 9px;
+}
+
+.atlas-ui-taxonomy--list .atlas-ui-lesion-grid--panel.atlas-ui-lesion-grid--list {
+  grid-column: 2 / -1;
 }
 
 /* Vue cartes : quatre cartes par ligne sur grand écran. */
@@ -641,7 +701,7 @@
 }
 
 .atlas-ui-lesion-grid--flat.atlas-ui-lesion-grid--list {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 9px;
 }
 
@@ -652,8 +712,8 @@
 }
 
 .atlas-ui-category > .atlas-ui-lesion-grid--flat {
-  width: calc(100% - var(--atlas-ui-category-content-indent));
-  margin-left: var(--atlas-ui-category-content-indent);
+  width: 100%;
+  margin-left: 0;
   margin-bottom: 16px;
 }
 
@@ -908,8 +968,21 @@
 
 /* ---------- Responsive ---------- */
 
-/* La vue cartes garde davantage de colonnes que la vue liste. */
+/*
+ * Responsive : le principe « une unité sous-catégorie + lésions » se contracte
+ * progressivement. La vue Cartes conserve son comportement précédent.
+ */
 @media (max-width: 1180px) {
+  .atlas-ui-taxonomy--list .atlas-ui-subcategory-panel {
+    grid-template-columns: minmax(170px, 0.72fr) repeat(2, minmax(0, 1fr));
+  }
+
+  .atlas-ui-taxonomy--list .atlas-ui-lesion-grid--panel.atlas-ui-lesion-grid--list {
+    grid-column: 2 / -1;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .atlas-ui-lesion-grid--flat.atlas-ui-lesion-grid--list,
   .atlas-ui-lesion-grid--panel.atlas-ui-lesion-grid--cards,
   .atlas-ui-lesion-grid--flat.atlas-ui-lesion-grid--cards {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -917,7 +990,17 @@
 }
 
 @media (max-width: 900px) {
-  .atlas-ui-lesion-grid--panel.atlas-ui-lesion-grid--list,
+  .atlas-ui-taxonomy--list .atlas-ui-subcategory-panel {
+    display: block;
+  }
+
+  .atlas-ui-taxonomy--list .atlas-ui-subcategory-heading {
+    margin: 0 0 9px;
+    aspect-ratio: auto;
+    min-height: 56px;
+  }
+
+  .atlas-ui-taxonomy--list .atlas-ui-lesion-grid--panel.atlas-ui-lesion-grid--list,
   .atlas-ui-lesion-grid--flat.atlas-ui-lesion-grid--list,
   .atlas-ui-lesion-grid--panel.atlas-ui-lesion-grid--cards,
   .atlas-ui-lesion-grid--flat.atlas-ui-lesion-grid--cards {
@@ -928,13 +1011,13 @@
 @media (max-width: 640px) {
 
   .atlas-ui-category {
-    --atlas-ui-category-content-indent: 13px;
+    --atlas-ui-category-heading-padding-inline: 13px;
     margin-bottom: 38px;
   }
 
   .atlas-ui-category-heading {
     margin-bottom: 16px;
-    padding: 10px var(--atlas-ui-category-content-indent) 11px;
+    padding: 10px var(--atlas-ui-category-heading-padding-inline) 11px;
     border-radius: 10px;
   }
 
