@@ -45,6 +45,137 @@ const UNTHEMED_THEME = {
 };
 
 
+const UNCLASSIFIED_ATLAS_CATEGORY = 'Sans catégorie';
+
+// Ordre pédagogique de l’Atlas. Les catégories inconnues restent acceptées et
+// sont placées ensuite par ordre alphabétique, ce qui évite de rendre le rendu
+// fragile si une nouvelle catégorie est ajoutée dans Strapi.
+const ATLAS_CATEGORY_ORDER = [
+  'Variations anatomiques, physiologiques et états bénins fréquents',
+  'Anomalies du développement et pathologies dentaires',
+  'Pathologies gingivales et parodontales',
+  // Nouvelle organisation : les vrais kystes et les pseudokystes/cavités
+  // peuvent vivre dans deux catégories voisines. L'ancien intitulé reste
+  // accepté pendant la migration des fiches.
+  'Kystes des maxillaires',
+  'Kystes et pseudokystes des maxillaires',
+  'Pseudokystes et cavités osseuses des maxillaires',
+  'Tumeurs et autres lésions osseuses ou odontogènes des maxillaires',
+  'Lésions réactionnelles et traumatiques des tissus mous',
+  'Pathologies des glandes salivaires',
+  'Pathologies infectieuses et complications',
+  'Pathologies inflammatoires, immunitaires, bulleuses et ulcéreuses',
+  'Troubles oraux potentiellement malins',
+  'Pathologies des lèvres et périorales',
+  'Tumeurs bénignes des tissus mous et de la muqueuse',
+  'Tumeurs malignes de la cavité orale',
+  'Lésions pigmentées et vasculaires',
+  'Maladies systémiques, génétiques et hématologiques à manifestations orales',
+  'Douleurs, troubles fonctionnels et signes cervico-faciaux',
+];
+
+const ATLAS_SUBCATEGORY_ORDER = {
+  'Variations anatomiques, physiologiques et états bénins fréquents': [
+    'Variations anatomiques et physiologiques orales',
+    'Variations et affections bénignes de la langue',
+  ],
+  'Anomalies du développement et pathologies dentaires': [
+    'Anomalies du développement',
+    'Anomalies dentaires et de l’éruption',
+    'Altérations et traumatismes dentaires',
+  ],
+  'Pathologies gingivales et parodontales': [
+    'Gingivites et maladies parodontales inflammatoires',
+    'Accroissements et hyperplasies gingivales',
+  ],
+  'Kystes des maxillaires': [
+    'Kystes odontogènes du développement',
+    'Kystes non odontogènes du développement',
+    'Kystes odontogènes inflammatoires',
+    'Kystes liés à l’éruption',
+  ],
+  // Compatibilité pendant la migration vers deux grandes catégories.
+  'Kystes et pseudokystes des maxillaires': [
+    'Kystes odontogènes du développement',
+    'Kystes non odontogènes du développement',
+    'Kystes odontogènes inflammatoires',
+    'Kystes liés à l’éruption',
+    'Pseudokystes et cavités osseuses',
+  ],
+  'Tumeurs et autres lésions osseuses ou odontogènes des maxillaires': [
+    'Tumeurs odontogènes bénignes épithéliales',
+    'Tumeurs odontogènes bénignes mixtes',
+    'Tumeurs odontogènes bénignes mésenchymateuses',
+    'Lésions à cellules géantes',
+    'Lésions fibro-osseuses et dysplasies',
+    'Tumeurs osseuses bénignes',
+    'Lésions osseuses réactionnelles ou iatrogènes',
+    'Tumeurs odontogènes malignes',
+    'Tumeurs osseuses malignes',
+    'Autres tumeurs bénignes des maxillaires',
+  ],
+  'Lésions réactionnelles et traumatiques des tissus mous': [
+    'Hyperplasies et pseudotumeurs réactionnelles',
+    'Lésions traumatiques et frictionnelles',
+    'Lésions thermiques et irritatives',
+    'Lésions iatrogènes des tissus mous',
+  ],
+  'Pathologies des glandes salivaires': [
+    'Pathologies obstructives et rétentionnelles',
+    'Pathologies inflammatoires et infectieuses',
+    'Pathologies réactionnelles et ischémiques',
+    'Troubles fonctionnels',
+    'Tumeurs salivaires bénignes',
+    'Tumeurs salivaires malignes',
+  ],
+  'Pathologies infectieuses et complications': [
+    'Infections odontogènes',
+    'Complications infectieuses à distance',
+    'Autres infections bactériennes',
+    'Infections virales',
+    'Infections fongiques',
+  ],
+  'Pathologies inflammatoires, immunitaires, bulleuses et ulcéreuses': [
+    'Pathologies aphteuses',
+    'Pathologies bulleuses',
+    'Pathologies immuno-inflammatoires',
+    'Autres lésions inflammatoires',
+  ],
+  'Pathologies des lèvres et périorales': [
+    'Chéilites',
+    'Lésions vasculaires',
+    'Lésions cutanéo-labiales et périorales',
+  ],
+  'Tumeurs bénignes des tissus mous et de la muqueuse': [
+    'Tumeurs épithéliales',
+    'Tumeurs mésenchymateuses',
+    'Tumeurs d’histogenèse particulière ou incertaine',
+  ],
+  'Tumeurs malignes de la cavité orale': [
+    'Tumeurs épithéliales',
+    'Tumeurs mélanocytaires',
+    'Tumeurs vasculaires et mésenchymateuses',
+    'Métastases',
+    'Hémopathies malignes',
+  ],
+  'Lésions pigmentées et vasculaires': [
+    'Pigmentations',
+    'Lésions vasculaires',
+  ],
+  'Maladies systémiques, génétiques et hématologiques à manifestations orales': [
+    'Maladies inflammatoires et immunitaires systémiques',
+    'Maladies hématologiques et immunitaires',
+    'Maladies et syndromes génétiques',
+    'Syndromes auto-inflammatoires',
+    'Maladies osseuses systémiques',
+  ],
+  'Douleurs, troubles fonctionnels et signes cervico-faciaux': [
+    'Douleurs et troubles fonctionnels',
+    'Signes cliniques cervico-faciaux',
+  ],
+};
+
+
 const LIST_CACHE = new Map();
 const LIST_STALE_MS = Number(import.meta.env.VITE_LIST_CACHE_STALE_MS) || 20_000;
 const LIST_MAX_AGE_MS = Number(import.meta.env.VITE_LIST_CACHE_MAX_AGE_MS) || 5 * 60_000;
@@ -89,6 +220,215 @@ function normalizeBadges(badgesAny) {
       variant: String(b?.variant || 'info').trim() || 'info',
     }))
     .filter((b) => b.label);
+}
+
+
+function normalizeClassifications(value) {
+  const list = Array.isArray(value)
+    ? value
+    : Array.isArray(value?.data)
+      ? value.data
+      : value
+        ? [value]
+        : [];
+
+  return list
+    .map((node) => (node?.attributes ? node.attributes : node))
+    .filter(Boolean)
+    .map((entry) => ({
+      category: String(entry?.category || '').trim(),
+      subcategory: String(entry?.subcategory || '').trim(),
+    }))
+    .filter((entry) => entry.category);
+}
+
+function makeOrderMap(values) {
+  return new Map((Array.isArray(values) ? values : []).map((value, index) => [value, index]));
+}
+
+const ATLAS_CATEGORY_ORDER_MAP = makeOrderMap(ATLAS_CATEGORY_ORDER);
+const ATLAS_SUBCATEGORY_ORDER_MAP = Object.fromEntries(
+  Object.entries(ATLAS_SUBCATEGORY_ORDER).map(([category, values]) => [category, makeOrderMap(values)])
+);
+
+function compareAtlasLabels(a, b, orderMap = null) {
+  const aLabel = String(a || '');
+  const bLabel = String(b || '');
+
+  if (aLabel === UNCLASSIFIED_ATLAS_CATEGORY && bLabel !== UNCLASSIFIED_ATLAS_CATEGORY) return 1;
+  if (bLabel === UNCLASSIFIED_ATLAS_CATEGORY && aLabel !== UNCLASSIFIED_ATLAS_CATEGORY) return -1;
+
+  if (orderMap) {
+    const ai = orderMap.has(aLabel) ? orderMap.get(aLabel) : Number.POSITIVE_INFINITY;
+    const bi = orderMap.has(bLabel) ? orderMap.get(bLabel) : Number.POSITIVE_INFINITY;
+    if (ai !== bi) return ai - bi;
+  }
+
+  return aLabel.localeCompare(bLabel, 'fr', { sensitivity: 'base', numeric: true });
+}
+
+function itemIdentity(item) {
+  return String(item?.documentId || item?.id || item?.slug || item?.title || '');
+}
+
+function pushUniqueAtlasItem(target, seen, item) {
+  const key = itemIdentity(item);
+  if (key && seen.has(key)) return;
+  if (key) seen.add(key);
+  target.push(item);
+}
+
+function buildAtlasCategorySections(items) {
+  const source = Array.isArray(items) ? items : [];
+  const categories = new Map();
+
+  for (const item of source) {
+    const classifications = normalizeClassifications(item?.classification);
+    const targets = classifications.length
+      ? classifications
+      : [{ category: UNCLASSIFIED_ATLAS_CATEGORY, subcategory: '' }];
+
+    for (const classification of targets) {
+      const categoryLabel = classification.category || UNCLASSIFIED_ATLAS_CATEGORY;
+      const subcategoryLabel = classification.subcategory || '';
+
+      if (!categories.has(categoryLabel)) {
+        categories.set(categoryLabel, {
+          key: categoryLabel,
+          label: categoryLabel,
+          directItems: [],
+          directSeen: new Set(),
+          subcategories: new Map(),
+        });
+      }
+
+      const category = categories.get(categoryLabel);
+
+      if (!subcategoryLabel) {
+        pushUniqueAtlasItem(category.directItems, category.directSeen, item);
+        continue;
+      }
+
+      if (!category.subcategories.has(subcategoryLabel)) {
+        category.subcategories.set(subcategoryLabel, {
+          key: `${categoryLabel}::${subcategoryLabel}`,
+          label: subcategoryLabel,
+          items: [],
+          seen: new Set(),
+        });
+      }
+
+      const subcategory = category.subcategories.get(subcategoryLabel);
+      pushUniqueAtlasItem(subcategory.items, subcategory.seen, item);
+    }
+  }
+
+  return Array.from(categories.values())
+    .sort((a, b) => compareAtlasLabels(a.label, b.label, ATLAS_CATEGORY_ORDER_MAP))
+    .map((category) => {
+      const subOrder = ATLAS_SUBCATEGORY_ORDER_MAP[category.label] || null;
+      return {
+        key: category.key,
+        label: category.label,
+        directItems: category.directItems.sort(compareByTitleAsc),
+        subcategories: Array.from(category.subcategories.values())
+          .sort((a, b) => compareAtlasLabels(a.label, b.label, subOrder))
+          .map((subcategory) => ({
+            key: subcategory.key,
+            label: subcategory.label,
+            items: subcategory.items.sort(compareByTitleAsc),
+          })),
+      };
+    });
+}
+
+
+/*
+ * Répartition des panneaux de sous-catégories dans deux colonnes réelles.
+ *
+ * On n'utilise volontairement plus CSS Multi-column (`column-count`) :
+ * selon le contenu et le navigateur, plusieurs panneaux pouvaient rester
+ * empilés dans la colonne de gauche. Ici, React calcule une répartition
+ * équilibrée et déterministe à partir du nombre de lésions.
+ *
+ * L'ordre pédagogique original est conservé dans `__atlasPanelOrder` afin
+ * de pouvoir le restaurer sur tablette/mobile lorsque l'affichage repasse
+ * sur une seule colonne.
+ */
+function estimateAtlasSubcategoryPanelWeight(subcategory, view) {
+  const itemCount = Math.max(1, Array.isArray(subcategory?.items) ? subcategory.items.length : 0);
+  const titleLength = String(subcategory?.label || '').length;
+  const extraTitleLines = Math.max(0, Math.ceil(titleLength / 44) - 1);
+
+  // En vue cartes, un panneau affiche 2 lésions par rangée sur grand écran.
+  const lesionRows = view === 'cards' ? Math.ceil(itemCount / 2) : itemCount;
+
+  return lesionRows + 0.58 + extraTitleLines * 0.28;
+}
+
+function balanceAtlasSubcategoryColumns(subcategories, view) {
+  const source = Array.isArray(subcategories) ? subcategories : [];
+
+  const decorated = source.map((subcategory, index) => ({
+    ...subcategory,
+    __atlasPanelOrder: index,
+    __atlasPanelWeight: estimateAtlasSubcategoryPanelWeight(subcategory, view),
+  }));
+
+  if (decorated.length <= 1) {
+    return [decorated, []];
+  }
+
+  // Les catégories de l'Atlas ont peu de sous-groupes (actuellement <= 10).
+  // On peut donc tester toutes les répartitions possibles, en gardant le
+  // premier panneau à gauche, et choisir celle dont les hauteurs estimées
+  // sont les plus proches. Au-delà de 12 panneaux, fallback glouton.
+  if (decorated.length <= 12) {
+    const first = decorated[0];
+    const rest = decorated.slice(1);
+    const combinations = 1 << rest.length;
+
+    let best = null;
+
+    for (let mask = 0; mask < combinations; mask += 1) {
+      const columns = [[first], []];
+      const weights = [first.__atlasPanelWeight, 0];
+
+      for (let i = 0; i < rest.length; i += 1) {
+        const columnIndex = (mask >> i) & 1;
+        columns[columnIndex].push(rest[i]);
+        weights[columnIndex] += rest[i].__atlasPanelWeight;
+      }
+
+      // Avec plusieurs panneaux, on veut réellement utiliser les deux colonnes.
+      if (columns[1].length === 0) continue;
+
+      const heightDifference = Math.abs(weights[0] - weights[1]);
+      const countDifference = Math.abs(columns[0].length - columns[1].length);
+
+      // La hauteur prime très largement ; le nombre de panneaux ne sert
+      // qu'à départager des solutions visuellement proches.
+      const score = heightDifference + countDifference * 0.06;
+
+      if (!best || score < best.score) {
+        best = { columns, score };
+      }
+    }
+
+    if (best) return best.columns;
+  }
+
+  // Fallback déterministe pour une éventuelle catégorie très fragmentée.
+  const columns = [[], []];
+  const weights = [0, 0];
+
+  for (const subcategory of decorated) {
+    const columnIndex = weights[0] <= weights[1] ? 0 : 1;
+    columns[columnIndex].push(subcategory);
+    weights[columnIndex] += subcategory.__atlasPanelWeight;
+  }
+
+  return columns;
 }
 
 function getCaseThemesValue(item) {
@@ -370,9 +710,18 @@ function ViewToggle({ view, setView }) {
 
 function AtlasControls({ atlasGroup, setAtlasGroup, showBadges, setShowBadges }) {
   return (
-    <div className="cc-atlas-controls" role="group" aria-label="Contrôles Atlas">
-      <div className="cc-atlas-control" role="group" aria-label="Grouper par">
+    <div className="atlas-ui-controls" role="group" aria-label="Contrôles Atlas">
+      <div className="atlas-ui-control" role="group" aria-label="Grouper par">
         <span className="cc-sortlabel">Grouper par :</span>
+
+        <button
+          type="button"
+          className={`cc-sortbtn ${atlasGroup === 'category' ? 'active' : ''}`}
+          onClick={() => setAtlasGroup('category')}
+          aria-pressed={atlasGroup === 'category'}
+        >
+          Catégorie
+        </button>
 
         <button
           type="button"
@@ -393,7 +742,7 @@ function AtlasControls({ atlasGroup, setAtlasGroup, showBadges, setShowBadges })
         </button>
       </div>
 
-      <div className="cc-atlas-control" role="group" aria-label="Afficher les badges">
+      <div className="atlas-ui-control" role="group" aria-label="Afficher les badges">
         <span className="cc-sortlabel">Badges :</span>
 
         <button
@@ -420,8 +769,8 @@ function AtlasControls({ atlasGroup, setAtlasGroup, showBadges, setShowBadges })
 
 function CaseControls({ caseGroup, setCaseGroup, groupLabel = 'Thème' }) {
   return (
-    <div className="cc-atlas-controls" role="group" aria-label="Contrôles des cas cliniques">
-      <div className="cc-atlas-control" role="group" aria-label="Grouper par">
+    <div className="cc-case-controls" role="group" aria-label="Contrôles des cas cliniques">
+      <div className="cc-case-control" role="group" aria-label="Grouper par">
         <span className="cc-sortlabel">Grouper par :</span>
 
         <button
@@ -485,14 +834,15 @@ export default function CasCliniques() {
     localStorage.setItem('cc:view', view);
   }, [view]);
 
-  // Atlas : grouper par lettre par défaut, puis respecter la préférence utilisateur.
+  // Atlas : classement pédagogique par catégorie par défaut.
+  // La clé v2 permet de ne pas réutiliser l'ancien défaut « Lettre » mémorisé.
   const [atlasGroup, setAtlasGroup] = useState(() => {
-    const saved = localStorage.getItem('atlas:group');
-    return saved === 'none' ? 'none' : 'letter';
-  }); // 'letter' | 'none'
+    const saved = localStorage.getItem('atlas:group:v2');
+    return ['category', 'letter', 'none'].includes(saved) ? saved : 'category';
+  }); // 'category' | 'letter' | 'none'
 
   useEffect(() => {
-    localStorage.setItem('atlas:group', atlasGroup);
+    localStorage.setItem('atlas:group:v2', atlasGroup);
     localStorage.setItem('atlas:show', 'all');
   }, [atlasGroup]);
 
@@ -621,7 +971,11 @@ export default function CasCliniques() {
                 params: {
                   populate: {
                     cover: { fields: ['url', 'formats'] },
+                    // `badges` reste chargé pour les données complètes utilisées par CaseDetail / breadcrumb.
                     badges: { fields: ['label', 'variant'] },
+                    // `atlasBadges` est la relation dédiée aux badges visibles sur les cartes de l'Atlas.
+                    atlasBadges: { fields: ['label', 'variant'] },
+                    classification: { fields: ['category', 'subcategory'] },
                   },
                   locale: 'all',
                   filters,
@@ -816,32 +1170,36 @@ export default function CasCliniques() {
     return [...sortedItems];
   }, [sortedItems, isAtlasHub, tab]);
 
-  // Sections Atlas (groupement)
-  const atlasSections = useMemo(() => {
+  // Atlas : sections alphabétiques (ancien affichage, conservé comme option).
+  const atlasLetterSections = useMemo(() => {
     if (!(isAtlasHub && tab === ATLAS_KEY)) return null;
-
-    const list = atlasVisibleItems;
-
-    if (atlasGroup === 'none') {
-      return [{ key: 'all', label: null, items: list }];
-    }
 
     const map = new Map();
 
-    for (const it of list) {
+    for (const it of atlasVisibleItems) {
       const label = getFirstLetter(it?.title);
       if (!map.has(label)) map.set(label, []);
       map.get(label).push(it);
     }
 
-    const labels = Array.from(map.keys()).sort((a, b) => String(a).localeCompare(String(b), 'fr', { sensitivity: 'base' }));
+    const labels = Array.from(map.keys()).sort((a, b) =>
+      String(a).localeCompare(String(b), 'fr', { sensitivity: 'base' })
+    );
 
     return labels.map((label) => ({
       key: String(label),
       label,
       items: map.get(label),
     }));
-  }, [isAtlasHub, tab, atlasVisibleItems, atlasGroup]);
+  }, [isAtlasHub, tab, atlasVisibleItems]);
+
+  // Atlas : classification pédagogique Catégorie > Sous-catégorie.
+  // Une même pathologie peut apparaître dans plusieurs branches si plusieurs
+  // composants `classification` sont présents dans Strapi.
+  const atlasCategorySections = useMemo(() => {
+    if (!(isAtlasHub && tab === ATLAS_KEY)) return null;
+    return buildAtlasCategorySections(atlasVisibleItems);
+  }, [isAtlasHub, tab, atlasVisibleItems]);
 
 
   const caseThemeSections = useMemo(() => {
@@ -913,11 +1271,14 @@ export default function CasCliniques() {
     const isPathology = entity === 'pathology';
     const isListView = view === 'list';
 
-    // Les badges sont réservés à l’Atlas. Une pathologie sans badge n’en affiche aucun.
+    // Deux jeux de badges distincts :
+    // - `badges` = badges complets de la pathologie, conservés pour CaseDetail / breadcrumb ;
+    // - `atlasBadges` = badges contextuels, seuls affichés sur les cartes de l'Atlas.
     const pathoBadges = isPathology ? normalizeBadges(attrs?.badges) : [];
-    const badgesToRender = isPathology && atlasShowBadges ? pathoBadges : [];
+    const atlasBadges = isPathology ? normalizeBadges(attrs?.atlasBadges) : [];
+    const badgesToRender = isPathology && atlasShowBadges ? atlasBadges : [];
 
-    // Les données de navigation conservent les vrais badges, indépendamment de leur affichage.
+    // Les données de navigation conservent les badges complets, indépendamment de l'affichage Atlas.
     const primaryBadge = isPathology ? pickPrimaryBadge(attrs?.badges) : null;
 
     const key = `${entity}:${slug || idx}`;
@@ -947,58 +1308,38 @@ export default function CasCliniques() {
             prefetch: { slug, title: titleText, type: attrs?.type || null },
           };
 
-    // Atlas : on utilise le même modèle de carte que Documentation.
+    // Atlas : carte entièrement isolée des styles Documentation / Entraînement.
+    // Les classes `atlas-ui-*` permettent de faire évoluer l'Atlas sans modifier
+    // les cartes ou séparateurs partagés utilisés ailleurs sur le site.
     if (isPathology) {
-      const cardClass = `doc-card ui-card ${isListView ? 'doc-card--list' : ''}`;
+      const cardClass = `atlas-ui-lesion-card ${
+        isListView ? 'atlas-ui-lesion-card--list' : 'atlas-ui-lesion-card--cards'
+      }`;
 
       const Inner = (
         <>
           <div
-            className={coverUrl ? 'doc-thumb' : 'doc-thumb is-empty'}
+            className={coverUrl ? 'atlas-ui-lesion-thumb' : 'atlas-ui-lesion-thumb atlas-ui-lesion-thumb--empty'}
             style={coverUrl ? { backgroundImage: `url(${coverUrl})` } : undefined}
             aria-hidden="true"
-          >
-            {!isListView && (
-              <div className="doc-thumb-overlay">
-                <div className="doc-thumb-badges">
-                  {badgesToRender.map((b) => (
-                    <span
-                      key={`${b.variant}:${b.label}`}
-                      className={`doc-thumb-badge badge badge-soft badge-${b.variant}`}
-                    >
-                      {b.label}
-                    </span>
-                  ))}
-                </div>
-                <h3 className="doc-thumb-title">{titleText}</h3>
-              </div>
-            )}
-          </div>
+          />
 
-          {isListView ? (
-            <div className="doc-body">
-              <h3 className="doc-title">
-                <span className="doc-title-text">{titleText}</span>
-              </h3>
+          <div className="atlas-ui-lesion-body">
+            <h3 className="atlas-ui-lesion-title">{titleText}</h3>
 
-              <div className="doc-title-badges">
+            {badgesToRender.length > 0 && (
+              <div className="atlas-ui-lesion-badges">
                 {badgesToRender.map((b) => (
                   <span
                     key={`${b.variant}:${b.label}`}
-                    className={`doc-title-badge badge badge-soft-outline badge-${b.variant}`}
+                    className={`atlas-ui-lesion-badge badge badge-soft-outline badge-${b.variant}`}
                   >
                     {b.label}
                   </span>
                 ))}
               </div>
-
-              {excerpt ? <p className="doc-excerpt">{excerpt}</p> : null}
-            </div>
-          ) : excerpt ? (
-            <div className="doc-body">
-              <p className="doc-excerpt">{excerpt}</p>
-            </div>
-          ) : null}
+            )}
+          </div>
         </>
       );
 
@@ -1007,7 +1348,11 @@ export default function CasCliniques() {
           {Inner}
         </Link>
       ) : (
-        <div key={key} className={`${cardClass} doc-card--disabled`} title="Slug manquant">
+        <div
+          key={key}
+          className={`${cardClass} atlas-ui-lesion-card--disabled`}
+          title="Slug manquant"
+        >
           {Inner}
         </div>
       );
@@ -1053,6 +1398,55 @@ export default function CasCliniques() {
     ) : (
       <div key={key} className={`${cardClass} doc-card--disabled`} title="Slug manquant">
         {Inner}
+      </div>
+    );
+  };
+
+
+  const renderAtlasSubcategoryColumns = (category) => {
+    const subcategories = Array.isArray(category?.subcategories) ? category.subcategories : [];
+    if (subcategories.length === 0) return null;
+
+    const columns = balanceAtlasSubcategoryColumns(subcategories, view);
+    const isSingle = subcategories.length === 1;
+
+    return (
+      <div
+        className={`atlas-ui-subcategory-columns ${
+          isSingle ? 'atlas-ui-subcategory-columns--single' : ''
+        }`}
+      >
+        {columns.map((column, columnIndex) => (
+          <div
+            key={`${category.key}:column:${columnIndex}`}
+            className={`atlas-ui-subcategory-column atlas-ui-subcategory-column--${columnIndex + 1} ${
+              column.length === 0 ? 'atlas-ui-subcategory-column--empty' : ''
+            }`}
+          >
+            {column.map((subcategory) => (
+              <section
+                key={subcategory.key}
+                className="atlas-ui-subcategory-panel"
+                aria-label={subcategory.label}
+                style={{ '--atlas-panel-order': subcategory.__atlasPanelOrder }}
+              >
+                <div className="atlas-ui-subcategory-heading">
+                  <h3 className="atlas-ui-subcategory-title">{subcategory.label}</h3>
+                  <span className="atlas-ui-subcategory-count">
+                    {subcategory.items.length}{' '}
+                    {subcategory.items.length > 1 ? 'lésions' : 'lésion'}
+                  </span>
+                </div>
+
+                <div
+                  className={`atlas-ui-lesion-grid atlas-ui-lesion-grid--panel atlas-ui-lesion-grid--${view}`}
+                >
+                  {subcategory.items.map(renderItem)}
+                </div>
+              </section>
+            ))}
+          </div>
+        ))}
       </div>
     );
   };
@@ -1162,29 +1556,63 @@ export default function CasCliniques() {
             {/* Rendu */}
             {!loading && !error && listForEmptyCheck.length > 0 && (
               <>
-                {isAtlasList && atlasSections && atlasGroup !== 'none' ? (
+                {isAtlasList && atlasGroup === 'category' && atlasCategorySections ? (
                   <div
-                    className={`resource-groups cc-groups cc-groups--atlas ${view === 'list' ? 'cc-groups--list' : 'cc-groups--cards'}`}
-                    aria-label="Ressources"
+                    className={`atlas-ui-taxonomy atlas-ui-taxonomy--${view}`}
+                    aria-label="Pathologies par catégorie"
                   >
-                    {atlasSections.map((section) => (
-                      <div key={section.key} className="resource-group cc-group">
-                        {section.label && (
-                          <div className="resource-group-header cc-group-header" aria-hidden="true">
-                            <span className="resource-group-title cc-group-title">{section.label}</span>
-                            <div className="resource-group-rule cc-group-rule" />
+                    {atlasCategorySections.map((category) => (
+                      <section
+                        key={category.key}
+                        className="atlas-ui-category"
+                        aria-label={category.label}
+                      >
+                        <div className="atlas-ui-category-heading">
+                          <h2 className="atlas-ui-category-title">{category.label}</h2>
+                          <div className="atlas-ui-category-rule" aria-hidden="true" />
+                        </div>
+
+                        {category.directItems.length > 0 && (
+                          <div
+                            className={`atlas-ui-lesion-grid atlas-ui-lesion-grid--flat atlas-ui-lesion-grid--${view}`}
+                            aria-label={`${category.label} — lésions`}
+                          >
+                            {category.directItems.map(renderItem)}
                           </div>
                         )}
 
-                        <section
-                          className={`resource-grid doc-grid cc-resource-grid ${view === 'list' ? 'doc-grid--list' : ''}`}
-                          aria-label={section.label ? `Groupe ${section.label}` : 'Ressources'}
-                        >
-                          {section.items.map(renderItem)}
-                        </section>
-                      </div>
+                        {renderAtlasSubcategoryColumns(category)}
+                      </section>
                     ))}
                   </div>
+                ) : isAtlasList && atlasGroup === 'letter' && atlasLetterSections ? (
+                  <div
+                    className={`atlas-ui-letters atlas-ui-letters--${view}`}
+                    aria-label="Pathologies par lettre"
+                  >
+                    {atlasLetterSections.map((section) => (
+                      <section
+                        key={section.key}
+                        className="atlas-ui-letter-section"
+                        aria-label={`Lettre ${section.label}`}
+                      >
+                        <h2 className="atlas-ui-letter-title">{section.label}</h2>
+
+                        <div
+                          className={`atlas-ui-lesion-grid atlas-ui-lesion-grid--flat atlas-ui-lesion-grid--${view}`}
+                        >
+                          {section.items.map(renderItem)}
+                        </div>
+                      </section>
+                    ))}
+                  </div>
+                ) : isAtlasList ? (
+                  <section
+                    className={`atlas-ui-lesion-grid atlas-ui-lesion-grid--flat atlas-ui-lesion-grid--${view} atlas-ui-ungrouped`}
+                    aria-label="Pathologies"
+                  >
+                    {atlasVisibleItems.map(renderItem)}
+                  </section>
                 ) : useCaseThemeSections ? (
                   <div
                     className="resource-groups cc-training-groups"
@@ -1211,7 +1639,7 @@ export default function CasCliniques() {
                     className={`resource-grid doc-grid cc-resource-grid ${view === 'list' ? 'doc-grid--list' : ''}`}
                     aria-label="Ressources"
                   >
-                    {(isAtlasList ? atlasVisibleItems : sortedItems).map(renderItem)}
+                    {sortedItems.map(renderItem)}
                   </section>
                 )}
 
