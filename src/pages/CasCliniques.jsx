@@ -47,33 +47,8 @@ const UNTHEMED_THEME = {
 
 const UNCLASSIFIED_ATLAS_CATEGORY = 'Sans catégorie';
 
-// Ordre pédagogique de l’Atlas. Les catégories inconnues restent acceptées et
-// sont placées ensuite par ordre alphabétique, ce qui évite de rendre le rendu
-// fragile si une nouvelle catégorie est ajoutée dans Strapi.
-const ATLAS_CATEGORY_ORDER = [
-  'Variations anatomiques, physiologiques et états bénins fréquents',
-  'Anomalies du développement et pathologies dentaires',
-  'Pathologies gingivales et parodontales',
-  // Nouvelle organisation : les vrais kystes et les pseudokystes/cavités
-  // peuvent vivre dans deux catégories voisines. L'ancien intitulé reste
-  // accepté pendant la migration des fiches.
-  'Kystes des maxillaires',
-  'Kystes et pseudokystes des maxillaires',
-  'Pseudokystes et cavités osseuses des maxillaires',
-  'Tumeurs et autres lésions osseuses ou odontogènes des maxillaires',
-  'Lésions réactionnelles et traumatiques des tissus mous',
-  'Pathologies des glandes salivaires',
-  'Pathologies infectieuses et complications',
-  'Pathologies inflammatoires, immunitaires, bulleuses et ulcéreuses',
-  'Troubles oraux potentiellement malins',
-  'Pathologies des lèvres et périorales',
-  'Tumeurs bénignes des tissus mous et de la muqueuse',
-  'Tumeurs malignes de la cavité orale',
-  'Lésions pigmentées et vasculaires',
-  'Maladies systémiques, génétiques et hématologiques à manifestations orales',
-  'Douleurs, troubles fonctionnels et signes cervico-faciaux',
-];
-
+// Les grandes catégories de l’Atlas sont triées automatiquement par ordre
+// alphabétique français. Aucun ordre de catégorie n’est maintenu manuellement ici.
 const ATLAS_SUBCATEGORY_ORDER = {
   'Variations anatomiques, physiologiques et états bénins fréquents': [
     'Variations anatomiques et physiologiques orales',
@@ -246,7 +221,6 @@ function makeOrderMap(values) {
   return new Map((Array.isArray(values) ? values : []).map((value, index) => [value, index]));
 }
 
-const ATLAS_CATEGORY_ORDER_MAP = makeOrderMap(ATLAS_CATEGORY_ORDER);
 const ATLAS_SUBCATEGORY_ORDER_MAP = Object.fromEntries(
   Object.entries(ATLAS_SUBCATEGORY_ORDER).map(([category, values]) => [category, makeOrderMap(values)])
 );
@@ -324,7 +298,7 @@ function buildAtlasCategorySections(items) {
   }
 
   return Array.from(categories.values())
-    .sort((a, b) => compareAtlasLabels(a.label, b.label, ATLAS_CATEGORY_ORDER_MAP))
+    .sort((a, b) => compareAtlasLabels(a.label, b.label))
     .map((category) => {
       const subOrder = ATLAS_SUBCATEGORY_ORDER_MAP[category.label] || null;
       return {
@@ -342,94 +316,6 @@ function buildAtlasCategorySections(items) {
     });
 }
 
-
-/*
- * Répartition des panneaux de sous-catégories dans deux colonnes réelles.
- *
- * On n'utilise volontairement plus CSS Multi-column (`column-count`) :
- * selon le contenu et le navigateur, plusieurs panneaux pouvaient rester
- * empilés dans la colonne de gauche. Ici, React calcule une répartition
- * équilibrée et déterministe à partir du nombre de lésions.
- *
- * L'ordre pédagogique original est conservé dans `__atlasPanelOrder` afin
- * de pouvoir le restaurer sur tablette/mobile lorsque l'affichage repasse
- * sur une seule colonne.
- */
-function estimateAtlasSubcategoryPanelWeight(subcategory, view) {
-  const itemCount = Math.max(1, Array.isArray(subcategory?.items) ? subcategory.items.length : 0);
-  const titleLength = String(subcategory?.label || '').length;
-  const extraTitleLines = Math.max(0, Math.ceil(titleLength / 44) - 1);
-
-  // En vue cartes, un panneau affiche 2 lésions par rangée sur grand écran.
-  const lesionRows = view === 'cards' ? Math.ceil(itemCount / 2) : itemCount;
-
-  return lesionRows + 0.58 + extraTitleLines * 0.28;
-}
-
-function balanceAtlasSubcategoryColumns(subcategories, view) {
-  const source = Array.isArray(subcategories) ? subcategories : [];
-
-  const decorated = source.map((subcategory, index) => ({
-    ...subcategory,
-    __atlasPanelOrder: index,
-    __atlasPanelWeight: estimateAtlasSubcategoryPanelWeight(subcategory, view),
-  }));
-
-  if (decorated.length <= 1) {
-    return [decorated, []];
-  }
-
-  // Les catégories de l'Atlas ont peu de sous-groupes (actuellement <= 10).
-  // On peut donc tester toutes les répartitions possibles, en gardant le
-  // premier panneau à gauche, et choisir celle dont les hauteurs estimées
-  // sont les plus proches. Au-delà de 12 panneaux, fallback glouton.
-  if (decorated.length <= 12) {
-    const first = decorated[0];
-    const rest = decorated.slice(1);
-    const combinations = 1 << rest.length;
-
-    let best = null;
-
-    for (let mask = 0; mask < combinations; mask += 1) {
-      const columns = [[first], []];
-      const weights = [first.__atlasPanelWeight, 0];
-
-      for (let i = 0; i < rest.length; i += 1) {
-        const columnIndex = (mask >> i) & 1;
-        columns[columnIndex].push(rest[i]);
-        weights[columnIndex] += rest[i].__atlasPanelWeight;
-      }
-
-      // Avec plusieurs panneaux, on veut réellement utiliser les deux colonnes.
-      if (columns[1].length === 0) continue;
-
-      const heightDifference = Math.abs(weights[0] - weights[1]);
-      const countDifference = Math.abs(columns[0].length - columns[1].length);
-
-      // La hauteur prime très largement ; le nombre de panneaux ne sert
-      // qu'à départager des solutions visuellement proches.
-      const score = heightDifference + countDifference * 0.06;
-
-      if (!best || score < best.score) {
-        best = { columns, score };
-      }
-    }
-
-    if (best) return best.columns;
-  }
-
-  // Fallback déterministe pour une éventuelle catégorie très fragmentée.
-  const columns = [[], []];
-  const weights = [0, 0];
-
-  for (const subcategory of decorated) {
-    const columnIndex = weights[0] <= weights[1] ? 0 : 1;
-    columns[columnIndex].push(subcategory);
-    weights[columnIndex] += subcategory.__atlasPanelWeight;
-  }
-
-  return columns;
-}
 
 function getCaseThemesValue(item) {
   return (
@@ -1403,49 +1289,28 @@ export default function CasCliniques() {
   };
 
 
-  const renderAtlasSubcategoryColumns = (category) => {
+  const renderAtlasSubcategories = (category) => {
     const subcategories = Array.isArray(category?.subcategories) ? category.subcategories : [];
     if (subcategories.length === 0) return null;
 
-    const columns = balanceAtlasSubcategoryColumns(subcategories, view);
-    const isSingle = subcategories.length === 1;
-
     return (
-      <div
-        className={`atlas-ui-subcategory-columns ${
-          isSingle ? 'atlas-ui-subcategory-columns--single' : ''
-        }`}
-      >
-        {columns.map((column, columnIndex) => (
-          <div
-            key={`${category.key}:column:${columnIndex}`}
-            className={`atlas-ui-subcategory-column atlas-ui-subcategory-column--${columnIndex + 1} ${
-              column.length === 0 ? 'atlas-ui-subcategory-column--empty' : ''
-            }`}
+      <div className="atlas-ui-subcategory-stack">
+        {subcategories.map((subcategory) => (
+          <section
+            key={subcategory.key}
+            className="atlas-ui-subcategory-panel"
+            aria-label={subcategory.label}
           >
-            {column.map((subcategory) => (
-              <section
-                key={subcategory.key}
-                className="atlas-ui-subcategory-panel"
-                aria-label={subcategory.label}
-                style={{ '--atlas-panel-order': subcategory.__atlasPanelOrder }}
-              >
-                <div className="atlas-ui-subcategory-heading">
-                  <h3 className="atlas-ui-subcategory-title">{subcategory.label}</h3>
-                  <span className="atlas-ui-subcategory-count">
-                    {subcategory.items.length}{' '}
-                    {subcategory.items.length > 1 ? 'lésions' : 'lésion'}
-                  </span>
-                </div>
+            <div className="atlas-ui-subcategory-heading">
+              <h3 className="atlas-ui-subcategory-title">{subcategory.label}</h3>
+            </div>
 
-                <div
-                  className={`atlas-ui-lesion-grid atlas-ui-lesion-grid--panel atlas-ui-lesion-grid--${view}`}
-                >
-                  {subcategory.items.map(renderItem)}
-                </div>
-              </section>
-            ))}
-          </div>
+            <div
+              className={`atlas-ui-lesion-grid atlas-ui-lesion-grid--panel atlas-ui-lesion-grid--${view}`}
+            >
+              {subcategory.items.map(renderItem)}
+            </div>
+          </section>
         ))}
       </div>
     );
@@ -1569,7 +1434,6 @@ export default function CasCliniques() {
                       >
                         <div className="atlas-ui-category-heading">
                           <h2 className="atlas-ui-category-title">{category.label}</h2>
-                          <div className="atlas-ui-category-rule" aria-hidden="true" />
                         </div>
 
                         {category.directItems.length > 0 && (
@@ -1581,7 +1445,7 @@ export default function CasCliniques() {
                           </div>
                         )}
 
-                        {renderAtlasSubcategoryColumns(category)}
+                        {renderAtlasSubcategories(category)}
                       </section>
                     ))}
                   </div>

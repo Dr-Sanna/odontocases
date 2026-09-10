@@ -506,81 +506,76 @@
 }
 
 .atlas-ui-category {
+  /* Alignement commun : le contenu sous le bandeau commence exactement
+     au même niveau que le texte du titre de catégorie. */
+  --atlas-ui-category-content-indent: 17px;
+
   min-width: 0;
-  margin: 0 0 clamp(28px, 3vw, 42px);
+  margin: 0 0 clamp(48px, 4.5vw, 62px);
 }
 
 .atlas-ui-category:last-child {
-  margin-bottom: 24px;
+  margin-bottom: 32px;
 }
 
-/* Titre principal de catégorie : texte + trait horizontal. */
+/*
+ * Titre principal de catégorie : bandeau pleine largeur.
+ *
+ * Le bandeau sert désormais de séparateur visuel entre les grandes catégories :
+ * - aucune icône ;
+ * - aucun trait horizontal ;
+ * - aucun accent / bordure verticale à gauche ;
+ * - fond légèrement bleuté, suffisamment visible pour structurer la page
+ *   sans concurrencer les cartes de lésions.
+ */
 .atlas-ui-category-heading {
   display: flex;
   align-items: center;
-  gap: 0.8rem;
+  width: 100%;
   min-width: 0;
-  margin: 0 0 14px;
+  box-sizing: border-box;
+
+  margin: 0 0 22px;
+  padding: 12px var(--atlas-ui-category-content-indent) 13px;
+
+  border: 0;
+  border-radius: 12px;
+  /* Bandeau Atlas : bleu uni et totalement opaque.
+     Aucune transparence / aucun dégradé : l'illustration de fond ne transparaît pas. */
+  background: #e8f2fc;
+  box-shadow: none;
+}
+
+[data-theme='dark'] .atlas-ui-category-heading {
+  background: #20344b;
 }
 
 .atlas-ui-category-title {
-  flex: 0 1 auto;
   min-width: 0;
   margin: 0;
 
   color: inherit;
-  font-size: 1rem;
-  font-weight: 650;
-  line-height: 1.35;
-  opacity: 0.94;
+  font-size: clamp(1.16rem, 1.35vw, 1.38rem);
+  font-weight: 720;
+  line-height: 1.28;
+  opacity: 0.98;
 }
 
-.atlas-ui-category-rule {
-  flex: 1 1 auto;
-  min-width: 32px;
-  height: 0;
-  border: 0;
-  border-top: 1px solid rgba(0, 0, 0, 0.12);
-}
-
-[data-theme='dark'] .atlas-ui-category-rule {
-  border-top-color: rgba(255, 255, 255, 0.13);
-}
-
-/* ---------- Panneaux de sous-catégories ---------- */
+/* ---------- Sous-catégories pleine largeur ---------- */
 
 /*
- * Deux vraies colonnes indépendantes en grand écran.
- *
- * Important : on n'utilise plus CSS Multi-column (`column-count`).
- * React distribue les panneaux entre deux piles équilibrées ; chaque pile
- * s'écoule indépendamment, ce qui supprime les grands espaces vides causés
- * par les panneaux de hauteurs très différentes.
+ * Test de disposition : il n'y a plus deux colonnes de sous-catégories.
+ * Chaque sous-catégorie occupe toute la largeur disponible, puis les lésions
+ * sont réparties dans une grille compacte de quatre cartes par ligne.
  */
-.atlas-ui-subcategory-columns {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-  align-items: start;
-
-  min-width: 0;
-}
-
-.atlas-ui-subcategory-column {
+.atlas-ui-subcategory-stack {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: clamp(24px, 2.2vw, 34px);
 
   min-width: 0;
-}
-
-/* Une catégorie qui ne possède qu'un seul sous-groupe utilise toute la largeur. */
-.atlas-ui-subcategory-columns--single {
-  grid-template-columns: minmax(0, 1fr);
-}
-
-.atlas-ui-subcategory-columns--single .atlas-ui-subcategory-column--empty {
-  display: none;
+  box-sizing: border-box;
+  padding-left: var(--atlas-ui-category-content-indent);
 }
 
 .atlas-ui-subcategory-panel {
@@ -590,49 +585,30 @@
   box-sizing: border-box;
 
   margin: 0;
-  padding: 13px;
-
-  border: 1px solid rgba(0, 0, 0, 0.10);
-  border-radius: 13px;
-  background: rgba(0, 0, 0, 0.015);
-}
-
-[data-theme='dark'] .atlas-ui-subcategory-panel {
-  border-color: rgba(255, 255, 255, 0.10);
-  background: rgba(255, 255, 255, 0.018);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 
 .atlas-ui-subcategory-heading {
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-
   min-width: 0;
-  margin: 0 2px 10px;
+  margin: 0 1px 10px;
 }
 
 .atlas-ui-subcategory-title {
   min-width: 0;
   margin: 0;
 
-  color: inherit;
-  font-size: 0.98rem;
-  font-weight: 500;
+  color: var(--ifm-color-emphasis-700);
+  font-size: 0.94rem;
+  font-weight: 520;
   line-height: 1.35;
   opacity: 0.92;
 }
 
-.atlas-ui-subcategory-count {
-  flex: 0 0 auto;
-  padding-top: 0.08rem;
-
-  font-size: 0.76rem;
-  font-weight: 500;
-  line-height: 1.35;
-  white-space: nowrap;
-  opacity: 0.52;
-}
 
 /* ---------- Grilles de lésions ---------- */
 
@@ -643,27 +619,20 @@
   padding: 0;
 }
 
-/* Dans un panneau, la vue liste est volontairement une pile compacte. */
-.atlas-ui-lesion-grid--panel.atlas-ui-lesion-grid--list {
-  grid-template-columns: minmax(0, 1fr);
-  gap: 7px;
-}
-
 /*
- * Si une grande catégorie ne contient qu'un seul sous-groupe, le panneau
- * prend toute la largeur et ses lésions peuvent se répartir en colonnes.
- * Cela évite de remplacer un vide de panneau par de très longues lignes.
+ * Vue liste : chaque sous-catégorie est pleine largeur et reçoit quatre
+ * colonnes égales. On garde ainsi la largeur compacte de carte validée
+ * précédemment, tout en supprimant le découpage de la page en deux moitiés.
  */
-.atlas-ui-subcategory-columns--single
-  .atlas-ui-lesion-grid--panel.atlas-ui-lesion-grid--list {
-  grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
+.atlas-ui-lesion-grid--panel.atlas-ui-lesion-grid--list {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 9px;
 }
 
-/* Vue cartes : petites cartes à l’intérieur du panneau. */
+/* Vue cartes : quatre cartes également pour garder le même rythme horizontal. */
 .atlas-ui-lesion-grid--panel.atlas-ui-lesion-grid--cards {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 9px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
 }
 
 /* Vues non regroupées / lettres / fiches directement sous une catégorie. */
@@ -672,8 +641,8 @@
 }
 
 .atlas-ui-lesion-grid--flat.atlas-ui-lesion-grid--list {
-  grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 9px;
 }
 
 .atlas-ui-lesion-grid--flat.atlas-ui-lesion-grid--cards {
@@ -682,6 +651,8 @@
 }
 
 .atlas-ui-category > .atlas-ui-lesion-grid--flat {
+  width: calc(100% - var(--atlas-ui-category-content-indent));
+  margin-left: var(--atlas-ui-category-content-indent);
   margin-bottom: 16px;
 }
 
@@ -700,34 +671,29 @@
   color: inherit;
   text-decoration: none;
 
-  border: 1px solid rgba(0, 0, 0, 0.12);
+  --atlas-ui-lesion-border-color: rgba(0, 0, 0, 0.10);
+
+  border: 1px solid var(--atlas-ui-lesion-border-color);
   border-radius: 10px;
   background: var(--ifm-background-surface-color);
 
-  transition:
-    border-color 0.15s ease,
-    background-color 0.15s ease,
-    box-shadow 0.15s ease;
+  transition: box-shadow 0.15s ease;
 }
 
 [data-theme='dark'] .atlas-ui-lesion-card {
-  border-color: rgba(255, 255, 255, 0.14);
+  --atlas-ui-lesion-border-color: rgba(255, 255, 255, 0.13);
 }
 
 .atlas-ui-lesion-card:hover {
   color: inherit;
   text-decoration: none;
-  border-color: color-mix(in srgb, var(--ifm-color-primary) 55%, var(--ifm-color-emphasis-300));
-  background: color-mix(
-    in srgb,
-    var(--ifm-background-surface-color) 96%,
-    var(--ifm-color-primary) 4%
-  );
-  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
-}
+  border-color: var(--atlas-ui-lesion-border-color);
 
-[data-theme='dark'] .atlas-ui-lesion-card:hover {
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+  /* Le fond et la bordure restent strictement identiques au repos. */
+  background: var(--ifm-background-surface-color);
+
+  /* Réutilise exactement l'ombre hover commune définie pour les cartes du site. */
+  box-shadow: var(--card-shadow-hover);
 }
 
 .atlas-ui-lesion-card:focus-visible {
@@ -741,14 +707,11 @@
 }
 
 .atlas-ui-lesion-card--disabled:hover {
-  border-color: rgba(0, 0, 0, 0.12);
+  border-color: var(--atlas-ui-lesion-border-color);
   background: var(--ifm-background-surface-color);
   box-shadow: none;
 }
 
-[data-theme='dark'] .atlas-ui-lesion-card--disabled:hover {
-  border-color: rgba(255, 255, 255, 0.14);
-}
 
 /* ---------- Vue liste : ligne courte image + texte ---------- */
 
@@ -883,68 +846,57 @@
   }
 }
 
-@media (max-width: 980px) {
-  /*
-   * En une colonne, les wrappers de colonnes deviennent transparents.
-   * Les panneaux redeviennent les enfants flex directs et `order`
-   * restaure exactement l'ordre pédagogique d'origine.
-   */
-  .atlas-ui-subcategory-columns {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .atlas-ui-subcategory-column {
-    display: contents;
-  }
-
-  .atlas-ui-subcategory-panel {
-    order: var(--atlas-panel-order, 0);
-  }
-
-  .atlas-ui-lesion-grid--flat.atlas-ui-lesion-grid--cards {
+@media (max-width: 1100px) {
+  .atlas-ui-lesion-grid--panel.atlas-ui-lesion-grid--list,
+  .atlas-ui-lesion-grid--panel.atlas-ui-lesion-grid--cards,
+  .atlas-ui-lesion-grid--flat.atlas-ui-lesion-grid--list {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .atlas-ui-lesion-grid--panel.atlas-ui-lesion-grid--cards {
-    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  .atlas-ui-lesion-grid--flat.atlas-ui-lesion-grid--cards {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 820px) {
+  .atlas-ui-subcategory-stack {
+    gap: 22px;
+  }
+
+  .atlas-ui-lesion-grid--panel.atlas-ui-lesion-grid--list,
+  .atlas-ui-lesion-grid--panel.atlas-ui-lesion-grid--cards,
+  .atlas-ui-lesion-grid--flat.atlas-ui-lesion-grid--list,
+  .atlas-ui-lesion-grid--flat.atlas-ui-lesion-grid--cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 640px) {
   .atlas-ui-category {
-    margin-bottom: 28px;
+    --atlas-ui-category-content-indent: 13px;
+    margin-bottom: 38px;
   }
 
   .atlas-ui-category-heading {
-    align-items: flex-start;
-    margin-bottom: 12px;
-  }
-
-  .atlas-ui-category-rule {
-    margin-top: 0.67em;
+    margin-bottom: 16px;
+    padding: 10px var(--atlas-ui-category-content-indent) 11px;
+    border-radius: 10px;
   }
 
   .atlas-ui-subcategory-panel {
     margin: 0;
-    padding: 11px;
-    border-radius: 11px;
+    padding: 0;
   }
 
   .atlas-ui-subcategory-heading {
     margin-bottom: 9px;
   }
 
-  .atlas-ui-subcategory-count {
-    display: none;
-  }
 
   .atlas-ui-lesion-grid--flat.atlas-ui-lesion-grid--list,
   .atlas-ui-lesion-grid--flat.atlas-ui-lesion-grid--cards,
-  .atlas-ui-lesion-grid--panel.atlas-ui-lesion-grid--cards,
-  .atlas-ui-subcategory-columns--single
-    .atlas-ui-lesion-grid--panel.atlas-ui-lesion-grid--list {
+  .atlas-ui-lesion-grid--panel.atlas-ui-lesion-grid--list,
+  .atlas-ui-lesion-grid--panel.atlas-ui-lesion-grid--cards {
     grid-template-columns: 1fr;
   }
 
@@ -969,14 +921,11 @@
 
 @media (hover: none), (pointer: coarse) {
   .atlas-ui-lesion-card:hover {
-    border-color: rgba(0, 0, 0, 0.12);
+    border-color: var(--atlas-ui-lesion-border-color);
     background: var(--ifm-background-surface-color);
     box-shadow: none;
   }
 
-  [data-theme='dark'] .atlas-ui-lesion-card:hover {
-    border-color: rgba(255, 255, 255, 0.14);
-  }
 }
 
 
