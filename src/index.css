@@ -366,7 +366,7 @@ body.bg-home::before {
 
 /* Pages secondaires: opacité réduite */
 body.bg-secondary::before {
-  opacity: 0.25;
+  opacity: 0.15;
 }
 
 /* CaseDetail: pas du tout visible */

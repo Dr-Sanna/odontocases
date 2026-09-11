@@ -1259,3 +1259,113 @@
 .cc-training-active .cc-toolbar--views {
   margin-bottom: 16px;
 }
+
+/* ========================================================================== 
+   Atlas — fiche générale intégrée au cartouche de sous-catégorie
+   --------------------------------------------------------------------------
+   Une Pathology qui possède des `childPathologies` est traitée comme une
+   fiche de synthèse en vue Liste. Elle ne consomme donc plus une des trois
+   colonnes réservées aux lésions : son accès est rendu directement dans la
+   partie principale du cartouche bleu de sous-catégorie.
+   ========================================================================== */
+
+.atlas-ui-taxonomy--list
+  .atlas-ui-subcategory-panel--has-general
+  .atlas-ui-subcategory-main {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 10px;
+}
+
+.atlas-ui-general-pathology-list {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+
+  /* Le lien reste dans le cartouche sans créer de niveau vertical inutile. */
+  margin-top: 4px;
+  padding: 0;
+  border: 0;
+}
+
+.atlas-ui-general-pathology-link {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+
+  /* Carte compacte : le titre de la pathologie n'est plus répété ici. */
+  padding: 8px 11px;
+  border: 0;
+  border-radius: 10px;
+  background: #d2e5f7;
+
+  /*
+   * Ombre volontairement décalée uniquement vers le bas et la droite.
+   * Le faible blur évite l'effet de halo/lueur.
+   */
+  box-shadow: 2px 3px 3px -2px rgba(31, 63, 88, 0.30);
+
+  color: #315979;
+  text-decoration: none;
+
+  transition:
+    background-color 150ms ease,
+    box-shadow 150ms ease,
+    color 150ms ease;
+}
+
+.atlas-ui-general-pathology-link:hover,
+.atlas-ui-general-pathology-link:focus-visible {
+  background: #cbdff3;
+  color: #254f70;
+  box-shadow: 2px 3px 4px -2px rgba(31, 63, 88, 0.36);
+  text-decoration: none;
+}
+
+.atlas-ui-general-pathology-link:focus-visible {
+  outline: 2px solid color-mix(in srgb, #4d82ad 48%, transparent);
+  outline-offset: 3px;
+}
+
+.atlas-ui-general-pathology-kicker {
+  display: block;
+  min-width: 0;
+
+  color: inherit;
+  font-size: 0.70rem;
+  font-weight: 720;
+  line-height: 1.2;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+[data-theme='dark'] .atlas-ui-general-pathology-list {
+  border: 0;
+}
+
+[data-theme='dark'] .atlas-ui-general-pathology-link {
+  border: 0;
+  background: #29465f;
+  color: #e7f2fb;
+  box-shadow: 2px 3px 3px -2px rgba(0, 0, 0, 0.46);
+}
+
+[data-theme='dark'] .atlas-ui-general-pathology-link:hover,
+[data-theme='dark'] .atlas-ui-general-pathology-link:focus-visible {
+  background: #2f4d68;
+  color: #ffffff;
+  box-shadow: 2px 3px 4px -2px rgba(0, 0, 0, 0.54);
+}
+
+@media (max-width: 900px) {
+  .atlas-ui-taxonomy--list
+    .atlas-ui-subcategory-panel--has-general
+    .atlas-ui-subcategory-main {
+    gap: 10px;
+  }
+
+  .atlas-ui-general-pathology-list {
+    margin-top: 0;
+  }
+}

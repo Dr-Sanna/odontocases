@@ -216,6 +216,24 @@ function normalizeClassifications(value) {
     .filter((entry) => entry.category);
 }
 
+function normalizePathologyRelation(value) {
+  const list = Array.isArray(value)
+    ? value
+    : Array.isArray(value?.data)
+      ? value.data
+      : value
+        ? [value]
+        : [];
+
+  return list
+    .map((node) => (node?.attributes ? { id: node.id, documentId: node.documentId, ...node.attributes } : node))
+    .filter(Boolean);
+}
+
+function isGeneralPathology(item) {
+  return normalizePathologyRelation(item?.childPathologies).length > 0;
+}
+
 function makeOrderMap(values) {
   return new Map((Array.isArray(values) ? values : []).map((value, index) => [value, index]));
 }
@@ -324,19 +342,26 @@ function buildAtlasCategorySections(items) {
         directItems: category.directItems.sort(compareByTitleAsc),
         subcategories: Array.from(category.subcategories.values())
           .sort((a, b) => compareAtlasLabels(a.label, b.label, subOrder))
-          .map((subcategory) => ({
-            key: subcategory.key,
-            label: subcategory.label,
-            directItems: subcategory.directItems.sort(compareByTitleAsc),
-            subdivisions: Array.from(subcategory.subdivisions.values())
-              // L'ordre d'apparition est conservé pour permettre des couples
-              // pédagogiques comme « Odontogènes » puis « Non odontogènes ».
-              .map((subdivision) => ({
-                key: subdivision.key,
-                label: subdivision.label,
-                items: subdivision.items.sort(compareByTitleAsc),
-              })),
-          })),
+          .map((subcategory) => {
+            const sortedDirectItems = subcategory.directItems.sort(compareByTitleAsc);
+            const generalItems = sortedDirectItems.filter(isGeneralPathology);
+            const directItems = sortedDirectItems.filter((item) => !isGeneralPathology(item));
+
+            return {
+              key: subcategory.key,
+              label: subcategory.label,
+              generalItems,
+              directItems,
+              subdivisions: Array.from(subcategory.subdivisions.values())
+                // L'ordre d'apparition est conservé pour permettre des couples
+                // pédagogiques comme « Odontogènes » puis « Non odontogènes ».
+                .map((subdivision) => ({
+                  key: subdivision.key,
+                  label: subdivision.label,
+                  items: subdivision.items.sort(compareByTitleAsc),
+                })),
+            };
+          }),
       };
     });
 }
@@ -887,6 +912,11 @@ export default function CasCliniques() {
                     // `atlasBadges` est la relation dédiée aux badges visibles sur les cartes de l'Atlas.
                     atlasBadges: { fields: ['label', 'variant'] },
                     classification: { fields: ['category', 'subcategory', 'subdivision'] },
+                    // Auto-relation Pathology -> Pathology. `childPathologies` permet
+                    // d'identifier une fiche de synthèse à afficher directement
+                    // dans le cartouche bleu de sa sous-catégorie en vue Liste.
+                    parentPathology: { fields: ['title', 'slug'] },
+                    childPathologies: { fields: ['title', 'slug'] },
                   },
                   locale: 'all',
                   filters,
@@ -1314,6 +1344,45 @@ export default function CasCliniques() {
   };
 
 
+  const renderGeneralPathologyLink = (attrs, idx) => {
+    if (!attrs?.slug) return null;
+
+    const titleText = attrs?.title || 'Fiche générale';
+    const slug = attrs.slug;
+    const pathoBadges = normalizeBadges(attrs?.badges);
+    const primaryBadge = pickPrimaryBadge(attrs?.badges);
+
+    return (
+      <Link
+        key={`atlas-general:${slug || idx}`}
+        to={`/atlas/${slug}`}
+        className="atlas-ui-general-pathology-link"
+        aria-label={`Ouvrir la fiche générale : ${titleText}`}
+        title={titleText}
+        state={{
+          breadcrumb: {
+            mode: 'atlas',
+            pathology: {
+              slug,
+              title: titleText,
+              badge: primaryBadge,
+              badges: pathoBadges,
+            },
+            case: null,
+          },
+          prefetch: {
+            slug,
+            title: titleText,
+            type: 'presentation',
+            badges: attrs?.badges ?? null,
+          },
+        }}
+      >
+        <span className="atlas-ui-general-pathology-kicker">Fiche générale</span>
+      </Link>
+    );
+  };
+
   const renderAtlasSubcategories = (category) => {
     const subcategories = Array.isArray(category?.subcategories) ? category.subcategories : [];
     if (subcategories.length === 0) return null;
@@ -1321,19 +1390,27 @@ export default function CasCliniques() {
     return (
       <div className="atlas-ui-subcategory-stack">
         {subcategories.map((subcategory) => {
+          const generalItems = Array.isArray(subcategory?.generalItems) ? subcategory.generalItems : [];
           const directItems = Array.isArray(subcategory?.directItems) ? subcategory.directItems : [];
           const subdivisions = Array.isArray(subcategory?.subdivisions) ? subcategory.subdivisions : [];
           const hasSubdivisions = subdivisions.length > 0;
+          const showGeneralInHeading = view === 'list' && generalItems.length > 0;
+
+          // En vue Cartes, la fiche générale reste une carte normale : seule la vue
+          // Liste la déplace dans le cartouche bleu de sous-catégorie.
+          const contentDirectItems = view === 'list'
+            ? directItems
+            : [...generalItems, ...directItems].sort(compareByTitleAsc);
 
           // En desktop / vue Liste, la partie droite du cartouche de sous-catégorie
           // reprend les subdivisions. Leur hauteur relative suit approximativement
           // le nombre de rangées de lésions (3 lésions par rangée).
           const subdivisionRows = [];
-          if (directItems.length > 0 && hasSubdivisions) {
+          if (contentDirectItems.length > 0 && hasSubdivisions) {
             subdivisionRows.push({
               key: `${subcategory.key}::__direct__`,
               label: '',
-              rowWeight: Math.max(1, Math.ceil(directItems.length / 3)),
+              rowWeight: Math.max(1, Math.ceil(contentDirectItems.length / 3)),
               isDirect: true,
             });
           }
@@ -1355,7 +1432,7 @@ export default function CasCliniques() {
               key={subcategory.key}
               className={`atlas-ui-subcategory-panel ${
                 hasSubdivisions ? 'atlas-ui-subcategory-panel--has-subdivisions' : ''
-              }`}
+              } ${showGeneralInHeading ? 'atlas-ui-subcategory-panel--has-general' : ''}`}
               aria-label={subcategory.label}
             >
               <div
@@ -1368,6 +1445,12 @@ export default function CasCliniques() {
               >
                 <div className="atlas-ui-subcategory-main">
                   <h3 className="atlas-ui-subcategory-title">{subcategory.label}</h3>
+
+                  {showGeneralInHeading && (
+                    <div className="atlas-ui-general-pathology-list" aria-label="Fiche générale">
+                      {generalItems.map(renderGeneralPathologyLink)}
+                    </div>
+                  )}
                 </div>
 
                 {subdivisionRows.length > 0 && (
@@ -1388,11 +1471,11 @@ export default function CasCliniques() {
               </div>
 
               <div className="atlas-ui-subcategory-content">
-                {directItems.length > 0 && (
+                {contentDirectItems.length > 0 && (
                   <div
                     className={`atlas-ui-lesion-grid atlas-ui-lesion-grid--panel atlas-ui-lesion-grid--${view}`}
                   >
-                    {directItems.map(renderItem)}
+                    {contentDirectItems.map(renderItem)}
                   </div>
                 )}
 
