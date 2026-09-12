@@ -226,7 +226,7 @@
   margin-top: 12px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 14px;
 }
 
@@ -531,6 +531,9 @@
 .atlas-ui-category-heading {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
+  gap: 14px;
+  flex-wrap: wrap;
   width: 100%;
   min-width: 0;
   box-sizing: border-box;
@@ -554,6 +557,7 @@
 }
 
 .atlas-ui-category-title {
+  flex: 0 1 auto;
   min-width: 0;
   margin: 0;
 
@@ -562,6 +566,23 @@
   font-weight: 720;
   line-height: 1.28;
   opacity: 0.98;
+}
+
+
+/* Fiche générale directement rattachée à une catégorie.
+   En vue Liste, elle devient une puce compacte à droite du titre dans le
+   bandeau principal. Elle n'impose donc plus une sous-catégorie artificielle. */
+.atlas-ui-category-general-pathology-list {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex: 0 0 auto;
+  min-width: 0;
+  margin-left: 0;
+}
+
+.atlas-ui-category-general-pathology-list .atlas-ui-general-pathology-link {
+  white-space: nowrap;
 }
 
 /* ---------- Sous-catégories ---------- */
@@ -1281,17 +1302,22 @@
 .atlas-ui-general-pathology-list {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   min-width: 0;
 
-  /* Le lien reste dans le cartouche sans créer de niveau vertical inutile. */
+  /* Le lien reste dans le cartouche sans créer de niveau vertical inutile.
+     align-items:flex-start empêche la puce de s'étirer sur toute la largeur
+     du cartouche : elle épouse uniquement la largeur de son texte. */
   margin-top: 4px;
   padding: 0;
   border: 0;
 }
 
 .atlas-ui-general-pathology-link {
-  display: flex;
+  display: inline-flex;
   align-items: center;
+  width: fit-content;
+  max-width: 100%;
   min-width: 0;
 
   /* Carte compacte : le titre de la pathologie n'est plus répété ici. */
@@ -1367,5 +1393,25 @@
 
   .atlas-ui-general-pathology-list {
     margin-top: 0;
+  }
+
+  .atlas-ui-category-general-pathology-list {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 560px) {
+  .atlas-ui-category-heading {
+    align-items: flex-start;
+    gap: 9px 12px;
+  }
+
+  .atlas-ui-category-title {
+    flex-basis: auto;
+  }
+
+  .atlas-ui-category-general-pathology-list {
+    width: auto;
+    justify-content: flex-start;
   }
 }

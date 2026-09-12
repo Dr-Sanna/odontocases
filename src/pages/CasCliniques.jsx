@@ -336,10 +336,15 @@ function buildAtlasCategorySections(items) {
     .sort((a, b) => compareAtlasLabels(a.label, b.label))
     .map((category) => {
       const subOrder = ATLAS_SUBCATEGORY_ORDER_MAP[category.label] || null;
+      const sortedCategoryDirectItems = category.directItems.sort(compareByTitleAsc);
+      const generalItems = sortedCategoryDirectItems.filter(isGeneralPathology);
+      const directItems = sortedCategoryDirectItems.filter((item) => !isGeneralPathology(item));
+
       return {
         key: category.key,
         label: category.label,
-        directItems: category.directItems.sort(compareByTitleAsc),
+        generalItems,
+        directItems,
         subcategories: Array.from(category.subcategories.values())
           .sort((a, b) => compareAtlasLabels(a.label, b.label, subOrder))
           .map((subcategory) => {
@@ -1612,28 +1617,57 @@ export default function CasCliniques() {
                     className={`atlas-ui-taxonomy atlas-ui-taxonomy--${view}`}
                     aria-label="Pathologies par catégorie"
                   >
-                    {atlasCategorySections.map((category) => (
-                      <section
-                        key={category.key}
-                        className="atlas-ui-category"
-                        aria-label={category.label}
-                      >
-                        <div className="atlas-ui-category-heading">
-                          <h2 className="atlas-ui-category-title">{category.label}</h2>
-                        </div>
+                    {atlasCategorySections.map((category) => {
+                      const categoryGeneralItems = Array.isArray(category?.generalItems)
+                        ? category.generalItems
+                        : [];
+                      const categoryDirectItems = Array.isArray(category?.directItems)
+                        ? category.directItems
+                        : [];
+                      const showCategoryGeneralInHeading =
+                        view === 'list' && categoryGeneralItems.length > 0;
 
-                        {category.directItems.length > 0 && (
-                          <div
-                            className={`atlas-ui-lesion-grid atlas-ui-lesion-grid--flat atlas-ui-lesion-grid--${view}`}
-                            aria-label={`${category.label} — lésions`}
-                          >
-                            {category.directItems.map(renderItem)}
+                      // Comme pour les sous-catégories : en vue Liste, la fiche générale
+                      // est retirée de la grille et devient une puce dans le bandeau bleu.
+                      // En vue Cartes, elle reste une carte Atlas normale.
+                      const categoryContentItems = view === 'list'
+                        ? categoryDirectItems
+                        : [...categoryGeneralItems, ...categoryDirectItems].sort(compareByTitleAsc);
+
+                      return (
+                        <section
+                          key={category.key}
+                          className={`atlas-ui-category ${
+                            showCategoryGeneralInHeading ? 'atlas-ui-category--has-general' : ''
+                          }`}
+                          aria-label={category.label}
+                        >
+                          <div className="atlas-ui-category-heading">
+                            <h2 className="atlas-ui-category-title">{category.label}</h2>
+
+                            {showCategoryGeneralInHeading && (
+                              <div
+                                className="atlas-ui-category-general-pathology-list"
+                                aria-label="Fiche générale"
+                              >
+                                {categoryGeneralItems.map(renderGeneralPathologyLink)}
+                              </div>
+                            )}
                           </div>
-                        )}
 
-                        {renderAtlasSubcategories(category)}
-                      </section>
-                    ))}
+                          {categoryContentItems.length > 0 && (
+                            <div
+                              className={`atlas-ui-lesion-grid atlas-ui-lesion-grid--flat atlas-ui-lesion-grid--${view}`}
+                              aria-label={`${category.label} — lésions`}
+                            >
+                              {categoryContentItems.map(renderItem)}
+                            </div>
+                          )}
+
+                          {renderAtlasSubcategories(category)}
+                        </section>
+                      );
+                    })}
                   </div>
                 ) : isAtlasList && atlasGroup === 'letter' && atlasLetterSections ? (
                   <div
