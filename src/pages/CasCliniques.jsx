@@ -209,30 +209,40 @@ function normalizeClassifications(value) {
     .map((node) => (node?.attributes ? node.attributes : node))
     .filter(Boolean)
     .map((entry) => ({
+      categoryId: String(entry?.categoryId || '').trim(),
       category: String(entry?.category || '').trim(),
+      subcategoryId: String(entry?.subcategoryId || '').trim(),
       subcategory: String(entry?.subcategory || '').trim(),
+      subdivisionId: String(entry?.subdivisionId || '').trim(),
       subdivision: String(entry?.subdivision || '').trim(),
     }))
-    .filter((entry) => entry.category);
+    .filter((entry) => entry.category || entry.categoryId);
 }
 
-function normalizePathologyRelation(value) {
+function normalizeGeneralFor(value) {
   const list = Array.isArray(value)
     ? value
-    : Array.isArray(value?.data)
-      ? value.data
-      : value
-        ? [value]
-        : [];
+    : value === undefined || value === null || value === false || value === ''
+      ? []
+      : [value];
 
-  return list
-    .map((node) => (node?.attributes ? { id: node.id, documentId: node.documentId, ...node.attributes } : node))
-    .filter(Boolean);
+  return Array.from(
+    new Set(
+      list
+        .map((entry) => {
+          if (typeof entry === 'string' || typeof entry === 'number') {
+            return String(entry).trim();
+          }
+          if (entry && typeof entry === 'object') {
+            return String(entry.id || entry.key || entry.target || '').trim();
+          }
+          return '';
+        })
+        .filter(Boolean)
+    )
+  );
 }
 
-function isGeneralPathology(item) {
-  return normalizePathologyRelation(item?.childPathologies).length > 0;
-}
 
 function makeOrderMap(values) {
   return new Map((Array.isArray(values) ? values : []).map((value, index) => [value, index]));
@@ -275,59 +285,98 @@ function buildAtlasCategorySections(items) {
 
   for (const item of source) {
     const classifications = normalizeClassifications(item?.classification);
+    const generalTargets = new Set(normalizeGeneralFor(item?.generalFor));
     const targets = classifications.length
       ? classifications
-      : [{ category: UNCLASSIFIED_ATLAS_CATEGORY, subcategory: '', subdivision: '' }];
+      : [{
+          categoryId: '',
+          category: UNCLASSIFIED_ATLAS_CATEGORY,
+          subcategoryId: '',
+          subcategory: '',
+          subdivisionId: '',
+          subdivision: '',
+        }];
 
     for (const classification of targets) {
-      const categoryLabel = classification.category || UNCLASSIFIED_ATLAS_CATEGORY;
-      const subcategoryLabel = classification.subcategory || '';
-      const subdivisionLabel = classification.subdivision || '';
+      const categoryId = classification.categoryId || '';
+      const categoryLabel = classification.category || categoryId || UNCLASSIFIED_ATLAS_CATEGORY;
+      const categoryKey = categoryId || `label:${categoryLabel}`;
 
-      if (!categories.has(categoryLabel)) {
-        categories.set(categoryLabel, {
-          key: categoryLabel,
+      const subcategoryId = classification.subcategoryId || '';
+      const subcategoryLabel = classification.subcategory || subcategoryId || '';
+      const subcategoryKey = subcategoryId || (subcategoryLabel ? `${categoryKey}::label:${subcategoryLabel}` : '');
+
+      const subdivisionId = classification.subdivisionId || '';
+      const subdivisionLabel = classification.subdivision || subdivisionId || '';
+      const subdivisionKey = subdivisionId || (subdivisionLabel ? `${subcategoryKey}::label:${subdivisionLabel}` : '');
+
+      if (!categories.has(categoryKey)) {
+        categories.set(categoryKey, {
+          key: categoryKey,
+          id: categoryId || null,
           label: categoryLabel,
+          generalItems: [],
+          generalSeen: new Set(),
           directItems: [],
           directSeen: new Set(),
           subcategories: new Map(),
         });
       }
 
-      const category = categories.get(categoryLabel);
+      const category = categories.get(categoryKey);
 
       if (!subcategoryLabel) {
-        pushUniqueAtlasItem(category.directItems, category.directSeen, item);
+        const isCategoryGeneral =
+          (categoryId && generalTargets.has(categoryId)) ||
+          (!categoryId && generalTargets.has(categoryLabel));
+
+        if (isCategoryGeneral) {
+          pushUniqueAtlasItem(category.generalItems, category.generalSeen, item);
+        } else {
+          pushUniqueAtlasItem(category.directItems, category.directSeen, item);
+        }
         continue;
       }
 
-      if (!category.subcategories.has(subcategoryLabel)) {
-        category.subcategories.set(subcategoryLabel, {
-          key: `${categoryLabel}::${subcategoryLabel}`,
+      if (!category.subcategories.has(subcategoryKey)) {
+        category.subcategories.set(subcategoryKey, {
+          key: subcategoryKey,
+          id: subcategoryId || null,
           label: subcategoryLabel,
+          generalItems: [],
+          generalSeen: new Set(),
           directItems: [],
           directSeen: new Set(),
           subdivisions: new Map(),
         });
       }
 
-      const subcategory = category.subcategories.get(subcategoryLabel);
+      const subcategory = category.subcategories.get(subcategoryKey);
 
       if (!subdivisionLabel) {
-        pushUniqueAtlasItem(subcategory.directItems, subcategory.directSeen, item);
+        const isSubcategoryGeneral =
+          (subcategoryId && generalTargets.has(subcategoryId)) ||
+          (!subcategoryId && generalTargets.has(subcategoryLabel));
+
+        if (isSubcategoryGeneral) {
+          pushUniqueAtlasItem(subcategory.generalItems, subcategory.generalSeen, item);
+        } else {
+          pushUniqueAtlasItem(subcategory.directItems, subcategory.directSeen, item);
+        }
         continue;
       }
 
-      if (!subcategory.subdivisions.has(subdivisionLabel)) {
-        subcategory.subdivisions.set(subdivisionLabel, {
-          key: `${categoryLabel}::${subcategoryLabel}::${subdivisionLabel}`,
+      if (!subcategory.subdivisions.has(subdivisionKey)) {
+        subcategory.subdivisions.set(subdivisionKey, {
+          key: subdivisionKey,
+          id: subdivisionId || null,
           label: subdivisionLabel,
           items: [],
           seen: new Set(),
         });
       }
 
-      const subdivision = subcategory.subdivisions.get(subdivisionLabel);
+      const subdivision = subcategory.subdivisions.get(subdivisionKey);
       pushUniqueAtlasItem(subdivision.items, subdivision.seen, item);
     }
   }
@@ -336,41 +385,33 @@ function buildAtlasCategorySections(items) {
     .sort((a, b) => compareAtlasLabels(a.label, b.label))
     .map((category) => {
       const subOrder = ATLAS_SUBCATEGORY_ORDER_MAP[category.label] || null;
-      const sortedCategoryDirectItems = category.directItems.sort(compareByTitleAsc);
-      const generalItems = sortedCategoryDirectItems.filter(isGeneralPathology);
-      const directItems = sortedCategoryDirectItems.filter((item) => !isGeneralPathology(item));
 
       return {
         key: category.key,
+        id: category.id,
         label: category.label,
-        generalItems,
-        directItems,
+        generalItems: category.generalItems.sort(compareByTitleAsc),
+        directItems: category.directItems.sort(compareByTitleAsc),
         subcategories: Array.from(category.subcategories.values())
           .sort((a, b) => compareAtlasLabels(a.label, b.label, subOrder))
-          .map((subcategory) => {
-            const sortedDirectItems = subcategory.directItems.sort(compareByTitleAsc);
-            const generalItems = sortedDirectItems.filter(isGeneralPathology);
-            const directItems = sortedDirectItems.filter((item) => !isGeneralPathology(item));
-
-            return {
-              key: subcategory.key,
-              label: subcategory.label,
-              generalItems,
-              directItems,
-              subdivisions: Array.from(subcategory.subdivisions.values())
-                // L'ordre d'apparition est conservé pour permettre des couples
-                // pédagogiques comme « Odontogènes » puis « Non odontogènes ».
-                .map((subdivision) => ({
-                  key: subdivision.key,
-                  label: subdivision.label,
-                  items: subdivision.items.sort(compareByTitleAsc),
-                })),
-            };
-          }),
+          .map((subcategory) => ({
+            key: subcategory.key,
+            id: subcategory.id,
+            label: subcategory.label,
+            generalItems: subcategory.generalItems.sort(compareByTitleAsc),
+            directItems: subcategory.directItems.sort(compareByTitleAsc),
+            subdivisions: Array.from(subcategory.subdivisions.values())
+              // L'ordre d'apparition est conservé pour les subdivisions déjà renvoyées par Strapi.
+              .map((subdivision) => ({
+                key: subdivision.key,
+                id: subdivision.id,
+                label: subdivision.label,
+                items: subdivision.items.sort(compareByTitleAsc),
+              })),
+          })),
       };
     });
 }
-
 
 function getCaseThemesValue(item) {
   return (
@@ -916,19 +957,23 @@ export default function CasCliniques() {
                     badges: { fields: ['label', 'variant'] },
                     // `atlasBadges` est la relation dédiée aux badges visibles sur les cartes de l'Atlas.
                     atlasBadges: { fields: ['label', 'variant'] },
-                    classification: { fields: ['category', 'subcategory', 'subdivision'] },
-                    // Auto-relation Pathology -> Pathology. `childPathologies` permet
-                    // d'identifier une fiche de synthèse à afficher directement
-                    // dans le cartouche bleu de sa sous-catégorie en vue Liste.
-                    parentPathology: { fields: ['title', 'slug'] },
-                    childPathologies: { fields: ['title', 'slug'] },
+                    classification: {
+                      fields: [
+                        'categoryId',
+                        'category',
+                        'subcategoryId',
+                        'subcategory',
+                        'subdivisionId',
+                        'subdivision',
+                      ],
+                    },
                   },
                   locale: 'all',
                   filters,
                   // Atlas trié alphabétiquement sur l'ensemble des lots.
                   sort: 'title:asc,slug:asc',
                   pagination: { page: currentPage, pageSize: ATLAS_BATCH_SIZE },
-                  fields: ['title', 'slug', 'excerpt', 'updatedAt'],
+                  fields: ['title', 'slug', 'excerpt', 'updatedAt', 'generalFor'],
                   publicationState: 'live',
                 },
                 options: { signal: controller.signal },

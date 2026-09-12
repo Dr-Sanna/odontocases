@@ -936,9 +936,9 @@
  */
 .atlas-ui-lesion-card--list {
   display: grid;
-  grid-template-columns: 26.5% minmax(0, 1fr);
+  grid-template-columns: 29.5% minmax(0, 1fr);
   align-items: stretch;
-  aspect-ratio: 4.65 / 1;
+  aspect-ratio: 4.15 / 1;
   min-height: 0;
 }
 
@@ -1296,7 +1296,11 @@
   flex-direction: column;
   align-items: stretch;
   justify-content: center;
-  gap: 10px;
+
+  /* Fiche générale : espacement plus compact et équilibré. */
+  gap: 4px;
+  padding-top: 10px;
+  padding-bottom: 6px;
 }
 
 .atlas-ui-general-pathology-list {
@@ -1308,7 +1312,7 @@
   /* Le lien reste dans le cartouche sans créer de niveau vertical inutile.
      align-items:flex-start empêche la puce de s'étirer sur toute la largeur
      du cartouche : elle épouse uniquement la largeur de son texte. */
-  margin-top: 4px;
+  margin-top: 0;
   padding: 0;
   border: 0;
 }
@@ -1321,7 +1325,7 @@
   min-width: 0;
 
   /* Carte compacte : le titre de la pathologie n'est plus répété ici. */
-  padding: 8px 11px;
+  padding: 6px 9px;
   border: 0;
   border-radius: 10px;
   background: #d2e5f7;
@@ -1388,7 +1392,7 @@
   .atlas-ui-taxonomy--list
     .atlas-ui-subcategory-panel--has-general
     .atlas-ui-subcategory-main {
-    gap: 10px;
+    gap: 7px;
   }
 
   .atlas-ui-general-pathology-list {
