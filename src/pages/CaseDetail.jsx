@@ -161,6 +161,65 @@ function normalizeAliasesList(aliasesRel, pathologyTitle = '') {
     });
 }
 
+/** Liens complémentaires affichés en fin de fiche Atlas */
+function normalizeFurtherLinksList(value) {
+  if (!Array.isArray(value)) return [];
+
+  const seen = new Set();
+
+  return value
+    .map((entry) => {
+      let label = '';
+      let url = '';
+
+      // Format actuellement envoyé par l'importeur vers Strapi :
+      // { label: "...", url: "..." }
+      if (entry && typeof entry === 'object' && !Array.isArray(entry)) {
+        label = String(entry.label ?? entry.title ?? entry.text ?? '').trim();
+        url = String(entry.url ?? entry.href ?? entry.link ?? '').trim();
+      }
+      // Compatibilité avec une éventuelle saisie JSON compacte directement dans Strapi.
+      else if (Array.isArray(entry)) {
+        label = String(entry[0] ?? '').trim();
+        url = String(entry[1] ?? '').trim();
+      }
+
+      if (!label || !url) return null;
+
+      // Le même contrat que l'importeur : URL web absolue ou chemin interne du site.
+      const isSafeUrl = /^https?:\/\/\S+$/i.test(url) || /^\/(?!\/)\S*$/.test(url);
+      if (!isSafeUrl) return null;
+
+      const key = `${label}\u0000${url}`;
+      if (seen.has(key)) return null;
+      seen.add(key);
+
+      return { label, url };
+    })
+    .filter(Boolean);
+}
+
+function escapeMarkdownLinkLabel(value) {
+  return String(value || '')
+    .replace(/\\/g, '\\\\')
+    .replace(/\[/g, '\\[')
+    .replace(/\]/g, '\\]');
+}
+
+function buildFurtherLinksMarkdown(links = []) {
+  const list = Array.isArray(links) ? links : [];
+  if (!list.length) return '';
+
+  const callouts = list.map(({ label, url }) => {
+    const safeLabel = escapeMarkdownLinkLabel(label);
+    // Les chevrons rendent la destination Markdown robuste, notamment si l'URL
+    // contient des parenthèses. Les URL sont déjà filtrées ci-dessus.
+    return `> [!info] [${safeLabel}](<${url}>)`;
+  });
+
+  return `## Pour aller plus loin\n\n${callouts.join('\n\n')}`;
+}
+
 /** Galerie structurée des pathologies Atlas */
 function normalizeGalleryList(galleryRel, pathologyTitle = '') {
   return normalizeRelationArray(galleryRel)
@@ -620,6 +679,7 @@ function hasMeaningfulContentLike(obj) {
   if (Array.isArray(obj?.qa_blocks) && obj.qa_blocks.length) return true;
   if (Array.isArray(obj?.quiz_blocks) && obj.quiz_blocks.length) return true;
   if (Array.isArray(obj?.gallery) && obj.gallery.length) return true;
+  if (Array.isArray(obj?.furtherLinks) && obj.furtherLinks.length) return true;
   if (typeof obj?.credits === 'string' && obj.credits.trim().length > 0) return true;
   if (typeof obj?.references === 'string' && obj.references.trim().length > 0) return true;
   if (typeof obj?.copyright === 'string' && obj.copyright.trim().length > 0) return true;
@@ -1447,7 +1507,17 @@ export default function CaseDetail(props) {
                 }
               : {}),
           },
-          fields: ['title', 'slug', 'excerpt', 'content', 'updatedAt', 'credits', 'references', 'copyright'],
+          fields: [
+            'title',
+            'slug',
+            'excerpt',
+            'content',
+            'updatedAt',
+            'credits',
+            'references',
+            'copyright',
+            'furtherLinks',
+          ],
           pagination: { page: 1, pageSize: 1 },
         },
         options: signal ? { signal } : undefined,
@@ -1494,6 +1564,7 @@ export default function CaseDetail(props) {
 
     const gallery = normalizeGalleryList(attrs?.gallery, attrs?.title || slugToLoad);
     const aliases = normalizeAliasesList(attrs?.aliases, attrs?.title || slugToLoad);
+    const furtherLinks = normalizeFurtherLinksList(attrs?.furtherLinks);
 
     return {
       ...attrs,
@@ -1503,6 +1574,7 @@ export default function CaseDetail(props) {
       cases: rel,
       gallery,
       aliases,
+      furtherLinks,
     };
   }
 
@@ -1775,6 +1847,16 @@ export default function CaseDetail(props) {
     if (!isPathologyPage) return [];
     return normalizeAliasesList(displayItem?.aliases, displayItem?.title || displayItem?.slug || '');
   }, [isPathologyPage, displayItem?.aliases, displayItem?.title, displayItem?.slug]);
+
+  const pathologyFurtherLinks = useMemo(() => {
+    if (!isPathologyPage) return [];
+    return normalizeFurtherLinksList(displayItem?.furtherLinks);
+  }, [isPathologyPage, displayItem?.furtherLinks]);
+
+  const pathologyFurtherLinksMarkdown = useMemo(
+    () => buildFurtherLinksMarkdown(pathologyFurtherLinks),
+    [pathologyFurtherLinks]
+  );
 
   const relatedCases = useMemo(() => {
     if (!isPathologyPage) return [];
@@ -2944,6 +3026,18 @@ export default function CaseDetail(props) {
               ))}
             </section>
           )}
+
+          {/* PATHO : liens complémentaires, tout à la fin du contenu principal */}
+          {!isDocNamespace &&
+            isPathologyPage &&
+            displayMatchesRoute &&
+            pathologyFurtherLinksMarkdown && (
+              <section className="cd-further-links" aria-label="Pour aller plus loin">
+                <CaseMarkdown scopeKey={`${markdownScopeKey}-further-links`}>
+                  {pathologyFurtherLinksMarkdown}
+                </CaseMarkdown>
+              </section>
+            )}
 
           </div>
 
