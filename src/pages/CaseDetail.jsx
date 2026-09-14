@@ -982,7 +982,10 @@ function buildNumberedPathologyCredits(displayItem, relatedCases = [], galleryIt
   // puis les images de galerie -> [2], [3], etc.
   let nextNumber = 1;
 
-  extractInlineContentCitationKeys(contentMarkdown).forEach((citekey) => {
+  // V24 : l'ordre bibliographique tient compte à la fois des citations
+  // textuelles [@citekey] et des images enrichies data-odonto-cite présentes
+  // dans le contenu Atlas (notamment dans les clinicalLayout gallery).
+  extractOrderedContentReferenceKeys(contentMarkdown).forEach((citekey) => {
     const entry = entries.find((candidate) => candidate.citekeys.has(citekey));
     if (!entry) return;
 
@@ -2475,7 +2478,10 @@ export default function CaseDetail(props) {
 
   const usesInlineCitationSystem = useMemo(() => {
     if (!isPathologyPage) return false;
-    return extractInlineContentCitationKeys(displayItem?.content || '').length > 0;
+    // Inclut les citations textuelles [@citekey] ET les images enrichies
+    // data-odonto-cite afin d'activer le système de références Atlas dans
+    // les deux cas.
+    return extractOrderedContentReferenceKeys(displayItem?.content || '').length > 0;
   }, [isPathologyPage, displayItem?.content]);
 
   const usesPathologyReferenceSystem = usesGalleryReferenceSystem || usesInlineCitationSystem;
@@ -2614,7 +2620,9 @@ export default function CaseDetail(props) {
                     referenceNumbers={
                       isDocNamespace
                         ? documentationNumberedCredits?.citationNumbers
-                        : null
+                        : isPathologyPage
+                          ? pathologyNumberedCredits?.citationNumbers
+                          : null
                     }
                   >
                     {renderedDisplayContent}
