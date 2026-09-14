@@ -1040,6 +1040,117 @@ function buildNumberedPathologyCredits(displayItem, relatedCases = [], galleryIt
 }
 
 
+function extractDocumentationFigureLocators(markdown) {
+  const text = String(markdown || '');
+  const values = [];
+  const re = /\bFigures?\s+([^.\n]+)\./gi;
+  let match;
+
+  while ((match = re.exec(text))) {
+    String(match[1] || '')
+      .split(/\s*(?:,|;|\bet\b|&)\s*/i)
+      .map((value) => value.trim())
+      .filter(Boolean)
+      .forEach((value) => values.push(value));
+  }
+
+  return values;
+}
+
+function stripDocumentationFigureLocators(markdown) {
+  return String(markdown || '')
+    .replace(/\bFigures?\s+[^.\n]+\.\s*/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function formatDocumentationFigureLocators(values = []) {
+  const unique = [];
+  const seen = new Set();
+
+  values.forEach((rawValue) => {
+    const value = String(rawValue || '').trim();
+    if (!value) return;
+    const key = value.toLocaleLowerCase('fr');
+    if (seen.has(key)) return;
+    seen.add(key);
+    unique.push(value);
+  });
+
+  unique.sort((a, b) =>
+    a.localeCompare(b, 'fr', { numeric: true, sensitivity: 'base' })
+  );
+
+  if (!unique.length) return '';
+  if (unique.length === 1) return `Figure ${unique[0]}.`;
+  if (unique.length === 2) return `Figures ${unique[0]} et ${unique[1]}.`;
+  return `Figures ${unique.slice(0, -1).join(', ')} et ${unique[unique.length - 1]}.`;
+}
+
+function mergeDocumentationCreditMarkdown(currentMarkdown, incomingMarkdown) {
+  const current = String(currentMarkdown || '').trim();
+  const incoming = String(incomingMarkdown || '').trim();
+  if (!current) return incoming;
+  if (!incoming) return current;
+  if (normalizeCreditEntryKey(current) === normalizeCreditEntryKey(incoming)) return current;
+
+  const currentBase = normalizeCreditEntryKey(stripDocumentationFigureLocators(current));
+  const incomingBase = normalizeCreditEntryKey(stripDocumentationFigureLocators(incoming));
+
+  // Le cas visé est une même référence bibliographique répétée dans plusieurs
+  // sous-sections avec des localisateurs de figures différents.
+  if (!currentBase || currentBase !== incomingBase) return current;
+
+  const currentLocators = extractDocumentationFigureLocators(current);
+  const incomingLocators = extractDocumentationFigureLocators(incoming);
+  const mergedLocator = formatDocumentationFigureLocators([
+    ...currentLocators,
+    ...incomingLocators,
+  ]);
+
+  if (!mergedLocator) return current;
+
+  const template = currentLocators.length ? current : incoming;
+  let replaced = false;
+
+  return template
+    .replace(/\bFigures?\s+[^.\n]+\.\s*/gi, (whole) => {
+      if (replaced) return '';
+      replaced = true;
+      return `${mergedLocator} `;
+    })
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function documentationCreditIdentityKeys(markdown, markers = []) {
+  const text = String(markdown || '');
+  const visibleMarkdown = stripOdontoCitationMarker(text).trim();
+  const keys = [];
+
+  // DOI = identité bibliographique la plus robuste lorsque le même article
+  // est crédité avec des localisateurs différents (Figure 5 / Figures 6 et 7).
+  const doiLink = visibleMarkdown.match(/https?:\/\/(?:dx\.)?doi\.org\/([^\s)>\]]+)/i);
+  const doiText = visibleMarkdown.match(/\bdoi\s*:\s*(10\.\d{4,9}\/[^\s;,)]+)/i);
+  const doi = String(doiLink?.[1] || doiText?.[1] || '')
+    .replace(/[.]+$/, '')
+    .trim()
+    .toLocaleLowerCase('fr');
+  if (doi) keys.push(`doi:${doi}`);
+
+  (Array.isArray(markers) ? markers : []).forEach((citekey) => {
+    const key = String(citekey || '').trim().toLocaleLowerCase('fr');
+    if (key) keys.push(`cite:${key}`);
+  });
+
+  // Repli : même texte bibliographique une fois le localisateur de figure retiré.
+  // Cela couvre aussi les anciennes entrées qui auraient perdu leur marqueur HTML.
+  const base = normalizeCreditEntryKey(stripDocumentationFigureLocators(visibleMarkdown));
+  if (base) keys.push(`base:${base}`);
+
+  return [...new Set(keys)];
+}
+
 function buildNumberedDocumentationCredits(nodes = []) {
   const orderedNodes = (Array.isArray(nodes) ? nodes : []).filter(Boolean);
   const entries = [];
@@ -1051,8 +1162,16 @@ function buildNumberedDocumentationCredits(nodes = []) {
     const visibleMarkdown = stripOdontoCitationMarker(markdown).trim();
     if (!visibleMarkdown) return null;
 
-    const key = normalizeCreditEntryKey(visibleMarkdown);
-    let entry = seen.get(key);
+    const identityKeys = documentationCreditIdentityKeys(markdown, markers);
+    let entry = null;
+
+    for (const key of identityKeys) {
+      const existing = seen.get(key);
+      if (existing) {
+        entry = existing;
+        break;
+      }
+    }
 
     if (!entry) {
       entry = {
@@ -1061,19 +1180,24 @@ function buildNumberedDocumentationCredits(nodes = []) {
         number: null,
         id: null,
       };
-      seen.set(key, entry);
       entries.push(entry);
+    } else {
+      entry.markdown = mergeDocumentationCreditMarkdown(entry.markdown, visibleMarkdown);
     }
 
     markers.forEach((citekey) => {
       if (citekey) entry.citekeys.add(citekey);
     });
 
+    // Toutes les identités connues renvoient désormais vers l'entrée fusionnée.
+    identityKeys.forEach((key) => seen.set(key, entry));
+
     return entry;
   };
 
   // Bibliographie commune : d'abord les crédits de l'ITEM, puis ceux des
-  // sections dans leur ordre éditorial.
+  // sections dans leur ordre éditorial. Une même source est fusionnée même si
+  // ses localisateurs diffèrent selon les sous-sections.
   orderedNodes.forEach((node) => {
     splitCreditsMarkdownEntries(getCreditsMarkdown(node)).forEach(addEntry);
   });
