@@ -371,13 +371,23 @@ function buildAtlasCategorySections(items) {
           key: subdivisionKey,
           id: subdivisionId || null,
           label: subdivisionLabel,
-          items: [],
-          seen: new Set(),
+          generalItems: [],
+          generalSeen: new Set(),
+          directItems: [],
+          directSeen: new Set(),
         });
       }
 
       const subdivision = subcategory.subdivisions.get(subdivisionKey);
-      pushUniqueAtlasItem(subdivision.items, subdivision.seen, item);
+      const isSubdivisionGeneral =
+        (subdivisionId && generalTargets.has(subdivisionId)) ||
+        (!subdivisionId && generalTargets.has(subdivisionLabel));
+
+      if (isSubdivisionGeneral) {
+        pushUniqueAtlasItem(subdivision.generalItems, subdivision.generalSeen, item);
+      } else {
+        pushUniqueAtlasItem(subdivision.directItems, subdivision.directSeen, item);
+      }
     }
   }
 
@@ -406,7 +416,8 @@ function buildAtlasCategorySections(items) {
                 key: subdivision.key,
                 id: subdivision.id,
                 label: subdivision.label,
-                items: subdivision.items.sort(compareByTitleAsc),
+                generalItems: subdivision.generalItems.sort(compareByTitleAsc),
+                directItems: subdivision.directItems.sort(compareByTitleAsc),
               })),
           })),
       };
@@ -1465,10 +1476,18 @@ export default function CasCliniques() {
             });
           }
           for (const subdivision of subdivisions) {
+            const subdivisionGeneralItems = Array.isArray(subdivision?.generalItems)
+              ? subdivision.generalItems
+              : [];
+            const subdivisionDirectItems = Array.isArray(subdivision?.directItems)
+              ? subdivision.directItems
+              : [];
+
             subdivisionRows.push({
               key: subdivision.key,
               label: subdivision.label,
-              rowWeight: Math.max(1, Math.ceil((subdivision.items?.length || 0) / 3)),
+              generalItems: subdivisionGeneralItems,
+              rowWeight: Math.max(1, Math.ceil(subdivisionDirectItems.length / 3)),
               isDirect: false,
             });
           }
@@ -1505,17 +1524,38 @@ export default function CasCliniques() {
 
                 {subdivisionRows.length > 0 && (
                   <div className="atlas-ui-subcategory-subdivision-rail" aria-label="Subdivisions">
-                    {subdivisionRows.map((row) => (
-                      <div
-                        key={row.key}
-                        className={`atlas-ui-subcategory-subdivision-segment ${
-                          row.isDirect ? 'atlas-ui-subcategory-subdivision-segment--direct' : ''
-                        }`}
-                        aria-hidden={row.isDirect ? 'true' : undefined}
-                      >
-                        {row.label}
-                      </div>
-                    ))}
+                    {subdivisionRows.map((row) => {
+                      const hasSubdivisionGeneral = !row.isDirect && row.generalItems?.length > 0;
+
+                      return (
+                        <div
+                          key={row.key}
+                          className={`atlas-ui-subcategory-subdivision-segment ${
+                            row.isDirect ? 'atlas-ui-subcategory-subdivision-segment--direct' : ''
+                          } ${
+                            hasSubdivisionGeneral
+                              ? 'atlas-ui-subcategory-subdivision-segment--has-general'
+                              : ''
+                          }`}
+                          aria-hidden={row.isDirect ? 'true' : undefined}
+                        >
+                          {!row.isDirect && (
+                            <>
+                              <span className="atlas-ui-subcategory-subdivision-label">{row.label}</span>
+
+                              {view === 'list' && hasSubdivisionGeneral && (
+                                <div
+                                  className="atlas-ui-subdivision-general-pathology-list"
+                                  aria-label="Fiche générale"
+                                >
+                                  {row.generalItems.map(renderGeneralPathologyLink)}
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -1529,21 +1569,44 @@ export default function CasCliniques() {
                   </div>
                 )}
 
-                {subdivisions.map((subdivision) => (
-                  <section
-                    key={subdivision.key}
-                    className="atlas-ui-subdivision-block"
-                    aria-label={`${subcategory.label} — ${subdivision.label}`}
-                  >
-                    <h4 className="atlas-ui-subdivision-title">{subdivision.label}</h4>
+                {subdivisions.map((subdivision) => {
+                  const subdivisionGeneralItems = Array.isArray(subdivision?.generalItems)
+                    ? subdivision.generalItems
+                    : [];
+                  const subdivisionDirectItems = Array.isArray(subdivision?.directItems)
+                    ? subdivision.directItems
+                    : [];
+                  const subdivisionContentItems = view === 'list'
+                    ? subdivisionDirectItems
+                    : [...subdivisionGeneralItems, ...subdivisionDirectItems].sort(compareByTitleAsc);
 
-                    <div
-                      className={`atlas-ui-lesion-grid atlas-ui-lesion-grid--panel atlas-ui-lesion-grid--${view}`}
+                  return (
+                    <section
+                      key={subdivision.key}
+                      className="atlas-ui-subdivision-block"
+                      aria-label={`${subcategory.label} — ${subdivision.label}`}
                     >
-                      {subdivision.items.map(renderItem)}
-                    </div>
-                  </section>
-                ))}
+                      <h4 className="atlas-ui-subdivision-title">{subdivision.label}</h4>
+
+                      {view === 'list' && subdivisionGeneralItems.length > 0 && (
+                        <div
+                          className="atlas-ui-subdivision-general-pathology-list atlas-ui-subdivision-general-pathology-list--content"
+                          aria-label="Fiche générale"
+                        >
+                          {subdivisionGeneralItems.map(renderGeneralPathologyLink)}
+                        </div>
+                      )}
+
+                      {subdivisionContentItems.length > 0 && (
+                        <div
+                          className={`atlas-ui-lesion-grid atlas-ui-lesion-grid--panel atlas-ui-lesion-grid--${view}`}
+                        >
+                          {subdivisionContentItems.map(renderItem)}
+                        </div>
+                      )}
+                    </section>
+                  );
+                })}
               </div>
             </section>
           );

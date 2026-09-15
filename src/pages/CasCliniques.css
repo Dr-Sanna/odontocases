@@ -721,7 +721,7 @@
   .atlas-ui-subcategory-panel--has-subdivisions
   .atlas-ui-subcategory-heading {
   display: grid;
-  grid-template-columns: minmax(0, 1.18fr) minmax(92px, 0.82fr);
+  grid-template-columns: minmax(0, 1fr) fit-content(50%);
 }
 
 .atlas-ui-taxonomy--list .atlas-ui-subcategory-subdivision-rail {
@@ -735,7 +735,10 @@
 
 .atlas-ui-taxonomy--list .atlas-ui-subcategory-subdivision-segment {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 6px;
   min-width: 0;
   padding: 9px 10px;
 
@@ -743,7 +746,45 @@
   font-size: 0.78rem;
   font-weight: 650;
   line-height: 1.22;
-  overflow-wrap: anywhere;
+
+  /* On évite les coupures arbitraires au milieu des mots. La largeur de la
+     colonne de subdivision est désormais calculée par fit-content() ci-dessus. */
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: auto;
+}
+
+.atlas-ui-subcategory-subdivision-label {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.atlas-ui-subdivision-general-pathology-list {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+  min-width: 0;
+  max-width: 100%;
+  margin: 0;
+}
+
+/* Le doublon placé dans le contenu sert uniquement lorsque, en responsive,
+   le rail des subdivisions disparaît. */
+.atlas-ui-subdivision-general-pathology-list--content {
+  display: none;
+}
+
+.atlas-ui-subdivision-general-pathology-list .atlas-ui-general-pathology-link {
+  padding: 5px 7px;
+  border-radius: 8px;
+}
+
+.atlas-ui-subdivision-general-pathology-list .atlas-ui-general-pathology-kicker {
+  font-size: 0.62rem;
+  line-height: 1.15;
+  letter-spacing: 0.025em;
 }
 
 .atlas-ui-taxonomy--list
@@ -1138,6 +1179,11 @@
 
   .atlas-ui-taxonomy--list .atlas-ui-subcategory-subdivision-rail {
     display: none;
+  }
+
+  .atlas-ui-subdivision-general-pathology-list--content {
+    display: flex;
+    margin-bottom: 7px;
   }
 
   .atlas-ui-taxonomy--list .atlas-ui-subdivision-title {
