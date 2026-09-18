@@ -302,145 +302,451 @@ function isBibliographicGalleryMarker(marker) {
   return marker?.kind === 'citation' || marker?.kind === 'case';
 }
 
-function buildGalleryGroupLabels(galleryItems = []) {
-  const counts = new Map();
-  const order = [];
+function gallerySingleItemLogicalSpan(item) {
+  const width = Number(item?.image?.width) || 0;
+  const height = Number(item?.image?.height) || 0;
+  
+  if (width > 0 && height > 0) {
+    const ratio = width / height;
+    /*
+     * Les images franchement panoramiques peuvent compter pour 2 images
+     * logiques dans l'algorithme de composition. Cela permet par exemple à
+     * une ligne « image normale + image très large » d'occuper toute la
+     * largeur comme un ensemble 1 + 2 = 3.
+     */
+    if (ratio >= 1.55) return 2;
+  }
 
-  (Array.isArray(galleryItems) ? galleryItems : []).forEach((item) => {
-    const identity = normalizeGalleryGroupIdentity(
-      galleryGroupKeyFromSourceUrl(item?.sourceUrl)
-    );
-    if (!identity) return;
-
-    if (!counts.has(identity)) order.push(identity);
-    counts.set(identity, (counts.get(identity) || 0) + 1);
-  });
-
-  const labels = new Map();
-  let nextCaseNumber = 1;
-
-  order.forEach((identity) => {
-    // Un groupe composé d'une seule image ne reçoit aucun marquage visuel.
-    if ((counts.get(identity) || 0) < 2) return;
-    labels.set(identity, `Cas ${nextCaseNumber++}`);
-  });
-
-  return labels;
+  return 1;
 }
 
-function useGalleryGroupRowLinks(galleryItems = [], groupLabels = new Map()) {
-  const gridRef = useRef(null);
-  const [linkedNextIndexes, setLinkedNextIndexes] = useState([]);
-  const [linkedRuns, setLinkedRuns] = useState([]);
+function buildGalleryLayoutUnits(galleryItems = []) {
+  const items = Array.isArray(galleryItems) ? galleryItems : [];
+  const units = [];
+  let index = 0;
 
-  useEffect(() => {
-    const grid = gridRef.current;
-    if (!grid) {
-      setLinkedNextIndexes([]);
-      setLinkedRuns([]);
-      return undefined;
+  while (index < items.length) {
+    const identity = normalizeGalleryGroupIdentity(
+      galleryGroupKeyFromSourceUrl(items[index]?.sourceUrl)
+    );
+
+    if (identity) {
+      let endIndex = index + 1;
+      while (endIndex < items.length) {
+        const nextIdentity = normalizeGalleryGroupIdentity(
+          galleryGroupKeyFromSourceUrl(items[endIndex]?.sourceUrl)
+        );
+        if (nextIdentity !== identity) break;
+        endIndex += 1;
+      }
+
+      const count = endIndex - index;
+      if (count >= 2) {
+        units.push({
+          kind: 'group',
+          identity,
+          startIndex: index,
+          endIndex: endIndex - 1,
+          count,
+        });
+        index = endIndex;
+        continue;
+      }
     }
 
+    units.push({
+      kind: 'single',
+      identity: '',
+      startIndex: index,
+      endIndex: index,
+      count: 1,
+      logicalSpan: gallerySingleItemLogicalSpan(items[index]),
+    });
+    index += 1;
+  }
+
+  return units;
+}
+
+
+function galleryLayoutUnitSpan(unit) {
+  const logicalSpan = Number(unit?.logicalSpan) || 0;
+  if (logicalSpan > 0) return Math.min(logicalSpan, 4);
+
+  const count = Math.max(1, Number(unit?.count) || 1);
+  return Math.min(count, 4);
+}
+
+/*
+ * Répartit les unités atomiques de la galerie dans des lignes de 4 images.
+ *
+ * Priorités visuelles :
+ * - groupe de 4 seul ;
+ * - groupe de 3 + image seule ;
+ * - groupe de 2 + groupe de 2 ;
+ * - groupe de 2 + 2 images seules ;
+ * - 4 images seules.
+ *
+ * On conserve l'ordre d'origine dès que la première unité peut participer à
+ * une ligne complète. Si elle ne le peut pas mais qu'une combinaison complète
+ * existe juste après, elle est différée : cela évite de créer un trou de 1 ou
+ * 2 colonnes alors qu'une ligne harmonieuse est possible.
+ */
+function buildGalleryLayoutRows(layoutUnits = []) {
+  const remaining = (Array.isArray(layoutUnits) ? layoutUnits : []).map((unit, order) => ({
+    ...unit,
+    layoutOrder: order,
+    span: galleryLayoutUnitSpan(unit),
+  }));
+  const rows = [];
+
+  /*
+   * Composition de la galerie :
+   * - règle générale : remplir autant que possible des lignes de 3 images
+   *   logiques avant de créer la ligne suivante ;
+   * - exception : un groupe atomique de 4 occupe seul toute la ligne ;
+   * - exception : deux groupes atomiques de 2 peuvent partager une ligne 2+2 ;
+   * - une image panoramique peut compter pour 2 via galleryLayoutUnitSpan().
+   *
+   * Cette stratégie évite le découpage « équilibré » 3 + 2 + 2 pour 7 images.
+   * On obtient désormais 3 + 3 + 1, ce qui garde les deux premières lignes
+   * denses et laisse la dernière image à sa largeur plafonnée naturelle.
+   */
+  const takeSelection = (selection) => {
+    const unique = [...new Set(selection)].sort((a, b) => a - b);
+    const rowUnits = unique.map((index) => remaining[index]);
+
+    [...unique].sort((a, b) => b - a).forEach((index) => {
+      remaining.splice(index, 1);
+    });
+
+    return rowUnits;
+  };
+
+  const findExactSelection = (target, { requireFirst = false } = {}) => {
+    let found = null;
+
+    const visit = (startIndex, sum, selection) => {
+      if (found) return;
+      if (sum === target) {
+        if (!requireFirst || selection.includes(0)) found = [...selection];
+        return;
+      }
+      if (sum >= target) return;
+
+      for (let index = startIndex; index < remaining.length; index += 1) {
+        const span = remaining[index]?.span || 0;
+
+        // Les groupes de 4 sont réservés à leur propre ligne.
+        if (span >= 4) continue;
+
+        const nextSum = sum + span;
+        if (nextSum > target) continue;
+
+        selection.push(index);
+        visit(index + 1, nextSum, selection);
+        selection.pop();
+        if (found) return;
+      }
+    };
+
+    visit(0, 0, []);
+    return found;
+  };
+
+  while (remaining.length) {
+    const first = remaining[0];
+
+    // Groupe atomique de 4 : toujours une ligne complète autonome.
+    if ((first?.span || 0) >= 4) {
+      const units = takeSelection([0]);
+      rows.push({ units, usedColumns: 4 });
+      continue;
+    }
+
+    // Deux groupes réels de 2 : exception volontaire 2 + 2.
+    if (first?.span === 2 && first?.kind === 'group') {
+      const secondGroupOfTwo = remaining.findIndex(
+        (unit, index) => index > 0 && unit?.span === 2 && unit?.kind === 'group'
+      );
+
+      if (secondGroupOfTwo !== -1) {
+        const units = takeSelection([0, secondGroupOfTwo]);
+        rows.push({ units, usedColumns: 4 });
+        continue;
+      }
+    }
+
+    // Priorité absolue à une ligne normale complète de 3.
+    const fullRowSelection =
+      findExactSelection(3, { requireFirst: true }) ||
+      findExactSelection(3, { requireFirst: false });
+
+    if (fullRowSelection) {
+      const units = takeSelection(fullRowSelection);
+      rows.push({
+        units,
+        usedColumns: units.reduce((sum, unit) => sum + unit.span, 0),
+      });
+      continue;
+    }
+
+    // Plus aucune combinaison de 3 n'est possible : on termine avec 2 puis 1.
+    const twoSelection =
+      findExactSelection(2, { requireFirst: true }) ||
+      findExactSelection(2, { requireFirst: false });
+
+    if (twoSelection) {
+      const units = takeSelection(twoSelection);
+      rows.push({
+        units,
+        usedColumns: units.reduce((sum, unit) => sum + unit.span, 0),
+      });
+      continue;
+    }
+
+    const units = takeSelection([0]);
+    rows.push({
+      units,
+      usedColumns: units.reduce((sum, unit) => sum + unit.span, 0),
+    });
+  }
+
+  return rows;
+}
+
+/*
+ * Égalise la hauteur de la partie "légende" uniquement entre les blocs qui
+ * sont réellement sur la même ligne visuelle. On mesure les hauteurs naturelles
+ * puis on applique la plus grande comme min-height via une variable CSS locale.
+ *
+ * Le calcul se base sur la position réelle des unités, donc il reste correct si
+ * le responsive fait passer certains blocs à la ligne sur petit écran.
+ */
+function useGalleryRowCaptionEqualizer(layoutRows = []) {
+  const rootRef = useRef(null);
+
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return undefined;
+
     let raf = 0;
+    let lastObservedWidth = -1;
 
-    const compute = () => {
+    const imageRatio = (image) => {
+      const naturalWidth = Number(image?.naturalWidth) || 0;
+      const naturalHeight = Number(image?.naturalHeight) || 0;
+      if (naturalWidth > 0 && naturalHeight > 0) return naturalWidth / naturalHeight;
+
+      const fallbackWidth = Number(image?.dataset?.galleryWidth) || 0;
+      const fallbackHeight = Number(image?.dataset?.galleryHeight) || 0;
+      if (fallbackWidth > 0 && fallbackHeight > 0) return fallbackWidth / fallbackHeight;
+
+      return 4 / 3;
+    };
+
+    const px = (value) => {
+      const parsed = Number.parseFloat(value);
+      return Number.isFinite(parsed) ? parsed : 0;
+    };
+
+    const measure = () => {
       raf = 0;
-      const cards = Array.from(grid.children);
-      const next = [];
+      const rows = Array.from(root.querySelectorAll('.cd-pathology-gallery-row'));
+      if (!rows.length) return;
 
-      for (let index = 0; index < galleryItems.length - 1; index += 1) {
-        const currentGroup = normalizeGalleryGroupIdentity(
-          galleryGroupKeyFromSourceUrl(galleryItems[index]?.sourceUrl)
+      /*
+       * Justification des images ligne par ligne.
+       * Chaque ligne contient toujours les mêmes 4 images logiques, mais sa
+       * hauteur est calculée à partir des ratios réels des fichiers chargés.
+       * Les cartes peuvent donc avoir des largeurs différentes, tandis que
+       * toutes les images d'une même ligne ont exactement la même hauteur.
+       */
+      rows.forEach((row) => {
+        const units = Array.from(row.children).filter((element) =>
+          element.classList?.contains('cd-gallery-unit')
         );
-        const followingGroup = normalizeGalleryGroupIdentity(
-          galleryGroupKeyFromSourceUrl(galleryItems[index + 1]?.sourceUrl)
+        if (!units.length) return;
+
+        const rowStyle = window.getComputedStyle(row);
+        const rowGap = px(rowStyle.columnGap || rowStyle.gap);
+        const rowWidth = row.getBoundingClientRect().width;
+
+        let ratioSum = 0;
+        let internalGaps = 0;
+        const unitModels = [];
+
+        units.forEach((unit) => {
+          const images = Array.from(unit.querySelectorAll('.cd-gallery-image'));
+          const ratios = images.map(imageRatio);
+          const unitRatio = ratios.reduce((sum, ratio) => sum + ratio, 0) || 4 / 3;
+
+          const groupGrid = unit.querySelector('.cd-gallery-group-grid');
+          let groupGap = 0;
+          if (groupGrid && ratios.length > 1) {
+            const groupStyle = window.getComputedStyle(groupGrid);
+            groupGap = px(groupStyle.columnGap || groupStyle.gap);
+            internalGaps += groupGap * (ratios.length - 1);
+          }
+
+          ratioSum += unitRatio;
+          unitModels.push({ unit, ratios, unitRatio, groupGrid, groupGap });
+        });
+
+        const externalGaps = rowGap * Math.max(0, units.length - 1);
+
+        /*
+         * Une ligne de 3 ou 4 images peut utiliser toute la largeur.
+         * Une ligne incomplète de 1 ou 2 images est plafonnée à la largeur
+         * qu'occuperaient respectivement 1/3 ou 2/3 d'une ligne de 3 images.
+         *
+         * On évite ainsi qu'une ou deux images isolées deviennent
+         * disproportionnellement grandes, tout en conservant la justification
+         * complète des lignes de 3 images.
+         */
+        const logicalImageCount = Math.max(
+          1,
+          Number.parseInt(row.dataset.galleryRowColumns || '', 10) || 1
         );
 
-        if (!currentGroup || currentGroup !== followingGroup || !groupLabels.has(currentGroup)) {
-          continue;
+        /*
+         * Base : 1 image = max 1/3, 2 images = max 2/3, 3+ = pleine largeur.
+         *
+         * Exception responsive aux ratios réels : si une ligne ne contient
+         * physiquement que 2 images et qu'elles sont toutes deux nettement
+         * paysagères en moyenne, on autorise la ligne à occuper 100 %.
+         *
+         * On se base ici sur naturalWidth / naturalHeight, donc la décision
+         * reste correcte même si Strapi ne fournit pas les dimensions du média.
+         */
+        const physicalImageCount = unitModels.reduce(
+          (sum, model) => sum + model.ratios.length,
+          0
+        );
+        const averageImageRatio =
+          physicalImageCount > 0 ? ratioSum / physicalImageCount : 0;
+
+        let rowFillRatio = Math.min(1, logicalImageCount / 3);
+
+        if (physicalImageCount === 2 && averageImageRatio >= 1.55) {
+          rowFillRatio = 1;
         }
 
-        const currentCard = cards[index];
-        const followingCard = cards[index + 1];
-        if (!currentCard || !followingCard) continue;
+        const targetRowWidth = rowWidth * rowFillRatio;
 
-        const currentRect = currentCard.getBoundingClientRect();
-        const followingRect = followingCard.getBoundingClientRect();
+        const availableImageWidth = Math.max(
+          1,
+          targetRowWidth - externalGaps - internalGaps
+        );
+        const rowImageHeight = Math.max(
+          1,
+          availableImageWidth / Math.max(ratioSum, 0.0001)
+        );
 
-        // Le raccord n'existe que lorsque les cartes sont réellement côte à côte.
-        // Si le groupe passe à la ligne, les cartes restent autonomes.
-        if (Math.abs(currentRect.top - followingRect.top) <= 2) next.push(index);
-      }
+        row.style.setProperty('--cd-gallery-row-image-h', `${rowImageHeight}px`);
 
-      const nextSet = new Set(next);
-      const runs = [];
-      let index = 0;
+        unitModels.forEach(({ unit, ratios, unitRatio, groupGrid, groupGap }) => {
+          const unitWidth = unitRatio * rowImageHeight + groupGap * Math.max(0, ratios.length - 1);
+          unit.style.setProperty('--cd-gallery-unit-w', `${unitWidth}px`);
 
-      while (index < cards.length - 1) {
-        if (!nextSet.has(index)) {
-          index += 1;
-          continue;
-        }
+          if (groupGrid && ratios.length) {
+            const groupColumns = ratios.map((ratio) => `${ratio}fr`).join(' ');
 
-        const startIndex = index;
-        let endIndex = index + 1;
-        while (nextSet.has(endIndex)) endIndex += 1;
-
-        const firstRect = cards[startIndex]?.getBoundingClientRect?.();
-        const lastRect = cards[endIndex]?.getBoundingClientRect?.();
-        if (firstRect && lastRect) {
-          runs.push({
-            startIndex,
-            endIndex,
-            width: Math.max(0, lastRect.right - firstRect.left),
-          });
-        }
-
-        index = endIndex + 1;
-      }
-
-      setLinkedNextIndexes((previous) => {
-        if (previous.length === next.length && previous.every((value, i) => value === next[i])) {
-          return previous;
-        }
-        return next;
+            /*
+             * La même géométrie de colonnes doit piloter les images ET les
+             * légendes individuelles du groupe. La variable est donc portée
+             * par l'unité parente, puis héritée par la grille d'images et la
+             * bande de captions qui sont deux éléments frères.
+             */
+            unit.style.setProperty('--cd-gallery-group-columns', groupColumns);
+            groupGrid.style.setProperty('--cd-gallery-group-columns', groupColumns);
+          }
+        });
       });
 
-      setLinkedRuns((previous) => {
-        const same = previous.length === runs.length && previous.every((run, i) => {
-          const candidate = runs[i];
-          return run.startIndex === candidate.startIndex &&
-            run.endIndex === candidate.endIndex &&
-            Math.abs(run.width - candidate.width) < 0.5;
+      const units = Array.from(root.querySelectorAll('.cd-gallery-unit'));
+      units.forEach((unit) => unit.style.removeProperty('--cd-gallery-row-caption-h'));
+
+      const measured = units.map((unit) => {
+        const unitRect = unit.getBoundingClientRect();
+        const captions = Array.from(
+          unit.querySelectorAll(
+            '.cd-gallery-caption-copy, .cd-gallery-shared-caption-copy, .cd-gallery-shared-caption-column'
+          )
+        ).filter((element) => {
+          const style = window.getComputedStyle(element);
+          const rect = element.getBoundingClientRect();
+          return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
         });
-        return same ? previous : runs;
+
+        const naturalCaptionHeight = captions.reduce(
+          (max, element) => Math.max(max, element.getBoundingClientRect().height),
+          0
+        );
+
+        return {
+          unit,
+          top: unitRect.top,
+          naturalCaptionHeight,
+        };
+      });
+
+      const visualRows = [];
+      measured.forEach((entry) => {
+        let visualRow = visualRows.find((candidate) => Math.abs(candidate.top - entry.top) <= 2);
+        if (!visualRow) {
+          visualRow = { top: entry.top, entries: [], maxCaptionHeight: 0 };
+          visualRows.push(visualRow);
+        }
+        visualRow.entries.push(entry);
+        visualRow.maxCaptionHeight = Math.max(visualRow.maxCaptionHeight, entry.naturalCaptionHeight);
+      });
+
+      visualRows.forEach((visualRow) => {
+        if (visualRow.maxCaptionHeight <= 0) return;
+        const height = `${Math.ceil(visualRow.maxCaptionHeight)}px`;
+        visualRow.entries.forEach(({ unit }) => {
+          unit.style.setProperty('--cd-gallery-row-caption-h', height);
+        });
       });
     };
 
     const schedule = () => {
       if (raf) cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(compute);
+      raf = requestAnimationFrame(measure);
     };
 
     schedule();
 
+    const images = Array.from(root.querySelectorAll('.cd-gallery-image'));
+    images.forEach((image) => image.addEventListener('load', schedule));
+
     let observer = null;
     if (typeof ResizeObserver !== 'undefined') {
-      observer = new ResizeObserver(schedule);
-      observer.observe(grid);
-      Array.from(grid.children).forEach((child) => observer.observe(child));
+      observer = new ResizeObserver((entries) => {
+        const width = entries[0]?.contentRect?.width ?? root.getBoundingClientRect().width;
+        if (Math.abs(width - lastObservedWidth) <= 0.5) return;
+        lastObservedWidth = width;
+        schedule();
+      });
+      observer.observe(root);
+    }
+
+    if (typeof document !== 'undefined' && document.fonts?.ready) {
+      document.fonts.ready.then(schedule).catch(() => {});
     }
 
     window.addEventListener('resize', schedule);
 
     return () => {
       if (raf) cancelAnimationFrame(raf);
+      images.forEach((image) => image.removeEventListener('load', schedule));
       observer?.disconnect();
       window.removeEventListener('resize', schedule);
     };
-  }, [galleryItems, groupLabels]);
+  }, [layoutRows]);
 
-  return { gridRef, linkedNextIndexes, linkedRuns };
+  return rootRef;
 }
 
 function galleryInternalSourcePath(value) {
@@ -1959,16 +2265,22 @@ export default function CaseDetail(props) {
     return Array.isArray(displayItem?.gallery) ? displayItem.gallery : [];
   }, [isPathologyPage, displayItem?.gallery]);
 
-  const pathologyGalleryGroupLabels = useMemo(
-    () => buildGalleryGroupLabels(pathologyGallery),
+  const pathologyGalleryLayoutUnits = useMemo(
+    () => buildGalleryLayoutUnits(pathologyGallery),
     [pathologyGallery]
   );
 
-  const {
-    gridRef: pathologyGalleryGridRef,
-    linkedNextIndexes: pathologyGalleryLinkedNextIndexes,
-    linkedRuns: pathologyGalleryLinkedRuns,
-  } = useGalleryGroupRowLinks(pathologyGallery, pathologyGalleryGroupLabels);
+  const pathologyGalleryLayoutRows = useMemo(
+    () => buildGalleryLayoutRows(pathologyGalleryLayoutUnits),
+    [pathologyGalleryLayoutUnits]
+  );
+
+  const pathologyGalleryRowsRef = useGalleryRowCaptionEqualizer(pathologyGalleryLayoutRows);
+
+  const pathologyGalleryGroupRuns = useMemo(
+    () => pathologyGalleryLayoutUnits.filter((unit) => unit.kind === 'group'),
+    [pathologyGalleryLayoutUnits]
+  );
 
   const pathologyAliases = useMemo(() => {
     if (!isPathologyPage) return [];
@@ -2476,7 +2788,7 @@ export default function CaseDetail(props) {
       };
     };
 
-    (Array.isArray(pathologyGalleryLinkedRuns) ? pathologyGalleryLinkedRuns : []).forEach((run) => {
+    (Array.isArray(pathologyGalleryGroupRuns) ? pathologyGalleryGroupRuns : []).forEach((run) => {
       const members = pathologyGallery.slice(run.startIndex, run.endIndex + 1);
       if (members.length < 2) return;
 
@@ -2583,7 +2895,7 @@ export default function CaseDetail(props) {
     return { byStartIndex, startIndexByMember };
   }, [
     pathologyGallery,
-    pathologyGalleryLinkedRuns,
+    pathologyGalleryGroupRuns,
     pathologyNumberedCredits,
     visibleRelatedCases,
   ]);
@@ -2638,6 +2950,239 @@ export default function CaseDetail(props) {
     pathologyNumberedCredits,
     documentationNumberedCredits,
   ]);
+
+  const renderPathologyGalleryFigure = (galleryItem, index, { groupStartIndex = null } = {}) => {
+    const captionId = `cd-gallery-caption-${markdownScopeKey}-${index}`;
+    const referenceMarker = parseGalleryReferenceMarker(galleryItem.sourceUrl);
+    const isBibliographicMarker = isBibliographicGalleryMarker(referenceMarker);
+    const referenceNumber = galleryReferenceNumber(galleryItem, pathologyNumberedCredits);
+    const sharedSourceModel = Number.isInteger(groupStartIndex)
+      ? pathologyGallerySharedSources.byStartIndex.get(groupStartIndex) || null
+      : null;
+    const belongsToSharedSource = Boolean(sharedSourceModel);
+    const belongsToSharedCaption = Boolean(sharedSourceModel?.sharedCaption);
+    const belongsToSharedCaptionColumns = Boolean(sharedSourceModel?.captionColumns);
+    const belongsToSharedCaptionArea = belongsToSharedCaption || belongsToSharedCaptionColumns;
+    const sharedCaptionId = belongsToSharedCaption
+      ? `cd-gallery-shared-caption-${markdownScopeKey}-${groupStartIndex}`
+      : '';
+    const sharedCaptionColumnId = belongsToSharedCaptionColumns
+      ? `cd-gallery-shared-caption-${markdownScopeKey}-${groupStartIndex}-${index}`
+      : '';
+    const sharedSourceContentId = belongsToSharedSource
+      ? `cd-gallery-shared-source-content-${markdownScopeKey}-${groupStartIndex}`
+      : '';
+    const visibleSourceUrl = gallerySourceUrlWithoutGroupMetadata(galleryItem.sourceUrl);
+    const sourceLabel = isBibliographicMarker
+      ? ''
+      : gallerySourceLabelFromUrl(visibleSourceUrl, visibleRelatedCases);
+    const internalSourcePath = isBibliographicMarker
+      ? ''
+      : galleryInternalSourcePath(visibleSourceUrl);
+    const hasBibliographicFooter = Boolean(
+      isBibliographicMarker && (galleryItem.credit || referenceNumber)
+    );
+    const hasLegacySource = Boolean(!isBibliographicMarker && visibleSourceUrl);
+    const hasCaptionCopy = Boolean(galleryItem.title || galleryItem.caption);
+    const hasSourceFooter = Boolean(hasBibliographicFooter || hasLegacySource);
+    const renderCaptionCopy = Boolean(hasCaptionCopy && !belongsToSharedCaptionArea);
+    const renderSourceFooter = Boolean(hasSourceFooter && !belongsToSharedSource);
+    const hasIndividualCaption = renderCaptionCopy || renderSourceFooter;
+    const describedBy = [
+      hasIndividualCaption ? captionId : '',
+      sharedCaptionId,
+      sharedCaptionColumnId,
+      sharedSourceContentId,
+    ]
+      .filter(Boolean)
+      .join(' ') || undefined;
+
+    return (
+      <figure className={`cd-gallery-item${belongsToSharedCaptionArea ? ' has-shared-caption-area' : ''}`}>
+        <button
+          type="button"
+          className="cd-gallery-image-button"
+          onClick={() =>
+            setLightbox({
+              src: galleryItem.fullImageUrl || galleryItem.imageUrl,
+              alt: galleryItem.alt || '',
+            })
+          }
+          aria-label={`Agrandir ${galleryItem.alt || `l’image ${index + 1}`}`}
+          aria-describedby={describedBy}
+        >
+          <img
+            className="cd-gallery-image"
+            src={galleryItem.imageUrl}
+            alt={galleryItem.alt || ''}
+            loading="lazy"
+            data-no-lightbox="1"
+            data-gallery-width={galleryItem.image?.width || ''}
+            data-gallery-height={galleryItem.image?.height || ''}
+          />
+        </button>
+
+        {hasIndividualCaption && (
+          <figcaption
+            id={captionId}
+            className={`cd-gallery-caption${renderCaptionCopy ? ' has-caption-copy' : ''}${renderSourceFooter ? ' has-source-footer' : ''}`}
+          >
+            {renderCaptionCopy && (
+              <div className="cd-gallery-caption-copy">
+                {galleryItem.title && <strong className="cd-gallery-title">{galleryItem.title}</strong>}
+                {galleryItem.caption && <span>{galleryItem.caption}</span>}
+              </div>
+            )}
+
+            {hasBibliographicFooter && renderSourceFooter && (
+              <small className="cd-gallery-source-row cd-gallery-credit cd-gallery-credit-compact">
+                {renderCaptionCopy && <span className="cd-gallery-source-rule" aria-hidden="true" />}
+                <span className="cd-gallery-credit-inline">
+                  {galleryItem.credit && <span>{galleryItem.credit}</span>}
+                  {referenceNumber && (
+                    <a
+                      className="cd-gallery-reference-link"
+                      href={`#cd-reference-${referenceNumber}`}
+                      aria-label={`Voir la source ${referenceNumber}`}
+                      onClick={() => flashReferenceEntry(referenceNumber)}
+                    >
+                      [{referenceNumber}]
+                    </a>
+                  )}
+                </span>
+              </small>
+            )}
+
+            {hasLegacySource && renderSourceFooter && (
+              <small className="cd-gallery-source-row cd-gallery-credit cd-gallery-credit-legacy">
+                {renderCaptionCopy && <span className="cd-gallery-source-rule" aria-hidden="true" />}
+                {galleryItem.credit && (
+                  <span className="cd-gallery-meta-row">
+                    <span className="cd-gallery-meta-label">Crédit :</span>{' '}
+                    <span>{galleryItem.credit}</span>
+                  </span>
+                )}
+                <span className="cd-gallery-meta-row">
+                  <span className="cd-gallery-meta-label">Source :</span>{' '}
+                  {internalSourcePath ? (
+                    <Link to={internalSourcePath}>{sourceLabel || 'Cas clinique'}</Link>
+                  ) : (
+                    <a href={visibleSourceUrl} target="_blank" rel="noreferrer">
+                      {sourceLabel || 'Source'}
+                    </a>
+                  )}
+                </span>
+              </small>
+            )}
+          </figcaption>
+        )}
+      </figure>
+    );
+  };
+
+  const renderPathologyGallerySharedBand = (sharedSource, startIndex) => {
+    if (!sharedSource) return null;
+
+    return (
+      <div
+        id={`cd-gallery-shared-source-${markdownScopeKey}-${startIndex}`}
+        className={`cd-gallery-shared-source${sharedSource.sharedCaption ? ' has-shared-caption' : sharedSource.captionColumns ? ' has-shared-caption-columns' : sharedSource.hasCaptionCopy ? ' has-caption-copy' : ' is-source-only'}`}
+      >
+        {sharedSource.sharedCaption && (
+          <div
+            id={`cd-gallery-shared-caption-${markdownScopeKey}-${startIndex}`}
+            className="cd-gallery-shared-caption-copy"
+          >
+            {sharedSource.sharedCaption.title && (
+              <strong className="cd-gallery-title">{sharedSource.sharedCaption.title}</strong>
+            )}
+            {sharedSource.sharedCaption.caption && <span>{sharedSource.sharedCaption.caption}</span>}
+          </div>
+        )}
+
+        {sharedSource.captionColumns && (
+          <div
+            className="cd-gallery-shared-caption-columns"
+            style={{ '--cd-gallery-caption-columns': sharedSource.captionColumns.length }}
+          >
+            {sharedSource.captionColumns.map((captionModel, columnIndex) => {
+              const memberIndex = startIndex + columnIndex;
+              return (
+                <div
+                  key={`${memberIndex}-${captionModel.title}-${captionModel.caption}`}
+                  id={`cd-gallery-shared-caption-${markdownScopeKey}-${startIndex}-${memberIndex}`}
+                  className="cd-gallery-shared-caption-column"
+                >
+                  {captionModel.title && (
+                    <strong className="cd-gallery-title">{captionModel.title}</strong>
+                  )}
+                  {captionModel.caption && <span>{captionModel.caption}</span>}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {sharedSource.kind === 'bibliographic' ? (
+          <small
+            id={`cd-gallery-shared-source-content-${markdownScopeKey}-${startIndex}`}
+            className="cd-gallery-credit cd-gallery-credit-compact cd-gallery-shared-source-content"
+          >
+            {(sharedSource.sharedCaption || sharedSource.captionColumns) && (
+              <span className="cd-gallery-source-rule" aria-hidden="true" />
+            )}
+            <span className="cd-gallery-credit-inline">
+              {sharedSource.credit && <span>{sharedSource.credit}</span>}
+              {(Array.isArray(sharedSource.referenceNumbers)
+                ? sharedSource.referenceNumbers
+                : sharedSource.referenceNumber
+                  ? [sharedSource.referenceNumber]
+                  : []
+              ).map((referenceNumber, refIndex) => (
+                <a
+                  key={`${referenceNumber}-${refIndex}`}
+                  className="cd-gallery-reference-link"
+                  href={`#cd-reference-${referenceNumber}`}
+                  aria-label={`Voir la source ${referenceNumber}`}
+                  onClick={() => flashReferenceEntry(referenceNumber)}
+                  style={!sharedSource.credit && refIndex === 0 ? { marginLeft: 0 } : undefined}
+                >
+                  [{referenceNumber}]
+                </a>
+              ))}
+            </span>
+          </small>
+        ) : (
+          <small
+            id={`cd-gallery-shared-source-content-${markdownScopeKey}-${startIndex}`}
+            className="cd-gallery-credit cd-gallery-credit-legacy cd-gallery-shared-source-content"
+          >
+            {(sharedSource.sharedCaption || sharedSource.captionColumns) && (
+              <span className="cd-gallery-source-rule" aria-hidden="true" />
+            )}
+            {sharedSource.credit && (
+              <span className="cd-gallery-meta-row">
+                <span className="cd-gallery-meta-label">Crédit :</span>{' '}
+                <span>{sharedSource.credit}</span>
+              </span>
+            )}
+            <span className="cd-gallery-meta-row">
+              <span className="cd-gallery-meta-label">Source :</span>{' '}
+              {sharedSource.internalSourcePath ? (
+                <Link to={sharedSource.internalSourcePath}>
+                  {sharedSource.sourceLabel || 'Cas clinique'}
+                </Link>
+              ) : (
+                <a href={sharedSource.sourceUrl} target="_blank" rel="noreferrer">
+                  {sharedSource.sourceLabel || 'Source'}
+                </a>
+              )}
+            </span>
+          </small>
+        )}
+      </div>
+    );
+  };
 
   const showExtras = Boolean(
     creditsMarkdown ||
@@ -2831,242 +3376,74 @@ export default function CaseDetail(props) {
                 Galerie
               </h2>
 
-              <div ref={pathologyGalleryGridRef} className="cd-pathology-gallery-grid">
-                {pathologyGallery.map((galleryItem, index) => {
-                  const captionId = `cd-gallery-caption-${markdownScopeKey}-${index}`;
-                  const referenceMarker = parseGalleryReferenceMarker(galleryItem.sourceUrl);
-                  const isBibliographicMarker = isBibliographicGalleryMarker(referenceMarker);
-                  const referenceNumber = galleryReferenceNumber(galleryItem, pathologyNumberedCredits);
-                  const isLinkedNext = pathologyGalleryLinkedNextIndexes.includes(index);
-                  const isLinkedPrev = pathologyGalleryLinkedNextIndexes.includes(index - 1);
-                  const sharedSourceOwnerIndex = pathologyGallerySharedSources.startIndexByMember.get(index);
-                  const belongsToSharedSource = Number.isInteger(sharedSourceOwnerIndex);
-                  const sharedSourceModel = belongsToSharedSource
-                    ? pathologyGallerySharedSources.byStartIndex.get(sharedSourceOwnerIndex) || null
-                    : null;
-                  const belongsToSharedCaption = Boolean(sharedSourceModel?.sharedCaption);
-                  const belongsToSharedCaptionColumns = Boolean(sharedSourceModel?.captionColumns);
-                  const belongsToSharedCaptionArea = belongsToSharedCaption || belongsToSharedCaptionColumns;
-                  const sharedSource = pathologyGallerySharedSources.byStartIndex.get(index) || null;
-                  const sharedSourceId = belongsToSharedSource
-                    ? `cd-gallery-shared-source-${markdownScopeKey}-${sharedSourceOwnerIndex}`
-                    : '';
-                  const sharedCaptionId = belongsToSharedCaption
-                    ? `cd-gallery-shared-caption-${markdownScopeKey}-${sharedSourceOwnerIndex}`
-                    : '';
-                  const sharedCaptionColumnId = belongsToSharedCaptionColumns
-                    ? `cd-gallery-shared-caption-${markdownScopeKey}-${sharedSourceOwnerIndex}-${index}`
-                    : '';
-                  const sharedSourceContentId = belongsToSharedSource
-                    ? `cd-gallery-shared-source-content-${markdownScopeKey}-${sharedSourceOwnerIndex}`
-                    : '';
-                  const visibleSourceUrl = gallerySourceUrlWithoutGroupMetadata(galleryItem.sourceUrl);
-                  const sourceLabel = isBibliographicMarker
-                    ? ''
-                    : gallerySourceLabelFromUrl(visibleSourceUrl, visibleRelatedCases);
-                  const internalSourcePath = isBibliographicMarker
-                    ? ''
-                    : galleryInternalSourcePath(visibleSourceUrl);
-                  const hasBibliographicFooter = Boolean(
-                    isBibliographicMarker && (galleryItem.credit || referenceNumber)
-                  );
-                  const hasLegacySource = Boolean(!isBibliographicMarker && visibleSourceUrl);
-                  const hasCaptionCopy = Boolean(galleryItem.title || galleryItem.caption);
-                  const hasSourceFooter = Boolean(hasBibliographicFooter || hasLegacySource);
-                  const hasCaption = Boolean(hasCaptionCopy || hasSourceFooter);
-                  const itemKey = galleryItem.id ?? `${galleryItem.imageUrl}-${index}`;
-                  const describedBy = [
-                    hasCaption && !belongsToSharedCaptionArea ? captionId : '',
-                    sharedCaptionId,
-                    sharedCaptionColumnId,
-                    sharedSourceContentId,
-                  ]
-                    .filter(Boolean)
-                    .join(' ') || undefined;
+              <div ref={pathologyGalleryRowsRef} className="cd-pathology-gallery-grid">
+                {pathologyGalleryLayoutRows.map((row, rowIndex) => {
+                  const rowKey = row.units.map((unit) => unit.startIndex).join('-') || rowIndex;
 
                   return (
                     <div
-                      key={itemKey}
-                      className={`cd-gallery-item-wrap${isLinkedPrev ? ' is-linked-prev' : ''}${isLinkedNext ? ' is-linked-next' : ''}`}
-                      data-gallery-index={index}
+                      key={`gallery-row-${rowKey}`}
+                      className="cd-pathology-gallery-row"
+                      data-gallery-row={rowIndex}
+                      data-gallery-row-columns={row.usedColumns}
                     >
-                      <figure className={`cd-gallery-item${belongsToSharedCaptionArea ? ' has-shared-caption-area' : ''}`}>
-                      <button
-                        type="button"
-                        className="cd-gallery-image-button"
-                        onClick={() =>
-                          setLightbox({
-                            src: galleryItem.fullImageUrl || galleryItem.imageUrl,
-                            alt: galleryItem.alt || '',
-                          })
+                      {row.units.map((unit) => {
+                        const unitItems = pathologyGallery.slice(unit.startIndex, unit.endIndex + 1);
+                        const unitSpan = unit.span || galleryLayoutUnitSpan(unit);
+                        const unitStyle = { '--cd-gallery-unit-span': unitSpan };
+
+                        if (unit.kind === 'single') {
+                          const galleryItem = unitItems[0];
+                          const itemKey = galleryItem?.id ?? `${galleryItem?.imageUrl}-${unit.startIndex}`;
+
+                          return (
+                            <div
+                              key={itemKey}
+                              className="cd-gallery-unit cd-gallery-unit-single cd-gallery-item-wrap is-size-1"
+                              data-gallery-index={unit.startIndex}
+                              style={unitStyle}
+                            >
+                              {renderPathologyGalleryFigure(galleryItem, unit.startIndex)}
+                            </div>
+                          );
                         }
-                        aria-label={`Agrandir ${galleryItem.alt || `l’image ${index + 1}`}`}
-                        aria-describedby={describedBy}
-                      >
-                        <img
-                          className="cd-gallery-image"
-                          src={galleryItem.imageUrl}
-                          alt={galleryItem.alt || ''}
-                          loading="lazy"
-                          data-no-lightbox="1"
-                        />
-                      </button>
 
-                      {hasCaption && (
-                        <figcaption
-                          id={captionId}
-                          className={`cd-gallery-caption${hasCaptionCopy ? ' has-caption-copy' : ''}${hasSourceFooter ? ' has-source-footer' : ''}`}
-                        >
-                          {hasCaptionCopy && (
-                            <div
-                              className={`cd-gallery-caption-copy${belongsToSharedCaptionArea ? ' is-shared-caption-placeholder' : ''}`}
-                              aria-hidden={belongsToSharedCaptionArea || undefined}
-                            >
-                              {galleryItem.title && <strong className="cd-gallery-title">{galleryItem.title}</strong>}
-                              {galleryItem.caption && <span>{galleryItem.caption}</span>}
-                            </div>
-                          )}
+                        const sharedSource = pathologyGallerySharedSources.byStartIndex.get(unit.startIndex) || null;
+                        const groupKey = `gallery-group-${unit.identity}-${unit.startIndex}`;
 
-                          {hasBibliographicFooter && (
-                            <small
-                              className={`cd-gallery-source-row cd-gallery-credit cd-gallery-credit-compact${belongsToSharedSource ? ' is-shared-source-placeholder' : ''}`}
-                              aria-hidden={belongsToSharedSource || undefined}
-                            >
-                              {galleryItem.credit && <span>{galleryItem.credit}</span>}
-                              {referenceNumber && (
-                                <a
-                                  className="cd-gallery-reference-link"
-                                  href={`#cd-reference-${referenceNumber}`}
-                                  aria-label={`Voir la source ${referenceNumber}`}
-                                  onClick={() => flashReferenceEntry(referenceNumber)}
-                                >
-                                  [{referenceNumber}]
-                                </a>
-                              )}
-                            </small>
-                          )}
+                        return (
+                          <div
+                            key={groupKey}
+                            className={`cd-gallery-unit cd-gallery-unit-group is-size-${unitSpan}${sharedSource ? ' has-shared-band' : ''}`}
+                            data-gallery-group-size={unit.count}
+                            style={{
+                              ...unitStyle,
+                              '--cd-gallery-group-size': unit.count,
+                            }}
+                          >
+                            <div className="cd-gallery-group-grid">
+                              {unitItems.map((galleryItem, offset) => {
+                                const index = unit.startIndex + offset;
+                                const itemKey = galleryItem.id ?? `${galleryItem.imageUrl}-${index}`;
 
-                          {hasLegacySource && (
-                            <small
-                              className={`cd-gallery-source-row cd-gallery-credit cd-gallery-credit-legacy${belongsToSharedSource ? ' is-shared-source-placeholder' : ''}`}
-                              aria-hidden={belongsToSharedSource || undefined}
-                            >
-                              {galleryItem.credit && (
-                                <span className="cd-gallery-meta-row">
-                                  <span className="cd-gallery-meta-label">Crédit :</span>{' '}
-                                  <span>{galleryItem.credit}</span>
-                                </span>
-                              )}
-                              <span className="cd-gallery-meta-row">
-                                <span className="cd-gallery-meta-label">Source :</span>{' '}
-                                {internalSourcePath ? (
-                                  <Link to={internalSourcePath}>{sourceLabel || 'Cas clinique'}</Link>
-                                ) : (
-                                  <a href={visibleSourceUrl} target="_blank" rel="noreferrer">
-                                    {sourceLabel || 'Source'}
-                                  </a>
-                                )}
-                              </span>
-                            </small>
-                          )}
-                        </figcaption>
-                      )}
-                      </figure>
-
-                      {sharedSource && (
-                        <div
-                          id={`cd-gallery-shared-source-${markdownScopeKey}-${index}`}
-                          className={`cd-gallery-shared-source${sharedSource.sharedCaption ? ' has-shared-caption' : sharedSource.captionColumns ? ' has-shared-caption-columns' : sharedSource.hasCaptionCopy ? ' has-caption-copy' : ' is-source-only'}`}
-                          style={{ width: `${Math.max(0, sharedSource.width - 2)}px` }}
-                        >
-                          {sharedSource.sharedCaption && (
-                            <div
-                              id={`cd-gallery-shared-caption-${markdownScopeKey}-${index}`}
-                              className="cd-gallery-shared-caption-copy"
-                            >
-                              {sharedSource.sharedCaption.title && (
-                                <strong className="cd-gallery-title">{sharedSource.sharedCaption.title}</strong>
-                              )}
-                              {sharedSource.sharedCaption.caption && (
-                                <span>{sharedSource.sharedCaption.caption}</span>
-                              )}
-                            </div>
-                          )}
-
-                          {sharedSource.captionColumns && (
-                            <div
-                              className="cd-gallery-shared-caption-columns"
-                              style={{ '--cd-gallery-caption-columns': sharedSource.captionColumns.length }}
-                            >
-                              {sharedSource.captionColumns.map((captionModel, columnIndex) => {
-                                const memberIndex = index + columnIndex;
                                 return (
                                   <div
-                                    key={`${memberIndex}-${captionModel.title}-${captionModel.caption}`}
-                                    id={`cd-gallery-shared-caption-${markdownScopeKey}-${index}-${memberIndex}`}
-                                    className="cd-gallery-shared-caption-column"
+                                    key={itemKey}
+                                    className="cd-gallery-group-cell"
+                                    data-gallery-index={index}
                                   >
-                                    {captionModel.title && (
-                                      <strong className="cd-gallery-title">{captionModel.title}</strong>
-                                    )}
-                                    {captionModel.caption && <span>{captionModel.caption}</span>}
+                                    {renderPathologyGalleryFigure(galleryItem, index, {
+                                      groupStartIndex: unit.startIndex,
+                                    })}
                                   </div>
                                 );
                               })}
                             </div>
-                          )}
 
-                          {sharedSource.kind === 'bibliographic' ? (
-                            <small
-                              id={`cd-gallery-shared-source-content-${markdownScopeKey}-${index}`}
-                              className="cd-gallery-credit cd-gallery-credit-compact cd-gallery-shared-source-content"
-                            >
-                              {sharedSource.credit && <span>{sharedSource.credit}</span>}
-                              {(Array.isArray(sharedSource.referenceNumbers)
-                                ? sharedSource.referenceNumbers
-                                : sharedSource.referenceNumber
-                                  ? [sharedSource.referenceNumber]
-                                  : []
-                              ).map((referenceNumber, refIndex) => (
-                                <a
-                                  key={`${referenceNumber}-${refIndex}`}
-                                  className="cd-gallery-reference-link"
-                                  href={`#cd-reference-${referenceNumber}`}
-                                  aria-label={`Voir la source ${referenceNumber}`}
-                                  onClick={() => flashReferenceEntry(referenceNumber)}
-                                  style={!sharedSource.credit && refIndex === 0 ? { marginLeft: 0 } : undefined}
-                                >
-                                  [{referenceNumber}]
-                                </a>
-                              ))}
-                            </small>
-                          ) : (
-                            <small
-                              id={`cd-gallery-shared-source-content-${markdownScopeKey}-${index}`}
-                              className="cd-gallery-credit cd-gallery-credit-legacy cd-gallery-shared-source-content"
-                            >
-                              {sharedSource.credit && (
-                                <span className="cd-gallery-meta-row">
-                                  <span className="cd-gallery-meta-label">Crédit :</span>{' '}
-                                  <span>{sharedSource.credit}</span>
-                                </span>
-                              )}
-                              <span className="cd-gallery-meta-row">
-                                <span className="cd-gallery-meta-label">Source :</span>{' '}
-                                {sharedSource.internalSourcePath ? (
-                                  <Link to={sharedSource.internalSourcePath}>
-                                    {sharedSource.sourceLabel || 'Cas clinique'}
-                                  </Link>
-                                ) : (
-                                  <a href={sharedSource.sourceUrl} target="_blank" rel="noreferrer">
-                                    {sharedSource.sourceLabel || 'Source'}
-                                  </a>
-                                )}
-                              </span>
-                            </small>
-                          )}
-                        </div>
-                      )}
+                            {renderPathologyGallerySharedBand(sharedSource, unit.startIndex)}
+                          </div>
+                        );
+                      })}
                     </div>
                   );
                 })}

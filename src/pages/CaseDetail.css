@@ -756,7 +756,7 @@
     transition: transform 220ms ease;
 
     z-index: 60;
-    background: var(--ifm-background-surface-color);
+    background: var(--cd-gallery-caption-bg);
   }
 
   .cd-side-inner { width: 100%; }
@@ -941,24 +941,90 @@
 
 .cd-pathology-gallery-grid {
   --cd-gallery-image-h: 190px;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 250px));
-  /*
-   * V20 : ne pas utiliser grid-auto-rows: 1fr.
-   * Avec 1fr, toutes les rangées implicites de la galerie prennent la même
-   * hauteur que la rangée la plus haute de toute la grille. Une légende longue
-   * en deuxième rangée étirait donc aussi inutilement les cartes de la première.
-   *
-   * En laissant les rangées en auto, chaque rangée calcule indépendamment sa
-   * hauteur d'après son contenu le plus haut. align-items: stretch conserve
-   * l'égalisation des cartes à l'intérieur d'une même rangée.
-   */
-  grid-auto-rows: auto;
   --cd-gallery-gap: 0.75rem;
+  /*
+   * Hiérarchie tonale de la galerie :
+   * - média : gris neutre suffisamment présent pour matérialiser les bandes
+   *   laissées par object-fit: contain ;
+   * - légende et auteur/source : même fond clair pour former une seule zone
+   *   documentaire cohérente sous les images.
+   * Les color-mix restent automatiquement cohérents en thème sombre.
+   */
+  --cd-gallery-caption-bg: color-mix(
+    in srgb,
+    var(--ifm-background-color) 98%,
+    var(--ifm-font-color-base)
+  );
+  --cd-gallery-media-bg: var(--cd-gallery-caption-bg);
+  --cd-gallery-source-bg: var(--cd-gallery-caption-bg);
+
+  display: grid;
   gap: var(--cd-gallery-gap);
+  width: 100%;
   margin-top: 0.75rem;
-  justify-content: start;
-  align-items: stretch;
+}
+
+/*
+ * Chaque ligne dispose de quatre emplacements de largeur identique et utilise
+ * toute la largeur disponible de l'article. Les blocs ont déjà été assemblés
+ * côté React pour privilégier 3 + 1 et 2 + 2 sans jamais couper un groupe.
+ */
+.cd-pathology-gallery-row {
+  display: flex;
+  gap: var(--cd-gallery-gap);
+  width: 100%;
+  min-width: 0;
+  align-items: flex-start;
+}
+
+.cd-gallery-unit {
+  flex: 0 0 var(--cd-gallery-unit-w, auto);
+  width: var(--cd-gallery-unit-w, auto);
+  min-width: 0;
+  align-self: flex-start;
+}
+
+.cd-gallery-unit-single {
+  min-width: 0;
+}
+
+.cd-gallery-unit-group {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--ifm-toc-border-color);
+  border-radius: 8px;
+  background: var(--ifm-background-surface-color);
+}
+
+/*
+ * Les images d'un groupe restent jointives dans une sous-grille indépendante.
+ * La hauteur d'image ne dépend jamais du nombre d'images du groupe : un groupe
+ * de 4 partage simplement la largeur de la ligne en quatre colonnes.
+ */
+.cd-gallery-group-grid {
+  display: grid;
+  grid-template-columns: var(--cd-gallery-group-columns, repeat(var(--cd-gallery-group-size, 2), minmax(0, 1fr)));
+  align-items: start;
+  gap: 2px;
+  min-width: 0;
+  background: var(--cd-gallery-caption-bg);
+}
+
+.cd-gallery-group-cell {
+  min-width: 0;
+}
+
+.cd-gallery-group-cell + .cd-gallery-group-cell {
+  border-left: 0;
+}
+
+.cd-gallery-unit-group .cd-gallery-item {
+  width: 100%;
+  height: auto;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  overflow: hidden;
 }
 
 /*
@@ -976,7 +1042,7 @@
 .cd-gallery-item-wrap {
   position: relative;
   min-width: 0;
-  height: 100%;
+  height: auto;
   --cd-gallery-expand-left: 0px;
   --cd-gallery-expand-right: 0px;
 }
@@ -1010,15 +1076,15 @@
   position: relative;
   z-index: 1;
   min-width: 0;
-  height: 100%;
+  height: auto;
   margin: 0;
-  align-self: stretch;
+  align-self: start;
   display: flex;
   flex-direction: column;
   border: 1px solid var(--ifm-toc-border-color);
   border-radius: 8px;
   overflow: hidden;
-  background: var(--ifm-background-surface-color);
+  background: var(--cd-gallery-caption-bg);
 }
 
 .cd-gallery-image-button {
@@ -1026,12 +1092,14 @@
   display: block;
   flex: 0 0 auto;
   width: 100%;
+  height: var(--cd-gallery-row-image-h, var(--cd-gallery-image-h));
   margin: 0;
   padding: 0;
   appearance: none;
   border: 0;
-  background: var(--ifm-background-surface-color);
+  background: var(--cd-gallery-media-bg);
   cursor: zoom-in;
+  overflow: hidden;
 }
 
 .cd-gallery-image-button:focus-visible {
@@ -1048,27 +1116,27 @@
   display: block;
   width: 100%;
   max-width: 100%;
-  height: var(--cd-gallery-image-h);
+  height: 100%;
   max-height: none;
   margin: 0;
   border-radius: 0;
   object-fit: contain;
-  background: var(--ifm-background-surface-color);
+  background: var(--cd-gallery-media-bg);
 }
 
 .casedetail .cd-pathology-gallery .cd-gallery-caption {
   display: flex;
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   flex-direction: column;
-  min-height: 2.55rem;
+  min-height: 0;
   margin: 0;
   padding: 0;
-  border-top: 1px solid var(--ifm-toc-border-color);
+  border-top: 0;
   text-align: left;
   font-size: 0.9rem;
   line-height: 1.35;
   opacity: 1;
-  background: color-mix(in srgb, var(--ifm-background-color) 92%, var(--ifm-font-color-base));
+  background: var(--cd-gallery-caption-bg);
 }
 
 /*
@@ -1088,11 +1156,14 @@
  */
 .cd-gallery-caption-copy {
   display: grid;
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   align-content: start;
-  gap: 0.25rem;
+  gap: 0.18rem;
   min-width: 0;
-  padding: 0.58rem 0.72rem 0.52rem;
+  min-height: var(--cd-gallery-row-caption-h, 0px);
+  box-sizing: border-box;
+  padding: 0.42rem 0.72rem 0.28rem;
+  background: var(--cd-gallery-caption-bg);
 }
 
 /*
@@ -1123,16 +1194,24 @@
   box-sizing: border-box;
   min-width: 0;
   margin: 0;
-  padding: 0.52rem 0.72rem 0.58rem;
+  padding: 0.38rem 0.72rem 0.46rem;
+  background: var(--cd-gallery-source-bg);
 }
 
-.casedetail .cd-pathology-gallery .cd-gallery-caption.has-caption-copy .cd-gallery-source-row {
-  border-top: 1px solid var(--ifm-toc-border-color);
+.cd-gallery-source-rule {
+  display: block;
+  width: 100%;
+  height: 0;
+  margin: 0 0 0.38rem;
+  padding: 0;
+  border: 0;
+  border-top: 1px solid color-mix(in srgb, var(--ifm-toc-border-color) 72%, transparent);
+  box-sizing: border-box;
 }
 
 .casedetail .cd-pathology-gallery .cd-gallery-caption:not(.has-caption-copy) .cd-gallery-source-row {
   flex: 1 1 auto;
-  padding: 0.58rem 0.72rem 0.64rem;
+  padding: 0.5rem 0.72rem 0.54rem;
 }
 
 .cd-gallery-credit {
@@ -1169,14 +1248,15 @@
   line-height: 1.25;
 }
 
-.cd-gallery-credit-compact > span {
+.cd-gallery-credit-inline {
   display: inline;
+  min-width: 0;
   overflow-wrap: anywhere;
 }
 
 .cd-gallery-reference-link {
-  display: inline;
-  margin-left: 0.28rem;
+  display: inline-block;
+  margin-left: 0.22rem;
   font-weight: 650;
   color: var(--ifm-color-primary);
   text-decoration: none;
@@ -1217,18 +1297,17 @@
  * vraie bordure de 1 px que partout ailleurs.
  */
 .cd-gallery-shared-source {
-  position: absolute;
-  z-index: 4;
-  left: 1px;
-  bottom: 1px;
+  position: relative;
+  z-index: 1;
   box-sizing: border-box;
+  width: 100%;
   min-width: 0;
-  border-top: 1px solid var(--ifm-toc-border-color);
-  background: color-mix(in srgb, var(--ifm-background-color) 92%, var(--ifm-font-color-base));
+  border-top: 0;
+  background: var(--cd-gallery-source-bg);
 }
 
 .cd-gallery-shared-source.is-source-only {
-  top: var(--cd-gallery-image-h);
+  display: block;
 }
 
 /*
@@ -1242,54 +1321,61 @@
  */
 .cd-gallery-shared-source.has-shared-caption,
 .cd-gallery-shared-source.has-shared-caption-columns {
-  top: var(--cd-gallery-image-h);
   display: flex;
   flex-direction: column;
 }
 
 .cd-gallery-shared-caption-copy {
   display: grid;
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   align-content: start;
-  gap: 0.25rem;
+  gap: 0.18rem;
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
-  padding: 0.58rem 0.72rem 0.52rem;
+  min-height: var(--cd-gallery-row-caption-h, 0px);
+  padding: 0.42rem 0.72rem 0.28rem;
   text-align: left;
   font-size: 0.9rem;
   line-height: 1.35;
+  background: var(--cd-gallery-caption-bg);
 }
 
 .cd-gallery-shared-caption-columns {
   display: grid;
-  flex: 1 1 auto;
-  grid-template-columns: repeat(var(--cd-gallery-caption-columns, 2), minmax(0, 1fr));
+  flex: 0 0 auto;
+  grid-template-columns: var(
+    --cd-gallery-group-columns,
+    repeat(var(--cd-gallery-caption-columns, 2), minmax(0, 1fr))
+  );
+  column-gap: 2px;
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
   text-align: left;
   font-size: 0.9rem;
   line-height: 1.35;
+  background: var(--cd-gallery-caption-bg);
 }
 
 .cd-gallery-shared-caption-column {
   display: grid;
   align-content: start;
-  gap: 0.25rem;
+  gap: 0.18rem;
   box-sizing: border-box;
   min-width: 0;
-  padding: 0.58rem 0.72rem 0.52rem;
+  min-height: var(--cd-gallery-row-caption-h, 0px);
+  padding: 0.42rem 0.72rem 0.28rem;
+  background: var(--cd-gallery-caption-bg);
 }
 
 .cd-gallery-shared-caption-column + .cd-gallery-shared-caption-column {
-  border-left: 1px solid var(--ifm-toc-border-color);
+  border-left: 0;
 }
 
 .cd-gallery-shared-source.has-shared-caption .cd-gallery-shared-source-content,
 .cd-gallery-shared-source.has-shared-caption-columns .cd-gallery-shared-source-content {
   flex: 0 0 auto;
-  border-top: 1px solid var(--ifm-toc-border-color);
 }
 
 .cd-gallery-shared-source-content {
@@ -1298,44 +1384,42 @@
   width: 100%;
   min-width: 0;
   margin: 0;
-  padding: 0.52rem 0.72rem 0.58rem;
+  padding: 0.38rem 0.72rem 0.46rem;
   text-align: left;
+  background: var(--cd-gallery-source-bg);
 }
 
 .cd-gallery-shared-source.is-source-only .cd-gallery-shared-source-content {
-  padding: 0.58rem 0.72rem 0.64rem;
+  padding: 0.5rem 0.72rem 0.54rem;
 }
 
 @media (max-width: 980px) {
   .cd-pathology-gallery-grid {
     --cd-gallery-image-h: clamp(150px, 22vw, 210px);
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    justify-content: stretch;
   }
+
 }
 
 @media (max-width: 560px) {
   .cd-pathology-gallery-grid {
     --cd-gallery-image-h: clamp(135px, 38vw, 190px);
-    grid-template-columns: repeat(2, minmax(0, 1fr));
     --cd-gallery-gap: 0.6rem;
-    gap: var(--cd-gallery-gap);
   }
 
   .cd-gallery-caption-copy,
   .cd-gallery-shared-caption-copy,
   .cd-gallery-shared-caption-column {
-    padding: 0.55rem 0.6rem 0.5rem;
+    padding: 0.4rem 0.6rem 0.28rem;
   }
 
   .cd-gallery-source-row,
   .cd-gallery-shared-source-content {
-    padding: 0.48rem 0.6rem 0.55rem;
+    padding: 0.34rem 0.6rem 0.46rem;
   }
 
   .casedetail .cd-pathology-gallery .cd-gallery-caption:not(.has-caption-copy) .cd-gallery-source-row,
   .cd-gallery-shared-source.is-source-only .cd-gallery-shared-source-content {
-    padding: 0.55rem 0.6rem 0.65rem;
+    padding: 0.46rem 0.6rem 0.52rem;
   }
 }
 
