@@ -33,6 +33,7 @@ const FALLBACK_PAGE_SIZE = 300;
 
 const CASES_ENDPOINT = import.meta.env.VITE_CASES_ENDPOINT || '/cases';
 const PATHO_ENDPOINT = import.meta.env.VITE_PATHO_ENDPOINT || '/pathologies';
+const ATLAS_TAXONOMY_ENDPOINT = import.meta.env.VITE_ATLAS_TAXONOMY_ENDPOINT || '/atlas-taxonomy';
 const TRAINING_STATS_PUB_STATE = import.meta.env.DEV ? 'preview' : 'live';
 const CASE_THEME_RELATION = import.meta.env.VITE_CASE_THEME_RELATION || 'doc_themes';
 
@@ -219,6 +220,92 @@ function normalizeClassifications(value) {
     .filter((entry) => entry.category || entry.categoryId);
 }
 
+function normalizeAtlasTaxonomy(value) {
+  const node = normalizeNode(value?.data ?? value);
+  const taxonomy = node?.taxonomy ?? value?.taxonomy ?? null;
+
+  if (!taxonomy || typeof taxonomy !== 'object' || Array.isArray(taxonomy)) return null;
+  return taxonomy;
+}
+
+function buildAtlasTaxonomyIndex(taxonomy) {
+  if (!taxonomy || typeof taxonomy !== 'object') return null;
+
+  const tabs = (Array.isArray(taxonomy.tabs) ? taxonomy.tabs : [])
+    .map((tab) => ({
+      id: String(tab?.id || '').trim(),
+      label: String(tab?.label || '').trim(),
+    }))
+    .filter((tab) => tab.id && tab.label);
+
+  const categories = [];
+  const categoryById = new Map();
+  const subcategoryById = new Map();
+  const subdivisionById = new Map();
+
+  for (const category of Array.isArray(taxonomy.categories) ? taxonomy.categories : []) {
+    const id = String(category?.id || '').trim();
+    if (!id) continue;
+
+    const normalizedCategory = {
+      id,
+      label: String(category?.label || id).trim() || id,
+      tabs: Array.from(
+        new Set((Array.isArray(category?.tabs) ? category.tabs : []).map((tabId) => String(tabId || '').trim()).filter(Boolean))
+      ),
+    };
+
+    categories.push(normalizedCategory);
+    categoryById.set(id, normalizedCategory);
+
+    for (const subcategory of Array.isArray(category?.subcategories) ? category.subcategories : []) {
+      const subId = String(subcategory?.id || '').trim();
+      if (!subId) continue;
+
+      subcategoryById.set(subId, {
+        id: subId,
+        label: String(subcategory?.label || subId).trim() || subId,
+        categoryId: id,
+      });
+
+      for (const subdivision of Array.isArray(subcategory?.subdivisions) ? subcategory.subdivisions : []) {
+        const divId = String(subdivision?.id || '').trim();
+        if (!divId) continue;
+
+        subdivisionById.set(divId, {
+          id: divId,
+          label: String(subdivision?.label || divId).trim() || divId,
+          subcategoryId: subId,
+          categoryId: id,
+        });
+      }
+    }
+  }
+
+  return { tabs, categories, categoryById, subcategoryById, subdivisionById };
+}
+
+function resolveAtlasClassification(entry, taxonomyIndex) {
+  if (!entry) return entry;
+  if (!taxonomyIndex) return entry;
+
+  const categoryId = String(entry.categoryId || '').trim();
+  const subcategoryId = String(entry.subcategoryId || '').trim();
+  const subdivisionId = String(entry.subdivisionId || '').trim();
+
+  return {
+    ...entry,
+    category: taxonomyIndex.categoryById.get(categoryId)?.label || entry.category || categoryId,
+    subcategory: taxonomyIndex.subcategoryById.get(subcategoryId)?.label || entry.subcategory || subcategoryId,
+    subdivision: taxonomyIndex.subdivisionById.get(subdivisionId)?.label || entry.subdivision || subdivisionId,
+  };
+}
+
+function itemBelongsToAtlasCategories(item, allowedCategoryIds) {
+  if (!(allowedCategoryIds instanceof Set) || allowedCategoryIds.size === 0) return false;
+  return normalizeClassifications(item?.classification).some((entry) => allowedCategoryIds.has(entry.categoryId));
+}
+
 function normalizeGeneralFor(value) {
   const list = Array.isArray(value)
     ? value
@@ -279,14 +366,14 @@ function pushUniqueAtlasItem(target, seen, item) {
   target.push(item);
 }
 
-function buildAtlasCategorySections(items) {
+function buildAtlasCategorySections(items, taxonomyIndex = null, allowedCategoryIds = null) {
   const source = Array.isArray(items) ? items : [];
   const categories = new Map();
 
   for (const item of source) {
     const classifications = normalizeClassifications(item?.classification);
     const generalTargets = new Set(normalizeGeneralFor(item?.generalFor));
-    const targets = classifications.length
+    const targets = (classifications.length
       ? classifications
       : [{
           categoryId: '',
@@ -295,9 +382,13 @@ function buildAtlasCategorySections(items) {
           subcategory: '',
           subdivisionId: '',
           subdivision: '',
-        }];
+        }])
+      .map((classification) => resolveAtlasClassification(classification, taxonomyIndex));
 
     for (const classification of targets) {
+      if (allowedCategoryIds instanceof Set) {
+        if (!classification.categoryId || !allowedCategoryIds.has(classification.categoryId)) continue;
+      }
       const categoryId = classification.categoryId || '';
       const categoryLabel = classification.category || categoryId || UNCLASSIFIED_ATLAS_CATEGORY;
       const categoryKey = categoryId || `label:${categoryLabel}`;
@@ -653,7 +744,8 @@ function getHubAndSelection(pathname) {
     if (sub === 'quiz') return { hub: 'training', selection: STRAPI_QUIZ_TYPE };
     if (sub === 'presentation') return { hub: 'training', selection: STRAPI_PRESENTATION_TYPE };
 
-    return { hub: 'training', selection: 'all' };
+    // /entrainement ouvre désormais directement le mode Quiz.
+    return { hub: 'training', selection: STRAPI_QUIZ_TYPE };
   }
 
   return { hub: 'unknown', selection: 'all' };
@@ -798,6 +890,9 @@ export default function CasCliniques() {
   const [items, setItems] = useState([]);
   const [total, setTotal] = useState(0);
   const [refreshToken, setRefreshToken] = useState(0);
+  const [atlasTaxonomy, setAtlasTaxonomy] = useState(null);
+  const [atlasTaxonomyLoading, setAtlasTaxonomyLoading] = useState(false);
+  const [atlasTaxonomyError, setAtlasTaxonomyError] = useState('');
   const lastFocusAtRef = useRef(Date.now());
   const handledRefreshRef = useRef(0);
 
@@ -860,16 +955,44 @@ export default function CasCliniques() {
 
   const q = searchParams.get('q') || '';
   const page = Number(searchParams.get('page') || 1);
+  const requestedAtlasTab = searchParams.get('tab') || '';
 
   const { hub, selection } = getHubAndSelection(pathname);
 
   const isAtlasHub = hub === 'atlas';
   const isTrainingHub = hub === 'training';
 
-  const showTypePicker = isTrainingHub && selection === 'all';
-  const tab = selection; // 'atlas' | 'qa' | 'quiz' | 'presentation' | 'all'
+  // Ancien sélecteur de quatre gros boutons conservé dans le code, mais plus utilisé.
+  const showTypePicker = false;
+  const tab = selection; // 'atlas' | 'qa' | 'quiz' | 'presentation'
+
+  const atlasTaxonomyIndex = useMemo(() => buildAtlasTaxonomyIndex(atlasTaxonomy), [atlasTaxonomy]);
+  const atlasTabs = atlasTaxonomyIndex?.tabs || [];
+  const defaultAtlasTabId =
+    atlasTabs.find((entry) => entry.id === 'tab_medecine_orale')?.id || atlasTabs[0]?.id || '';
+  const activeAtlasTabId = atlasTabs.some((entry) => entry.id === requestedAtlasTab)
+    ? requestedAtlasTab
+    : defaultAtlasTabId;
+
+  const activeAtlasCategoryIds = useMemo(() => {
+    if (!atlasTaxonomyIndex || !activeAtlasTabId) return new Set();
+    return new Set(
+      atlasTaxonomyIndex.categories
+        .filter((category) => category.tabs.includes(activeAtlasTabId))
+        .map((category) => category.id)
+    );
+  }, [atlasTaxonomyIndex, activeAtlasTabId]);
 
   const variants = useMemo(() => (q ? buildVariants(q) : []), [q]);
+
+  // La route historique /entrainement devient une entrée directe vers le Quiz.
+  useEffect(() => {
+    if (pathname !== '/entrainement') return;
+    const params = new URLSearchParams();
+    if (q) params.set('q', q);
+    const suffix = params.toString() ? `?${params.toString()}` : '';
+    navigate(`/entrainement/quiz${suffix}`, { replace: true });
+  }, [pathname, q, navigate]);
 
   const goPage = (p) => {
     const base = isAtlasHub
@@ -910,6 +1033,43 @@ export default function CasCliniques() {
     if (q) f.$or = buildOrFilterFromVariants(variants);
     return f;
   }, [q, variants]);
+
+  useEffect(() => {
+    if (!isAtlasHub) return undefined;
+
+    let ignore = false;
+    const controller = new AbortController();
+
+    async function loadAtlasTaxonomy() {
+      setAtlasTaxonomyLoading(true);
+      setAtlasTaxonomyError('');
+
+      try {
+        const data = await strapiFetch(ATLAS_TAXONOMY_ENDPOINT, {
+          params: { fields: ['taxonomy'] },
+          options: { signal: controller.signal },
+        });
+
+        if (ignore) return;
+        const taxonomy = normalizeAtlasTaxonomy(data);
+        if (!taxonomy) throw new Error('Taxonomie Atlas absente ou invalide.');
+
+        setAtlasTaxonomy(taxonomy);
+      } catch (e) {
+        if (!ignore && !isAbortError(e)) {
+          setAtlasTaxonomyError(e?.message || 'Erreur de chargement de la taxonomie Atlas');
+        }
+      } finally {
+        if (!ignore) setAtlasTaxonomyLoading(false);
+      }
+    }
+
+    loadAtlasTaxonomy();
+    return () => {
+      ignore = true;
+      controller.abort();
+    };
+  }, [isAtlasHub, refreshToken]);
 
   useEffect(() => {
     let ignore = false;
@@ -1166,11 +1326,12 @@ export default function CasCliniques() {
     return arr;
   }, [items, isAtlasHub, isTrainingHub, tab]);
 
-  // Atlas : Afficher = Tous.
+  // Atlas : n'afficher que les pathologies appartenant aux catégories du tab actif.
   const atlasVisibleItems = useMemo(() => {
     if (!(isAtlasHub && tab === ATLAS_KEY)) return sortedItems;
-    return [...sortedItems];
-  }, [sortedItems, isAtlasHub, tab]);
+    if (!atlasTaxonomyIndex || !activeAtlasTabId) return [];
+    return sortedItems.filter((item) => itemBelongsToAtlasCategories(item, activeAtlasCategoryIds));
+  }, [sortedItems, isAtlasHub, tab, atlasTaxonomyIndex, activeAtlasTabId, activeAtlasCategoryIds]);
 
   // Atlas : sections alphabétiques (ancien affichage, conservé comme option).
   const atlasLetterSections = useMemo(() => {
@@ -1200,8 +1361,8 @@ export default function CasCliniques() {
   // composants `classification` sont présents dans Strapi.
   const atlasCategorySections = useMemo(() => {
     if (!(isAtlasHub && tab === ATLAS_KEY)) return null;
-    return buildAtlasCategorySections(atlasVisibleItems);
-  }, [isAtlasHub, tab, atlasVisibleItems]);
+    return buildAtlasCategorySections(atlasVisibleItems, atlasTaxonomyIndex, activeAtlasCategoryIds);
+  }, [isAtlasHub, tab, atlasVisibleItems, atlasTaxonomyIndex, activeAtlasCategoryIds]);
 
 
   const caseThemeSections = useMemo(() => {
@@ -1228,7 +1389,7 @@ export default function CasCliniques() {
   const description = isAtlasHub
     ? 'Atlas de pathologies orales, variations physiologiques de la muqueuse et cas cliniques associés.'
     : isTrainingHub
-      ? 'Q/R, quiz diagnostiques, présentations et tirage aléatoire de cas cliniques.'
+      ? 'Q/R, quiz diagnostiques et présentations de cas cliniques.'
       : 'Atlas de pathologies orales.';
 
   // Navigation entre les modes d'entraînement.
@@ -1251,6 +1412,15 @@ export default function CasCliniques() {
           : '/entrainement/presentation';
 
     navigate(`${base}${buildSearch({ q, page: 1 })}`);
+  };
+
+  const onAtlasTab = (nextTabId) => {
+    if (!nextTabId) return;
+    const params = new URLSearchParams(searchParams);
+    params.set('tab', nextTabId);
+    params.delete('page');
+    const suffix = params.toString() ? `?${params.toString()}` : '';
+    navigate(`/atlas${suffix}`);
   };
 
   const renderItem = (attrs, idx) => {
@@ -1617,6 +1787,8 @@ export default function CasCliniques() {
 
   const isAtlasList = isAtlasHub && tab === ATLAS_KEY;
   const listForEmptyCheck = isAtlasList ? atlasVisibleItems : sortedItems;
+  const effectiveLoading = loading || (isAtlasHub && atlasTaxonomyLoading);
+  const effectiveError = error || (isAtlasHub ? atlasTaxonomyError : '');
 
   return (
     <>
@@ -1648,6 +1820,25 @@ export default function CasCliniques() {
 
       <div className={`container ${showChips ? 'cc-training-active' : ''}`}>
         {showTypePicker && <TypePicker />}
+
+        {isAtlasHub && atlasTabs.length > 0 && (
+          <section className="cc-toolbar cc-toolbar--top atlas-ui-tabs-toolbar">
+            <div className="cc-tabs" role="tablist" aria-label="Sections de l’Atlas">
+              {atlasTabs.map((atlasTab) => (
+                <button
+                  key={atlasTab.id}
+                  type="button"
+                  className={`cc-tab ${activeAtlasTabId === atlasTab.id ? 'active' : ''}`}
+                  onClick={() => onAtlasTab(atlasTab.id)}
+                  role="tab"
+                  aria-selected={activeAtlasTabId === atlasTab.id}
+                >
+                  {atlasTab.label}
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
 
         {showChips && (
           <section className="cc-toolbar cc-toolbar--top cc-training-toolbar">
@@ -1682,15 +1873,21 @@ export default function CasCliniques() {
                 Présentation
               </button>
 
-              <button
-                type="button"
-                className={`cc-tab ${tab === RANDOM_KEY ? 'active' : ''}`}
-                onClick={() => onChip(RANDOM_KEY)}
-                role="tab"
-                aria-selected={tab === RANDOM_KEY}
-              >
-                Aléatoire
-              </button>
+              {/*
+                Fonction Aléatoire temporairement masquée.
+                Le mécanisme et la route sont conservés : une nouvelle fonction
+                aléatoire sera remise en place ultérieurement.
+
+                <button
+                  type="button"
+                  className={`cc-tab ${tab === RANDOM_KEY ? 'active' : ''}`}
+                  onClick={() => onChip(RANDOM_KEY)}
+                  role="tab"
+                  aria-selected={tab === RANDOM_KEY}
+                >
+                  Aléatoire
+                </button>
+              */}
             </div>
 
             <div className="display-toolbar-actions" aria-label="Options d’affichage">
@@ -1713,12 +1910,12 @@ export default function CasCliniques() {
         {!showTypePicker && (
           <>
             {/* États globaux */}
-            {loading && <div className="cc-state">Chargement…</div>}
-            {error && !loading && <div className="cc-state error">{error}</div>}
-            {!loading && !error && listForEmptyCheck.length === 0 && <div className="cc-state">Aucun résultat.</div>}
+            {effectiveLoading && <div className="cc-state">Chargement…</div>}
+            {effectiveError && !effectiveLoading && <div className="cc-state error">{effectiveError}</div>}
+            {!effectiveLoading && !effectiveError && listForEmptyCheck.length === 0 && <div className="cc-state">Aucun résultat.</div>}
 
             {/* Rendu */}
-            {!loading && !error && listForEmptyCheck.length > 0 && (
+            {!effectiveLoading && !effectiveError && listForEmptyCheck.length > 0 && (
               <>
                 {isAtlasList && atlasGroup === 'category' && atlasCategorySections ? (
                   <div

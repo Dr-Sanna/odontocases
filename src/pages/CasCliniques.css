@@ -1465,3 +1465,10 @@
     justify-content: flex-start;
   }
 }
+
+
+/* Atlas : la navigation réutilise strictement .cc-tabs / .cc-tab.
+   Cette règle ajoute uniquement l'espacement avec le contenu de l'Atlas. */
+.atlas-ui-tabs-toolbar {
+  margin-bottom: clamp(24px, 2.4vw, 34px);
+}
