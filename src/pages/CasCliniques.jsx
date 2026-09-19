@@ -154,6 +154,12 @@ const LIST_CACHE = new Map();
 const LIST_STALE_MS = Number(import.meta.env.VITE_LIST_CACHE_STALE_MS) || 20_000;
 const LIST_MAX_AGE_MS = Number(import.meta.env.VITE_LIST_CACHE_MAX_AGE_MS) || 5 * 60_000;
 
+// La taxonomie change rarement : on la conserve en mémoire entre Atlas et CaseDetail.
+// Cela évite un nouvel aller-retour réseau à chaque retour vers /atlas.
+let ATLAS_TAXONOMY_CACHE = null;
+let ATLAS_TAXONOMY_CACHE_AT = 0;
+const ATLAS_TAXONOMY_CACHE_STALE_MS = 5 * 60_000;
+
 function readListCache(key) {
   const entry = LIST_CACHE.get(key);
   if (!entry) return null;
@@ -900,7 +906,7 @@ export default function CasCliniques() {
     const refreshAfterFocus = () => {
       if (document.visibilityState === 'hidden') return;
       const now = Date.now();
-      if (now - lastFocusAtRef.current < 10_000) return;
+      if (now - lastFocusAtRef.current < 5 * 60_000) return;
       lastFocusAtRef.current = now;
       setRefreshToken((v) => v + 1);
     };
@@ -1034,14 +1040,48 @@ export default function CasCliniques() {
     return f;
   }, [q, variants]);
 
+  // Atlas : on ne demande à Strapi que les pathologies appartenant aux
+  // catégories du tab actif. Le filtrage client reste conservé comme sécurité,
+  // mais il n'est plus responsable de charger les 200+ fiches à chaque entrée.
+  const atlasCategoryOnlyFilters = useMemo(() => {
+    if (!(isAtlasHub && tab === ATLAS_KEY)) return {};
+    const categoryIds = Array.from(activeAtlasCategoryIds);
+    if (categoryIds.length === 0) return {};
+
+    return {
+      classification: {
+        categoryId: { $in: categoryIds },
+      },
+    };
+  }, [isAtlasHub, tab, activeAtlasCategoryIds]);
+
+  const atlasPathoFilters = useMemo(() => ({
+    ...atlasCategoryOnlyFilters,
+    ...pathoFilters,
+  }), [atlasCategoryOnlyFilters, pathoFilters]);
+
   useEffect(() => {
     if (!isAtlasHub) return undefined;
 
     let ignore = false;
     const controller = new AbortController();
+    const now = Date.now();
+    const cachedTaxonomy = ATLAS_TAXONOMY_CACHE;
+    const cacheIsFresh =
+      cachedTaxonomy && now - ATLAS_TAXONOMY_CACHE_AT <= ATLAS_TAXONOMY_CACHE_STALE_MS;
+
+    if (cachedTaxonomy) {
+      setAtlasTaxonomy(cachedTaxonomy);
+      setAtlasTaxonomyLoading(false);
+      setAtlasTaxonomyError('');
+    }
+
+    // Au premier affichage ou lors d'un retour récent depuis CaseDetail, la copie
+    // mémoire suffit. Un refresh explicite/focus ancien force néanmoins une mise à jour.
+    if (cacheIsFresh && refreshToken === 0) return () => controller.abort();
 
     async function loadAtlasTaxonomy() {
-      setAtlasTaxonomyLoading(true);
+      if (!cachedTaxonomy) setAtlasTaxonomyLoading(true);
       setAtlasTaxonomyError('');
 
       try {
@@ -1054,13 +1094,15 @@ export default function CasCliniques() {
         const taxonomy = normalizeAtlasTaxonomy(data);
         if (!taxonomy) throw new Error('Taxonomie Atlas absente ou invalide.');
 
+        ATLAS_TAXONOMY_CACHE = taxonomy;
+        ATLAS_TAXONOMY_CACHE_AT = Date.now();
         setAtlasTaxonomy(taxonomy);
       } catch (e) {
-        if (!ignore && !isAbortError(e)) {
+        if (!ignore && !isAbortError(e) && !cachedTaxonomy) {
           setAtlasTaxonomyError(e?.message || 'Erreur de chargement de la taxonomie Atlas');
         }
       } finally {
-        if (!ignore) setAtlasTaxonomyLoading(false);
+        if (!ignore && !cachedTaxonomy) setAtlasTaxonomyLoading(false);
       }
     }
 
@@ -1070,6 +1112,7 @@ export default function CasCliniques() {
       controller.abort();
     };
   }, [isAtlasHub, refreshToken]);
+
 
   useEffect(() => {
     let ignore = false;
@@ -1085,8 +1128,26 @@ export default function CasCliniques() {
       return () => controller.abort();
     }
 
+    // Pour l'Atlas, la taxonomie est nécessaire avant de connaître les catégories
+    // à demander au backend. On évite donc le gros fetch non filtré de l'ancienne version.
+    if (isAtlasHub && (!atlasTaxonomyIndex || !activeAtlasTabId)) {
+      setItems([]);
+      setTotal(0);
+      setLoading(Boolean(atlasTaxonomyLoading));
+      setError('');
+      return () => controller.abort();
+    }
+
+    if (isAtlasHub && activeAtlasCategoryIds.size === 0) {
+      setItems([]);
+      setTotal(0);
+      setLoading(false);
+      setError('');
+      return () => controller.abort();
+    }
+
     const cacheKey = isAtlasHub
-      ? `atlas:${tab}:all:${q}`
+      ? `atlas:${activeAtlasTabId}:all:${q}`
       : `cases:${tab}:${page}:${q}`;
     const cached = readListCache(cacheKey);
     const isBackgroundRefresh = Boolean(cached);
@@ -1113,71 +1174,70 @@ export default function CasCliniques() {
         // On récupère les pages Strapi par lots puis on les fusionne. Cela reste
         // fiable même si le backend impose une limite maximale par requête.
         if (isAtlasHub && tab === ATLAS_KEY) {
-          const fetchAllPathologies = async (filters) => {
-            const all = [];
-            let currentPage = 1;
-            let pageCount = 1;
-            let reportedTotal = null;
-
-            do {
-              const data = await strapiFetch(PATHO_ENDPOINT, {
-                params: {
-                  populate: {
-                    cover: { fields: ['url', 'formats'] },
-                    // `badges` reste chargé pour les données complètes utilisées par CaseDetail / breadcrumb.
-                    badges: { fields: ['label', 'variant'] },
-                    // `atlasBadges` est la relation dédiée aux badges visibles sur les cartes de l'Atlas.
-                    atlasBadges: { fields: ['label', 'variant'] },
-                    classification: {
-                      fields: [
-                        'categoryId',
-                        'category',
-                        'subcategoryId',
-                        'subcategory',
-                        'subdivisionId',
-                        'subdivision',
-                      ],
-                    },
+          const fetchAtlasPage = (filters, requestedPage) =>
+            strapiFetch(PATHO_ENDPOINT, {
+              params: {
+                populate: {
+                  cover: { fields: ['url', 'formats'] },
+                  badges: { fields: ['label', 'variant'] },
+                  atlasBadges: { fields: ['label', 'variant'] },
+                  classification: {
+                    fields: [
+                      'categoryId',
+                      'category',
+                      'subcategoryId',
+                      'subcategory',
+                      'subdivisionId',
+                      'subdivision',
+                    ],
                   },
-                  locale: 'all',
-                  filters,
-                  // Atlas trié alphabétiquement sur l'ensemble des lots.
-                  sort: 'title:asc,slug:asc',
-                  pagination: { page: currentPage, pageSize: ATLAS_BATCH_SIZE },
-                  fields: ['title', 'slug', 'excerpt', 'updatedAt', 'generalFor'],
-                  publicationState: 'live',
                 },
-                options: { signal: controller.signal },
-              });
+                locale: 'all',
+                filters,
+                sort: 'title:asc,slug:asc',
+                pagination: { page: requestedPage, pageSize: ATLAS_BATCH_SIZE },
+                fields: ['title', 'slug', 'excerpt', 'updatedAt', 'generalFor'],
+                publicationState: 'live',
+              },
+              options: { signal: controller.signal },
+            });
 
-              if (ignore) return null;
+          const fetchAllPathologies = async (filters) => {
+            // La première page nous donne pageCount ; les pages suivantes sont ensuite
+            // récupérées en parallèle plutôt qu'une par une.
+            const first = await fetchAtlasPage(filters, 1);
+            if (ignore) return null;
 
-              const batch = Array.isArray(data?.data) ? data.data : [];
-              all.push(...batch);
+            const firstBatch = Array.isArray(first?.data) ? first.data : [];
+            const pagination = first?.meta?.pagination || {};
+            const metaPageCount = Number(pagination.pageCount);
+            const pageCount = Number.isFinite(metaPageCount) && metaPageCount > 0 ? metaPageCount : 1;
+            const metaTotal = Number(pagination.total);
 
-              const pagination = data?.meta?.pagination || {};
-              const metaPageCount = Number(pagination.pageCount);
-              const metaTotal = Number(pagination.total);
+            if (pageCount <= 1) {
+              return {
+                data: firstBatch,
+                total: Number.isFinite(metaTotal) ? metaTotal : firstBatch.length,
+              };
+            }
 
-              if (Number.isFinite(metaTotal)) reportedTotal = metaTotal;
+            const remainingPages = await Promise.all(
+              Array.from({ length: pageCount - 1 }, (_, index) => fetchAtlasPage(filters, index + 2))
+            );
+            if (ignore) return null;
 
-              if (Number.isFinite(metaPageCount) && metaPageCount > 0) {
-                pageCount = metaPageCount;
-              } else {
-                // Sécurité pour un backend qui ne renverrait pas pageCount.
-                pageCount = batch.length < ATLAS_BATCH_SIZE ? currentPage : currentPage + 1;
-              }
-
-              currentPage += 1;
-            } while (currentPage <= pageCount);
+            const all = [...firstBatch];
+            for (const pageData of remainingPages) {
+              if (Array.isArray(pageData?.data)) all.push(...pageData.data);
+            }
 
             return {
               data: all,
-              total: reportedTotal ?? all.length,
+              total: Number.isFinite(metaTotal) ? metaTotal : all.length,
             };
           };
 
-          const result = await fetchAllPathologies(pathoFilters);
+          const result = await fetchAllPathologies(atlasPathoFilters);
           if (ignore || !result) return;
 
           let normalized = result.data.map(normalizeNode).filter((it) => it?.slug);
@@ -1186,7 +1246,7 @@ export default function CasCliniques() {
           // Recherche permissive historique : si le filtre Strapi ne trouve rien,
           // on charge l'Atlas complet puis on applique la recherche côté client.
           if (q && normalized.length === 0) {
-            const fallback = await fetchAllPathologies({});
+            const fallback = await fetchAllPathologies(atlasCategoryOnlyFilters);
             if (ignore || !fallback) return;
 
             normalized = fallback.data
@@ -1293,6 +1353,12 @@ export default function CasCliniques() {
     variants,
     caseFilters,
     pathoFilters,
+    atlasPathoFilters,
+    atlasCategoryOnlyFilters,
+    atlasTaxonomyIndex,
+    atlasTaxonomyLoading,
+    activeAtlasTabId,
+    activeAtlasCategoryIds,
     caseTypeFilterOnly,
     refreshToken,
   ]);
@@ -1492,9 +1558,20 @@ export default function CasCliniques() {
         <>
           <div
             className={coverUrl ? 'atlas-ui-lesion-thumb' : 'atlas-ui-lesion-thumb atlas-ui-lesion-thumb--empty'}
-            style={coverUrl ? { backgroundImage: `url(${coverUrl})` } : undefined}
             aria-hidden="true"
-          />
+          >
+            {coverUrl && (
+              <img
+                className="atlas-ui-lesion-thumb-img"
+                src={coverUrl}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                fetchPriority="low"
+                draggable="false"
+              />
+            )}
+          </div>
 
           <div className="atlas-ui-lesion-body">
             <h3 className="atlas-ui-lesion-title">{titleText}</h3>
@@ -1516,7 +1593,7 @@ export default function CasCliniques() {
       );
 
       return toHref ? (
-        <Link key={key} to={toHref} className={cardClass} state={linkState}>
+        <Link key={key} to={toHref} className={cardClass} state={linkState} draggable="false">
           {Inner}
         </Link>
       ) : (
@@ -2009,9 +2086,8 @@ export default function CasCliniques() {
                   >
                     {caseThemeSections.map((section) => (
                       <div key={section.key} className="resource-group">
-                        <div className="resource-group-header" aria-hidden="true">
-                          <span className="resource-group-title">{section.label}</span>
-                          <div className="resource-group-rule" />
+                        <div className="atlas-ui-category-heading cc-training-theme-heading">
+                          <h2 className="atlas-ui-category-title">{section.label}</h2>
                         </div>
 
                         <section

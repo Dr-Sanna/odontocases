@@ -881,7 +881,7 @@
 
 /* Vue cartes : quatre cartes par ligne sur grand écran. */
 .atlas-ui-lesion-grid--panel.atlas-ui-lesion-grid--cards {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   column-gap: 14px;
   row-gap: 26px;
 }
@@ -897,7 +897,7 @@
 }
 
 .atlas-ui-lesion-grid--flat.atlas-ui-lesion-grid--cards {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   column-gap: 14px;
   row-gap: 26px;
 }
@@ -1083,6 +1083,25 @@
   background-repeat: no-repeat;
 }
 
+/* Les vignettes Atlas utilisent de vraies images afin de bénéficier de
+   loading=lazy / decoding=async. Cela évite de charger immédiatement toutes
+   les images des 200+ pathologies comme le faisait background-image. */
+.atlas-ui-lesion-thumb-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Les séparateurs DocTheme de l'Entraînement réutilisent désormais exactement
+   le bandeau de catégorie Atlas. */
+.cc-training-theme-heading {
+  margin-top: 0;
+}
+
 .atlas-ui-lesion-thumb--empty {
   display: grid;
   place-items: center;
@@ -1200,10 +1219,15 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .atlas-ui-lesion-grid--flat.atlas-ui-lesion-grid--list,
+  /* La vue Liste conserve ses 3 colonnes. Seule la vue Cartes passe
+     progressivement de 5 à 4 colonnes sur les écrans intermédiaires. */
+  .atlas-ui-lesion-grid--flat.atlas-ui-lesion-grid--list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .atlas-ui-lesion-grid--panel.atlas-ui-lesion-grid--cards,
   .atlas-ui-lesion-grid--flat.atlas-ui-lesion-grid--cards {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
