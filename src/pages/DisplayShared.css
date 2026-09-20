@@ -1,0 +1,498 @@
+/* ========================================================================== 
+   DisplayShared.css
+   Styles visuels communs à l'Atlas et à l'Entraînement.
+
+   Règle : Atlas et Entraînement utilisent EXACTEMENT les mêmes classes pour :
+   - les tabs : .cc-tabs / .cc-tab (style historique Entraînement)
+   - les séparateurs : .display-section-heading / .display-section-title
+   - les grilles : .display-grid--cards / .display-grid--list
+   - les cartes : .display-card et ses sous-éléments
+   ========================================================================== */
+
+/* =========================
+   TABS — style historique Entraînement
+   Atlas et Entraînement utilisent littéralement les mêmes classes.
+   ========================= */
+
+.cc-toolbar {
+  margin-bottom: 24px;
+}
+
+.cc-tabs {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-end;
+  gap: clamp(18px, 2.6vw, 38px);
+  min-width: 0;
+  padding: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.cc-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.cc-tab {
+  position: relative;
+  flex: 0 0 auto;
+
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 8px 0 13px;
+  border-radius: 0;
+
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.2;
+  opacity: 0.78;
+
+  cursor: pointer;
+  user-select: none;
+
+  transition:
+    color 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.cc-tab::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 3px;
+  border-radius: 999px 999px 0 0;
+  background: transparent;
+}
+
+.cc-tab:hover {
+  color: var(--ifm-color-primary);
+  opacity: 1;
+  background: transparent;
+}
+
+.cc-tab.active {
+  color: var(--ifm-color-primary);
+  font-weight: 700;
+  opacity: 1;
+  background: transparent;
+}
+
+.cc-tab.active::after {
+  background: var(--ifm-color-primary);
+}
+
+.cc-tab:focus-visible {
+  outline: 2px solid var(--ifm-color-primary);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+
+[data-theme='dark'] .cc-tab {
+  background: transparent;
+  color: inherit;
+}
+
+[data-theme='dark'] .cc-tab:hover,
+[data-theme='dark'] .cc-tab.active {
+  background: transparent;
+  color: var(--ifm-color-primary);
+}
+
+.cc-toolbar--top {
+  display: block;
+  min-width: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+[data-theme='dark'] .cc-toolbar--top {
+  border-bottom-color: rgba(255, 255, 255, 0.12);
+}
+
+
+/* Barre commune : les contrôles sont superposés à droite et restent hors flux.
+   Ils ne modifient donc ni la position des tabs ni la hauteur de la barre. */
+.display-tabbar {
+  position: relative;
+}
+
+.display-tabbar .cc-tabs {
+  max-width: calc(100% - 220px);
+}
+
+.display-tabbar-actions {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  z-index: 2;
+
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  transform: translateY(-50%);
+}
+
+@media (max-width: 700px) {
+  .display-tabbar .cc-tabs {
+    max-width: calc(100% - 172px);
+  }
+
+  .display-tabbar-actions {
+    gap: 8px;
+  }
+}
+
+/* =========================
+   SECTIONS / SÉPARATEURS
+   ========================= */
+
+.display-sections {
+  min-width: 0;
+}
+
+.display-section {
+  min-width: 0;
+  margin: 0 0 clamp(48px, 4.5vw, 62px);
+}
+
+.display-section:last-child {
+  margin-bottom: 32px;
+}
+
+.display-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 14px;
+  flex-wrap: wrap;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  margin: 0 0 22px;
+  padding: 12px 17px 13px;
+  border: 0;
+  border-radius: 12px;
+  background: #dcecfb;
+  box-shadow: var(--ifm-alert-shadow);
+}
+
+[data-theme='dark'] .display-section-heading {
+  background: #26425d;
+  box-shadow: var(--ifm-alert-shadow);
+}
+
+.display-section-title {
+  flex: 0 1 auto;
+  min-width: 0;
+  margin: 0;
+  color: inherit;
+  font-size: clamp(1.16rem, 1.35vw, 1.38rem);
+  font-weight: 720;
+  line-height: 1.28;
+  opacity: 0.98;
+}
+
+/* =========================
+   GRILLES
+   ========================= */
+
+.display-grid {
+  display: grid;
+  min-width: 0;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.display-grid--cards {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  column-gap: 14px;
+  row-gap: 26px;
+}
+
+.display-grid--list {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 9px;
+}
+
+/* =========================
+   CARTES — BASE COMMUNE
+   ========================= */
+
+.display-card {
+  min-width: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+  color: inherit;
+  text-decoration: none;
+  --display-card-border-color: rgba(0, 0, 0, 0.10);
+  border: 1px solid var(--display-card-border-color);
+  border-radius: 10px;
+  background: var(--ifm-background-surface-color);
+  transition: box-shadow 0.15s ease;
+}
+
+[data-theme='dark'] .display-card {
+  --display-card-border-color: rgba(255, 255, 255, 0.13);
+}
+
+.display-card:hover {
+  color: inherit;
+  text-decoration: none;
+  border-color: var(--display-card-border-color);
+  background: var(--ifm-background-surface-color);
+  box-shadow: var(--card-shadow-hover);
+}
+
+.display-card:focus-visible {
+  outline: 2px solid var(--ifm-color-primary);
+  outline-offset: 2px;
+}
+
+.display-card--disabled {
+  opacity: 0.58;
+  cursor: default;
+}
+
+.display-card--disabled:hover {
+  border-color: var(--display-card-border-color);
+  background: var(--ifm-background-surface-color);
+  box-shadow: none;
+}
+
+/* Vue Liste */
+.display-card--list {
+  display: grid;
+  grid-template-columns: 29.5% minmax(0, 1fr);
+  align-items: stretch;
+  aspect-ratio: 4.15 / 1;
+  min-height: 0;
+}
+
+.display-card--list .display-card-thumb {
+  width: 100%;
+  min-height: 0;
+  height: 100%;
+}
+
+.display-card--list .display-card-body {
+  justify-content: center;
+  padding: 9px 12px;
+}
+
+/* Vue Cartes */
+.display-card--cards {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.display-card--cards:hover {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.display-card--cards .display-card-thumb {
+  width: 100%;
+  /* Cartes volontairement plus compactes : ~1/3 de hauteur en moins qu'avant. */
+  height: 9.375rem;
+  min-height: 9.375rem;
+  aspect-ratio: auto;
+  flex: 0 0 auto;
+  border: 1px solid var(--display-card-border-color);
+  border-radius: 10px;
+  background-color: var(--ifm-background-surface-color);
+  box-shadow: var(--card-shadow);
+  transition: var(--card-transition);
+}
+
+.display-card--cards:hover .display-card-thumb {
+  border: var(--card-border-hover);
+  box-shadow: var(--card-shadow-hover);
+}
+
+.display-card--cards:focus-visible {
+  outline: none;
+}
+
+.display-card--cards:focus-visible .display-card-thumb {
+  outline: 2px solid var(--ifm-color-primary);
+  outline-offset: 2px;
+}
+
+.display-card--cards .display-card-body {
+  flex: 0 0 auto;
+  justify-content: flex-start;
+  min-height: 0;
+  padding: 8px 2px 0;
+  border: 0;
+  background: transparent;
+}
+
+.display-card--cards .display-card-title {
+  font-size: 0.96rem;
+  line-height: 1.28;
+}
+
+.display-card--cards.display-card--disabled:hover .display-card-thumb {
+  border: 1px solid var(--display-card-border-color);
+  box-shadow: var(--card-shadow);
+}
+
+/* Image */
+.display-card-thumb {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--ifm-color-emphasis-100);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.display-card-thumb-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  pointer-events: none;
+  user-select: none;
+}
+
+.display-card-thumb--empty {
+  display: grid;
+  place-items: center;
+}
+
+.display-card-thumb--empty::after {
+  content: '';
+  width: 34%;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  background: var(--ifm-color-emphasis-200);
+  opacity: 0.55;
+}
+
+/* Texte / badges */
+.display-card-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.display-card-title {
+  margin: 0;
+  min-width: 0;
+  color: inherit;
+  font-size: 0.94rem;
+  font-weight: 650;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+
+/* =========================
+   RESPONSIVE COMMUN
+   ========================= */
+
+@media (max-width: 1180px) {
+  .display-grid--cards {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .display-grid--list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .display-grid--cards,
+  .display-grid--list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .display-section {
+    margin-bottom: 38px;
+  }
+
+  .display-section-heading {
+    align-items: flex-start;
+    gap: 9px 12px;
+    margin-bottom: 16px;
+    padding: 10px 13px 11px;
+    border-radius: 10px;
+  }
+
+  .display-grid--cards,
+  .display-grid--list {
+    grid-template-columns: 1fr;
+  }
+
+  .display-card--list {
+    grid-template-columns: 78px minmax(0, 1fr);
+    aspect-ratio: auto;
+    min-height: 68px;
+  }
+
+  .display-card--list .display-card-thumb {
+    width: 78px;
+    height: auto;
+    min-height: 68px;
+  }
+
+  .display-card--list .display-card-body {
+    padding: 8px 10px;
+  }
+
+  .display-card-title {
+    font-size: 0.92rem;
+  }
+}
+
+@media (max-width: 560px) {
+  .cc-tabs {
+    gap: 22px;
+  }
+
+  .cc-tab {
+    padding-bottom: 11px;
+    font-size: 0.95rem;
+  }
+
+}
+
+@media (hover: none), (pointer: coarse) {
+  .display-card:hover {
+    border-color: var(--display-card-border-color);
+    background: var(--ifm-background-surface-color);
+    box-shadow: none;
+  }
+
+  .display-card--cards:hover {
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .display-card--cards:hover .display-card-thumb {
+    border: 1px solid var(--display-card-border-color);
+    box-shadow: var(--card-shadow);
+  }
+}

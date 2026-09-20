@@ -5,6 +5,7 @@ import PageTitle from '../components/PageTitle';
 import FilterMenu from '../components/FilterMenu';
 import { strapiFetch, imgUrl, isAbortError } from '../lib/strapi';
 import { useQuizCount } from '../lib/trainingStatsStore';
+import './DisplayShared.css';
 import './CasCliniques.css';
 
 /**
@@ -799,7 +800,7 @@ function ViewToggle({ view, setView }) {
    Contrôles Atlas
    ========================= */
 
-function AtlasControls({ atlasGroup, setAtlasGroup, showBadges, setShowBadges }) {
+function AtlasControls({ atlasGroup, setAtlasGroup }) {
   return (
     <div className="atlas-ui-controls" role="group" aria-label="Contrôles Atlas">
       <div className="atlas-ui-control" role="group" aria-label="Grouper par">
@@ -830,28 +831,6 @@ function AtlasControls({ atlasGroup, setAtlasGroup, showBadges, setShowBadges })
           aria-pressed={atlasGroup === 'none'}
         >
           Aucun
-        </button>
-      </div>
-
-      <div className="atlas-ui-control" role="group" aria-label="Afficher les badges">
-        <span className="cc-sortlabel">Badges :</span>
-
-        <button
-          type="button"
-          className={`cc-sortbtn ${showBadges ? 'active' : ''}`}
-          onClick={() => setShowBadges(true)}
-          aria-pressed={showBadges}
-        >
-          Afficher
-        </button>
-
-        <button
-          type="button"
-          className={`cc-sortbtn ${!showBadges ? 'active' : ''}`}
-          onClick={() => setShowBadges(false)}
-          aria-pressed={!showBadges}
-        >
-          Masquer
         </button>
       </div>
     </div>
@@ -939,16 +918,6 @@ export default function CasCliniques() {
     localStorage.setItem('atlas:group:v2', atlasGroup);
     localStorage.setItem('atlas:show', 'all');
   }, [atlasGroup]);
-
-  // Atlas : les badges sont visibles par défaut, avec préférence persistée.
-  const [atlasShowBadges, setAtlasShowBadges] = useState(() => {
-    const saved = localStorage.getItem('atlas:badges');
-    return saved !== 'hidden';
-  });
-
-  useEffect(() => {
-    localStorage.setItem('atlas:badges', atlasShowBadges ? 'shown' : 'hidden');
-  }, [atlasShowBadges]);
 
   const [caseGroup, setCaseGroup] = useState(() => {
     const saved = localStorage.getItem('cases:group');
@@ -1180,7 +1149,6 @@ export default function CasCliniques() {
                 populate: {
                   cover: { fields: ['url', 'formats'] },
                   badges: { fields: ['label', 'variant'] },
-                  atlasBadges: { fields: ['label', 'variant'] },
                   classification: {
                     fields: [
                       'categoryId',
@@ -1455,7 +1423,7 @@ export default function CasCliniques() {
   const description = isAtlasHub
     ? 'Atlas de pathologies orales, variations physiologiques de la muqueuse et cas cliniques associés.'
     : isTrainingHub
-      ? 'Q/R, quiz diagnostiques et présentations de cas cliniques.'
+      ? 'Bibliothèque de cas cliniques : quiz diagnostiques, questions rédactionnelles et présentations de cas issus de la littérature.'
       : 'Atlas de pathologies orales.';
 
   // Navigation entre les modes d'entraînement.
@@ -1496,7 +1464,6 @@ export default function CasCliniques() {
 
     const titleText = attrs?.title || 'Sans titre';
     const slug = attrs?.slug || '';
-    const excerpt = attrs?.excerpt || '';
 
     const coverAttr = attrs?.cover?.data?.attributes || attrs?.cover || null;
     const coverUrl = imgUrl(coverAttr, 'medium') || imgUrl(coverAttr, 'thumbnail') || imgUrl(coverAttr) || '';
@@ -1509,14 +1476,11 @@ export default function CasCliniques() {
     const isPathology = entity === 'pathology';
     const isListView = view === 'list';
 
-    // Deux jeux de badges distincts :
-    // - `badges` = badges complets de la pathologie, conservés pour CaseDetail / breadcrumb ;
-    // - `atlasBadges` = badges contextuels, seuls affichés sur les cartes de l'Atlas.
+    // Les badges complets restent transmis au détail de la pathologie, mais ne sont
+    // plus affichés sur les cartes de l'Atlas.
     const pathoBadges = isPathology ? normalizeBadges(attrs?.badges) : [];
-    const atlasBadges = isPathology ? normalizeBadges(attrs?.atlasBadges) : [];
-    const badgesToRender = isPathology && atlasShowBadges ? atlasBadges : [];
 
-    // Les données de navigation conservent les badges complets, indépendamment de l'affichage Atlas.
+    // Les données de navigation conservent les badges complets pour CaseDetail.
     const primaryBadge = isPathology ? pickPrimaryBadge(attrs?.badges) : null;
 
     const key = `${entity}:${slug || idx}`;
@@ -1546,111 +1510,47 @@ export default function CasCliniques() {
             prefetch: { slug, title: titleText, type: attrs?.type || null },
           };
 
-    // Atlas : carte entièrement isolée des styles Documentation / Entraînement.
-    // Les classes `atlas-ui-*` permettent de faire évoluer l'Atlas sans modifier
-    // les cartes ou séparateurs partagés utilisés ailleurs sur le site.
-    if (isPathology) {
-      const cardClass = `atlas-ui-lesion-card ${
-        isListView ? 'atlas-ui-lesion-card--list' : 'atlas-ui-lesion-card--cards'
-      }`;
-
-      const Inner = (
-        <>
-          <div
-            className={coverUrl ? 'atlas-ui-lesion-thumb' : 'atlas-ui-lesion-thumb atlas-ui-lesion-thumb--empty'}
-            aria-hidden="true"
-          >
-            {coverUrl && (
-              <img
-                className="atlas-ui-lesion-thumb-img"
-                src={coverUrl}
-                alt=""
-                loading="lazy"
-                decoding="async"
-                fetchPriority="low"
-                draggable="false"
-              />
-            )}
-          </div>
-
-          <div className="atlas-ui-lesion-body">
-            <h3 className="atlas-ui-lesion-title">{titleText}</h3>
-
-            {badgesToRender.length > 0 && (
-              <div className="atlas-ui-lesion-badges">
-                {badgesToRender.map((b) => (
-                  <span
-                    key={`${b.variant}:${b.label}`}
-                    className={`atlas-ui-lesion-badge badge badge-soft-outline badge-${b.variant}`}
-                  >
-                    {b.label}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-        </>
-      );
-
-      return toHref ? (
-        <Link key={key} to={toHref} className={cardClass} state={linkState} draggable="false">
-          {Inner}
-        </Link>
-      ) : (
-        <div
-          key={key}
-          className={`${cardClass} atlas-ui-lesion-card--disabled`}
-          title="Slug manquant"
-        >
-          {Inner}
-        </div>
-      );
-    }
-
-    // Entraînement : même modèle visuel que les cartes Documentation, sans badge redondant.
-    const cardClass = `doc-card doc-card--training ui-card ${isListView ? 'doc-card--list' : ''}`;
+    // Atlas et Entraînement utilisent volontairement exactement le même
+    // composant visuel. Les seules différences sont les données affichées
+    // (par exemple les badges Atlas), jamais les classes ni la structure CSS.
+    const cardClass = `display-card ${isListView ? 'display-card--list' : 'display-card--cards'}`;
 
     const Inner = (
       <>
         <div
-          className={coverUrl ? 'doc-thumb' : 'doc-thumb is-empty'}
-          style={coverUrl ? { backgroundImage: `url(${coverUrl})` } : undefined}
+          className={coverUrl ? 'display-card-thumb' : 'display-card-thumb display-card-thumb--empty'}
           aria-hidden="true"
         >
-          {!isListView && (
-            <div className="doc-thumb-overlay">
-              <h3 className="doc-thumb-title">{titleText}</h3>
-            </div>
+          {coverUrl && (
+            <img
+              className="display-card-thumb-img"
+              src={coverUrl}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              fetchPriority="low"
+              draggable="false"
+            />
           )}
         </div>
 
-        {isListView ? (
-          <div className="doc-body">
-            <h3 className="doc-title">
-              <span className="doc-title-text">{titleText}</span>
-            </h3>
+        <div className="display-card-body">
+          <h3 className="display-card-title">{titleText}</h3>
 
-            {excerpt ? <p className="doc-excerpt">{excerpt}</p> : null}
-          </div>
-        ) : excerpt ? (
-          <div className="doc-body">
-            <p className="doc-excerpt">{excerpt}</p>
-          </div>
-        ) : null}
+        </div>
       </>
     );
 
     return toHref ? (
-      <Link key={key} to={toHref} className={cardClass} state={linkState}>
+      <Link key={key} to={toHref} className={cardClass} state={linkState} draggable="false">
         {Inner}
       </Link>
     ) : (
-      <div key={key} className={`${cardClass} doc-card--disabled`} title="Slug manquant">
+      <div key={key} className={`${cardClass} display-card--disabled`} title="Slug manquant">
         {Inner}
       </div>
     );
   };
-
 
   const renderGeneralPathologyLink = (attrs, idx) => {
     if (!attrs?.slug) return null;
@@ -1810,7 +1710,7 @@ export default function CasCliniques() {
               <div className="atlas-ui-subcategory-content">
                 {contentDirectItems.length > 0 && (
                   <div
-                    className={`atlas-ui-lesion-grid atlas-ui-lesion-grid--panel atlas-ui-lesion-grid--${view}`}
+                    className={`display-grid display-grid--panel display-grid--${view}`}
                   >
                     {contentDirectItems.map(renderItem)}
                   </div>
@@ -1846,7 +1746,7 @@ export default function CasCliniques() {
 
                       {subdivisionContentItems.length > 0 && (
                         <div
-                          className={`atlas-ui-lesion-grid atlas-ui-lesion-grid--panel atlas-ui-lesion-grid--${view}`}
+                          className={`display-grid display-grid--panel display-grid--${view}`}
                         >
                           {subdivisionContentItems.map(renderItem)}
                         </div>
@@ -1869,37 +1769,23 @@ export default function CasCliniques() {
 
   return (
     <>
-      {!showChips && (
+      {(isAtlasHub || showChips) && (
         <div className="page-header display-page-header">
           <div className="container">
             <div className="display-page-header-row">
               <div className="display-page-header-copy">
                 <PageTitle description={description}>{title}</PageTitle>
               </div>
-
-              {isAtlasHub && tab === ATLAS_KEY && (
-                <div className="display-page-header-actions" aria-label="Options d’affichage de l’Atlas">
-                  <FilterMenu>
-                    <AtlasControls
-                      atlasGroup={atlasGroup}
-                      setAtlasGroup={setAtlasGroup}
-                      showBadges={atlasShowBadges}
-                      setShowBadges={setAtlasShowBadges}
-                    />
-                  </FilterMenu>
-                  <ViewToggle view={view} setView={setView} />
-                </div>
-              )}
             </div>
           </div>
         </div>
       )}
 
-      <div className={`container ${showChips ? 'cc-training-active' : ''}`}>
+      <div className="container">
         {showTypePicker && <TypePicker />}
 
         {isAtlasHub && atlasTabs.length > 0 && (
-          <section className="cc-toolbar cc-toolbar--top atlas-ui-tabs-toolbar">
+          <section className="cc-toolbar cc-toolbar--top cc-training-toolbar display-tabbar">
             <div className="cc-tabs" role="tablist" aria-label="Sections de l’Atlas">
               {atlasTabs.map((atlasTab) => (
                 <button
@@ -1914,12 +1800,20 @@ export default function CasCliniques() {
                 </button>
               ))}
             </div>
+
+            <div className="display-tabbar-actions" aria-label="Options d’affichage de l’Atlas">
+              <FilterMenu>
+                <AtlasControls atlasGroup={atlasGroup} setAtlasGroup={setAtlasGroup} />
+              </FilterMenu>
+              <ViewToggle view={view} setView={setView} />
+            </div>
           </section>
         )}
 
         {showChips && (
-          <section className="cc-toolbar cc-toolbar--top cc-training-toolbar">
-            <div className="cc-tabs" role="tablist" aria-label="Modes d’entraînement">
+          <>
+            <section className="cc-toolbar cc-toolbar--top cc-training-toolbar display-tabbar">
+              <div className="cc-tabs" role="tablist" aria-label="Modes d’entraînement">
               <button
                 type="button"
                 className={`cc-tab ${tab === STRAPI_QA_TYPE ? 'active' : ''}`}
@@ -1965,23 +1859,24 @@ export default function CasCliniques() {
                   Aléatoire
                 </button>
               */}
-            </div>
+              </div>
 
-            <div className="display-toolbar-actions" aria-label="Options d’affichage">
-              <FilterMenu>
-                <CaseControls
-                  caseGroup={caseGroup}
-                  setCaseGroup={setCaseGroup}
-                  groupLabel={
-                    tab === STRAPI_QUIZ_TYPE || tab === STRAPI_PRESENTATION_TYPE
-                      ? 'Localisation'
-                      : 'Thème'
-                  }
-                />
-              </FilterMenu>
-              <ViewToggle view={view} setView={setView} />
-            </div>
-          </section>
+              <div className="display-tabbar-actions" aria-label="Options d’affichage de l’Entraînement">
+                <FilterMenu>
+                  <CaseControls
+                    caseGroup={caseGroup}
+                    setCaseGroup={setCaseGroup}
+                    groupLabel={
+                      tab === STRAPI_QUIZ_TYPE || tab === STRAPI_PRESENTATION_TYPE
+                        ? 'Localisation'
+                        : 'Thème'
+                    }
+                  />
+                </FilterMenu>
+                <ViewToggle view={view} setView={setView} />
+              </div>
+            </section>
+          </>
         )}
 
         {!showTypePicker && (
@@ -2019,13 +1914,13 @@ export default function CasCliniques() {
                       return (
                         <section
                           key={category.key}
-                          className={`atlas-ui-category ${
+                          className={`display-section atlas-ui-category ${
                             showCategoryGeneralInHeading ? 'atlas-ui-category--has-general' : ''
                           }`}
                           aria-label={category.label}
                         >
-                          <div className="atlas-ui-category-heading">
-                            <h2 className="atlas-ui-category-title">{category.label}</h2>
+                          <div className="display-section-heading">
+                            <h2 className="display-section-title">{category.label}</h2>
 
                             {showCategoryGeneralInHeading && (
                               <div
@@ -2039,7 +1934,7 @@ export default function CasCliniques() {
 
                           {categoryContentItems.length > 0 && (
                             <div
-                              className={`atlas-ui-lesion-grid atlas-ui-lesion-grid--flat atlas-ui-lesion-grid--${view}`}
+                              className={`display-grid display-grid--flat display-grid--${view}`}
                               aria-label={`${category.label} — lésions`}
                             >
                               {categoryContentItems.map(renderItem)}
@@ -2065,7 +1960,7 @@ export default function CasCliniques() {
                         <h2 className="atlas-ui-letter-title">{section.label}</h2>
 
                         <div
-                          className={`atlas-ui-lesion-grid atlas-ui-lesion-grid--flat atlas-ui-lesion-grid--${view}`}
+                          className={`display-grid display-grid--flat display-grid--${view}`}
                         >
                           {section.items.map(renderItem)}
                         </div>
@@ -2074,34 +1969,34 @@ export default function CasCliniques() {
                   </div>
                 ) : isAtlasList ? (
                   <section
-                    className={`atlas-ui-lesion-grid atlas-ui-lesion-grid--flat atlas-ui-lesion-grid--${view} atlas-ui-ungrouped`}
+                    className={`display-grid display-grid--flat display-grid--${view} atlas-ui-ungrouped`}
                     aria-label="Pathologies"
                   >
                     {atlasVisibleItems.map(renderItem)}
                   </section>
                 ) : useCaseThemeSections ? (
                   <div
-                    className="resource-groups cc-training-groups"
+                    className="display-sections"
                     aria-label="Cas cliniques par thème"
                   >
                     {caseThemeSections.map((section) => (
-                      <div key={section.key} className="resource-group">
-                        <div className="atlas-ui-category-heading cc-training-theme-heading">
-                          <h2 className="atlas-ui-category-title">{section.label}</h2>
+                      <section key={section.key} className="display-section">
+                        <div className="display-section-heading">
+                          <h2 className="display-section-title">{section.label}</h2>
                         </div>
 
                         <section
-                          className={`resource-grid doc-grid cc-resource-grid ${view === 'list' ? 'doc-grid--list' : ''}`}
+                          className={`display-grid display-grid--flat display-grid--${view}`}
                           aria-label={section.label}
                         >
                           {section.items.map(renderItem)}
                         </section>
-                      </div>
+                      </section>
                     ))}
                   </div>
                 ) : (
                   <section
-                    className={`resource-grid doc-grid cc-resource-grid ${view === 'list' ? 'doc-grid--list' : ''}`}
+                    className={`display-grid display-grid--flat display-grid--${view}`}
                     aria-label="Ressources"
                   >
                     {sortedItems.map(renderItem)}

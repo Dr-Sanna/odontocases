@@ -25,8 +25,14 @@ import '../styles/AssociatedCasesList.css';
 
 const CASES_ENDPOINT = import.meta.env.VITE_CASES_ENDPOINT || '/cases';
 const PATHO_ENDPOINT = import.meta.env.VITE_PATHO_ENDPOINT || '/pathologies';
+const ATLAS_TAXONOMY_ENDPOINT = import.meta.env.VITE_ATLAS_TAXONOMY_ENDPOINT || '/atlas-taxonomy';
 const DOCS_ENDPOINT = import.meta.env.VITE_DOCS_ENDPOINT || '/doc-nodes';
 const PUB_STATE = import.meta.env.DEV ? 'preview' : 'live';
+
+// La taxonomie est un Single Type léger et commun à toutes les fiches Atlas.
+// On la garde en mémoire pour éviter une requête à chaque navigation CaseDetail.
+let atlasTaxonomyCache = null;
+let atlasTaxonomyPromise = null;
 const DOCS_DEFAULT_SUBJECT_SLUG = import.meta.env.VITE_DOCS_DEFAULT_SUBJECT_SLUG || 'moco';
 const DOCS_DEFAULT_CHAPTER_SLUG = import.meta.env.VITE_DOCS_DEFAULT_CHAPTER_SLUG || 'medecine-orale';
 
@@ -137,6 +143,120 @@ function normalizeBadgesList(badgesRel) {
 }
 function firstBadgeFromList(list) {
   return Array.isArray(list) && list.length ? list[0] : null;
+}
+
+function badgeIdentity(badge) {
+  const normalized = ensureBadge(badge);
+  return normalized?.text ? normalized.text.trim().toLocaleLowerCase('fr') : '';
+}
+
+/**
+ * Fusionne plusieurs listes en conservant leur ordre.
+ * Un même libellé n'est affiché qu'une fois : le premier rencontré gagne.
+ * Cela garantit l'ordre : badges taxonomiques → badges custom de la fiche.
+ */
+function mergeBadgeLists(...sources) {
+  const merged = [];
+  const seen = new Set();
+
+  for (const source of sources) {
+    const list = Array.isArray(source) ? source.map(ensureBadge).filter(Boolean) : [];
+    for (const badge of list) {
+      const key = badgeIdentity(badge);
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      merged.push(badge);
+    }
+  }
+
+  return merged;
+}
+
+function normalizeClassifications(value) {
+  const list = Array.isArray(value)
+    ? value
+    : Array.isArray(value?.data)
+      ? value.data
+      : value
+        ? [value]
+        : [];
+
+  return list
+    .map((entry) => normalizeEntity(entry))
+    .filter(Boolean)
+    .map((entry) => ({
+      categoryId: String(entry?.categoryId || '').trim(),
+      subcategoryId: String(entry?.subcategoryId || '').trim(),
+      subdivisionId: String(entry?.subdivisionId || '').trim(),
+    }))
+    .filter((entry) => entry.categoryId || entry.subcategoryId || entry.subdivisionId);
+}
+
+function taxonomyPayloadFromResponse(response) {
+  const entity = normalizeEntity(response?.data) || normalizeEntity(response);
+  const taxonomy = entity?.taxonomy;
+  return taxonomy && typeof taxonomy === 'object' && !Array.isArray(taxonomy) ? taxonomy : null;
+}
+
+async function loadAtlasTaxonomy({ force = false } = {}) {
+  if (!force && atlasTaxonomyCache) return atlasTaxonomyCache;
+  if (!force && atlasTaxonomyPromise) return atlasTaxonomyPromise;
+
+  const request = strapiFetch(ATLAS_TAXONOMY_ENDPOINT, {
+    params: { fields: ['taxonomy'] },
+  }).then((response) => {
+    const taxonomy = taxonomyPayloadFromResponse(response);
+    if (taxonomy) atlasTaxonomyCache = taxonomy;
+    return taxonomy;
+  });
+
+  if (force) return request;
+
+  atlasTaxonomyPromise = request;
+  try {
+    return await request;
+  } finally {
+    atlasTaxonomyPromise = null;
+  }
+}
+
+/**
+ * Résout les badges généraux pour chaque classification dans l'ordre :
+ * catégorie → sous-catégorie → subdivision.
+ * Si une fiche possède plusieurs classifications, leurs branches sont parcourues
+ * dans l'ordre enregistré dans Strapi. Les doublons de libellé sont supprimés.
+ */
+function resolveTaxonomyBadges(taxonomy, classificationsValue) {
+  if (!taxonomy || !Array.isArray(taxonomy.categories)) return [];
+
+  const classifications = normalizeClassifications(classificationsValue);
+  if (!classifications.length) return [];
+
+  const resolved = [];
+
+  for (const classification of classifications) {
+    const category = taxonomy.categories.find((node) => node?.id === classification.categoryId) || null;
+    if (!category) continue;
+
+    resolved.push(...normalizeBadgesList(category?.badges));
+
+    const subcategories = Array.isArray(category?.subcategories) ? category.subcategories : [];
+    const subcategory = classification.subcategoryId
+      ? subcategories.find((node) => node?.id === classification.subcategoryId) || null
+      : null;
+
+    if (!subcategory) continue;
+    resolved.push(...normalizeBadgesList(subcategory?.badges));
+
+    const subdivisions = Array.isArray(subcategory?.subdivisions) ? subcategory.subdivisions : [];
+    const subdivision = classification.subdivisionId
+      ? subdivisions.find((node) => node?.id === classification.subdivisionId) || null
+      : null;
+
+    if (subdivision) resolved.push(...normalizeBadgesList(subdivision?.badges));
+  }
+
+  return mergeBadgeLists(resolved);
 }
 
 /** Autres appellations des pathologies Atlas */
@@ -1739,6 +1859,26 @@ export default function CaseDetail(props) {
     return getPathologyFromCache(pathologySlug, { publicationState: PUB_STATE }) || null;
   });
 
+  // Taxonomie centrale Atlas : source des badges généraux hérités.
+  const [atlasTaxonomy, setAtlasTaxonomy] = useState(() => atlasTaxonomyCache);
+
+  useEffect(() => {
+    if (!isPresentationNamespace) return undefined;
+
+    let ignore = false;
+    loadAtlasTaxonomy({ force: refreshToken > 0 })
+      .then((taxonomy) => {
+        if (!ignore && taxonomy) setAtlasTaxonomy(taxonomy);
+      })
+      // Une indisponibilité de la taxonomie ne doit jamais bloquer la fiche :
+      // les badges custom Strapi restent utilisables seuls en secours.
+      .catch(() => {});
+
+    return () => {
+      ignore = true;
+    };
+  }, [isPresentationNamespace, refreshToken]);
+
   // stableType seulement pour les cas classiques (affichage)
   const [stableType, setStableType] = useState(() => {
     if (!isPlainCase) return null;
@@ -1906,7 +2046,10 @@ export default function CaseDetail(props) {
           publicationState: PUB_STATE,
           populate: {
             cover: { fields: ['url', 'formats', 'alternativeText', 'name'] },
-            badges: { fields: ['label', 'variant'] }, // ✅ badges
+            badges: { fields: ['label', 'variant'] }, // badges custom de la fiche
+            classification: {
+              fields: ['categoryId', 'subcategoryId', 'subdivisionId'],
+            },
             ...(withAliases ? { aliases: { fields: ['name'] } } : {}),
             ...(withGallery
               ? {
@@ -2314,7 +2457,7 @@ export default function CaseDetail(props) {
   const indexPatho = cdIndex?.pathoIndex || {};
   const indexCase = cdIndex?.caseIndex || {};
 
-  // ✅ badges instantanés (évite le flash "Atlas" quand on a déjà l’info via state/index/cache)
+  // Badges custom instantanés (ancienne relation Strapi), conservés pour les exceptions propres à une fiche.
   const instantBadges = useMemo(() => {
     if (!isPresentationNamespace) return [];
 
@@ -2359,10 +2502,27 @@ export default function CaseDetail(props) {
     provisional?.badges,
   ]);
 
+  const pathologyClassifications = useMemo(() => {
+    if (!isPresentationNamespace) return [];
+    const source = isPathologyPage ? displayItem?.classification : parentPathology?.classification;
+    return normalizeClassifications(source);
+  }, [
+    isPresentationNamespace,
+    isPathologyPage,
+    displayItem?.classification,
+    parentPathology?.classification,
+  ]);
+
+  const taxonomyBadges = useMemo(
+    () => resolveTaxonomyBadges(atlasTaxonomy, pathologyClassifications),
+    [atlasTaxonomy, pathologyClassifications]
+  );
+
   const pathologyBadges = useMemo(() => {
     if (!isPresentationNamespace) return [];
-    return instantBadges;
-  }, [isPresentationNamespace, instantBadges]);
+    // Ordre contractuel : généraux hérités de la taxonomie, puis custom de la fiche.
+    return mergeBadgeLists(taxonomyBadges, instantBadges);
+  }, [isPresentationNamespace, taxonomyBadges, instantBadges]);
 
   const pathologyBadge = useMemo(() => firstBadgeFromList(pathologyBadges), [pathologyBadges]);
 

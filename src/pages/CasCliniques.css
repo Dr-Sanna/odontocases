@@ -1,108 +1,8 @@
 /* ===============================
    CasCliniques.css
-   Onglets + grille + états + pagination + TypePicker
-   + toolbar (toggle + tri)
-   (les styles de cartes sont dans Cards.css)
+   Structure et contrôles spécifiques à CasCliniques.
+   Les styles visuels communs Atlas/Entraînement sont dans DisplayShared.css.
    =============================== */
-
-/* ----- Barre d’onglets (type de cas) ----- */
-.cc-toolbar {
-  margin-bottom: 24px;
-}
-
-/*
- * Les modes d’entraînement sont une navigation principale :
- * texte simple + indicateur inférieur, distincts des boutons de tri.
- */
-.cc-tabs {
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: flex-end;
-  gap: clamp(18px, 2.6vw, 38px);
-  min-width: 0;
-  padding: 0;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.cc-tabs::-webkit-scrollbar {
-  display: none;
-}
-
-.cc-tab {
-  position: relative;
-  flex: 0 0 auto;
-
-  appearance: none;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  padding: 8px 0 13px;
-  border-radius: 0;
-
-  font-size: 1rem;
-  font-weight: 500;
-  line-height: 1.2;
-  opacity: 0.78;
-
-  cursor: pointer;
-  user-select: none;
-
-  transition:
-    color 0.15s ease,
-    opacity 0.15s ease;
-}
-
-.cc-tab::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -1px;
-  height: 3px;
-  border-radius: 999px 999px 0 0;
-  background: transparent;
-}
-
-.cc-tab:hover {
-  color: var(--ifm-color-primary);
-  opacity: 1;
-  background: transparent;
-}
-
-.cc-tab.active {
-  color: var(--ifm-color-primary);
-  font-weight: 700;
-  opacity: 1;
-  background: transparent;
-}
-
-.cc-tab.active::after {
-  background: var(--ifm-color-primary);
-}
-
-.cc-tab:focus-visible {
-  outline: 2px solid var(--ifm-color-primary);
-  outline-offset: 3px;
-  border-radius: 3px;
-}
-
-/* Dark mode onglets */
-[data-theme='dark'] .cc-tab {
-  background: transparent;
-  color: inherit;
-}
-
-[data-theme='dark'] .cc-tab:hover,
-[data-theme='dark'] .cc-tab.active {
-  background: transparent;
-  color: var(--ifm-color-primary);
-}
-
-/* Extrait : on ne l'affiche pas */
-.cc-excerpt {
-  display: none !important;
-}
 
 /* ----- États de liste ----- */
 .cc-state {
@@ -193,42 +93,8 @@
    TOOLBARS
    ========================================================= */
 
-/* Les vues d’entraînement actives n’affichent plus le grand en-tête de page. */
-.cc-training-active {
-  padding-top: clamp(8px, 1vw, 14px);
-}
+/* Atlas et Entraînement partagent le même espacement vertical sous le PageTitle. */
 
-@media (max-width: 560px) {
-  .cc-training-active {
-    padding-top: 8px;
-  }
-}
-
-.cc-toolbar--top {
-  display: block;
-  min-width: 0;
-  margin-top: 0;
-  margin-bottom: 0;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-}
-
-[data-theme='dark'] .cc-toolbar--top {
-  border-bottom-color: rgba(255, 255, 255, 0.12);
-}
-
-/* Espace entre la navigation des modes et les options, sans modifier les contrôles. */
-.cc-toolbar--top + .cc-toolbar--views {
-  margin-top: clamp(20px, 2vw, 28px);
-}
-
-/* toolbar en dessous (contrôles à gauche / toggle à droite) */
-.cc-toolbar--views {
-  margin-top: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 14px;
-}
 
 /* =========================================================
    Toggle Cartes / Liste (icônes, sans ombre)
@@ -340,12 +206,6 @@
    Tri (UI seulement) - base
    ========================================================= */
 
-.cc-sort {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
 
 /* petit label "Trier :" */
 .cc-sortlabel {
@@ -418,8 +278,8 @@
 
 /* =========================================================
    Contrôles Atlas / Cas cliniques
-   - namespaces séparés : atlas-ui-* pour l’Atlas
-   - les boutons .cc-sortbtn restent le contrôle générique partagé
+   - spécifiques aux options de filtrage uniquement
+   - le rendu visuel des contenus est partagé dans DisplayShared.css
    ========================================================= */
 
 .atlas-ui-controls,
@@ -448,28 +308,12 @@
   line-height: 1;
 }
 
-@media (max-width: 560px) {
-  .cc-tabs {
-    gap: 22px;
-  }
-
-  .cc-tab {
-    padding-bottom: 11px;
-    font-size: 0.95rem;
-  }
-}
 
 /* =========================================================
    Mobile : toolbar stable + toggle qui ne saute pas
    ========================================================= */
 
 @media (max-width: 560px) {
-  .cc-toolbar--views {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-  }
-
   .atlas-ui-controls,
   .cc-case-controls {
     width: 100%;
@@ -491,11 +335,10 @@
 
 
 /* =========================================================
-   ATLAS — CLASSIFICATION ET CARTES
+   ATLAS — HIÉRARCHIE TAXONOMIQUE
    ---------------------------------------------------------
-   Namespace volontairement autonome : atlas-ui-*
-   Aucun sélecteur resource-group / doc-card / cc-group n’est
-   utilisé ici, afin de ne pas modifier Documentation ou Entraînement.
+   Ici ne restent que les règles propres aux sous-catégories, subdivisions
+   et fiches générales. Tabs, séparateurs, grilles et cartes sont partagés.
    ========================================================= */
 
 /* ---------- Structure générale ---------- */
@@ -506,66 +349,7 @@
 }
 
 .atlas-ui-category {
-  /* Le bandeau conserve son padding interne, mais le contenu situé dessous
-     n'est plus indenté : sous-catégories et cartes repartent du bord de la grille. */
-  --atlas-ui-category-heading-padding-inline: 17px;
-
   min-width: 0;
-  margin: 0 0 clamp(48px, 4.5vw, 62px);
-}
-
-.atlas-ui-category:last-child {
-  margin-bottom: 32px;
-}
-
-/*
- * Titre principal de catégorie : bandeau pleine largeur.
- *
- * Le bandeau sert désormais de séparateur visuel entre les grandes catégories :
- * - aucune icône ;
- * - aucun trait horizontal ;
- * - aucun accent / bordure verticale à gauche ;
- * - fond légèrement bleuté, suffisamment visible pour structurer la page
- *   sans concurrencer les cartes de lésions.
- */
-.atlas-ui-category-heading {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 14px;
-  flex-wrap: wrap;
-  width: 100%;
-  min-width: 0;
-  box-sizing: border-box;
-
-  margin: 0 0 22px;
-  padding: 12px var(--atlas-ui-category-heading-padding-inline) 13px;
-
-  border: 0;
-  border-radius: 12px;
-  /* Bandeau Atlas : bleu uni et totalement opaque.
-     Aucune transparence / aucun dégradé : l'illustration de fond ne transparaît pas. */
-  background: #dcecfb;
-  /* Même ombre que les callouts du site : on réutilise directement
-     la variable Docusaurus employée par .cd-callout. */
-  box-shadow: var(--ifm-alert-shadow);
-}
-
-[data-theme='dark'] .atlas-ui-category-heading {
-  background: #26425d;
-  box-shadow: var(--ifm-alert-shadow);
-}
-
-.atlas-ui-category-title {
-  flex: 0 1 auto;
-  min-width: 0;
-  margin: 0;
-
-  color: inherit;
-  font-size: clamp(1.16rem, 1.35vw, 1.38rem);
-  font-weight: 720;
-  line-height: 1.28;
-  opacity: 0.98;
 }
 
 
@@ -829,20 +613,13 @@
 }
 
 
-/* ---------- Grilles de lésions ---------- */
+/* ---------- Grilles dans la hiérarchie Atlas ---------- */
 
-.atlas-ui-lesion-grid {
-  display: grid;
-  min-width: 0;
-  margin: 0;
-  padding: 0;
-}
-
-/*
- * En vue Liste regroupée par catégorie, la sous-catégorie occupe la première
- * des quatre unités. Sa grille de lésions occupe les trois unités restantes.
- */
-.atlas-ui-lesion-grid--panel.atlas-ui-lesion-grid--list {
+/* En vue Liste, le cartouche de sous-catégorie occupe la première unité ;
+   les lésions utilisent les trois unités restantes. Les cartes elles-mêmes
+   restent les cartes partagées de DisplayShared.css. */
+.atlas-ui-taxonomy--list .display-grid--panel.display-grid--list {
+  grid-column: auto;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 9px;
 }
@@ -860,17 +637,9 @@
 }
 
 .atlas-ui-taxonomy--list .atlas-ui-subdivision-title {
-  /* En desktop Liste, le libellé est déjà affiché dans le cartouche bleu
-     de gauche ; on évite donc de le répéter à droite. */
   display: none;
 }
 
-.atlas-ui-taxonomy--list .atlas-ui-lesion-grid--panel.atlas-ui-lesion-grid--list {
-  grid-column: auto;
-}
-
-/* En vue Cartes, le troisième niveau est indiqué sobrement au-dessus
-   de sa propre grille : le cartouche segmenté n'existe qu'en vue Liste. */
 .atlas-ui-taxonomy--cards .atlas-ui-subcategory-content {
   gap: 18px;
 }
@@ -879,284 +648,13 @@
   display: block;
 }
 
-/* Vue cartes : quatre cartes par ligne sur grand écran. */
-.atlas-ui-lesion-grid--panel.atlas-ui-lesion-grid--cards {
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  column-gap: 14px;
-  row-gap: 26px;
-}
-
-/* Vues non regroupées / lettres / fiches directement sous une catégorie. */
-.atlas-ui-lesion-grid--flat {
-  width: 100%;
-}
-
-.atlas-ui-lesion-grid--flat.atlas-ui-lesion-grid--list {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 9px;
-}
-
-.atlas-ui-lesion-grid--flat.atlas-ui-lesion-grid--cards {
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  column-gap: 14px;
-  row-gap: 26px;
-}
-
-.atlas-ui-category > .atlas-ui-lesion-grid--flat {
-  width: 100%;
-  margin-left: 0;
+.atlas-ui-category > .display-grid--flat {
   margin-bottom: 16px;
 }
 
 .atlas-ui-ungrouped {
   margin-top: 8px;
   margin-bottom: 32px;
-}
-
-/* ---------- Carte d’une lésion : base autonome ---------- */
-
-.atlas-ui-lesion-card {
-  min-width: 0;
-  box-sizing: border-box;
-
-  overflow: hidden;
-  color: inherit;
-  text-decoration: none;
-
-  --atlas-ui-lesion-border-color: rgba(0, 0, 0, 0.10);
-
-  border: 1px solid var(--atlas-ui-lesion-border-color);
-  border-radius: 10px;
-  background: var(--ifm-background-surface-color);
-
-  transition: box-shadow 0.15s ease;
-}
-
-[data-theme='dark'] .atlas-ui-lesion-card {
-  --atlas-ui-lesion-border-color: rgba(255, 255, 255, 0.13);
-}
-
-.atlas-ui-lesion-card:hover {
-  color: inherit;
-  text-decoration: none;
-  border-color: var(--atlas-ui-lesion-border-color);
-
-  /* Le fond et la bordure restent strictement identiques au repos. */
-  background: var(--ifm-background-surface-color);
-
-  /* Réutilise exactement l'ombre hover commune définie pour les cartes du site. */
-  box-shadow: var(--card-shadow-hover);
-}
-
-.atlas-ui-lesion-card:focus-visible {
-  outline: 2px solid var(--ifm-color-primary);
-  outline-offset: 2px;
-}
-
-.atlas-ui-lesion-card--disabled {
-  opacity: 0.58;
-  cursor: default;
-}
-
-.atlas-ui-lesion-card--disabled:hover {
-  border-color: var(--atlas-ui-lesion-border-color);
-  background: var(--ifm-background-surface-color);
-  box-shadow: none;
-}
-
-
-/* ---------- Vue liste : image + texte, proportions conservées ---------- */
-
-/*
- * En passant de 4 à 3 cartes par ligne, la largeur de chaque carte augmente
- * d'environ 4/3. On conserve donc la silhouette de la carte en liant sa
- * hauteur à sa largeur plutôt qu'en gardant une hauteur fixe.
- *
- * La vignette occupe également une proportion fixe de la largeur de la carte,
- * ce qui agrandit image et hauteur ensemble sur les grands écrans.
- */
-.atlas-ui-lesion-card--list {
-  display: grid;
-  grid-template-columns: 29.5% minmax(0, 1fr);
-  align-items: stretch;
-  aspect-ratio: 4.15 / 1;
-  min-height: 0;
-}
-
-.atlas-ui-lesion-card--list .atlas-ui-lesion-thumb {
-  width: 100%;
-  min-height: 0;
-  height: 100%;
-}
-
-.atlas-ui-lesion-card--list .atlas-ui-lesion-body {
-  justify-content: center;
-  padding: 9px 12px;
-}
-
-/* ---------- Vue cartes : image autonome + titre libre dessous ---------- */
-
-/*
- * En vue Cartes, le lien n'est plus lui-même un cartouche visuel :
- * seule l'image porte l'apparence de carte. Le titre reste donc entièrement
- * libre sous l'image, sans fond ni bordure autour de sa zone de texte.
- *
- * La hauteur de l'image reprend la hauteur visuelle des cartes Documentation
- * en mode cartes (11.25rem / ~180 px dans Cards.css). Cela permet de rapprocher
- * les deux familles de cartes tout en conservant leur différence de composition :
- * Documentation = titre dans l'image ; Atlas = titre sous l'image.
- */
-.atlas-ui-lesion-card--cards {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-
-  overflow: visible;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-}
-
-.atlas-ui-lesion-card--cards:hover {
-  border: 0;
-  background: transparent;
-  box-shadow: none;
-}
-
-.atlas-ui-lesion-card--cards .atlas-ui-lesion-thumb {
-  width: 100%;
-  height: 11.25rem;
-  min-height: 11.25rem;
-  aspect-ratio: auto;
-  flex: 0 0 auto;
-
-  border: 1px solid var(--atlas-ui-lesion-border-color);
-  border-radius: 10px;
-  background-color: var(--ifm-background-surface-color);
-  box-shadow: var(--card-shadow);
-  transition: var(--card-transition);
-}
-
-.atlas-ui-lesion-card--cards:hover .atlas-ui-lesion-thumb {
-  border: var(--card-border-hover);
-  box-shadow: var(--card-shadow-hover);
-}
-
-.atlas-ui-lesion-card--cards:focus-visible {
-  outline: none;
-}
-
-.atlas-ui-lesion-card--cards:focus-visible .atlas-ui-lesion-thumb {
-  outline: 2px solid var(--ifm-color-primary);
-  outline-offset: 2px;
-}
-
-.atlas-ui-lesion-card--cards .atlas-ui-lesion-body {
-  flex: 0 0 auto;
-  justify-content: flex-start;
-  min-height: 0;
-  padding: 8px 2px 0;
-  border: 0;
-  background: transparent;
-}
-
-.atlas-ui-lesion-card--cards .atlas-ui-lesion-title {
-  font-size: 0.96rem;
-  line-height: 1.28;
-}
-
-.atlas-ui-lesion-card--cards.atlas-ui-lesion-card--disabled:hover .atlas-ui-lesion-thumb {
-  border: 1px solid var(--atlas-ui-lesion-border-color);
-  box-shadow: var(--card-shadow);
-}
-
-/* ---------- Image ---------- */
-
-.atlas-ui-lesion-thumb {
-  position: relative;
-  overflow: hidden;
-
-  background-color: var(--ifm-color-emphasis-100);
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-}
-
-/* Les vignettes Atlas utilisent de vraies images afin de bénéficier de
-   loading=lazy / decoding=async. Cela évite de charger immédiatement toutes
-   les images des 200+ pathologies comme le faisait background-image. */
-.atlas-ui-lesion-thumb-img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
-  pointer-events: none;
-  user-select: none;
-}
-
-/* Les séparateurs DocTheme de l'Entraînement réutilisent désormais exactement
-   le bandeau de catégorie Atlas. */
-.cc-training-theme-heading {
-  margin-top: 0;
-}
-
-.atlas-ui-lesion-thumb--empty {
-  display: grid;
-  place-items: center;
-}
-
-.atlas-ui-lesion-thumb--empty::after {
-  content: '';
-  width: 34%;
-  aspect-ratio: 1;
-  border-radius: 8px;
-  background: var(--ifm-color-emphasis-200);
-  opacity: 0.55;
-}
-
-/* ---------- Texte et badges ---------- */
-
-.atlas-ui-lesion-body {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.atlas-ui-lesion-title {
-  margin: 0;
-  min-width: 0;
-
-  color: inherit;
-  font-size: 0.94rem;
-  font-weight: 650;
-  line-height: 1.25;
-
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-}
-
-.atlas-ui-lesion-badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-
-  min-width: 0;
-  margin-top: 7px;
-}
-
-.atlas-ui-lesion-badge {
-  width: fit-content;
-  max-width: 100%;
-  margin: 0;
-
-  font-size: 0.72rem;
-  line-height: 1.05;
-  white-space: normal;
-  overflow-wrap: anywhere;
 }
 
 /* ---------- Vue par lettre ---------- */
@@ -1176,20 +674,13 @@
   opacity: 0.88;
 }
 
-/* ---------- Responsive ---------- */
+/* ---------- Responsive spécifique à la hiérarchie Atlas ---------- */
 
-/*
- * Responsive : le principe « une unité sous-catégorie + lésions » se contracte
- * progressivement. La vue Cartes conserve son comportement précédent.
- */
 @media (max-width: 1180px) {
   .atlas-ui-taxonomy--list .atlas-ui-subcategory-panel {
     grid-template-columns: minmax(170px, 0.72fr) repeat(2, minmax(0, 1fr));
   }
 
-  /* À cette largeur la grille de lésions passe à 2 colonnes ; on affiche donc
-     les subdivisions au-dessus de leurs lésions plutôt que de forcer un
-     alignement artificiel dans le cartouche de gauche. */
   .atlas-ui-taxonomy--list
     .atlas-ui-subcategory-panel--has-subdivisions
     .atlas-ui-subcategory-heading {
@@ -1214,20 +705,9 @@
     gap: 14px;
   }
 
-  .atlas-ui-taxonomy--list .atlas-ui-lesion-grid--panel.atlas-ui-lesion-grid--list {
+  .atlas-ui-taxonomy--list .display-grid--panel.display-grid--list {
     grid-column: 2 / -1;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  /* La vue Liste conserve ses 3 colonnes. Seule la vue Cartes passe
-     progressivement de 5 à 4 colonnes sur les écrans intermédiaires. */
-  .atlas-ui-lesion-grid--flat.atlas-ui-lesion-grid--list {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .atlas-ui-lesion-grid--panel.atlas-ui-lesion-grid--cards,
-  .atlas-ui-lesion-grid--flat.atlas-ui-lesion-grid--cards {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
@@ -1246,27 +726,12 @@
     width: 100%;
   }
 
-  .atlas-ui-taxonomy--list .atlas-ui-lesion-grid--panel.atlas-ui-lesion-grid--list,
-  .atlas-ui-lesion-grid--flat.atlas-ui-lesion-grid--list,
-  .atlas-ui-lesion-grid--panel.atlas-ui-lesion-grid--cards,
-  .atlas-ui-lesion-grid--flat.atlas-ui-lesion-grid--cards {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .atlas-ui-taxonomy--list .display-grid--panel.display-grid--list {
+    grid-column: auto;
   }
 }
 
 @media (max-width: 640px) {
-
-  .atlas-ui-category {
-    --atlas-ui-category-heading-padding-inline: 13px;
-    margin-bottom: 38px;
-  }
-
-  .atlas-ui-category-heading {
-    margin-bottom: 16px;
-    padding: 10px var(--atlas-ui-category-heading-padding-inline) 11px;
-    border-radius: 10px;
-  }
-
   .atlas-ui-subcategory-panel {
     margin: 0;
     padding: 0;
@@ -1275,80 +740,6 @@
   .atlas-ui-subcategory-heading {
     margin-bottom: 9px;
   }
-
-
-  .atlas-ui-lesion-grid--flat.atlas-ui-lesion-grid--list,
-  .atlas-ui-lesion-grid--flat.atlas-ui-lesion-grid--cards,
-  .atlas-ui-lesion-grid--panel.atlas-ui-lesion-grid--list,
-  .atlas-ui-lesion-grid--panel.atlas-ui-lesion-grid--cards {
-    grid-template-columns: 1fr;
-  }
-
-  .atlas-ui-lesion-card--list {
-    grid-template-columns: 78px minmax(0, 1fr);
-    aspect-ratio: auto;
-    min-height: 68px;
-  }
-
-  .atlas-ui-lesion-card--list .atlas-ui-lesion-thumb {
-    width: 78px;
-    height: auto;
-    min-height: 68px;
-  }
-
-  .atlas-ui-lesion-card--list .atlas-ui-lesion-body {
-    padding: 8px 10px;
-  }
-
-  .atlas-ui-lesion-title {
-    font-size: 0.92rem;
-  }
-}
-
-@media (hover: none), (pointer: coarse) {
-  .atlas-ui-lesion-card:hover {
-    border-color: var(--atlas-ui-lesion-border-color);
-    background: var(--ifm-background-surface-color);
-    box-shadow: none;
-  }
-
-  /* En vue Cartes, aucun fond ne doit apparaître derrière le titre, même au toucher. */
-  .atlas-ui-lesion-card--cards:hover {
-    border: 0;
-    background: transparent;
-    box-shadow: none;
-  }
-
-  .atlas-ui-lesion-card--cards:hover .atlas-ui-lesion-thumb {
-    border: 1px solid var(--atlas-ui-lesion-border-color);
-    box-shadow: var(--card-shadow);
-  }
-}
-
-
-/* =========================================================
-   Cartes des modes d’entraînement
-   - aucun badge redondant hors Atlas
-   - titre un peu moins lourd et recentré en vue liste
-   ========================================================= */
-.doc-card--training .doc-thumb-title,
-.doc-card--training .doc-title-text {
-  font-weight: 650;
-}
-
-.doc-card--training.doc-card--list .doc-body {
-  justify-content: center;
-  padding-top: 12px !important;
-  padding-bottom: 12px !important;
-}
-
-.doc-card--training.doc-card--list .doc-title {
-  min-height: 0;
-}
-
-/* Rapproche légèrement le premier groupe de la barre d’options. */
-.cc-training-active .cc-toolbar--views {
-  margin-bottom: 16px;
 }
 
 /* ========================================================================== 
@@ -1475,15 +866,6 @@
 }
 
 @media (max-width: 560px) {
-  .atlas-ui-category-heading {
-    align-items: flex-start;
-    gap: 9px 12px;
-  }
-
-  .atlas-ui-category-title {
-    flex-basis: auto;
-  }
-
   .atlas-ui-category-general-pathology-list {
     width: auto;
     justify-content: flex-start;
@@ -1491,8 +873,3 @@
 }
 
 
-/* Atlas : la navigation réutilise strictement .cc-tabs / .cc-tab.
-   Cette règle ajoute uniquement l'espacement avec le contenu de l'Atlas. */
-.atlas-ui-tabs-toolbar {
-  margin-bottom: clamp(24px, 2.4vw, 34px);
-}
