@@ -127,7 +127,10 @@
 
 .display-tabbar-actions {
   position: absolute;
-  top: 50%;
+  /* Alignement optique sur la ligne des tabs.
+     Les contrôles sont plus hauts que les boutons de tab : on remonte leur
+     centre de 5 px sans les remettre dans le flux. */
+  top: calc(50% - 5px);
   right: 0;
   z-index: 2;
 

@@ -242,6 +242,8 @@ function buildAtlasTaxonomyIndex(taxonomy) {
     .map((tab) => ({
       id: String(tab?.id || '').trim(),
       label: String(tab?.label || '').trim(),
+      // Compatibilité : un ancien JSON sans `enabled` reste publié.
+      enabled: tab?.enabled !== false,
     }))
     .filter((tab) => tab.id && tab.label);
 
@@ -942,7 +944,12 @@ export default function CasCliniques() {
   const tab = selection; // 'atlas' | 'qa' | 'quiz' | 'presentation'
 
   const atlasTaxonomyIndex = useMemo(() => buildAtlasTaxonomyIndex(atlasTaxonomy), [atlasTaxonomy]);
-  const atlasTabs = atlasTaxonomyIndex?.tabs || [];
+  // Seuls les tabs publiés sont exposés dans l’Atlas. Les tabs en brouillon
+  // restent présents dans la taxonomie et conservent toutes leurs associations.
+  const atlasTabs = useMemo(
+    () => (atlasTaxonomyIndex?.tabs || []).filter((entry) => entry.enabled !== false),
+    [atlasTaxonomyIndex]
+  );
   const defaultAtlasTabId =
     atlasTabs.find((entry) => entry.id === 'tab_medecine_orale')?.id || atlasTabs[0]?.id || '';
   const activeAtlasTabId = atlasTabs.some((entry) => entry.id === requestedAtlasTab)
