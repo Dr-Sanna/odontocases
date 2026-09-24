@@ -210,11 +210,16 @@
   position: absolute;
   z-index: 60;
   top: calc(100% + 8px);
+
+  /* Le bord droit reste exactement ancré au bouton Filtres.
+     Si le contenu a besoin de plus de place, le menu grandit vers la gauche. */
   right: 0;
+  left: auto;
 
   width: max-content;
-  min-width: 220px;
-  max-width: min(300px, calc(100vw - 32px));
+  min-width: 0;
+  max-width: calc(100vw - 32px);
+  box-sizing: border-box;
   padding: 12px;
 
   border: 1px solid rgba(0, 0, 0, 0.11);
@@ -225,6 +230,30 @@
     0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
+/* Atlas et Entraînement : le menu épouse la largeur naturelle de la ligne.
+   Aucun bouton ne prend artificiellement l'espace disponible. */
+.display-filter-popover :is(.atlas-ui-controls, .cc-case-controls) {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  width: max-content;
+  min-width: 0;
+  max-width: none;
+  gap: 14px;
+}
+
+.display-filter-popover :is(.atlas-ui-control, .cc-case-control) {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  width: max-content;
+  min-width: 0;
+  max-width: none;
+  gap: 10px;
+  white-space: nowrap;
+}
+
+/* Compatibilité avec les autres contrôles qui utilisent encore les anciens noms. */
 .display-filter-popover :is(.cc-atlas-controls, .doc-atlas-controls) {
   display: block;
   width: auto;
@@ -242,14 +271,27 @@
 }
 
 .display-filter-popover :is(.cc-sortlabel, .doc-sortlabel) {
-  grid-column: 1 / -1;
-  margin: 0 0 2px;
+  margin: 0;
   font-size: 0.82rem;
   font-weight: 700;
   opacity: 0.72;
+  white-space: nowrap;
 }
 
-.display-filter-popover :is(.cc-sortbtn, .doc-sortbtn) {
+/* Les puces Atlas / Entraînement prennent uniquement la largeur de leur texte. */
+.display-filter-popover :is(.atlas-ui-controls, .cc-case-controls) .cc-sortbtn {
+  flex: 0 0 auto;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  padding: 8px 10px;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+/* Anciennes variantes Documentation : comportement conservé. */
+.display-filter-popover .doc-sortbtn,
+.display-filter-popover .cc-atlas-controls .cc-sortbtn {
   width: 100%;
   min-width: 88px;
   padding: 8px 10px;

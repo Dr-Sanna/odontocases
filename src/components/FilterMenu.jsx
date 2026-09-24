@@ -51,11 +51,6 @@ export default function FilterMenu({ children, label = 'Filtres' }) {
           className="display-filter-popover"
           role="dialog"
           aria-label="Options de filtrage"
-          onClick={(event) => {
-            // Laisse d'abord le bouton interne appliquer son changement
-            // (setCaseGroup / setAtlasGroup / setDocGroup), puis ferme le menu.
-            if (event.target.closest?.('button')) setOpen(false);
-          }}
         >
           {children}
         </div>

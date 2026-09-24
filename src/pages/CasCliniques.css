@@ -308,6 +308,40 @@
   line-height: 1;
 }
 
+/* Le dropdown Entraînement suit la largeur naturelle de son contenu.
+   Les puces restent sur une seule ligne : c’est le popover qui s’élargit,
+   et non les contrôles qui se compressent ou reviennent à la ligne. */
+.cc-case-controls {
+  width: max-content;
+  max-width: none;
+  min-width: max-content;
+  box-sizing: border-box;
+  flex-wrap: nowrap;
+}
+
+.cc-case-control {
+  width: max-content;
+  max-width: none;
+  min-width: max-content;
+  box-sizing: border-box;
+  gap: 10px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.cc-case-controls .cc-sortlabel {
+  flex: 0 0 auto;
+  font-size: 0.86rem;
+  white-space: nowrap;
+}
+
+.cc-case-controls .cc-sortbtn {
+  flex: 0 0 auto;
+  min-width: max-content;
+  padding-inline: 10px;
+  white-space: nowrap;
+}
+
 
 /* =========================================================
    Mobile : toolbar stable + toggle qui ne saute pas
@@ -873,3 +907,3067 @@
 }
 
 
+
+
+/* ========================================================================== 
+   Atlas — layout déclaratif par grille (taxonomyVersion >= 5)
+   --------------------------------------------------------------------------
+   Le JSON ne décrit que la structure :
+     parent.layout = { mode: "grid", columns: N }
+     enfant.placement = { order, span }
+
+   Ces règles ne s'appliquent qu'à la vue Liste. Les catégories qui ne portent
+   pas de layout continuent donc d'utiliser strictement la composition historique.
+   ========================================================================== */
+
+/* Une catégorie peut disposer ses sous-catégories sur une grille. */
+.atlas-ui-taxonomy--list .atlas-ui-subcategory-stack--grid {
+  display: grid;
+  grid-template-columns: repeat(var(--atlas-ui-layout-columns, 4), minmax(0, 1fr));
+  align-items: start;
+  gap: 18px 9px;
+}
+
+.atlas-ui-taxonomy--list .atlas-ui-subcategory-panel--grid-item {
+  grid-column: span var(--atlas-ui-placement-span, 1);
+  align-self: start;
+
+  /* Dans une grille parente, la sous-catégorie devient elle-même un bloc
+     vertical : intitulé en haut, contenu en dessous. */
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.atlas-ui-taxonomy--list
+  .atlas-ui-subcategory-panel--grid-item
+  > .atlas-ui-subcategory-heading {
+  display: flex;
+  width: 100%;
+  min-height: 48px;
+  margin: 0;
+  border-radius: 10px;
+  background: #e8f2fc;
+}
+
+.atlas-ui-taxonomy--list
+  .atlas-ui-subcategory-panel--grid-item
+  > .atlas-ui-subcategory-heading
+  > .atlas-ui-subcategory-main {
+  width: 100%;
+  padding: 10px 12px;
+}
+
+.atlas-ui-taxonomy--list
+  .atlas-ui-subcategory-panel--grid-item
+  > .atlas-ui-subcategory-heading
+  .atlas-ui-subcategory-subdivision-rail {
+  display: none;
+}
+
+.atlas-ui-taxonomy--list
+  .atlas-ui-subcategory-panel--grid-item
+  > .atlas-ui-subcategory-content {
+  width: 100%;
+  grid-column: auto;
+  gap: 12px;
+}
+
+.atlas-ui-taxonomy--list
+  .atlas-ui-subcategory-panel--grid-item
+  .atlas-ui-subdivision-title {
+  display: block;
+}
+
+/* Une sous-catégorie peut disposer ses subdivisions sur sa propre grille. */
+.atlas-ui-taxonomy--list .atlas-ui-subcategory-panel--layout-grid {
+  display: block;
+  width: 100%;
+}
+
+.atlas-ui-taxonomy--list
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading {
+  display: flex;
+  width: 100%;
+  min-height: 50px;
+  margin: 0 0 10px;
+  border-radius: 10px;
+  background: #e8f2fc;
+}
+
+.atlas-ui-taxonomy--list
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading
+  > .atlas-ui-subcategory-main {
+  width: 100%;
+  justify-content: center;
+  padding: 10px 14px;
+  text-align: center;
+}
+
+.atlas-ui-taxonomy--list
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading
+  .atlas-ui-subcategory-title {
+  width: 100%;
+}
+
+.atlas-ui-taxonomy--list
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-content {
+  width: 100%;
+  grid-column: auto;
+  gap: 10px;
+}
+
+.atlas-ui-taxonomy--list .atlas-ui-subdivision-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--atlas-ui-layout-columns, 4), minmax(0, 1fr));
+  align-items: start;
+  gap: 12px 9px;
+  width: 100%;
+  min-width: 0;
+}
+
+.atlas-ui-taxonomy--list .atlas-ui-subdivision-block--grid-item {
+  grid-column: span var(--atlas-ui-placement-span, 1);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* L'intitulé de subdivision remplace ici le rail vertical historique. */
+.atlas-ui-taxonomy--list
+  .atlas-ui-subdivision-block--grid-item
+  > .atlas-ui-subdivision-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  margin: 0 0 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+
+  background: #f0f6fc;
+  color: #436987;
+  font-size: 0.82rem;
+  font-weight: 680;
+  line-height: 1.25;
+  text-align: center;
+  opacity: 1;
+}
+
+/* Le span définit à la fois la largeur du groupe et le nombre de cartes que
+   celui-ci peut afficher côte à côte. Un span 2 fournit donc deux colonnes de
+   pathologies sans qu'aucune position absolue ne soit encodée dans le JSON. */
+.atlas-ui-taxonomy--list
+  .atlas-ui-subdivision-block--grid-item
+  > .display-grid--panel.display-grid--list {
+  grid-template-columns: repeat(var(--atlas-ui-placement-span, 1), minmax(0, 1fr));
+  gap: 9px;
+}
+
+/* Même logique lorsqu'une catégorie organise directement ses sous-catégories. */
+.atlas-ui-taxonomy--list
+  .atlas-ui-subcategory-panel--grid-item
+  > .atlas-ui-subcategory-content
+  > .display-grid--panel.display-grid--list {
+  grid-template-columns: repeat(var(--atlas-ui-placement-span, 1), minmax(0, 1fr));
+  gap: 9px;
+}
+
+[data-theme='dark']
+  .atlas-ui-taxonomy--list
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading,
+[data-theme='dark']
+  .atlas-ui-taxonomy--list
+  .atlas-ui-subcategory-panel--grid-item
+  > .atlas-ui-subcategory-heading {
+  background: #20344b;
+}
+
+[data-theme='dark']
+  .atlas-ui-taxonomy--list
+  .atlas-ui-subdivision-block--grid-item
+  > .atlas-ui-subdivision-title {
+  background: #243a52;
+  color: #bad6ec;
+}
+
+/* Deux colonnes de structure sur écran intermédiaire. Les blocs configurés
+   avec span > 1 prennent toute la largeur disponible. */
+@media (max-width: 900px) {
+  .atlas-ui-taxonomy--list .atlas-ui-subcategory-stack--grid,
+  .atlas-ui-taxonomy--list .atlas-ui-subdivision-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .atlas-ui-taxonomy--list
+    .atlas-ui-subcategory-panel--grid-item[data-span='1'],
+  .atlas-ui-taxonomy--list
+    .atlas-ui-subdivision-block--grid-item[data-span='1'] {
+    grid-column: span 1 !important;
+  }
+
+  .atlas-ui-taxonomy--list
+    .atlas-ui-subcategory-panel--grid-item[data-span]:not([data-span='1']),
+  .atlas-ui-taxonomy--list
+    .atlas-ui-subdivision-block--grid-item[data-span]:not([data-span='1']) {
+    grid-column: span 2 !important;
+  }
+
+  /* Quand la grille structurelle passe de 4 à 2 colonnes, chaque bloc
+     span=1 devient deux fois plus large. On double donc aussi le nombre de
+     cartes internes afin de conserver la largeur visuelle historique des
+     cartes au lieu de les étirer sur toute la demi-page.
+
+     Résultat : 2 groupes par ligne × 2 cartes par groupe = 4 cartes par ligne.
+     Un groupe qui occupe les 2 colonnes structurelles peut en afficher 4. */
+  .atlas-ui-taxonomy--list
+    .atlas-ui-subdivision-block--grid-item[data-span='1']
+    > .display-grid--panel.display-grid--list,
+  .atlas-ui-taxonomy--list
+    .atlas-ui-subcategory-panel--grid-item[data-span='1']
+    > .atlas-ui-subcategory-content
+    > .display-grid--panel.display-grid--list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .atlas-ui-taxonomy--list
+    .atlas-ui-subdivision-block--grid-item[data-span]:not([data-span='1'])
+    > .display-grid--panel.display-grid--list,
+  .atlas-ui-taxonomy--list
+    .atlas-ui-subcategory-panel--grid-item[data-span]:not([data-span='1'])
+    > .atlas-ui-subcategory-content
+    > .display-grid--panel.display-grid--list {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .atlas-ui-taxonomy--list .atlas-ui-subcategory-stack--grid,
+  .atlas-ui-taxonomy--list .atlas-ui-subdivision-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .atlas-ui-taxonomy--list .atlas-ui-subcategory-panel--grid-item,
+  .atlas-ui-taxonomy--list .atlas-ui-subdivision-block--grid-item {
+    grid-column: 1 / -1 !important;
+  }
+
+  .atlas-ui-taxonomy--list
+    .atlas-ui-subdivision-block--grid-item
+    > .display-grid--panel.display-grid--list,
+  .atlas-ui-taxonomy--list
+    .atlas-ui-subcategory-panel--grid-item
+    > .atlas-ui-subcategory-content
+    > .display-grid--panel.display-grid--list {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ========================================================================== 
+   v5.2 — sous-catégorie en grille sans subdivision
+   --------------------------------------------------------------------------
+   Un `layout: { mode: "grid", columns: N }` placé sur une sous-catégorie
+   s'applique aussi lorsque cette sous-catégorie contient directement des
+   pathologies. Le bandeau de sous-catégorie reste pleine largeur et les
+   pathologies utilisent N colonnes en dessous.
+   ========================================================================== */
+
+.atlas-ui-taxonomy--list
+  .atlas-ui-subcategory-panel--layout-grid
+  .atlas-ui-direct-pathology-grid.display-grid--panel.display-grid--list {
+  grid-template-columns: repeat(var(--atlas-ui-layout-columns, 4), minmax(0, 1fr));
+  gap: 9px;
+  width: 100%;
+}
+
+@media (max-width: 900px) {
+  .atlas-ui-taxonomy--list
+    .atlas-ui-subcategory-panel--layout-grid
+    .atlas-ui-direct-pathology-grid.display-grid--panel.display-grid--list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .atlas-ui-taxonomy--list
+    .atlas-ui-subcategory-panel--layout-grid
+    .atlas-ui-direct-pathology-grid.display-grid--panel.display-grid--list {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* ========================================================================== 
+   v5.3 — Variante « séparation minimaliste » pour les sous-catégories en grille
+   --------------------------------------------------------------------------
+   Objectif : conserver la hiérarchie visuelle sans multiplier les aplats.
+   - le grand titre de sous-catégorie n'est plus dans un bandeau rempli ;
+   - chaque subdivision utilise un simple titre textuel + un trait séparateur ;
+   - aucune bordure verticale décorative n'est affichée avant les titres.
+   ========================================================================== */
+
+.atlas-ui-taxonomy--list .atlas-ui-subcategory-panel--layout-grid {
+  margin-bottom: 8px;
+}
+
+.atlas-ui-taxonomy--list
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading {
+  display: flex;
+  width: 100%;
+  min-height: 0;
+  margin: 0 0 18px;
+  padding: 0 0 12px;
+  border: 0;
+  border-bottom: 1px solid #cfe0f0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.atlas-ui-taxonomy--list
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading
+  > .atlas-ui-subcategory-main {
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0;
+  text-align: left;
+}
+
+.atlas-ui-taxonomy--list
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading
+  .atlas-ui-subcategory-title {
+  width: auto;
+  color: #1f4f7f;
+  font-size: 1.1rem;
+  font-weight: 760;
+  line-height: 1.2;
+}
+
+/* Les subdivisions respirent davantage et sont délimitées par l'espacement
+   ainsi qu'un séparateur horizontal discret, sans vrai cartouche. */
+.atlas-ui-taxonomy--list .atlas-ui-subdivision-grid {
+  gap: 24px 24px;
+}
+
+.atlas-ui-taxonomy--list .atlas-ui-subdivision-block--grid-item {
+  padding-top: 12px;
+  border-top: 1px solid #d9e7f3;
+}
+
+.atlas-ui-taxonomy--list
+  .atlas-ui-subdivision-block--grid-item
+  > .atlas-ui-subdivision-title {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 0;
+  margin: 0 0 12px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #25507d;
+  font-size: 0.98rem;
+  font-weight: 760;
+  line-height: 1.25;
+  text-align: left;
+  letter-spacing: 0;
+  opacity: 1;
+}
+
+/* Pour les sous-catégories sans subdivisions : même logique minimaliste,
+   sans bandeau rempli ; seule la grille de cartes occupe l'espace. */
+.atlas-ui-taxonomy--list
+  .atlas-ui-subcategory-panel--layout-grid
+  .atlas-ui-direct-pathology-grid.display-grid--panel.display-grid--list {
+  margin-top: 0;
+}
+
+/* Mode sombre correspondant. */
+[data-theme='dark']
+  .atlas-ui-taxonomy--list
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading {
+  background: transparent;
+  border-bottom-color: #36526d;
+}
+
+[data-theme='dark']
+  .atlas-ui-taxonomy--list
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading
+  .atlas-ui-subcategory-title {
+  color: #d3e8f8;
+}
+
+[data-theme='dark']
+  .atlas-ui-taxonomy--list
+  .atlas-ui-subdivision-block--grid-item {
+  border-top-color: #334e68;
+}
+
+[data-theme='dark']
+  .atlas-ui-taxonomy--list
+  .atlas-ui-subdivision-block--grid-item
+  > .atlas-ui-subdivision-title {
+  background: transparent;
+  color: #c9e2f6;
+}
+
+@media (max-width: 900px) {
+  .atlas-ui-taxonomy--list .atlas-ui-subdivision-grid {
+    gap: 18px 18px;
+  }
+
+  .atlas-ui-taxonomy--list
+    .atlas-ui-subcategory-panel--layout-grid
+    > .atlas-ui-subcategory-heading {
+    margin-bottom: 14px;
+  }
+}
+
+@media (max-width: 640px) {
+  .atlas-ui-taxonomy--list
+    .atlas-ui-subcategory-panel--layout-grid
+    > .atlas-ui-subcategory-heading {
+    padding-bottom: 10px;
+  }
+
+  .atlas-ui-taxonomy--list .atlas-ui-subdivision-grid {
+    gap: 16px;
+  }
+
+  .atlas-ui-taxonomy--list .atlas-ui-subdivision-block--grid-item {
+    padding-top: 10px;
+  }
+}
+
+
+/* ========================================================================== 
+   v5.4 — Minimaliste affiné, plus proche de la maquette
+   --------------------------------------------------------------------------
+   Améliorations :
+   - ligne qui prolonge le titre de sous-catégorie ;
+   - titres de subdivisions avec ligne d'accompagnement ;
+   - séparateur vertical entre les deux colonnes de subdivisions ;
+   - hiérarchie typographique renforcée.
+   ========================================================================== */
+
+.atlas-ui-taxonomy--list .atlas-ui-subcategory-panel--layout-grid {
+  margin-bottom: 10px;
+}
+
+.atlas-ui-taxonomy--list
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading {
+  margin: 0 0 22px;
+  padding: 0;
+  border: 0;
+}
+
+.atlas-ui-taxonomy--list
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading
+  > .atlas-ui-subcategory-main {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 18px;
+  width: 100%;
+  padding: 0;
+  text-align: left;
+}
+
+.atlas-ui-taxonomy--list
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading
+  > .atlas-ui-subcategory-main::after {
+  content: '';
+  flex: 1 1 auto;
+  min-width: 32px;
+  border-top: 1px solid #c9d9e8;
+  transform: translateY(2px);
+}
+
+.atlas-ui-taxonomy--list
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading
+  .atlas-ui-subcategory-title {
+  width: auto;
+  color: #1d4e7d;
+  font-size: 1.28rem;
+  font-weight: 770;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+.atlas-ui-taxonomy--list .atlas-ui-subdivision-grid {
+  gap: 26px 26px;
+}
+
+.atlas-ui-taxonomy--list .atlas-ui-subdivision-block--grid-item {
+  position: relative;
+  padding-top: 0;
+  border-top: 0;
+}
+
+/* Séparateur vertical entre la colonne gauche et la colonne droite.
+   Dans la configuration actuelle des accroissements diffus, les subdivisions
+   arrivent naturellement en deux colonnes ; les éléments pairs correspondent
+   donc à la colonne de droite. */
+.atlas-ui-taxonomy--list .atlas-ui-subdivision-block--grid-item:nth-child(even) {
+  padding-left: 30px;
+  margin-left: 4px;
+  border-left: 1px solid #d7e4f0;
+}
+
+.atlas-ui-taxonomy--list
+  .atlas-ui-subdivision-block--grid-item
+  > .atlas-ui-subdivision-title {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 14px;
+  min-height: 0;
+  margin: 0 0 14px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #24527f;
+  font-size: 1.08rem;
+  font-weight: 760;
+  line-height: 1.2;
+  text-align: left;
+  letter-spacing: -0.01em;
+}
+
+.atlas-ui-taxonomy--list
+  .atlas-ui-subdivision-block--grid-item
+  > .atlas-ui-subdivision-title::after {
+  content: '';
+  flex: 1 1 auto;
+  min-width: 26px;
+  border-top: 1px solid #d7e4f0;
+  transform: translateY(2px);
+}
+
+/* Les cartes du mode grille héritent d'une hiérarchie un peu plus raffinée. */
+.atlas-ui-taxonomy--list
+  .atlas-ui-subcategory-panel--layout-grid
+  .display-card-title {
+  font-size: 0.96rem;
+  font-weight: 720;
+  line-height: 1.24;
+}
+
+
+/* Sous-catégorie en grille sans subdivisions : même titre avec ligne continue. */
+.atlas-ui-taxonomy--list
+  .atlas-ui-subcategory-panel--layout-grid
+  .atlas-ui-direct-pathology-grid.display-grid--panel.display-grid--list {
+  margin-top: 0;
+}
+
+/* Mode sombre */
+[data-theme='dark']
+  .atlas-ui-taxonomy--list
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading
+  > .atlas-ui-subcategory-main::after {
+  border-top-color: #4b6985;
+}
+
+[data-theme='dark']
+  .atlas-ui-taxonomy--list
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading
+  .atlas-ui-subcategory-title {
+  color: #d8ebf8;
+}
+
+[data-theme='dark']
+  .atlas-ui-taxonomy--list
+  .atlas-ui-subdivision-block--grid-item:nth-child(even) {
+  border-left-color: #3d5872;
+}
+
+[data-theme='dark']
+  .atlas-ui-taxonomy--list
+  .atlas-ui-subdivision-block--grid-item
+  > .atlas-ui-subdivision-title {
+  color: #cfe5f7;
+}
+
+[data-theme='dark']
+  .atlas-ui-taxonomy--list
+  .atlas-ui-subdivision-block--grid-item
+  > .atlas-ui-subdivision-title::after {
+  border-top-color: #3d5872;
+}
+
+@media (max-width: 900px) {
+  .atlas-ui-taxonomy--list
+    .atlas-ui-subcategory-panel--layout-grid
+    > .atlas-ui-subcategory-heading {
+    margin-bottom: 18px;
+  }
+
+  .atlas-ui-taxonomy--list
+    .atlas-ui-subcategory-panel--layout-grid
+    > .atlas-ui-subcategory-heading
+    .atlas-ui-subcategory-title {
+    font-size: 1.18rem;
+  }
+
+  .atlas-ui-taxonomy--list .atlas-ui-subdivision-grid {
+    gap: 22px 22px;
+  }
+
+  .atlas-ui-taxonomy--list .atlas-ui-subdivision-block--grid-item:nth-child(even) {
+    padding-left: 22px;
+    margin-left: 0;
+  }
+
+  .atlas-ui-taxonomy--list
+    .atlas-ui-subdivision-block--grid-item
+    > .atlas-ui-subdivision-title {
+    font-size: 1rem;
+    margin-bottom: 12px;
+  }
+}
+
+@media (max-width: 640px) {
+  .atlas-ui-taxonomy--list
+    .atlas-ui-subcategory-panel--layout-grid
+    > .atlas-ui-subcategory-heading
+    > .atlas-ui-subcategory-main {
+    gap: 12px;
+  }
+
+  .atlas-ui-taxonomy--list
+    .atlas-ui-subcategory-panel--layout-grid
+    > .atlas-ui-subcategory-heading
+    .atlas-ui-subcategory-title {
+    font-size: 1.08rem;
+  }
+
+  .atlas-ui-taxonomy--list .atlas-ui-subdivision-grid {
+    gap: 18px;
+  }
+
+  .atlas-ui-taxonomy--list .atlas-ui-subdivision-block--grid-item:nth-child(even) {
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .atlas-ui-taxonomy--list
+    .atlas-ui-subdivision-block--grid-item
+    > .atlas-ui-subdivision-title {
+    gap: 10px;
+    font-size: 0.96rem;
+  }
+}
+
+
+/* ========================================================================== 
+   v5.5 — Hiérarchie commune Liste / Cartes + catégorie renforcée
+   --------------------------------------------------------------------------
+   Le toggle Liste / Cartes ne modifie plus la taxonomie : il change seulement
+   l'apparence de chaque pathologie (`display-card--list` / `--cards`).
+   ========================================================================== */
+
+/* ---------- Catégorie : hiérarchie visuelle plus forte ---------- */
+.atlas-ui-category > .display-section-heading {
+  min-height: 66px;
+  box-sizing: border-box;
+  padding: 14px 20px;
+  border-radius: 12px;
+}
+
+.atlas-ui-category > .display-section-heading .display-section-title {
+  font-size: 1.48rem;
+  font-weight: 800;
+  line-height: 1.16;
+  letter-spacing: -0.012em;
+}
+
+/* ---------- Le layout déclaratif fonctionne dans les deux vues ---------- */
+.atlas-ui-taxonomy .atlas-ui-subcategory-stack--grid {
+  display: grid;
+  grid-template-columns: repeat(var(--atlas-ui-layout-columns, 4), minmax(0, 1fr));
+  align-items: start;
+  gap: 24px;
+}
+
+.atlas-ui-taxonomy .atlas-ui-subcategory-panel--grid-item {
+  grid-column: span var(--atlas-ui-placement-span, 1);
+  min-width: 0;
+}
+
+.atlas-ui-taxonomy .atlas-ui-subcategory-panel--layout-grid {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  margin-bottom: 10px;
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading {
+  display: flex;
+  width: 100%;
+  min-height: 0;
+  margin: 0 0 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading
+  > .atlas-ui-subcategory-main {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 18px;
+  width: 100%;
+  padding: 0;
+  text-align: left;
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading
+  > .atlas-ui-subcategory-main::after {
+  content: '';
+  flex: 1 1 auto;
+  min-width: 32px;
+  border-top: 1px solid #c9d9e8;
+  transform: translateY(2px);
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading
+  .atlas-ui-subcategory-title {
+  width: auto;
+  color: #1d4e7d;
+  font-size: 1.28rem;
+  font-weight: 770;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  opacity: 1;
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-content {
+  width: 100%;
+  grid-column: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.atlas-ui-taxonomy .atlas-ui-subdivision-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--atlas-ui-layout-columns, 4), minmax(0, 1fr));
+  align-items: start;
+  gap: 26px;
+  width: 100%;
+  min-width: 0;
+}
+
+.atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item {
+  position: relative;
+  grid-column: span var(--atlas-ui-placement-span, 1);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item:nth-child(even) {
+  padding-left: 30px;
+  margin-left: 4px;
+  border-left: 1px solid #d7e4f0;
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item
+  > .atlas-ui-subdivision-title {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 14px;
+  min-height: 0;
+  margin: 0 0 14px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #24527f;
+  font-size: 1.08rem;
+  font-weight: 760;
+  line-height: 1.2;
+  text-align: left;
+  letter-spacing: -0.01em;
+  opacity: 1;
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item
+  > .atlas-ui-subdivision-title::after {
+  content: '';
+  flex: 1 1 auto;
+  min-width: 26px;
+  border-top: 1px solid #d7e4f0;
+  transform: translateY(2px);
+}
+
+/* Un `span` de subdivision définit aussi le nombre de pathologies affichées
+   côte à côte, quelle que soit la représentation Liste / Cartes. */
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item
+  > .display-grid--panel {
+  grid-template-columns: repeat(var(--atlas-ui-placement-span, 1), minmax(0, 1fr));
+  gap: 9px;
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--grid-item
+  > .atlas-ui-subcategory-content
+  > .display-grid--panel {
+  grid-template-columns: repeat(var(--atlas-ui-placement-span, 1), minmax(0, 1fr));
+  gap: 9px;
+}
+
+/* Sous-catégorie sans subdivisions : les pathologies occupent directement
+   les N colonnes déclarées dans layout.columns, aussi bien en Liste qu'en Cartes. */
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  .atlas-ui-direct-pathology-grid.display-grid--panel {
+  grid-template-columns: repeat(var(--atlas-ui-layout-columns, 4), minmax(0, 1fr));
+  gap: 9px;
+  width: 100%;
+  margin-top: 0;
+}
+
+/* ---------- Hover : on laisse vivre les effets partagés ---------- */
+/*
+ * Les versions précédentes forçaient `box-shadow: none` avec un sélecteur plus
+ * spécifique que DisplayShared.css. Ici on ne neutralise plus ni la bordure,
+ * ni l'ombre : les effets hover/focus définis par le composant partagé sont
+ * donc de nouveau visibles dans la taxonomie.
+ */
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  .display-card:not(.display-card--disabled) {
+  transition: var(--card-transition);
+}
+
+/* Typographie des cartes : commune aux deux représentations, sans toucher à
+   leur composition propre. */
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  .display-card-title {
+  font-size: 0.96rem;
+  font-weight: 720;
+  line-height: 1.24;
+}
+
+/* ---------- Dark mode ---------- */
+[data-theme='dark']
+  .atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading {
+  background: transparent;
+}
+
+[data-theme='dark']
+  .atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading
+  > .atlas-ui-subcategory-main::after {
+  border-top-color: #4b6985;
+}
+
+[data-theme='dark']
+  .atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading
+  .atlas-ui-subcategory-title {
+  color: #d8ebf8;
+}
+
+[data-theme='dark']
+  .atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item:nth-child(even) {
+  border-left-color: #3d5872;
+}
+
+[data-theme='dark']
+  .atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item
+  > .atlas-ui-subdivision-title {
+  background: transparent;
+  color: #cfe5f7;
+}
+
+[data-theme='dark']
+  .atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item
+  > .atlas-ui-subdivision-title::after {
+  border-top-color: #3d5872;
+}
+
+/* ---------- Responsive commun Liste / Cartes ---------- */
+@media (max-width: 900px) {
+  .atlas-ui-category > .display-section-heading {
+    min-height: 60px;
+    padding: 12px 17px;
+  }
+
+  .atlas-ui-category > .display-section-heading .display-section-title {
+    font-size: 1.34rem;
+  }
+
+  .atlas-ui-taxonomy .atlas-ui-subcategory-stack--grid,
+  .atlas-ui-taxonomy .atlas-ui-subdivision-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .atlas-ui-taxonomy
+    .atlas-ui-subcategory-panel--grid-item[data-span='1'],
+  .atlas-ui-taxonomy
+    .atlas-ui-subdivision-block--grid-item[data-span='1'] {
+    grid-column: span 1 !important;
+  }
+
+  .atlas-ui-taxonomy
+    .atlas-ui-subcategory-panel--grid-item[data-span]:not([data-span='1']),
+  .atlas-ui-taxonomy
+    .atlas-ui-subdivision-block--grid-item[data-span]:not([data-span='1']) {
+    grid-column: span 2 !important;
+  }
+
+  .atlas-ui-taxonomy
+    .atlas-ui-subdivision-block--grid-item[data-span='1']
+    > .display-grid--panel,
+  .atlas-ui-taxonomy
+    .atlas-ui-subcategory-panel--grid-item[data-span='1']
+    > .atlas-ui-subcategory-content
+    > .display-grid--panel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .atlas-ui-taxonomy
+    .atlas-ui-subdivision-block--grid-item[data-span]:not([data-span='1'])
+    > .display-grid--panel,
+  .atlas-ui-taxonomy
+    .atlas-ui-subcategory-panel--grid-item[data-span]:not([data-span='1'])
+    > .atlas-ui-subcategory-content
+    > .display-grid--panel {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .atlas-ui-taxonomy
+    .atlas-ui-subcategory-panel--layout-grid
+    .atlas-ui-direct-pathology-grid.display-grid--panel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item:nth-child(even) {
+    padding-left: 22px;
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .atlas-ui-category > .display-section-heading {
+    min-height: 54px;
+    padding: 11px 14px;
+  }
+
+  .atlas-ui-category > .display-section-heading .display-section-title {
+    font-size: 1.2rem;
+  }
+
+  .atlas-ui-taxonomy .atlas-ui-subcategory-stack--grid,
+  .atlas-ui-taxonomy .atlas-ui-subdivision-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .atlas-ui-taxonomy .atlas-ui-subcategory-panel--grid-item,
+  .atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item {
+    grid-column: 1 / -1 !important;
+  }
+
+  .atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item:nth-child(even) {
+    padding-left: 0;
+    margin-left: 0;
+    border-left: 0;
+  }
+
+  .atlas-ui-taxonomy
+    .atlas-ui-subdivision-block--grid-item
+    > .display-grid--panel,
+  .atlas-ui-taxonomy
+    .atlas-ui-subcategory-panel--grid-item
+    > .atlas-ui-subcategory-content
+    > .display-grid--panel,
+  .atlas-ui-taxonomy
+    .atlas-ui-subcategory-panel--layout-grid
+    .atlas-ui-direct-pathology-grid.display-grid--panel {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* ========================================================================== 
+   v5.6 — Ajustement catégorie + bordure verte au hover
+   ========================================================================== */
+
+/* Catégorie : toujours clairement au-dessus de la sous-catégorie, mais moins
+   massive que dans la v5.5. */
+.atlas-ui-category > .display-section-heading {
+  min-height: 58px;
+  padding: 12px 18px;
+  border-radius: 11px;
+}
+
+.atlas-ui-category > .display-section-heading .display-section-title {
+  font-size: 1.38rem;
+  font-weight: 720;
+  line-height: 1.18;
+  letter-spacing: -0.008em;
+}
+
+/* Le système partagé de Cards.css utilise --card-border-hover pour la bordure
+   d'accent et --card-shadow-hover pour l'ombre au survol. On applique la même
+   convention aux display-card de l'Atlas. */
+@media (hover: hover) and (pointer: fine) {
+  .atlas-ui-taxonomy
+    .display-card--list:not(.display-card--disabled):hover {
+    border: var(--card-border-hover);
+    box-shadow: var(--card-shadow-hover);
+  }
+
+  .atlas-ui-taxonomy
+    .display-card--list:not(.display-card--disabled):focus-visible {
+    border: var(--card-border-hover);
+    box-shadow: var(--card-shadow-hover);
+    outline: none;
+  }
+
+  /* En vue Cartes, le cartouche visuel est la vignette : la bordure verte
+     doit donc s'appliquer à la vignette plutôt qu'au lien transparent. */
+  .atlas-ui-taxonomy
+    .display-card--cards:not(.display-card--disabled):hover
+    .display-card-thumb {
+    border: var(--card-border-hover);
+    box-shadow: var(--card-shadow-hover);
+  }
+
+  .atlas-ui-taxonomy
+    .display-card--cards:not(.display-card--disabled):focus-visible
+    .display-card-thumb {
+    border: var(--card-border-hover);
+    box-shadow: var(--card-shadow-hover);
+  }
+}
+
+@media (max-width: 900px) {
+  .atlas-ui-category > .display-section-heading {
+    min-height: 54px;
+    padding: 11px 16px;
+  }
+
+  .atlas-ui-category > .display-section-heading .display-section-title {
+    font-size: 1.26rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .atlas-ui-category > .display-section-heading {
+    min-height: 50px;
+    padding: 10px 13px;
+  }
+
+  .atlas-ui-category > .display-section-heading .display-section-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+  }
+}
+
+
+/* ========================================================================== 
+   v5.7 — Grille héritée catégorie -> sous-catégories
+   --------------------------------------------------------------------------
+   Une catégorie en grille transmet désormais son langage visuel et sa largeur
+   utile aux sous-catégories qui n'ont pas de layout explicite.
+   ========================================================================== */
+
+/* Une sous-catégorie placée dans une catégorie en grille utilise le même
+   langage minimaliste que les sous-catégories ayant leur propre layout. */
+.atlas-ui-taxonomy .atlas-ui-subcategory-stack--grid
+  > .atlas-ui-subcategory-panel--grid-item.atlas-ui-subcategory-panel--layout-grid {
+  min-width: 0;
+}
+
+/* Deux sous-catégories de demi-largeur : séparation verticale discrète entre
+   la colonne gauche et la colonne droite, cohérente avec les subdivisions. */
+.atlas-ui-taxonomy .atlas-ui-subcategory-stack--grid
+  > .atlas-ui-subcategory-panel--grid-item:nth-child(even):not(.atlas-ui-subcategory-panel--full-row) {
+  padding-left: 30px;
+  margin-left: 4px;
+  border-left: 1px solid #d7e4f0;
+}
+
+/* Une subdivision auto-héritée et pleine largeur ne doit jamais recevoir la
+   bordure verticale destinée aux deux colonnes côte à côte. */
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item.atlas-ui-subdivision-block--full-row {
+  padding-left: 0 !important;
+  margin-left: 0 !important;
+  border-left: 0 !important;
+}
+
+/* Dans une sous-catégorie héritée de largeur 2, les subdivisions pleine largeur
+   conservent 2 cartes par ligne via --atlas-ui-placement-span: 2. */
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item.atlas-ui-subdivision-block--full-row
+  > .display-grid--panel {
+  width: 100%;
+}
+
+[data-theme='dark']
+  .atlas-ui-taxonomy .atlas-ui-subcategory-stack--grid
+  > .atlas-ui-subcategory-panel--grid-item:nth-child(even):not(.atlas-ui-subcategory-panel--full-row) {
+  border-left-color: #3d5872;
+}
+
+@media (max-width: 900px) {
+  .atlas-ui-taxonomy .atlas-ui-subcategory-stack--grid
+    > .atlas-ui-subcategory-panel--grid-item:nth-child(even):not(.atlas-ui-subcategory-panel--full-row) {
+    padding-left: 22px;
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .atlas-ui-taxonomy .atlas-ui-subcategory-stack--grid
+    > .atlas-ui-subcategory-panel--grid-item:nth-child(even):not(.atlas-ui-subcategory-panel--full-row) {
+    padding-left: 0;
+    margin-left: 0;
+    border-left: 0;
+  }
+}
+
+
+/* ========================================================================== 
+   v5.8 — Variante « panneaux colorés »
+   --------------------------------------------------------------------------
+   Objectif : rapprocher l'UI de la proposition 3.
+   - chaque sous-catégorie en grille devient un panneau teinté ;
+   - chaque subdivision devient un sous-panneau teinté ;
+   - pas d'icônes supplémentaires, pas de palette différente selon la catégorie ;
+   - conservation du même layout taxonomique en Liste et en Cartes.
+   ========================================================================== */
+
+:root {
+  --atlas-ui-panel-bg: linear-gradient(180deg, rgba(243, 248, 253, 0.96) 0%, rgba(238, 245, 252, 0.92) 100%);
+  --atlas-ui-panel-border: #d8e6f2;
+  --atlas-ui-panel-shadow: 0 2px 10px rgba(79, 117, 151, 0.06);
+  --atlas-ui-subpanel-bg: linear-gradient(180deg, rgba(248, 251, 255, 0.96) 0%, rgba(242, 248, 254, 0.93) 100%);
+  --atlas-ui-subpanel-border: #dfeaf4;
+}
+
+/* Les grandes sous-catégories prennent la forme de panneaux unifiés. */
+.atlas-ui-taxonomy .atlas-ui-subcategory-panel--layout-grid {
+  margin-bottom: 12px;
+  padding: 18px 18px 16px;
+  border: 1px solid var(--atlas-ui-panel-border);
+  border-radius: 18px;
+  background: var(--atlas-ui-panel-bg);
+  box-shadow: var(--atlas-ui-panel-shadow);
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading {
+  margin-bottom: 16px;
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-content {
+  gap: 14px;
+}
+
+.atlas-ui-taxonomy .atlas-ui-subcategory-stack--grid {
+  gap: 22px;
+}
+
+/* Avec cette variante, les panneaux eux-mêmes assurent la séparation :
+   la ligne verticale centrale n'est plus nécessaire. */
+.atlas-ui-taxonomy .atlas-ui-subcategory-stack--grid
+  > .atlas-ui-subcategory-panel--grid-item:nth-child(even):not(.atlas-ui-subcategory-panel--full-row) {
+  padding-left: 0;
+  margin-left: 0;
+  border-left: 0;
+}
+
+/* Sous-panneaux des subdivisions. */
+.atlas-ui-taxonomy .atlas-ui-subdivision-grid {
+  gap: 16px;
+}
+
+.atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item {
+  padding: 12px 14px 14px;
+  border: 1px solid var(--atlas-ui-subpanel-border);
+  border-radius: 15px;
+  background: var(--atlas-ui-subpanel-bg);
+  box-shadow: 0 1px 6px rgba(79, 117, 151, 0.04);
+}
+
+.atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item:nth-child(even) {
+  padding-left: 14px;
+  margin-left: 0;
+  border-left: 1px solid var(--atlas-ui-subpanel-border);
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item
+  > .atlas-ui-subdivision-title {
+  margin-bottom: 12px;
+  color: #245b92;
+  font-size: 1.02rem;
+  font-weight: 760;
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item
+  > .atlas-ui-subdivision-title::after {
+  border-top-color: #cfddea;
+}
+
+/* Les cartes respirent mieux au sein des fonds colorés. */
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item
+  > .display-grid--panel,
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--grid-item
+  > .atlas-ui-subcategory-content
+  > .display-grid--panel,
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  .atlas-ui-direct-pathology-grid.display-grid--panel {
+  gap: 10px;
+}
+
+/* En vue Cartes, on conserve le fond coloré autour de la grille. */
+.atlas-ui-taxonomy--cards .atlas-ui-subcategory-panel--layout-grid {
+  padding-bottom: 18px;
+}
+
+/* Dark mode correspondant. */
+[data-theme='dark'] {
+  --atlas-ui-panel-bg: linear-gradient(180deg, rgba(31, 47, 63, 0.92) 0%, rgba(26, 40, 54, 0.94) 100%);
+  --atlas-ui-panel-border: #37516a;
+  --atlas-ui-panel-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  --atlas-ui-subpanel-bg: linear-gradient(180deg, rgba(38, 57, 75, 0.94) 0%, rgba(32, 49, 66, 0.95) 100%);
+  --atlas-ui-subpanel-border: #415c74;
+}
+
+[data-theme='dark']
+  .atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item:nth-child(even) {
+  border-left-color: var(--atlas-ui-subpanel-border);
+}
+
+[data-theme='dark']
+  .atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item > .atlas-ui-subdivision-title {
+  color: #d4e8fa;
+}
+
+[data-theme='dark']
+  .atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item > .atlas-ui-subdivision-title::after,
+[data-theme='dark']
+  .atlas-ui-taxonomy .atlas-ui-subcategory-panel--layout-grid > .atlas-ui-subcategory-heading > .atlas-ui-subcategory-main::after {
+  border-top-color: #58748e;
+}
+
+@media (max-width: 900px) {
+  .atlas-ui-taxonomy .atlas-ui-subcategory-panel--layout-grid {
+    padding: 16px 16px 15px;
+    border-radius: 16px;
+  }
+
+  .atlas-ui-taxonomy .atlas-ui-subcategory-stack--grid {
+    gap: 18px;
+  }
+
+  .atlas-ui-taxonomy .atlas-ui-subdivision-grid {
+    gap: 14px;
+  }
+
+  .atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item {
+    padding: 11px 12px 12px;
+  }
+
+  .atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item:nth-child(even) {
+    padding-left: 12px;
+    border-left-width: 1px;
+  }
+}
+
+@media (max-width: 640px) {
+  .atlas-ui-taxonomy .atlas-ui-subcategory-panel--layout-grid {
+    padding: 14px 13px 13px;
+    border-radius: 14px;
+  }
+
+  .atlas-ui-taxonomy .atlas-ui-subcategory-panel--layout-grid > .atlas-ui-subcategory-heading {
+    margin-bottom: 14px;
+  }
+
+  .atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item,
+  .atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item:nth-child(even) {
+    padding: 10px 11px 11px;
+    border-left: 1px solid var(--atlas-ui-subpanel-border);
+  }
+}
+
+
+/* ========================================================================== 
+   v5.9 — Contraste des panneaux + correction du padding colonne droite
+   --------------------------------------------------------------------------
+   - conserve le langage « panneaux colorés » de la v5.8 ;
+   - rétablit le padding interne des panneaux situés en colonne droite ;
+   - renforce légèrement le contraste entre sous-catégorie et subdivision.
+   ========================================================================== */
+
+:root {
+  /* La sous-catégorie reste très claire : c'est le grand conteneur. */
+  --atlas-ui-panel-bg: linear-gradient(
+    180deg,
+    rgba(246, 250, 254, 0.97) 0%,
+    rgba(241, 247, 252, 0.95) 100%
+  );
+  --atlas-ui-panel-border: #d4e3ef;
+  --atlas-ui-panel-shadow: 0 2px 10px rgba(69, 108, 142, 0.055);
+
+  /* La subdivision est volontairement un peu plus bleue et mieux bordée afin
+     d'être identifiable immédiatement à l'intérieur du panneau parent. */
+  --atlas-ui-subpanel-bg: linear-gradient(
+    180deg,
+    rgba(232, 242, 251, 0.94) 0%,
+    rgba(237, 246, 253, 0.92) 100%
+  );
+  --atlas-ui-subpanel-border: #c9ddea;
+  --atlas-ui-subpanel-shadow: 0 2px 8px rgba(65, 105, 140, 0.055);
+}
+
+/* --------------------------------------------------------------------------
+   Correction : la v5.8 supprimait accidentellement le padding-left des
+   sous-catégories paires pour enlever l'ancien séparateur vertical. On enlève
+   uniquement la bordure/marge et on conserve le padding normal du panneau.
+   -------------------------------------------------------------------------- */
+.atlas-ui-taxonomy .atlas-ui-subcategory-stack--grid
+  > .atlas-ui-subcategory-panel--grid-item:nth-child(even):not(.atlas-ui-subcategory-panel--full-row) {
+  padding-left: 18px;
+  margin-left: 0;
+  border-left: 1px solid var(--atlas-ui-panel-border);
+}
+
+/* Panneaux de subdivision plus lisibles à distance. */
+.atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item {
+  border-color: var(--atlas-ui-subpanel-border);
+  background: var(--atlas-ui-subpanel-bg);
+  box-shadow: var(--atlas-ui-subpanel-shadow);
+}
+
+.atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item:nth-child(even) {
+  border-left-color: var(--atlas-ui-subpanel-border);
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item
+  > .atlas-ui-subdivision-title {
+  color: #20598d;
+  font-size: 1.04rem;
+  font-weight: 770;
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item
+  > .atlas-ui-subdivision-title::after {
+  border-top-color: #bfd4e5;
+}
+
+/* Le titre de sous-catégorie reste un cran plus important que celui de
+   subdivision, sans augmenter à nouveau le bandeau de catégorie. */
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading
+  .atlas-ui-subcategory-title {
+  color: #1b4f7f;
+  font-weight: 750;
+}
+
+/* Dark mode */
+[data-theme='dark'] {
+  --atlas-ui-panel-bg: linear-gradient(
+    180deg,
+    rgba(29, 44, 59, 0.96) 0%,
+    rgba(25, 39, 52, 0.96) 100%
+  );
+  --atlas-ui-panel-border: #38536b;
+  --atlas-ui-subpanel-bg: linear-gradient(
+    180deg,
+    rgba(43, 64, 83, 0.96) 0%,
+    rgba(37, 57, 75, 0.96) 100%
+  );
+  --atlas-ui-subpanel-border: #4a6a84;
+  --atlas-ui-subpanel-shadow: 0 2px 10px rgba(0, 0, 0, 0.16);
+}
+
+[data-theme='dark']
+  .atlas-ui-taxonomy .atlas-ui-subcategory-stack--grid
+  > .atlas-ui-subcategory-panel--grid-item:nth-child(even):not(.atlas-ui-subcategory-panel--full-row) {
+  border-left-color: var(--atlas-ui-panel-border);
+}
+
+@media (max-width: 900px) {
+  .atlas-ui-taxonomy .atlas-ui-subcategory-stack--grid
+    > .atlas-ui-subcategory-panel--grid-item:nth-child(even):not(.atlas-ui-subcategory-panel--full-row) {
+    padding-left: 16px;
+  }
+}
+
+@media (max-width: 640px) {
+  .atlas-ui-taxonomy .atlas-ui-subcategory-stack--grid
+    > .atlas-ui-subcategory-panel--grid-item:nth-child(even):not(.atlas-ui-subcategory-panel--full-row) {
+    padding-left: 13px;
+  }
+}
+
+
+/* ========================================================================== 
+   v5.10 — Correction définitive du padding des subdivisions pleine largeur
+   --------------------------------------------------------------------------
+   Les subdivisions héritées (ex. Odontogènes / Non odontogènes dans une
+   sous-catégorie span=2) portent la classe --full-row. Une ancienne règle de
+   v5.7 appliquait padding-left:0 !important pour retirer le séparateur vertical.
+   Depuis la variante « panneaux colorés », cette règle ne doit plus supprimer
+   le padding interne du panneau. On rétablit donc explicitement les 4 côtés.
+   ========================================================================== */
+
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item.atlas-ui-subdivision-block--full-row {
+  box-sizing: border-box;
+  padding: 12px 14px 14px !important;
+  margin-left: 0 !important;
+  border: 1px solid var(--atlas-ui-subpanel-border) !important;
+  border-radius: 15px;
+  background: var(--atlas-ui-subpanel-bg);
+  box-shadow: var(--atlas-ui-subpanel-shadow);
+}
+
+/* La grille interne doit rester contenue dans le padding du panneau. */
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item.atlas-ui-subdivision-block--full-row
+  > .display-grid--panel {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+@media (max-width: 900px) {
+  .atlas-ui-taxonomy
+    .atlas-ui-subdivision-block--grid-item.atlas-ui-subdivision-block--full-row {
+    padding: 11px 12px 12px !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .atlas-ui-taxonomy
+    .atlas-ui-subdivision-block--grid-item.atlas-ui-subdivision-block--full-row {
+    padding: 10px 11px 11px !important;
+  }
+}
+
+
+/* ========================================================================== 
+   v5.11 — Raffinement visuel : panneaux éditoriaux + subdivisions en capsule
+   --------------------------------------------------------------------------
+   Objectifs :
+   - rapprocher l'Atlas du mockup validé sans ajouter d'icônes sémantiques ;
+   - renforcer la hiérarchie par les masses, espacements et contrastes ;
+   - alléger les répétitions de traits/bordures ;
+   - ajouter un chevron discret aux cartes de pathologie ;
+   - conserver le hover vert et toute la logique de grille existante.
+   ========================================================================== */
+
+:root {
+  --atlas-ui-panel-bg: linear-gradient(
+    180deg,
+    rgba(247, 251, 255, 0.98) 0%,
+    rgba(241, 248, 253, 0.96) 100%
+  );
+  --atlas-ui-panel-border: #d4e4f1;
+  --atlas-ui-panel-shadow: 0 5px 18px rgba(49, 91, 126, 0.055);
+
+  --atlas-ui-subpanel-bg: linear-gradient(
+    180deg,
+    rgba(229, 241, 251, 0.94) 0%,
+    rgba(236, 246, 253, 0.92) 100%
+  );
+  --atlas-ui-subpanel-border: #c7dce9;
+  --atlas-ui-subpanel-shadow: 0 3px 10px rgba(51, 92, 126, 0.05);
+
+  --atlas-ui-pill-bg: rgba(199, 224, 246, 0.72);
+  --atlas-ui-pill-border: rgba(128, 174, 211, 0.24);
+  --atlas-ui-rule: #c8dae8;
+  --atlas-ui-title: #174f82;
+  --atlas-ui-subtitle: #235f94;
+}
+
+/* ---------- Catégorie : signature graphique légère ---------- */
+.atlas-ui-category > .display-section-heading {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(166, 199, 224, 0.34);
+  background: linear-gradient(90deg, #dcecf9 0%, #d6e9f9 56%, #dcecf9 100%);
+  box-shadow: 0 2px 7px rgba(46, 84, 116, 0.05);
+}
+
+.atlas-ui-category > .display-section-heading::before {
+  content: '';
+  position: absolute;
+  left: 13px;
+  top: 50%;
+  width: 4px;
+  height: 52%;
+  border-radius: 999px;
+  background: var(--ifm-color-primary);
+  opacity: 0.82;
+  transform: translateY(-50%);
+}
+
+.atlas-ui-category > .display-section-heading .display-section-title {
+  padding-left: 10px;
+}
+
+/* ---------- Sous-catégorie : grand panneau calme ---------- */
+.atlas-ui-taxonomy .atlas-ui-subcategory-panel--layout-grid {
+  padding: 20px 20px 18px;
+  border-color: var(--atlas-ui-panel-border);
+  border-radius: 17px;
+  background: var(--atlas-ui-panel-bg);
+  box-shadow: var(--atlas-ui-panel-shadow);
+}
+
+.atlas-ui-taxonomy .atlas-ui-subcategory-stack--grid {
+  gap: 22px;
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading {
+  margin-bottom: 18px;
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading
+  > .atlas-ui-subcategory-main {
+  gap: 16px;
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading
+  .atlas-ui-subcategory-title {
+  color: var(--atlas-ui-title);
+  font-size: 1.25rem;
+  font-weight: 735;
+  line-height: 1.18;
+  letter-spacing: -0.008em;
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading
+  > .atlas-ui-subcategory-main::after {
+  border-top-color: var(--atlas-ui-rule);
+  opacity: 0.86;
+}
+
+/* ---------- Subdivision : zone plus contrastée, mais moins "boîte dans boîte" ---------- */
+.atlas-ui-taxonomy .atlas-ui-subdivision-grid {
+  gap: 18px;
+}
+
+.atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item,
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item.atlas-ui-subdivision-block--full-row {
+  padding: 15px 16px 16px !important;
+  border: 1px solid var(--atlas-ui-subpanel-border) !important;
+  border-radius: 13px;
+  background: var(--atlas-ui-subpanel-bg);
+  box-shadow: var(--atlas-ui-subpanel-shadow);
+}
+
+/* Le titre devient une capsule compacte : le fond du panneau suffit à tracer
+   les limites, donc on supprime le long trait horizontal répété. */
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item
+  > .atlas-ui-subdivision-title {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 30px;
+  margin: 0 0 13px;
+  padding: 5px 11px 5px;
+  border: 1px solid var(--atlas-ui-pill-border);
+  border-radius: 999px;
+  background: var(--atlas-ui-pill-bg);
+  color: var(--atlas-ui-subtitle);
+  font-size: 0.94rem;
+  font-weight: 720;
+  line-height: 1.15;
+  letter-spacing: 0.01em;
+  box-shadow: none;
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item
+  > .atlas-ui-subdivision-title::after {
+  display: none;
+  content: none;
+}
+
+/* ---------- Cartes de pathologie ---------- */
+.atlas-ui-taxonomy .display-card:not(.display-card--disabled) {
+  border-color: rgba(120, 145, 165, 0.22);
+  box-shadow: 0 1px 4px rgba(35, 66, 91, 0.035);
+}
+
+.atlas-ui-taxonomy .display-card-body {
+  position: relative;
+  min-width: 0;
+  padding-right: 34px !important;
+}
+
+.atlas-ui-taxonomy .display-card-chevron {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 22px;
+  color: #6f94b4;
+  font-size: 1.55rem;
+  font-weight: 300;
+  line-height: 1;
+  opacity: 0.76;
+  transform: translateY(-52%);
+  transition:
+    color 140ms ease,
+    opacity 140ms ease,
+    transform 140ms ease;
+  pointer-events: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .atlas-ui-taxonomy
+    .display-card:not(.display-card--disabled):hover
+    .display-card-chevron {
+    color: var(--ifm-color-primary);
+    opacity: 1;
+    transform: translate(2px, -52%);
+  }
+}
+
+.atlas-ui-taxonomy .display-card--disabled .display-card-chevron {
+  opacity: 0.2;
+}
+
+/* Les cartes restent blanches et nettes sur les panneaux colorés. */
+.atlas-ui-taxonomy .display-card--list,
+.atlas-ui-taxonomy .display-card--cards .display-card-thumb {
+  background-color: var(--ifm-background-surface-color);
+}
+
+/* ---------- Espacements internes ---------- */
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item
+  > .display-grid--panel,
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--grid-item
+  > .atlas-ui-subcategory-content
+  > .display-grid--panel,
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  .atlas-ui-direct-pathology-grid.display-grid--panel {
+  gap: 11px;
+}
+
+/* ---------- Dark mode ---------- */
+[data-theme='dark'] {
+  --atlas-ui-panel-bg: linear-gradient(180deg, rgba(28, 43, 57, 0.97), rgba(24, 38, 51, 0.97));
+  --atlas-ui-panel-border: #38546d;
+  --atlas-ui-panel-shadow: 0 5px 18px rgba(0, 0, 0, 0.19);
+  --atlas-ui-subpanel-bg: linear-gradient(180deg, rgba(41, 62, 81, 0.97), rgba(35, 54, 71, 0.97));
+  --atlas-ui-subpanel-border: #4a6c87;
+  --atlas-ui-subpanel-shadow: 0 3px 12px rgba(0, 0, 0, 0.16);
+  --atlas-ui-pill-bg: rgba(74, 112, 145, 0.46);
+  --atlas-ui-pill-border: rgba(129, 173, 209, 0.22);
+  --atlas-ui-rule: #536f87;
+  --atlas-ui-title: #d9ecfb;
+  --atlas-ui-subtitle: #d1e8fa;
+}
+
+[data-theme='dark'] .atlas-ui-category > .display-section-heading {
+  border-color: #39546b;
+  background: linear-gradient(90deg, #223b53, #20384e 58%, #223b53);
+}
+
+[data-theme='dark'] .atlas-ui-taxonomy .display-card-chevron {
+  color: #8dafca;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 900px) {
+  .atlas-ui-taxonomy .atlas-ui-subcategory-panel--layout-grid {
+    padding: 17px 17px 16px;
+  }
+
+  .atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item,
+  .atlas-ui-taxonomy
+    .atlas-ui-subdivision-block--grid-item.atlas-ui-subdivision-block--full-row {
+    padding: 13px 13px 14px !important;
+  }
+
+  .atlas-ui-taxonomy .atlas-ui-subcategory-stack--grid,
+  .atlas-ui-taxonomy .atlas-ui-subdivision-grid {
+    gap: 16px;
+  }
+}
+
+@media (max-width: 640px) {
+  .atlas-ui-category > .display-section-heading::before {
+    left: 10px;
+    width: 3px;
+  }
+
+  .atlas-ui-category > .display-section-heading .display-section-title {
+    padding-left: 7px;
+  }
+
+  .atlas-ui-taxonomy .atlas-ui-subcategory-panel--layout-grid {
+    padding: 14px 13px 13px;
+    border-radius: 14px;
+  }
+
+  .atlas-ui-taxonomy
+    .atlas-ui-subcategory-panel--layout-grid
+    > .atlas-ui-subcategory-heading
+    .atlas-ui-subcategory-title {
+    font-size: 1.1rem;
+  }
+
+  .atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item,
+  .atlas-ui-taxonomy
+    .atlas-ui-subdivision-block--grid-item.atlas-ui-subdivision-block--full-row {
+    padding: 11px !important;
+    border-radius: 11px;
+  }
+
+  .atlas-ui-taxonomy
+    .atlas-ui-subdivision-block--grid-item
+    > .atlas-ui-subdivision-title {
+    margin-bottom: 10px;
+    padding: 4px 9px;
+    font-size: 0.9rem;
+  }
+
+  .atlas-ui-taxonomy .display-card-body {
+    padding-right: 29px !important;
+  }
+
+  .atlas-ui-taxonomy .display-card-chevron {
+    right: 9px;
+  }
+}
+
+
+/* ========================================================================== 
+   v5.12 — Panneaux doux inspirés de la maquette Kystes
+   --------------------------------------------------------------------------
+   - chevrons supprimés du JSX ;
+   - bordures beaucoup plus discrètes ;
+   - subdivisions colorées sans contour externe ;
+   - palettes plus douces et mieux hiérarchisées ;
+   - grilles directes traitées comme des zones internes colorées ;
+   - cartes blanches, nettes, sans effet "boîte dans boîte" trop marqué.
+   ========================================================================== */
+
+:root {
+  /* Niveau sous-catégorie : presque blanc, légèrement bleuté. */
+  --atlas-ui-panel-bg-soft: linear-gradient(
+    180deg,
+    rgba(250, 253, 255, 0.97) 0%,
+    rgba(246, 251, 255, 0.96) 100%
+  );
+  --atlas-ui-panel-border-soft: rgba(151, 189, 220, 0.34);
+
+  /* Niveau subdivision / zone interne : bleu doux plus présent, sans bordure. */
+  --atlas-ui-subpanel-bg-soft: linear-gradient(
+    180deg,
+    rgba(231, 243, 253, 0.95) 0%,
+    rgba(237, 247, 254, 0.94) 100%
+  );
+
+  /* Capsule de subdivision, légèrement plus soutenue que son panneau. */
+  --atlas-ui-pill-bg-soft: rgba(205, 228, 248, 0.88);
+  --atlas-ui-pill-text-soft: #1f5d94;
+
+  --atlas-ui-rule-soft: rgba(124, 169, 205, 0.42);
+  --atlas-ui-card-border-soft: rgba(116, 145, 169, 0.18);
+  --atlas-ui-card-shadow-soft: 0 1px 3px rgba(47, 79, 105, 0.035);
+}
+
+/* ---------- Catégorie : bandeau plus léger et plus proche de la maquette ---------- */
+.atlas-ui-category > .display-section-heading {
+  border: 1px solid rgba(154, 192, 223, 0.22);
+  background: linear-gradient(90deg, #e8f4ff 0%, #e2f0fc 100%);
+  box-shadow: 0 1px 4px rgba(64, 101, 132, 0.035);
+}
+
+/* La barre d'accent de la v5.11 est supprimée : sans icône, elle surcharge. */
+.atlas-ui-category > .display-section-heading::before {
+  display: none;
+  content: none;
+}
+
+.atlas-ui-category > .display-section-heading .display-section-title {
+  padding-left: 0;
+}
+
+/* ---------- Sous-catégorie : grande zone très douce ---------- */
+.atlas-ui-taxonomy .atlas-ui-subcategory-panel--layout-grid {
+  padding: 18px 18px 17px;
+  border: 1px solid var(--atlas-ui-panel-border-soft);
+  border-radius: 16px;
+  background: var(--atlas-ui-panel-bg-soft);
+  box-shadow: 0 1px 5px rgba(67, 105, 137, 0.035);
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading {
+  margin-bottom: 15px;
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading
+  .atlas-ui-subcategory-title {
+  color: #164f83;
+  font-size: 1.23rem;
+  font-weight: 715;
+  letter-spacing: -0.006em;
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading
+  > .atlas-ui-subcategory-main::after {
+  border-top-color: var(--atlas-ui-rule-soft);
+  opacity: 0.8;
+}
+
+/* ---------- Subdivision : fond coloré sans bordure extérieure ---------- */
+.atlas-ui-taxonomy .atlas-ui-subdivision-grid {
+  gap: 16px;
+}
+
+.atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item,
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item.atlas-ui-subdivision-block--full-row {
+  padding: 13px 14px 14px !important;
+  border: 0 !important;
+  border-radius: 13px;
+  background: var(--atlas-ui-subpanel-bg-soft);
+  box-shadow: none;
+}
+
+/* Neutralise définitivement les anciennes règles colonne droite/full-row. */
+.atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item:nth-child(even),
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item.atlas-ui-subdivision-block--full-row {
+  margin-left: 0 !important;
+  border-left: 0 !important;
+}
+
+/* Capsule légère, elle aussi sans bordure. */
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item
+  > .atlas-ui-subdivision-title {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 27px;
+  margin: 0 0 11px;
+  padding: 4px 10px 4px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--atlas-ui-pill-bg-soft);
+  color: var(--atlas-ui-pill-text-soft);
+  font-size: 0.92rem;
+  font-weight: 690;
+  line-height: 1.15;
+  letter-spacing: 0.008em;
+  box-shadow: none;
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item
+  > .atlas-ui-subdivision-title::after {
+  display: none;
+  content: none;
+}
+
+/* ---------- Sous-catégorie sans subdivision : crée la même zone interne ---------- */
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  .atlas-ui-direct-pathology-grid.display-grid--panel {
+  box-sizing: border-box;
+  padding: 13px 14px 14px;
+  border: 0;
+  border-radius: 13px;
+  background: var(--atlas-ui-subpanel-bg-soft);
+}
+
+/* ---------- Cartes : beaucoup plus légères au repos ---------- */
+.atlas-ui-taxonomy .display-card:not(.display-card--disabled) {
+  border: 1px solid var(--atlas-ui-card-border-soft);
+  box-shadow: var(--atlas-ui-card-shadow-soft);
+}
+
+/* Le chevron n'existe plus : restitue le padding naturel du corps. */
+.atlas-ui-taxonomy .display-card-body {
+  padding-right: 12px !important;
+}
+
+/* Anciennes règles de chevron rendues inertes si un ancien DOM subsiste. */
+.atlas-ui-taxonomy .display-card-chevron {
+  display: none !important;
+}
+
+/* Légère différence de rayon : panneaux larges > zones internes > cartes. */
+.atlas-ui-taxonomy .display-card--list {
+  border-radius: 10px;
+}
+
+.atlas-ui-taxonomy .display-card--cards .display-card-thumb {
+  border-radius: 10px;
+}
+
+/* Le hover vert partagé reste prioritaire. */
+@media (hover: hover) and (pointer: fine) {
+  .atlas-ui-taxonomy
+    .display-card--list:not(.display-card--disabled):hover {
+    border: var(--card-border-hover);
+    box-shadow: var(--card-shadow-hover);
+  }
+
+  .atlas-ui-taxonomy
+    .display-card--cards:not(.display-card--disabled):hover
+    .display-card-thumb {
+    border: var(--card-border-hover);
+    box-shadow: var(--card-shadow-hover);
+  }
+}
+
+/* ---------- Dark mode ---------- */
+[data-theme='dark'] {
+  --atlas-ui-panel-bg-soft: linear-gradient(180deg, rgba(28, 43, 57, 0.97), rgba(25, 39, 52, 0.97));
+  --atlas-ui-panel-border-soft: rgba(94, 132, 163, 0.42);
+  --atlas-ui-subpanel-bg-soft: linear-gradient(180deg, rgba(39, 60, 78, 0.96), rgba(34, 53, 70, 0.96));
+  --atlas-ui-pill-bg-soft: rgba(70, 108, 140, 0.5);
+  --atlas-ui-pill-text-soft: #d4eafb;
+  --atlas-ui-rule-soft: rgba(104, 143, 175, 0.55);
+  --atlas-ui-card-border-soft: rgba(134, 163, 187, 0.22);
+  --atlas-ui-card-shadow-soft: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+
+[data-theme='dark'] .atlas-ui-category > .display-section-heading {
+  border-color: rgba(84, 119, 148, 0.42);
+  background: linear-gradient(90deg, #233d54 0%, #20384d 100%);
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 900px) {
+  .atlas-ui-taxonomy .atlas-ui-subcategory-panel--layout-grid {
+    padding: 16px 15px 15px;
+  }
+
+  .atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item,
+  .atlas-ui-taxonomy
+    .atlas-ui-subdivision-block--grid-item.atlas-ui-subdivision-block--full-row,
+  .atlas-ui-taxonomy
+    .atlas-ui-subcategory-panel--layout-grid
+    .atlas-ui-direct-pathology-grid.display-grid--panel {
+    padding: 12px 12px 13px !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .atlas-ui-taxonomy .atlas-ui-subcategory-panel--layout-grid {
+    padding: 13px 12px 12px;
+    border-radius: 14px;
+  }
+
+  .atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item,
+  .atlas-ui-taxonomy
+    .atlas-ui-subdivision-block--grid-item.atlas-ui-subdivision-block--full-row,
+  .atlas-ui-taxonomy
+    .atlas-ui-subcategory-panel--layout-grid
+    .atlas-ui-direct-pathology-grid.display-grid--panel {
+    padding: 10px 10px 11px !important;
+    border-radius: 11px;
+  }
+
+  .atlas-ui-taxonomy
+    .atlas-ui-subdivision-block--grid-item
+    > .atlas-ui-subdivision-title {
+    margin-bottom: 9px;
+    padding: 4px 9px;
+    font-size: 0.88rem;
+  }
+
+  .atlas-ui-taxonomy .display-card-body {
+    padding-right: 10px !important;
+  }
+}
+
+
+/* ========================================================================== 
+   v5.13 — Densité, hiérarchie et espace optimisés
+   --------------------------------------------------------------------------
+   - pas de second fond dans une sous-catégorie sans subdivision ;
+   - panneaux parents plus légers et plus compacts ;
+   - subdivisions plus denses et mieux différenciées ;
+   - hiérarchie typographique renforcée sans ajouter de couleurs ;
+   - cartes Liste légèrement plus compactes ;
+   - espacements réduits tout en gardant une lecture aérée.
+   ========================================================================== */
+
+:root {
+  --atlas-ui-panel-bg-soft: rgba(249, 252, 255, 0.92);
+  --atlas-ui-panel-border-soft: rgba(151, 189, 220, 0.24);
+  --atlas-ui-subpanel-bg-soft: linear-gradient(
+    180deg,
+    rgba(226, 240, 252, 0.94) 0%,
+    rgba(233, 245, 253, 0.92) 100%
+  );
+  --atlas-ui-pill-bg-soft: rgba(200, 226, 247, 0.9);
+  --atlas-ui-pill-text-soft: #225c8f;
+  --atlas-ui-rule-soft: rgba(124, 169, 205, 0.34);
+}
+
+/* ---------- Sous-catégories : plus légères et moins hautes ---------- */
+.atlas-ui-taxonomy .atlas-ui-subcategory-stack--grid {
+  gap: 18px;
+}
+
+.atlas-ui-taxonomy .atlas-ui-subcategory-panel--layout-grid {
+  padding: 15px 15px 14px;
+  border-color: var(--atlas-ui-panel-border-soft);
+  border-radius: 15px;
+  background: var(--atlas-ui-panel-bg-soft);
+  box-shadow: none;
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading {
+  margin-bottom: 12px;
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading
+  .atlas-ui-subcategory-title {
+  font-size: 1.2rem;
+  font-weight: 720;
+  line-height: 1.16;
+  letter-spacing: -0.006em;
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading
+  > .atlas-ui-subcategory-main {
+  gap: 15px;
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading
+  > .atlas-ui-subcategory-main::after {
+  opacity: 0.68;
+}
+
+/* ---------- Sous-catégorie SANS subdivision ----------
+   Le panneau parent suffit : pas de deuxième aplat bleu inutile. */
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid.atlas-ui-subcategory-panel--no-subdivisions
+  .atlas-ui-direct-pathology-grid.display-grid--panel {
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* ---------- Subdivisions : plus compactes, mais immédiatement lisibles ---------- */
+.atlas-ui-taxonomy .atlas-ui-subdivision-grid {
+  gap: 14px;
+}
+
+.atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item,
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item.atlas-ui-subdivision-block--full-row {
+  padding: 11px 12px 12px !important;
+  border: 0 !important;
+  border-radius: 12px;
+  background: var(--atlas-ui-subpanel-bg-soft);
+  box-shadow: none;
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item
+  > .atlas-ui-subdivision-title {
+  min-height: 24px;
+  margin: 0 0 9px;
+  padding: 3px 9px;
+  background: var(--atlas-ui-pill-bg-soft);
+  color: var(--atlas-ui-pill-text-soft);
+  font-size: 0.87rem;
+  font-weight: 690;
+  line-height: 1.16;
+  letter-spacing: 0.012em;
+}
+
+/* ---------- Densité interne ---------- */
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item
+  > .display-grid--panel,
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--grid-item
+  > .atlas-ui-subcategory-content
+  > .display-grid--panel,
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  .atlas-ui-direct-pathology-grid.display-grid--panel {
+  gap: 9px;
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-content {
+  gap: 11px;
+}
+
+/* ---------- Cartes Liste : dimensions restaurées ---------- */
+/*
+ * Aucune dimension locale n'est imposée ici. Les cartes reprennent exactement
+ * les proportions du composant partagé / de la v5.12.
+ */
+
+/* La carte reste clairement détachée du fond sans paraître entourée d'un cadre. */
+.atlas-ui-taxonomy .display-card:not(.display-card--disabled) {
+  border-color: rgba(116, 145, 169, 0.16);
+  box-shadow: 0 1px 3px rgba(47, 79, 105, 0.025);
+}
+
+/* ---------- Catégorie : hiérarchie claire sans prendre trop de hauteur ---------- */
+.atlas-ui-category > .display-section-heading {
+  min-height: 54px;
+  padding: 10px 17px;
+  box-shadow: none;
+}
+
+.atlas-ui-category > .display-section-heading .display-section-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+/* ---------- Dark mode ---------- */
+[data-theme='dark'] {
+  --atlas-ui-panel-bg-soft: rgba(27, 42, 56, 0.96);
+  --atlas-ui-panel-border-soft: rgba(94, 132, 163, 0.34);
+  --atlas-ui-subpanel-bg-soft: linear-gradient(180deg, rgba(39, 60, 78, 0.95), rgba(34, 53, 70, 0.95));
+  --atlas-ui-pill-bg-soft: rgba(70, 108, 140, 0.48);
+  --atlas-ui-pill-text-soft: #d4eafb;
+}
+
+[data-theme='dark']
+  .atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid.atlas-ui-subcategory-panel--no-subdivisions
+  .atlas-ui-direct-pathology-grid.display-grid--panel {
+  background: transparent !important;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 900px) {
+  .atlas-ui-taxonomy .atlas-ui-subcategory-stack--grid {
+    gap: 16px;
+  }
+
+  .atlas-ui-taxonomy .atlas-ui-subcategory-panel--layout-grid {
+    padding: 14px 13px 13px;
+  }
+
+  .atlas-ui-taxonomy .atlas-ui-subdivision-grid {
+    gap: 12px;
+  }
+
+  .atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item,
+  .atlas-ui-taxonomy
+    .atlas-ui-subdivision-block--grid-item.atlas-ui-subdivision-block--full-row {
+    padding: 10px 11px 11px !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .atlas-ui-taxonomy .atlas-ui-subcategory-panel--layout-grid {
+    padding: 12px 11px 11px;
+  }
+
+  .atlas-ui-taxonomy
+    .atlas-ui-subcategory-panel--layout-grid
+    > .atlas-ui-subcategory-heading {
+    margin-bottom: 10px;
+  }
+
+  .atlas-ui-taxonomy
+    .atlas-ui-subcategory-panel--layout-grid
+    > .atlas-ui-subcategory-heading
+    .atlas-ui-subcategory-title {
+    font-size: 1.08rem;
+  }
+
+  .atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item,
+  .atlas-ui-taxonomy
+    .atlas-ui-subdivision-block--grid-item.atlas-ui-subdivision-block--full-row {
+    padding: 9px 10px 10px !important;
+  }
+
+  .atlas-ui-taxonomy
+    .atlas-ui-subdivision-block--grid-item
+    > .atlas-ui-subdivision-title {
+    min-height: 22px;
+    margin-bottom: 8px;
+    padding: 3px 8px;
+    font-size: 0.84rem;
+  }
+
+  .atlas-ui-category > .display-section-heading {
+    min-height: 48px;
+    padding: 9px 12px;
+  }
+
+  .atlas-ui-category > .display-section-heading .display-section-title {
+    font-size: 1.12rem;
+  }
+}
+
+
+/* ========================================================================== 
+   v5.15 — Restauration stricte des cartes
+   --------------------------------------------------------------------------
+   La tentative v5.13 de compacter les cartes est entièrement retirée.
+   On ne force ici ni largeur de vignette, ni hauteur minimale, ni colonnes
+   internes : le composant partagé reprend son aspect validé d'avant v5.13,
+   y compris dans les dispositions Atlas non-layout.
+   ========================================================================== */
+
+.atlas-ui-taxonomy .display-card--list,
+.atlas-ui-taxonomy .display-card--list .display-card-thumb {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+
+/* ========================================================================== 
+   v5.16 — Fiche générale en ligne + hauteurs appariées dans les grilles
+   --------------------------------------------------------------------------
+   1) La puce « Fiche générale » reste sur la même ligne que le titre de la
+      sous-catégorie dans le nouveau layout.
+   2) Les sous-catégories / subdivisions voisines d'une même rangée prennent
+      automatiquement la hauteur du bloc le plus haut de cette rangée.
+   ========================================================================== */
+
+/* ---------- Fiche générale : titre + puce + trait sur une seule ligne ---------- */
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid.atlas-ui-subcategory-panel--has-general
+  > .atlas-ui-subcategory-heading
+  > .atlas-ui-subcategory-main {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+  gap: 10px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid.atlas-ui-subcategory-panel--has-general
+  > .atlas-ui-subcategory-heading
+  .atlas-ui-subcategory-title {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid.atlas-ui-subcategory-panel--has-general
+  > .atlas-ui-subcategory-heading
+  .atlas-ui-general-pathology-list {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: row;
+  align-items: center;
+  margin: 0;
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid.atlas-ui-subcategory-panel--has-general
+  > .atlas-ui-subcategory-heading
+  .atlas-ui-general-pathology-link {
+  padding: 5px 9px;
+  border-radius: 999px;
+  box-shadow: 0 2px 4px -2px rgba(31, 63, 88, 0.28);
+  white-space: nowrap;
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid.atlas-ui-subcategory-panel--has-general
+  > .atlas-ui-subcategory-heading
+  .atlas-ui-general-pathology-kicker {
+  font-size: 0.68rem;
+  line-height: 1.1;
+}
+
+/* ---------- Grilles : égalisation de hauteur uniquement entre voisins ---------- */
+.atlas-ui-taxonomy .atlas-ui-subcategory-stack--grid,
+.atlas-ui-taxonomy .atlas-ui-subdivision-grid {
+  align-items: stretch;
+}
+
+.atlas-ui-taxonomy .atlas-ui-subcategory-panel--grid-item,
+.atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item {
+  align-self: stretch;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+/* Les panneaux du nouveau layout remplissent toute la hauteur attribuée par
+   leur rangée CSS Grid. Chaque ligne reste indépendante des lignes suivantes. */
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--grid-item.atlas-ui-subcategory-panel--layout-grid {
+  display: flex;
+  flex-direction: column;
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--grid-item.atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-content {
+  flex: 1 1 auto;
+}
+
+.atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item
+  > .display-grid--panel {
+  align-content: start;
+}
+
+/* En mobile, chaque bloc est seul sur sa rangée : pas besoin de forcer une
+   hauteur héritée d'une autre colonne. */
+@media (max-width: 640px) {
+  .atlas-ui-taxonomy .atlas-ui-subcategory-panel--grid-item,
+  .atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item {
+    height: auto;
+  }
+
+  .atlas-ui-taxonomy
+    .atlas-ui-subcategory-panel--layout-grid.atlas-ui-subcategory-panel--has-general
+    > .atlas-ui-subcategory-heading
+    > .atlas-ui-subcategory-main {
+    flex-wrap: wrap;
+    row-gap: 7px;
+  }
+}
+
+
+/* ========================================================================== 
+   v5.17 — Sous-catégories sans trait horizontal
+   --------------------------------------------------------------------------
+   Les fonds colorés et les panneaux suffisent désormais à matérialiser la
+   hiérarchie. Le trait qui prolongeait le titre de sous-catégorie est retiré.
+   Les subdivisions et la puce « Fiche générale » restent inchangées.
+   ========================================================================== */
+
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading
+  > .atlas-ui-subcategory-main::after {
+  content: none !important;
+  display: none !important;
+  border: 0 !important;
+}
+
+/* Sans le trait, le titre n'a plus besoin de réserver un grand espace à droite. */
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading
+  > .atlas-ui-subcategory-main {
+  gap: 0;
+}
+
+/* Le cas avec fiche générale conserve uniquement l'espacement utile entre
+   le titre et la puce. */
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid.atlas-ui-subcategory-panel--has-general
+  > .atlas-ui-subcategory-heading
+  > .atlas-ui-subcategory-main {
+  gap: 10px;
+}
+
+
+/* ========================================================================== 
+   v5.18 — Densité structurelle affinée
+   --------------------------------------------------------------------------
+   Objectif : faire rentrer davantage de sous-catégories à l'écran sans
+   modifier la géométrie validée des cartes de pathologie.
+   - bandeau de catégorie un peu plus compact ;
+   - panneaux de sous-catégorie moins hauts ;
+   - titres légèrement réduits et moins lourds ;
+   - espacements verticaux resserrés ;
+   - subdivisions plus compactes ;
+   - sous-catégories sans subdivisions centrées verticalement lorsqu'une
+     voisine plus haute impose la hauteur de la rangée.
+   ========================================================================== */
+
+/* ---------- Catégorie ---------- */
+.atlas-ui-category > .display-section-heading {
+  min-height: 50px;
+  padding: 8px 15px;
+  border-radius: 10px;
+}
+
+.atlas-ui-category > .display-section-heading .display-section-title {
+  font-size: 1.22rem;
+  font-weight: 690;
+  line-height: 1.15;
+  letter-spacing: -0.006em;
+}
+
+/* ---------- Grille de sous-catégories ---------- */
+.atlas-ui-taxonomy .atlas-ui-subcategory-stack--grid {
+  gap: 14px;
+}
+
+.atlas-ui-taxonomy .atlas-ui-subcategory-panel--layout-grid {
+  padding: 12px 13px 12px;
+  border-radius: 13px;
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading {
+  margin-bottom: 9px;
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading
+  .atlas-ui-subcategory-title {
+  font-size: 1.1rem;
+  font-weight: 690;
+  line-height: 1.15;
+  letter-spacing: -0.004em;
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-content {
+  gap: 9px;
+}
+
+/* Une sous-catégorie simple qui partage sa rangée avec un bloc plus haut
+   utilise le surplus d'espace de manière équilibrée au lieu de laisser
+   tout le contenu collé en haut. */
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid.atlas-ui-subcategory-panel--no-subdivisions
+  > .atlas-ui-subcategory-content {
+  justify-content: center;
+}
+
+/* ---------- Fiche générale ---------- */
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid.atlas-ui-subcategory-panel--has-general
+  > .atlas-ui-subcategory-heading
+  > .atlas-ui-subcategory-main {
+  gap: 8px;
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid.atlas-ui-subcategory-panel--has-general
+  > .atlas-ui-subcategory-heading
+  .atlas-ui-general-pathology-link {
+  padding: 4px 8px;
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid.atlas-ui-subcategory-panel--has-general
+  > .atlas-ui-subcategory-heading
+  .atlas-ui-general-pathology-kicker {
+  font-size: 0.65rem;
+}
+
+/* ---------- Subdivisions ---------- */
+.atlas-ui-taxonomy .atlas-ui-subdivision-grid {
+  gap: 12px;
+}
+
+.atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item,
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item.atlas-ui-subdivision-block--full-row {
+  padding: 9px 10px 10px !important;
+  border-radius: 11px;
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item
+  > .atlas-ui-subdivision-title {
+  min-height: 22px;
+  margin: 0 0 8px;
+  padding: 3px 8px;
+  font-size: 0.82rem;
+  font-weight: 670;
+  line-height: 1.12;
+  letter-spacing: 0.008em;
+}
+
+/* Les cartes gardent intégralement leurs dimensions validées. On ne touche
+   qu'aux espacements de grille qui les entourent. */
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item
+  > .display-grid--panel,
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--grid-item
+  > .atlas-ui-subcategory-content
+  > .display-grid--panel,
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  .atlas-ui-direct-pathology-grid.display-grid--panel {
+  gap: 9px;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 900px) {
+  .atlas-ui-category > .display-section-heading {
+    min-height: 48px;
+    padding: 8px 13px;
+  }
+
+  .atlas-ui-category > .display-section-heading .display-section-title {
+    font-size: 1.16rem;
+  }
+
+  .atlas-ui-taxonomy .atlas-ui-subcategory-stack--grid {
+    gap: 13px;
+  }
+
+  .atlas-ui-taxonomy .atlas-ui-subcategory-panel--layout-grid {
+    padding: 11px 12px 11px;
+  }
+
+  .atlas-ui-taxonomy
+    .atlas-ui-subcategory-panel--layout-grid
+    > .atlas-ui-subcategory-heading {
+    margin-bottom: 8px;
+  }
+
+  .atlas-ui-taxonomy
+    .atlas-ui-subcategory-panel--layout-grid
+    > .atlas-ui-subcategory-heading
+    .atlas-ui-subcategory-title {
+    font-size: 1.05rem;
+  }
+
+  .atlas-ui-taxonomy .atlas-ui-subdivision-grid {
+    gap: 11px;
+  }
+
+  .atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item,
+  .atlas-ui-taxonomy
+    .atlas-ui-subdivision-block--grid-item.atlas-ui-subdivision-block--full-row {
+    padding: 8px 9px 9px !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .atlas-ui-category > .display-section-heading {
+    min-height: 46px;
+    padding: 8px 11px;
+  }
+
+  .atlas-ui-category > .display-section-heading .display-section-title {
+    font-size: 1.08rem;
+  }
+
+  .atlas-ui-taxonomy .atlas-ui-subcategory-panel--layout-grid {
+    padding: 10px;
+  }
+
+  .atlas-ui-taxonomy
+    .atlas-ui-subcategory-panel--layout-grid
+    > .atlas-ui-subcategory-heading
+    .atlas-ui-subcategory-title {
+    font-size: 1rem;
+  }
+
+  .atlas-ui-taxonomy
+    .atlas-ui-subdivision-block--grid-item
+    > .atlas-ui-subdivision-title {
+    font-size: 0.8rem;
+  }
+
+  .atlas-ui-taxonomy
+    .atlas-ui-subcategory-panel--layout-grid.atlas-ui-subcategory-panel--no-subdivisions
+    > .atlas-ui-subcategory-content {
+    justify-content: flex-start;
+  }
+}
+
+/* ========================================================================== 
+   v5.19 — Parent panel allégé (opaque) + titres de subdivisions textuels
+   --------------------------------------------------------------------------
+   - le panneau parent redevient une surface claire opaque et très discrète ;
+   - les blocs de subdivision gardent leur fond coloré mais sans bordure ;
+   - les titres de subdivision ne ressemblent plus à des capsules/puces.
+   ========================================================================== */
+
+.atlas-ui-taxonomy--list .atlas-ui-subcategory-panel--layout-grid {
+  background: #f9fcff;
+  border: 1px solid #dbe8f3;
+  border-radius: 18px;
+  box-shadow: none;
+}
+
+.atlas-ui-taxonomy--list
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading {
+  margin-bottom: 16px;
+}
+
+/* Sous-catégories avec subdivisions : le panneau parent doit exister mais
+   rester visuellement léger. */
+.atlas-ui-taxonomy--list
+  .atlas-ui-subcategory-panel--layout-grid.atlas-ui-subcategory-panel--has-subdivisions
+  > .atlas-ui-subcategory-content {
+  gap: 18px;
+}
+
+/* Les subdivisions deviennent les véritables groupes colorés, sans bordure
+   externe visible. */
+.atlas-ui-taxonomy--list .atlas-ui-subdivision-grid {
+  gap: 18px 18px;
+}
+
+.atlas-ui-taxonomy--list .atlas-ui-subdivision-block--grid-item {
+  padding: 14px 14px 16px;
+  border: 0;
+  border-radius: 16px;
+  background: #eaf4fc;
+  box-shadow: none;
+}
+
+.atlas-ui-taxonomy--list .atlas-ui-subdivision-block--grid-item:nth-child(even) {
+  padding-left: 14px;
+  margin-left: 0;
+  border-left: 0;
+}
+
+/* Le titre de subdivision n'est plus une puce/capsule : c'est un vrai titre
+   textuel aligné au bord du groupe. */
+.atlas-ui-taxonomy--list
+  .atlas-ui-subdivision-block--grid-item
+  > .atlas-ui-subdivision-title {
+  display: block;
+  min-height: 0;
+  margin: 0 0 12px;
+  padding: 0 2px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #215280;
+  font-size: 1rem;
+  font-weight: 760;
+  line-height: 1.2;
+  letter-spacing: -0.008em;
+}
+
+.atlas-ui-taxonomy--list
+  .atlas-ui-subdivision-block--grid-item
+  > .atlas-ui-subdivision-title::after {
+  content: none;
+}
+
+/* Les sous-catégories sans subdivisions n'ont pas de second fond teinté. */
+.atlas-ui-taxonomy--list
+  .atlas-ui-subcategory-panel--layout-grid.atlas-ui-subcategory-panel--no-subdivisions
+  > .atlas-ui-subcategory-content {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+/* Carte interne : un léger alignement pour que le groupe reste aéré. */
+.atlas-ui-taxonomy--list
+  .atlas-ui-subdivision-block--grid-item
+  .display-grid--panel {
+  gap: 10px;
+}
+
+/* Mode sombre */
+[data-theme='dark'] .atlas-ui-taxonomy--list .atlas-ui-subcategory-panel--layout-grid {
+  background: #162331;
+  border-color: #2b4257;
+}
+
+[data-theme='dark']
+  .atlas-ui-taxonomy--list
+  .atlas-ui-subdivision-block--grid-item {
+  background: #1b2d3f;
+}
+
+[data-theme='dark']
+  .atlas-ui-taxonomy--list
+  .atlas-ui-subdivision-block--grid-item
+  > .atlas-ui-subdivision-title {
+  color: #d6e9f8;
+}
+
+@media (max-width: 900px) {
+  .atlas-ui-taxonomy--list .atlas-ui-subdivision-grid {
+    gap: 16px;
+  }
+
+  .atlas-ui-taxonomy--list .atlas-ui-subdivision-block--grid-item {
+    padding: 12px 12px 14px;
+  }
+}
+
+@media (max-width: 640px) {
+  .atlas-ui-taxonomy--list .atlas-ui-subdivision-grid {
+    gap: 14px;
+  }
+
+  .atlas-ui-taxonomy--list .atlas-ui-subdivision-block--grid-item,
+  .atlas-ui-taxonomy--list .atlas-ui-subdivision-block--grid-item:nth-child(even) {
+    padding: 12px;
+  }
+
+  .atlas-ui-taxonomy--list
+    .atlas-ui-subdivision-block--grid-item
+    > .atlas-ui-subdivision-title {
+    margin-bottom: 10px;
+    font-size: 0.96rem;
+  }
+}
+
+
+/* ==========================================================================
+   v5.20 — Alignement haut des pathologies dans les panneaux égalisés
+   --------------------------------------------------------------------------
+   La v5.18 centrait verticalement le contenu des sous-catégories simples
+   lorsqu'une voisine plus haute imposait la hauteur de la rangée.
+   On conserve l'égalisation de hauteur, mais les pathologies repartent
+   systématiquement du haut du panneau.
+   ========================================================================== */
+
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid.atlas-ui-subcategory-panel--no-subdivisions
+  > .atlas-ui-subcategory-content {
+  justify-content: flex-start !important;
+  align-content: start;
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid.atlas-ui-subcategory-panel--no-subdivisions
+  .atlas-ui-direct-pathology-grid.display-grid--panel {
+  align-content: start;
+  align-items: start;
+}
+
+/* Même principe pour les panneaux de subdivision : une rangée plus haute
+   ne doit jamais recentrer les cartes de la subdivision la moins remplie. */
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item
+  > .display-grid--panel {
+  align-content: start;
+}
+
+
+/* ==========================================================================
+   v5.21 — Sous-catégories simples : titre rapproché des pathologies
+   --------------------------------------------------------------------------
+   Le grand espacement provenait du margin-bottom générique de 16 px appliqué
+   au heading en v5.19. On le conserve pour les sous-catégories avec
+   subdivisions, mais on le réduit uniquement quand les pathologies sont
+   directement rattachées à la sous-catégorie.
+   ========================================================================== */
+
+.atlas-ui-taxonomy--list
+  .atlas-ui-subcategory-panel--layout-grid.atlas-ui-subcategory-panel--no-subdivisions
+  > .atlas-ui-subcategory-heading {
+  margin-bottom: 8px;
+}
+
+@media (max-width: 900px) {
+  .atlas-ui-taxonomy--list
+    .atlas-ui-subcategory-panel--layout-grid.atlas-ui-subcategory-panel--no-subdivisions
+    > .atlas-ui-subcategory-heading {
+    margin-bottom: 7px;
+  }
+}
+
+@media (max-width: 640px) {
+  .atlas-ui-taxonomy--list
+    .atlas-ui-subcategory-panel--layout-grid.atlas-ui-subcategory-panel--no-subdivisions
+    > .atlas-ui-subcategory-heading {
+    margin-bottom: 6px;
+  }
+}
+
+
+/* ==========================================================================
+   v5.22 — Espacement uniforme titre → contenu
+   --------------------------------------------------------------------------
+   Les sous-catégories placées dans une grille recevaient encore un `gap: 9px`
+   en plus du margin-bottom du heading. Cela créait un espacement différent
+   selon que le panneau était ou non un --grid-item.
+   On neutralise ce gap structurel et on utilise un seul espacement explicite.
+   ========================================================================== */
+
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--grid-item.atlas-ui-subcategory-panel--layout-grid {
+  gap: 0;
+}
+
+.atlas-ui-taxonomy--list
+  .atlas-ui-subcategory-panel--layout-grid.atlas-ui-subcategory-panel--no-subdivisions
+  > .atlas-ui-subcategory-heading {
+  margin-bottom: 14px;
+}
+
+@media (max-width: 900px) {
+  .atlas-ui-taxonomy--list
+    .atlas-ui-subcategory-panel--layout-grid.atlas-ui-subcategory-panel--no-subdivisions
+    > .atlas-ui-subcategory-heading {
+    margin-bottom: 12px;
+  }
+}
+
+@media (max-width: 640px) {
+  .atlas-ui-taxonomy--list
+    .atlas-ui-subcategory-panel--layout-grid.atlas-ui-subcategory-panel--no-subdivisions
+    > .atlas-ui-subcategory-heading {
+    margin-bottom: 10px;
+  }
+}
+
+
+/* ==========================================================================
+   v5.23 — Placement vertical déclaratif (rowSpan)
+   --------------------------------------------------------------------------
+   `placement.rowSpan` complète désormais `placement.span`.
+   Sur desktop, un enfant peut occuper plusieurs rangées de la grille parente.
+   Lorsque la taxonomie passe à 2 colonnes / 1 colonne en responsive, le
+   rowSpan est neutralisé afin d'éviter de créer de grands espaces artificiels.
+   ========================================================================== */
+
+.atlas-ui-taxonomy .atlas-ui-subcategory-panel--grid-item,
+.atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item {
+  grid-row: span var(--atlas-ui-placement-row-span, 1);
+}
+
+@media (max-width: 900px) {
+  .atlas-ui-taxonomy .atlas-ui-subcategory-panel--grid-item,
+  .atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item {
+    grid-row: auto !important;
+  }
+}
+
+
+/* ==========================================================================
+   v5.24 — rowSpan explicite ≠ placement automatique
+   --------------------------------------------------------------------------
+   L'absence de `rowSpan` reste désormais réellement automatique.
+   Un `rowSpan: 1` ajouté volontairement est au contraire une contrainte
+   explicite et sert de frontière à l'algorithme d'emboîtement du JSX.
+   ========================================================================== */
+
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--grid-item[data-row-span-mode='auto'],
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item[data-row-span-mode='auto'] {
+  grid-row: auto;
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--grid-item[data-row-span-mode='explicit'],
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item[data-row-span-mode='explicit'] {
+  grid-row: span var(--atlas-ui-placement-row-span, 1);
+}
+
+@media (max-width: 900px) {
+  .atlas-ui-taxonomy
+    .atlas-ui-subcategory-panel--grid-item[data-row-span-mode],
+  .atlas-ui-taxonomy
+    .atlas-ui-subdivision-block--grid-item[data-row-span-mode] {
+    grid-row: auto !important;
+  }
+}
+
+
+/* ==========================================================================
+   v5.25 — Sémantique du rowSpan explicite
+   --------------------------------------------------------------------------
+   Le changement principal est côté JSX :
+   une suite explicite 1, 1, 2 est rendue 2, 1, 1 afin que l'ancre verticale
+   puisse recevoir les deux groupes d'une ligne à ses côtés.
+   Aucun changement de géométrie des cartes.
+   ========================================================================== */
+
+
+/* ==========================================================================
+   v5.26 — ancre rowSpan conservée à droite lorsqu'elle vient après des rangées
+   --------------------------------------------------------------------------
+   Correction JSX uniquement : une séquence 1, 1, 2 devient 1, 2, 1 dans le
+   flux CSS Grid, ce qui garde le rowSpan 2 à droite et empile les deux groupes
+   rowSpan 1 à gauche.
+   ========================================================================== */
+
+
+/* ==========================================================================
+   v5.27 — Titres de pathologies adaptatifs à la largeur réelle de la carte
+   --------------------------------------------------------------------------
+   Objectif :
+   - conserver strictement la géométrie / largeur des vignettes ;
+   - laisser le texte absorber la réduction de largeur des layouts compacts ;
+   - autoriser jusqu'à 3 lignes avant troncature ;
+   - réduire progressivement la typo uniquement lorsque la carte est étroite.
+
+   Les container queries se basent sur la largeur de chaque carte elle-même :
+   le comportement reste donc valable quelle que soit la grille parente
+   (4, 5, 6 colonnes, span 2/3/etc.).
+   ========================================================================== */
+
+/* La carte devient le conteneur de référence sans modifier sa géométrie. */
+.atlas-ui-taxonomy .display-card--list {
+  container-type: inline-size;
+  container-name: atlas-pathology-card;
+}
+
+/* Le texte reprend la main sur les anciennes règles de troncature éventuelles. */
+.atlas-ui-taxonomy
+  .display-card--list
+  .display-card-title {
+  min-width: 0;
+  max-width: 100%;
+
+  white-space: normal !important;
+  overflow: hidden;
+  text-overflow: clip !important;
+  overflow-wrap: break-word;
+  word-break: normal;
+  hyphens: auto;
+  text-wrap: pretty;
+
+  display: -webkit-box !important;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+}
+
+/* Carte modérément compacte : légère réduction, sans changer les images. */
+@container atlas-pathology-card (max-width: 390px) {
+  .display-card-title {
+    font-size: 0.92rem !important;
+    line-height: 1.18 !important;
+    letter-spacing: -0.008em;
+  }
+}
+
+/* Cas typique des layouts 5 colonnes en 2/3 : texte plus flexible. */
+@container atlas-pathology-card (max-width: 345px) {
+  .display-card-title {
+    font-size: 0.87rem !important;
+    line-height: 1.15 !important;
+    letter-spacing: -0.012em;
+  }
+}
+
+/* Cartes réellement étroites : dernier palier, toujours sans toucher à l'image. */
+@container atlas-pathology-card (max-width: 295px) {
+  .display-card-title {
+    font-size: 0.82rem !important;
+    line-height: 1.13 !important;
+    letter-spacing: -0.014em;
+  }
+}
+
+/* En responsive mobile, la grille se simplifie déjà : on retrouve une typo
+   confortable plutôt que de conserver artificiellement la réduction desktop. */
+@media (max-width: 640px) {
+  .atlas-ui-taxonomy
+    .display-card--list
+    .display-card-title {
+    font-size: 0.92rem !important;
+    line-height: 1.18 !important;
+  }
+}
