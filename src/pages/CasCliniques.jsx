@@ -291,6 +291,125 @@ function atlasPlacementRowSpan(placement) {
   return Math.min(12, Math.max(1, Math.floor(rawRowSpan)));
 }
 
+function atlasGridUsesRowSpan(items) {
+  return (Array.isArray(items) ? items : []).some((item) => {
+    const rowSpan = atlasPlacementRowSpan(item?.placement);
+    return Number.isFinite(rowSpan) && rowSpan > 1;
+  });
+}
+
+function buildAtlasGridPlacementHints(items, columns) {
+  const source = Array.isArray(items) ? items : [];
+  const columnCount = Math.max(1, Number(columns) || 1);
+  const hints = new Map();
+  const occupied = [];
+  const anchors = [];
+
+  const ensureRows = (count) => {
+    while (occupied.length < count) {
+      occupied.push(Array(columnCount).fill(false));
+    }
+  };
+
+  const isFree = (rowStart, columnStart, rowSpan, columnSpan) => {
+    if (columnStart < 1 || columnStart + columnSpan - 1 > columnCount) return false;
+    if (rowStart < 1) return false;
+
+    ensureRows(rowStart + rowSpan - 1);
+
+    for (let row = rowStart; row < rowStart + rowSpan; row += 1) {
+      for (let col = columnStart; col < columnStart + columnSpan; col += 1) {
+        if (occupied[row - 1][col - 1]) return false;
+      }
+    }
+    return true;
+  };
+
+  const occupy = (rowStart, columnStart, rowSpan, columnSpan) => {
+    ensureRows(rowStart + rowSpan - 1);
+    for (let row = rowStart; row < rowStart + rowSpan; row += 1) {
+      for (let col = columnStart; col < columnStart + columnSpan; col += 1) {
+        occupied[row - 1][col - 1] = true;
+      }
+    }
+  };
+
+  const findInsideAnchorBand = (rowSpan, columnSpan) => {
+    for (let index = anchors.length - 1; index >= 0; index -= 1) {
+      const anchor = anchors[index];
+      const rowEnd = anchor.rowStart + anchor.rowSpan - 1;
+
+      // Priorité à la zone située à droite de l'ancre.
+      const rightStart = anchor.columnStart + anchor.columnSpan;
+      if (rightStart <= columnCount) {
+        for (let row = anchor.rowStart; row <= rowEnd; row += 1) {
+          if (row + rowSpan - 1 > rowEnd) break;
+          for (let col = rightStart; col <= columnCount - columnSpan + 1; col += 1) {
+            if (isFree(row, col, rowSpan, columnSpan)) {
+              return { rowStart: row, columnStart: col };
+            }
+          }
+        }
+      }
+
+      // Puis la zone située à gauche de l'ancre.
+      const leftEnd = anchor.columnStart - 1;
+      if (leftEnd >= 1) {
+        for (let row = anchor.rowStart; row <= rowEnd; row += 1) {
+          if (row + rowSpan - 1 > rowEnd) break;
+          for (let col = 1; col <= leftEnd - columnSpan + 1; col += 1) {
+            if (isFree(row, col, rowSpan, columnSpan)) {
+              return { rowStart: row, columnStart: col };
+            }
+          }
+        }
+      }
+    }
+
+    return null;
+  };
+
+  const findNormalPosition = (rowSpan, columnSpan) => {
+    for (let row = 1; ; row += 1) {
+      for (let col = 1; col <= columnCount - columnSpan + 1; col += 1) {
+        if (isFree(row, col, rowSpan, columnSpan)) {
+          return { rowStart: row, columnStart: col };
+        }
+      }
+    }
+  };
+
+  for (const item of source) {
+    const columnSpan = atlasPlacementSpan(item?.placement, columnCount);
+    const explicitRowSpan = atlasPlacementRowSpan(item?.placement);
+    const rowSpan = explicitRowSpan ?? 1;
+
+    const position =
+      findInsideAnchorBand(rowSpan, columnSpan) ||
+      findNormalPosition(rowSpan, columnSpan);
+
+    occupy(position.rowStart, position.columnStart, rowSpan, columnSpan);
+
+    hints.set(item, {
+      rowStart: position.rowStart,
+      columnStart: position.columnStart,
+      rowSpan,
+      columnSpan,
+    });
+
+    if (rowSpan > 1) {
+      anchors.push({
+        rowStart: position.rowStart,
+        columnStart: position.columnStart,
+        rowSpan,
+        columnSpan,
+      });
+    }
+  }
+
+  return hints;
+}
+
 /*
  * Placement vertical semi-automatique :
  *
@@ -323,6 +442,99 @@ function atlasPlacementRowSpan(placement) {
  * Si l'ancre est déjà en première position, elle reste naturellement à gauche.
  * Un élément sans rowSpan coupe la séquence explicite.
  */
+function buildAtlasGridLanes(items, columns) {
+  const source = Array.isArray(items) ? items : [];
+  if (!atlasGridUsesRowSpan(source)) return null;
+
+  const placementHints = buildAtlasGridPlacementHints(source, columns);
+  const laneMap = new Map();
+
+  for (const item of source) {
+    const hint = placementHints.get(item);
+    if (!hint) return null;
+
+    const key = `${hint.columnStart}:${hint.columnSpan}`;
+
+    if (!laneMap.has(key)) {
+      laneMap.set(key, {
+        key,
+        columnStart: hint.columnStart,
+        columnSpan: hint.columnSpan,
+        entries: [],
+      });
+    }
+
+    laneMap.get(key).entries.push({
+      item,
+      rowStart: hint.rowStart,
+      rowSpan: hint.rowSpan,
+    });
+  }
+
+  const allEntries = [...laneMap.values()].flatMap((lane) => lane.entries);
+
+  // Une ligne est dite "dimensionnée" si au moins un panneau normal
+  // (rowSpan 1) l'occupe. Dans ce cas, un panneau rowSpan qui traverse cette
+  // ligne n'a pas besoin de participer au calcul de sa hauteur : il peut
+  // simplement s'étirer sur la somme des lignes concernées.
+  const naturallySizedRows = new Set(
+    allEntries
+      .filter((entry) => entry.rowSpan === 1)
+      .map((entry) => entry.rowStart)
+  );
+
+  const lanes = [...laneMap.values()]
+    .map((lane) => {
+      const entries = lane.entries
+        .sort((a, b) => a.rowStart - b.rowStart)
+        .map((entry) => {
+          const canOverlay =
+            entry.rowSpan > 1 &&
+            Array.from({ length: entry.rowSpan }, (_, index) => entry.rowStart + index)
+              .every((row) => naturallySizedRows.has(row));
+
+          return {
+            ...entry,
+            canOverlay,
+          };
+        });
+
+      const rowStart = Math.min(...entries.map((entry) => entry.rowStart));
+      const rowEnd = Math.max(
+        ...entries.map((entry) => entry.rowStart + entry.rowSpan - 1)
+      );
+
+      return {
+        ...lane,
+        rowStart,
+        rowSpan: rowEnd - rowStart + 1,
+        entries,
+      };
+    })
+    .sort((a, b) => a.columnStart - b.columnStart);
+
+  /*
+   * Une lane représente une bande horizontale indépendante.
+   * Si deux bandes se chevauchent horizontalement, on conserve l'ancien
+   * moteur CSS Grid comme solution de repli.
+   */
+  for (let i = 0; i < lanes.length; i += 1) {
+    const aStart = lanes[i].columnStart;
+    const aEnd = aStart + lanes[i].columnSpan - 1;
+
+    for (let j = i + 1; j < lanes.length; j += 1) {
+      const bStart = lanes[j].columnStart;
+      const bEnd = bStart + lanes[j].columnSpan - 1;
+
+      if (aStart <= bEnd && bStart <= aEnd) {
+        return null;
+      }
+    }
+  }
+
+  return lanes;
+}
+
 function arrangeAtlasGridItems(items) {
   const source = Array.isArray(items) ? items : [];
   const result = [];
@@ -1791,18 +2003,20 @@ export default function CasCliniques() {
       ? arrangeAtlasGridItems(sourceSubcategories)
       : sourceSubcategories;
 
-    return (
-      <div
-        className={`atlas-ui-subcategory-stack ${
-          useCategoryGrid ? 'atlas-ui-subcategory-stack--grid' : ''
-        }`}
-        style={
-          useCategoryGrid
-            ? { '--atlas-ui-layout-columns': categoryGridColumns }
-            : undefined
-        }
-      >
-        {subcategories.map((subcategory) => {
+    const categoryGridLanes =
+      useCategoryGrid && atlasGridUsesRowSpan(subcategories)
+        ? buildAtlasGridLanes(subcategories, categoryGridColumns)
+        : null;
+    const useCategoryLanes =
+      Array.isArray(categoryGridLanes) && categoryGridLanes.length > 0;
+
+    const categoryPlacementHints =
+      useCategoryGrid && atlasGridUsesRowSpan(subcategories) && !useCategoryLanes
+        ? buildAtlasGridPlacementHints(subcategories, categoryGridColumns)
+        : null;
+
+    const renderSubcategoryPanel = (subcategory, lanePlacement = null) => {
+          const inAtlasLane = Boolean(lanePlacement);
           const generalItems = Array.isArray(subcategory?.generalItems) ? subcategory.generalItems : [];
           const directItems = Array.isArray(subcategory?.directItems) ? subcategory.directItems : [];
           const subdivisions = Array.isArray(subcategory?.subdivisions) ? subcategory.subdivisions : [];
@@ -1817,6 +2031,7 @@ export default function CasCliniques() {
           const parentGridRowSpan = useCategoryGrid
             ? atlasPlacementRowSpan(subcategory?.placement)
             : 1;
+          const parentGridHint = categoryPlacementHints?.get(subcategory) || null;
 
           // Si la catégorie parente est déjà une grille, une sous-catégorie qui
           // n'a pas de layout explicite hérite automatiquement d'une grille interne
@@ -1839,16 +2054,33 @@ export default function CasCliniques() {
           const subcategoryUsesFullRow = useCategoryGrid && parentGridSpan >= categoryGridColumns;
 
           const panelStyle = useCategoryGrid
-            ? {
-                '--atlas-ui-placement-span': parentGridSpan,
-                ...(parentGridRowSpan !== null
-                  ? { '--atlas-ui-placement-row-span': parentGridRowSpan }
-                  : {}),
-                gridColumn: `span ${parentGridSpan}`,
-                ...(parentGridRowSpan !== null
-                  ? { gridRow: `span ${parentGridRowSpan}` }
-                  : {}),
-              }
+            ? inAtlasLane
+              ? {
+                  '--atlas-ui-placement-span': parentGridSpan,
+                  ...(parentGridRowSpan !== null
+                    ? { '--atlas-ui-placement-row-span': parentGridRowSpan }
+                    : {}),
+                  '--atlas-ui-lane-row-start': lanePlacement.rowStart,
+                  '--atlas-ui-lane-row-span': lanePlacement.rowSpan,
+                  gridRow: `${lanePlacement.rowStart} / span ${lanePlacement.rowSpan}`,
+                }
+              : {
+                  '--atlas-ui-placement-span': parentGridSpan,
+                  ...(parentGridRowSpan !== null
+                    ? { '--atlas-ui-placement-row-span': parentGridRowSpan }
+                    : {}),
+                  ...(parentGridHint
+                    ? {
+                        gridColumn: `${parentGridHint.columnStart} / span ${parentGridSpan}`,
+                        gridRow: `${parentGridHint.rowStart} / span ${parentGridHint.rowSpan}`,
+                      }
+                    : {
+                        gridColumn: `span ${parentGridSpan}`,
+                        ...(parentGridRowSpan !== null
+                          ? { gridRow: `span ${parentGridRowSpan}` }
+                          : {}),
+                      }),
+                }
             : undefined;
 
           // En vue Cartes, la fiche générale reste une carte normale : seule la vue
@@ -1871,6 +2103,7 @@ export default function CasCliniques() {
                 data-span={useCategoryGrid ? parentGridSpan : undefined}
                 data-row-span={useCategoryGrid && parentGridRowSpan !== null ? parentGridRowSpan : undefined}
                 data-row-span-mode={useCategoryGrid ? (parentGridRowSpan === null ? 'auto' : 'explicit') : undefined}
+                data-row-span-overlay={inAtlasLane && lanePlacement?.canOverlay ? 'true' : undefined}
                 aria-label={subcategory.label}
               >
                 <div className="atlas-ui-subcategory-heading">
@@ -1896,80 +2129,92 @@ export default function CasCliniques() {
                     </div>
                   )}
 
-                  {useSubdivisionGrid && (
-                    <div
-                      className="atlas-ui-subdivision-grid"
-                      style={{ '--atlas-ui-layout-columns': subdivisionGridColumns }}
-                      aria-label={`${subcategory.label} — subdivisions`}
-                    >
-                      {arrangeAtlasGridItems(subdivisions).map((subdivision) => {
-                        const subdivisionGeneralItems = Array.isArray(subdivision?.generalItems)
-                          ? subdivision.generalItems
-                          : [];
-                        const subdivisionDirectItems = Array.isArray(subdivision?.directItems)
-                          ? subdivision.directItems
-                          : [];
-                        const subdivisionContentItems = view === 'list'
-                          ? subdivisionDirectItems
-                          : [...subdivisionGeneralItems, ...subdivisionDirectItems].sort(compareByTitleAsc);
-                        // Dans une grille héritée (catégorie -> sous-catégorie),
-                        // une subdivision sans placement explicite occupe toute la
-                        // largeur locale. Ses pathologies utilisent donc naturellement
-                        // les 2 colonnes d'une sous-catégorie span 2. Un placement
-                        // explicite permet toujours de déroger à ce comportement.
-                        const subdivisionSpan =
-                          explicitSubcategoryGridColumns > 0 || subdivision?.placement
-                            ? atlasPlacementSpan(subdivision?.placement, subdivisionGridColumns)
-                            : subdivisionGridColumns;
-                        const subdivisionRowSpan = atlasPlacementRowSpan(subdivision?.placement);
-                        const subdivisionUsesFullRow = subdivisionSpan >= subdivisionGridColumns;
+                  {useSubdivisionGrid && (() => {
+                    const arrangedSubdivisions = arrangeAtlasGridItems(subdivisions);
+                    const subdivisionPlacementHints =
+                      atlasGridUsesRowSpan(arrangedSubdivisions)
+                        ? buildAtlasGridPlacementHints(arrangedSubdivisions, subdivisionGridColumns)
+                        : null;
 
-                        return (
-                          <section
-                            key={subdivision.key}
-                            className={`atlas-ui-subdivision-block atlas-ui-subdivision-block--grid-item ${
-                              subdivisionUsesFullRow
-                                ? 'atlas-ui-subdivision-block--full-row'
-                                : ''
-                            }`}
-                            style={{
-                              '--atlas-ui-placement-span': subdivisionSpan,
-                              ...(subdivisionRowSpan !== null
-                                ? { '--atlas-ui-placement-row-span': subdivisionRowSpan }
-                                : {}),
-                              gridColumn: `span ${subdivisionSpan}`,
-                              ...(subdivisionRowSpan !== null
-                                ? { gridRow: `span ${subdivisionRowSpan}` }
-                                : {}),
-                            }}
-                            data-span={subdivisionSpan}
-                            data-row-span={subdivisionRowSpan !== null ? subdivisionRowSpan : undefined}
-                            data-row-span-mode={subdivisionRowSpan === null ? 'auto' : 'explicit'}
-                            aria-label={`${subcategory.label} — ${subdivision.label}`}
-                          >
-                            <h4 className="atlas-ui-subdivision-title">{subdivision.label}</h4>
+                    return (
+                      <div
+                        className="atlas-ui-subdivision-grid"
+                        style={{ '--atlas-ui-layout-columns': subdivisionGridColumns }}
+                        aria-label={`${subcategory.label} — subdivisions`}
+                      >
+                        {arrangedSubdivisions.map((subdivision) => {
+                          const subdivisionGeneralItems = Array.isArray(subdivision?.generalItems)
+                            ? subdivision.generalItems
+                            : [];
+                          const subdivisionDirectItems = Array.isArray(subdivision?.directItems)
+                            ? subdivision.directItems
+                            : [];
+                          const subdivisionContentItems = view === 'list'
+                            ? subdivisionDirectItems
+                            : [...subdivisionGeneralItems, ...subdivisionDirectItems].sort(compareByTitleAsc);
 
-                            {view === 'list' && subdivisionGeneralItems.length > 0 && (
-                              <div
-                                className="atlas-ui-subdivision-general-pathology-list atlas-ui-subdivision-general-pathology-list--content"
-                                aria-label="Fiche générale"
-                              >
-                                {subdivisionGeneralItems.map(renderGeneralPathologyLink)}
-                              </div>
-                            )}
+                          const subdivisionSpan =
+                            explicitSubcategoryGridColumns > 0 || subdivision?.placement
+                              ? atlasPlacementSpan(subdivision?.placement, subdivisionGridColumns)
+                              : subdivisionGridColumns;
+                          const subdivisionRowSpan = atlasPlacementRowSpan(subdivision?.placement);
+                          const subdivisionGridHint = subdivisionPlacementHints?.get(subdivision) || null;
+                          const subdivisionUsesFullRow = subdivisionSpan >= subdivisionGridColumns;
 
-                            {subdivisionContentItems.length > 0 && (
-                              <div
-                                className={`display-grid display-grid--panel display-grid--${view}`}
-                              >
-                                {subdivisionContentItems.map(renderItem)}
-                              </div>
-                            )}
-                          </section>
-                        );
-                      })}
-                    </div>
-                  )}
+                          return (
+                            <section
+                              key={subdivision.key}
+                              className={`atlas-ui-subdivision-block atlas-ui-subdivision-block--grid-item ${
+                                subdivisionUsesFullRow
+                                  ? 'atlas-ui-subdivision-block--full-row'
+                                  : ''
+                              }`}
+                              style={{
+                                '--atlas-ui-placement-span': subdivisionSpan,
+                                ...(subdivisionRowSpan !== null
+                                  ? { '--atlas-ui-placement-row-span': subdivisionRowSpan }
+                                  : {}),
+                                ...(subdivisionGridHint
+                                  ? {
+                                      gridColumn: `${subdivisionGridHint.columnStart} / span ${subdivisionSpan}`,
+                                      gridRow: `${subdivisionGridHint.rowStart} / span ${subdivisionGridHint.rowSpan}`,
+                                    }
+                                  : {
+                                      gridColumn: `span ${subdivisionSpan}`,
+                                      ...(subdivisionRowSpan !== null
+                                        ? { gridRow: `span ${subdivisionRowSpan}` }
+                                        : {}),
+                                    }),
+                              }}
+                              data-span={subdivisionSpan}
+                              data-row-span={subdivisionRowSpan !== null ? subdivisionRowSpan : undefined}
+                              data-row-span-mode={subdivisionRowSpan === null ? 'auto' : 'explicit'}
+                              aria-label={`${subcategory.label} — ${subdivision.label}`}
+                            >
+                              <h4 className="atlas-ui-subdivision-title">{subdivision.label}</h4>
+
+                              {view === 'list' && subdivisionGeneralItems.length > 0 && (
+                                <div
+                                  className="atlas-ui-subdivision-general-pathology-list atlas-ui-subdivision-general-pathology-list--content"
+                                  aria-label="Fiche générale"
+                                >
+                                  {subdivisionGeneralItems.map(renderGeneralPathologyLink)}
+                                </div>
+                              )}
+
+                              {subdivisionContentItems.length > 0 && (
+                                <div
+                                  className={`display-grid display-grid--panel display-grid--${view}`}
+                                >
+                                  {subdivisionContentItems.map(renderItem)}
+                                </div>
+                              )}
+                            </section>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
                 </div>
               </section>
             );
@@ -2019,6 +2264,7 @@ export default function CasCliniques() {
               data-span={useCategoryGrid ? parentGridSpan : undefined}
               data-row-span={useCategoryGrid && parentGridRowSpan !== null ? parentGridRowSpan : undefined}
               data-row-span-mode={useCategoryGrid ? (parentGridRowSpan === null ? 'auto' : 'explicit') : undefined}
+              data-row-span-overlay={inAtlasLane && lanePlacement?.canOverlay ? 'true' : undefined}
               aria-label={subcategory.label}
             >
               <div
@@ -2127,7 +2373,46 @@ export default function CasCliniques() {
               </div>
             </section>
           );
-        })}
+        };
+
+    return (
+      <div
+        className={`atlas-ui-subcategory-stack ${
+          useCategoryGrid ? 'atlas-ui-subcategory-stack--grid' : ''
+        } ${useCategoryLanes ? 'atlas-ui-subcategory-stack--lanes' : ''}`}
+        style={
+          useCategoryGrid
+            ? { '--atlas-ui-layout-columns': categoryGridColumns }
+            : undefined
+        }
+      >
+        {useCategoryLanes
+          ? categoryGridLanes.map((lane) => (
+              <div
+                key={`lane-${lane.key}`}
+                className="atlas-ui-subcategory-lane"
+                style={{
+                  gridColumn: `${lane.columnStart} / span ${lane.columnSpan}`,
+                  gridRow: `${lane.rowStart} / span ${lane.rowSpan}`,
+                }}
+                data-lane-start={lane.columnStart}
+                data-lane-span={lane.columnSpan}
+                data-lane-row-start={lane.rowStart}
+                data-lane-row-span={lane.rowSpan}
+              >
+                {lane.entries.map((entry) =>
+                  renderSubcategoryPanel(entry.item, {
+                    rowStart: entry.rowStart - lane.rowStart + 1,
+                    rowSpan: entry.rowSpan,
+                    canOverlay: entry.canOverlay,
+                  })
+                )}
+              </div>
+            ))
+          : subcategories.map((subcategory) =>
+              renderSubcategoryPanel(subcategory, false)
+            )}
+
       </div>
     );
   };
