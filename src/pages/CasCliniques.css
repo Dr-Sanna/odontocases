@@ -4001,486 +4001,148 @@
 
 
 /* ==========================================================================
-   v5.30 — rowSpan sans étirement : lanes verticales indépendantes
+   v5.42 — simplification du moteur rowSpan : dimensions naturelles d'abord
    --------------------------------------------------------------------------
-   Lorsqu'une catégorie utilise rowSpan, le JSX regroupe les sous-catégories
-   qui occupent la même bande horizontale dans une pile verticale indépendante.
+   Principe :
+   1. chaque panneau se dimensionne naturellement avec son vrai padding ;
+   2. CSS Grid applique ensuite les rowSpan ;
+   3. les panneaux s'étirent seulement pour remplir la hauteur de leur aire.
 
-   Exemple sur 5 colonnes :
-     col 1   : Sialites
-     col 2   : Sialoses
-     col 3-4 : Pathologies tumorales et pseudotumorales
-     col 5   : Lésions réactionnelles
-               Xérostomie et hyposialie
-
-   rowSpan sert donc à calculer l'emboîtement, mais ne force plus la hauteur
-   visuelle des panneaux.
+   Aucun calcul de hauteur JS, aucune lane, aucun overlay, aucun contain:size.
+   Le placement horizontal/vertical déterministe du JSX v5.29 est conservé.
    ========================================================================== */
 
+/* Les éléments de grille ne doivent jamais imposer une hauteur artificielle
+   de 100 %. `height:auto` laisse CSS Grid calculer les tracks à partir de leur
+   contenu naturel, padding compris, puis `stretch` égalise visuellement. */
 .atlas-ui-taxonomy
-  .atlas-ui-subcategory-stack--grid.atlas-ui-subcategory-stack--lanes {
-  align-items: start !important;
+  .atlas-ui-subcategory-panel--grid-item.atlas-ui-subcategory-panel--layout-grid,
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item {
+  height: auto !important;
+  min-height: min-content;
+  align-self: stretch;
+  box-sizing: border-box;
 }
 
-.atlas-ui-taxonomy .atlas-ui-subcategory-lane {
+/* Le panneau est un flex-column uniquement pour permettre son étirement.
+   Le contenu ne doit JAMAIS rétrécir pour rentrer dans une hauteur calculée :
+   sa hauteur naturelle participe au sizing du CSS Grid. */
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--grid-item.atlas-ui-subcategory-panel--layout-grid {
   display: flex;
   flex-direction: column;
-  align-self: start;
-  min-width: 0;
-  gap: 14px;
+  overflow: visible;
 }
 
 .atlas-ui-taxonomy
-  .atlas-ui-subcategory-lane
-  > .atlas-ui-subcategory-panel--grid-item {
-  grid-column: auto !important;
-  grid-row: auto !important;
-  align-self: auto !important;
-  height: auto !important;
-  min-height: 0;
-}
-
-.atlas-ui-taxonomy
-  .atlas-ui-subcategory-lane
-  > .atlas-ui-subcategory-panel--layout-grid
+  .atlas-ui-subcategory-panel--grid-item.atlas-ui-subcategory-panel--layout-grid
   > .atlas-ui-subcategory-content {
-  flex: 0 1 auto !important;
+  flex: 0 0 auto !important;
+  min-height: auto !important;
+  overflow: visible;
+}
+
+/* Le heading garde toujours sa hauteur naturelle, notamment lorsqu'il y a des
+   subdivisions. Cela évite à la fois le titre rogné et la disparition du
+   padding inférieur par compression du contenu. */
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading {
+  flex: 0 0 auto !important;
+  min-height: max-content;
+  overflow: visible !important;
 }
 
 .atlas-ui-taxonomy
-  .atlas-ui-subcategory-lane
-  > .atlas-ui-subcategory-panel--grid-item[data-row-span-mode='explicit'] {
-  grid-row: auto !important;
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading
+  .atlas-ui-subcategory-title {
+  flex-shrink: 0;
 }
 
-/* Sur tablette/mobile, les wrappers disparaissent visuellement et les règles
-   responsive existantes reprennent la main sur les panneaux eux-mêmes. */
-@media (max-width: 900px) {
-  .atlas-ui-taxonomy .atlas-ui-subcategory-lane {
-    display: contents;
-  }
-}
-
-
-/* ==========================================================================
-   v5.31 — lanes naturelles + alignement du bas des rowSpan
-   --------------------------------------------------------------------------
-   v5.30 a correctement supprimé l'étirement artificiel de CHAQUE rangée,
-   mais les lanes étaient elles-mêmes alignées en haut (`align-self: start`).
-   Résultat : les sous-catégories rowSpan 2 ne descendaient plus jusqu'au bas
-   de la pile voisine.
-
-   Nouvelle logique :
-   - la lane occupe toute la hauteur de la rangée globale ;
-   - les panneaux ordinaires gardent leur hauteur naturelle ;
-   - un panneau explicitement `rowSpan > 1` et seul dans sa lane s'étire
-     jusqu'au bas de cette lane ;
-   - son contenu reste aligné en haut : seule la surface du conteneur s'étire.
-   ========================================================================== */
-
+/* Les panneaux avec subdivisions retrouvent strictement leur padding parent
+   normal. Aucun padding artificiel n'est ajouté au content. */
 .atlas-ui-taxonomy
-  .atlas-ui-subcategory-stack--grid.atlas-ui-subcategory-stack--lanes {
-  align-items: stretch !important;
-}
-
-.atlas-ui-taxonomy .atlas-ui-subcategory-lane {
-  align-self: stretch !important;
-  height: 100%;
-}
-
-/* Les panneaux simples restent naturels. */
-.atlas-ui-taxonomy
-  .atlas-ui-subcategory-lane
-  > .atlas-ui-subcategory-panel--grid-item {
-  height: auto !important;
-  flex: 0 0 auto;
-}
-
-/* Un rowSpan > 1 représente une catégorie qui doit couvrir la hauteur
-   de plusieurs éléments empilés dans une lane voisine. */
-.atlas-ui-taxonomy
-  .atlas-ui-subcategory-lane
-  > .atlas-ui-subcategory-panel--grid-item[data-row-span-mode='explicit']:not([data-row-span='1']) {
-  flex: 1 1 auto;
-  height: 100% !important;
-  min-height: 100%;
-}
-
-/* Le panneau peut s'étirer, mais son contenu ne doit jamais être centré
-   verticalement : les titres/cartes restent collés en haut. */
-.atlas-ui-taxonomy
-  .atlas-ui-subcategory-lane
-  > .atlas-ui-subcategory-panel--grid-item[data-row-span-mode='explicit']:not([data-row-span='1'])
+  .atlas-ui-subcategory-panel--layout-grid.atlas-ui-subcategory-panel--has-subdivisions
   > .atlas-ui-subcategory-content {
-  justify-content: flex-start !important;
-  align-content: start !important;
+  padding-bottom: 0 !important;
 }
 
-/* Responsive : on revient au comportement naturel lorsque les lanes disparaissent. */
+/* Les subdivisions suivent exactement la même règle : taille naturelle
+   d'abord, puis étirement éventuel de la cellule de grille. */
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item {
+  overflow: visible;
+}
+
+/* Responsive : comportement naturel, sans rowSpan comme auparavant. */
 @media (max-width: 900px) {
   .atlas-ui-taxonomy
-    .atlas-ui-subcategory-lane
-    > .atlas-ui-subcategory-panel--grid-item[data-row-span-mode='explicit']:not([data-row-span='1']) {
+    .atlas-ui-subcategory-panel--grid-item.atlas-ui-subcategory-panel--layout-grid,
+  .atlas-ui-taxonomy
+    .atlas-ui-subdivision-block--grid-item {
     height: auto !important;
     min-height: 0;
-    flex: 0 0 auto;
   }
 }
 
 
 /* ==========================================================================
-   v5.32 — Répartition souple de la hauteur entre les panneaux d'une lane
+   v5.43 — Titres de sous-catégories : rester strictement dans le conteneur
    --------------------------------------------------------------------------
-   Correctif de v5.31 :
-   - le surplus de hauteur n'est plus attribué uniquement au panneau rowSpan ;
-   - tous les panneaux d'une même lane participent à l'étirement ;
-   - le surplus est réparti à partir de leur hauteur naturelle ;
-   - aucun panneau ne reçoit `height: 100%` / `min-height: 100%` ;
-   - le contenu reste toujours aligné en haut.
+   La v5.42 protégeait correctement la hauteur du heading avec :
+     flex: 0 0 auto
+   mais elle avait aussi mis `flex-shrink: 0` sur le titre lui-même.
 
-   Effets attendus :
-   - Accroissements gingivaux : plus de panneau gauche démesurément étiré ;
-   - Candidoses : les deux panneaux de gauche gagnent légèrement en hauteur ;
-   - Kystes : les deux panneaux centraux se répartissent l'espace restant ;
-   - le bas de toutes les lanes reste aligné sur la plus haute.
+   Dans un panneau étroit, cette dernière règle empêchait le texte de se
+   replier à la largeur disponible et pouvait le faire dépasser horizontalement.
+
+   On garde donc la protection VERTICALE du heading, mais on rend au titre
+   son comportement horizontal naturel : il peut rétrécir et passer à la ligne.
    ========================================================================== */
 
 .atlas-ui-taxonomy
-  .atlas-ui-subcategory-stack--grid.atlas-ui-subcategory-stack--lanes {
-  align-items: stretch !important;
-}
-
-.atlas-ui-taxonomy .atlas-ui-subcategory-lane {
-  align-self: stretch !important;
-  height: auto !important;
-  min-height: 0;
-}
-
-/* Chaque panneau part de sa hauteur naturelle puis partage uniquement
-   l'espace restant de la lane. */
-.atlas-ui-taxonomy
-  .atlas-ui-subcategory-lane
-  > .atlas-ui-subcategory-panel--grid-item {
-  flex: 1 1 auto !important;
-  height: auto !important;
-  min-height: 0 !important;
-  align-self: stretch !important;
-}
-
-/* Neutralise explicitement l'ancien comportement v5.31 qui donnait toute
-   la hauteur restante au seul panneau rowSpan > 1. */
-.atlas-ui-taxonomy
-  .atlas-ui-subcategory-lane
-  > .atlas-ui-subcategory-panel--grid-item[data-row-span-mode='explicit']:not([data-row-span='1']) {
-  flex: 1 1 auto !important;
-  height: auto !important;
-  min-height: 0 !important;
-}
-
-/* L'étirement concerne uniquement l'enveloppe du panneau.
-   Son contenu reste collé en haut. */
-.atlas-ui-taxonomy
-  .atlas-ui-subcategory-lane
-  > .atlas-ui-subcategory-panel--grid-item
-  > .atlas-ui-subcategory-content {
-  justify-content: flex-start !important;
-  align-content: start !important;
-}
-
-/* Même principe pour les panneaux sans subdivisions dont la grille de
-   pathologies doit rester en haut du conteneur étiré. */
-.atlas-ui-taxonomy
-  .atlas-ui-subcategory-lane
-  > .atlas-ui-subcategory-panel--no-subdivisions
-  .atlas-ui-direct-pathology-grid.display-grid--panel {
-  align-content: start !important;
-  align-items: start !important;
-}
-
-/* Sur mobile les lanes disparaissent : aucun étirement artificiel. */
-@media (max-width: 900px) {
-  .atlas-ui-taxonomy
-    .atlas-ui-subcategory-lane
-    > .atlas-ui-subcategory-panel--grid-item,
-  .atlas-ui-taxonomy
-    .atlas-ui-subcategory-lane
-    > .atlas-ui-subcategory-panel--grid-item[data-row-span-mode='explicit']:not([data-row-span='1']) {
-    flex: 0 0 auto !important;
-    height: auto !important;
-    min-height: 0 !important;
-  }
-}
-
-
-/* ==========================================================================
-   v5.33 — vraies rangées partagées dans les layouts avec rowSpan
-   --------------------------------------------------------------------------
-   Le problème de v5.32 venait du fait que chaque lane répartissait sa hauteur
-   indépendamment. Deux panneaux pourtant placés sur la même rangée logique
-   pouvaient donc avoir des hauteurs différentes.
-
-   Les lanes utilisent maintenant CSS Subgrid :
-   - les rangées sont communes à toute la catégorie ;
-   - deux sous-catégories sur la même rangée ont exactement la même hauteur ;
-   - un rowSpan 2 couvre naturellement la somme des deux rangées + leur gap ;
-   - si un grand panneau impose un peu plus de hauteur, ce surplus est réparti
-     par le moteur de grille sur les rangées qu'il traverse ;
-   - aucun calcul global par flex n'est nécessaire.
-   ========================================================================== */
-
-.atlas-ui-taxonomy
-  .atlas-ui-subcategory-stack--grid.atlas-ui-subcategory-stack--lanes {
-  align-items: stretch !important;
-  grid-auto-rows: auto;
-}
-
-/* La lane garde sa bande de colonnes, mais partage les tracks verticaux
-   de la grille parente. */
-.atlas-ui-taxonomy .atlas-ui-subcategory-lane {
-  display: grid !important;
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: subgrid;
-  row-gap: inherit;
-  align-self: stretch !important;
-  height: auto !important;
-  min-height: 0;
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading {
   min-width: 0;
-}
-
-/* Chaque panneau remplit uniquement sa ou ses rangées logiques. */
-.atlas-ui-taxonomy
-  .atlas-ui-subcategory-lane
-  > .atlas-ui-subcategory-panel--grid-item {
-  grid-column: 1 / -1 !important;
-  align-self: stretch !important;
-  height: 100% !important;
-  min-height: 0 !important;
-  flex: none !important;
-}
-
-/* Neutralise les anciennes règles v5.31/v5.32 de partage par flex. */
-.atlas-ui-taxonomy
-  .atlas-ui-subcategory-lane
-  > .atlas-ui-subcategory-panel--grid-item[data-row-span-mode='explicit']:not([data-row-span='1']) {
-  flex: none !important;
-  height: 100% !important;
-  min-height: 0 !important;
-}
-
-/* Le panneau peut être plus haut que son contenu : les cartes restent en haut. */
-.atlas-ui-taxonomy
-  .atlas-ui-subcategory-lane
-  > .atlas-ui-subcategory-panel--grid-item
-  > .atlas-ui-subcategory-content {
-  justify-content: flex-start !important;
-  align-content: start !important;
+  max-width: 100%;
 }
 
 .atlas-ui-taxonomy
-  .atlas-ui-subcategory-lane
-  > .atlas-ui-subcategory-panel--no-subdivisions
-  .atlas-ui-direct-pathology-grid.display-grid--panel {
-  align-content: start !important;
-  align-items: start !important;
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading
+  > .atlas-ui-subcategory-main {
+  min-width: 0;
+  max-width: 100%;
 }
-
-/* Responsive : les lanes disparaissent et les anciennes règles 2 colonnes /
-   1 colonne reprennent entièrement la main. */
-@media (max-width: 900px) {
-  .atlas-ui-taxonomy .atlas-ui-subcategory-lane {
-    display: contents !important;
-  }
-
-  .atlas-ui-taxonomy
-    .atlas-ui-subcategory-lane
-    > .atlas-ui-subcategory-panel--grid-item {
-    grid-row: auto !important;
-    height: auto !important;
-    min-height: 0 !important;
-    flex: 0 0 auto !important;
-    grid-column: span var(--atlas-ui-placement-span, 1) !important;
-  }
-}
-
-@media (max-width: 640px) {
-  .atlas-ui-taxonomy
-    .atlas-ui-subcategory-lane
-    > .atlas-ui-subcategory-panel--grid-item {
-    grid-column: 1 / -1 !important;
-  }
-}
-
-
-/* ==========================================================================
-   v5.34 — rétablissement effectif du rowSpan dans les subgrids
-   --------------------------------------------------------------------------
-   Une ancienne règle v5.30 imposait encore :
-     grid-row: auto !important;
-   sur les panneaux placés dans une lane.
-
-   Elle neutralisait donc l'inline `gridRow` introduit ensuite par v5.33.
-   Les coordonnées locales sont désormais transmises par variables CSS et
-   réappliquées ici avec la même priorité `!important`.
-
-   Résultat :
-   - deux panneaux sur une même rangée restent de même hauteur ;
-   - un panneau rowSpan 2 couvre réellement les deux rangées partagées ;
-   - le contenu reste aligné en haut.
-   ========================================================================== */
 
 .atlas-ui-taxonomy
-  .atlas-ui-subcategory-lane
-  > .atlas-ui-subcategory-panel--grid-item {
-  grid-row:
-    var(--atlas-ui-lane-row-start, auto)
-    / span var(--atlas-ui-lane-row-span, 1) !important;
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading
+  .atlas-ui-subcategory-title {
+  flex: 1 1 auto !important;
+  min-width: 0;
+  max-width: 100%;
+
+  white-space: normal !important;
+  overflow: visible;
+  text-overflow: clip;
+
+  overflow-wrap: break-word;
+  word-break: normal;
+  hyphens: auto;
 }
 
-@media (max-width: 900px) {
-  .atlas-ui-taxonomy
-    .atlas-ui-subcategory-lane
-    > .atlas-ui-subcategory-panel--grid-item {
-    grid-row: auto !important;
-  }
-}
-
-
-/* ==========================================================================
-   v5.35 — priorité réelle au rowSpan
-   --------------------------------------------------------------------------
-   Correction du cas :
-      Tumorale (rowSpan 2) | Inflammatoire
-                           | Localisés
-
-   Le problème précédent venait du fait qu'un panneau rowSpan participait
-   encore au calcul intrinsèque des hauteurs de lignes CSS Grid. Sa propre
-   hauteur pouvait donc agrandir artificiellement la première ligne, donnant
-   l'impression que "Inflammatoire cherchait à matcher Tumorale".
-
-   Désormais, lorsqu'un rowSpan traverse uniquement des lignes qui possèdent
-   déjà chacune un panneau normal (rowSpan 1), ce panneau spanning est sorti
-   du calcul des tracks et superposé exactement sur son aire de grille.
-
-   Les hauteurs sont donc déterminées d'abord par :
-      Inflammatoire + Localisés
-   puis Tumorale s'étire sur leur hauteur cumulée.
-   ========================================================================== */
-
-.atlas-ui-taxonomy .atlas-ui-subcategory-lane {
-  position: relative;
-}
-
-/* Un rowSpan "overlay" ne participe plus au dimensionnement des rangées.
-   Ses coordonnées de grille définissent tout de même son containing block. */
+/* Même sécurité pour les titres de subdivisions, qui peuvent eux aussi
+   se retrouver dans des panneaux étroits sur les layouts 5 colonnes. */
 .atlas-ui-taxonomy
-  .atlas-ui-subcategory-lane
-  > .atlas-ui-subcategory-panel--grid-item[data-row-span-overlay='true'] {
-  position: absolute !important;
-  inset: 0 !important;
-
-  grid-column: 1 / -1 !important;
-  grid-row:
-    var(--atlas-ui-lane-row-start, 1)
-    / span var(--atlas-ui-lane-row-span, 1) !important;
-
-  width: auto !important;
-  height: auto !important;
-  min-height: 0 !important;
-  max-height: none !important;
-
-  align-self: stretch !important;
-  justify-self: stretch !important;
-  box-sizing: border-box;
-  overflow: hidden;
-}
-
-/* Le contenu du panneau spanning reste en haut pendant que son enveloppe
-   remplit exactement la somme des rangées voisines. */
-.atlas-ui-taxonomy
-  .atlas-ui-subcategory-lane
-  > .atlas-ui-subcategory-panel--grid-item[data-row-span-overlay='true']
-  > .atlas-ui-subcategory-content {
-  justify-content: flex-start !important;
-  align-content: start !important;
-}
-
-/* Responsive : les lanes disparaissent, donc plus de superposition. */
-@media (max-width: 900px) {
-  .atlas-ui-taxonomy
-    .atlas-ui-subcategory-lane
-    > .atlas-ui-subcategory-panel--grid-item[data-row-span-overlay='true'] {
-    position: static !important;
-    inset: auto !important;
-    overflow: visible;
-    grid-row: auto !important;
-    width: auto !important;
-    height: auto !important;
-  }
-}
-
-
-/* ==========================================================================
-   v5.36 — rowSpan sans perte du gap entre les rangées
-   --------------------------------------------------------------------------
-   Le v5.35 retirait correctement le panneau rowSpan du calcul des hauteurs,
-   mais le faisait via `position: absolute`. Cela pouvait court-circuiter le
-   vrai espace entre les tracks du subgrid : d'où Biofilm / Tumorale presque
-   collés alors que la colonne de droite conservait son gap normal.
-
-   On conserve la priorité du rowSpan, mais sans sortir le panneau du grid :
-   `contain: size` neutralise sa contribution intrinsèque au calcul des tracks,
-   tandis que le panneau reste un vrai grid-item. Il respecte donc exactement
-   les row-gap de la grille.
-   ========================================================================== */
-
-.atlas-ui-taxonomy
-  .atlas-ui-subcategory-lane
-  > .atlas-ui-subcategory-panel--grid-item[data-row-span-overlay='true'] {
-  /* Annule le positionnement absolu de v5.35. */
-  position: static !important;
-  inset: auto !important;
-
-  /* Le panneau reste dans sa vraie aire de subgrid. */
-  grid-column: 1 / -1 !important;
-  grid-row:
-    var(--atlas-ui-lane-row-start, 1)
-    / span var(--atlas-ui-lane-row-span, 1) !important;
-
-  /* Ne participe pas à la détermination de la hauteur des rangées :
-     ce sont les panneaux rowSpan 1 voisins qui dimensionnent les tracks. */
-  contain: size;
-
-  width: auto !important;
-  height: auto !important;
-  min-height: 0 !important;
-  max-height: none !important;
-
-  align-self: stretch !important;
-  justify-self: stretch !important;
-  box-sizing: border-box;
-  overflow: hidden;
-}
-
-/* Le contenu reste en haut de l'enveloppe spanning. */
-.atlas-ui-taxonomy
-  .atlas-ui-subcategory-lane
-  > .atlas-ui-subcategory-panel--grid-item[data-row-span-overlay='true']
-  > .atlas-ui-subcategory-content {
-  justify-content: flex-start !important;
-  align-content: start !important;
-}
-
-/* Responsive : pas de size containment quand le layout en lanes disparaît. */
-@media (max-width: 900px) {
-  .atlas-ui-taxonomy
-    .atlas-ui-subcategory-lane
-    > .atlas-ui-subcategory-panel--grid-item[data-row-span-overlay='true'] {
-    contain: none;
-    position: static !important;
-    inset: auto !important;
-    overflow: visible;
-    grid-row: auto !important;
-    width: auto !important;
-    height: auto !important;
-  }
+  .atlas-ui-subdivision-block--grid-item
+  > .atlas-ui-subdivision-title {
+  min-width: 0;
+  max-width: 100%;
+  white-space: normal !important;
+  overflow-wrap: break-word;
+  word-break: normal;
+  hyphens: auto;
 }

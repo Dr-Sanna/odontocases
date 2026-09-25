@@ -442,99 +442,6 @@ function buildAtlasGridPlacementHints(items, columns) {
  * Si l'ancre est déjà en première position, elle reste naturellement à gauche.
  * Un élément sans rowSpan coupe la séquence explicite.
  */
-function buildAtlasGridLanes(items, columns) {
-  const source = Array.isArray(items) ? items : [];
-  if (!atlasGridUsesRowSpan(source)) return null;
-
-  const placementHints = buildAtlasGridPlacementHints(source, columns);
-  const laneMap = new Map();
-
-  for (const item of source) {
-    const hint = placementHints.get(item);
-    if (!hint) return null;
-
-    const key = `${hint.columnStart}:${hint.columnSpan}`;
-
-    if (!laneMap.has(key)) {
-      laneMap.set(key, {
-        key,
-        columnStart: hint.columnStart,
-        columnSpan: hint.columnSpan,
-        entries: [],
-      });
-    }
-
-    laneMap.get(key).entries.push({
-      item,
-      rowStart: hint.rowStart,
-      rowSpan: hint.rowSpan,
-    });
-  }
-
-  const allEntries = [...laneMap.values()].flatMap((lane) => lane.entries);
-
-  // Une ligne est dite "dimensionnée" si au moins un panneau normal
-  // (rowSpan 1) l'occupe. Dans ce cas, un panneau rowSpan qui traverse cette
-  // ligne n'a pas besoin de participer au calcul de sa hauteur : il peut
-  // simplement s'étirer sur la somme des lignes concernées.
-  const naturallySizedRows = new Set(
-    allEntries
-      .filter((entry) => entry.rowSpan === 1)
-      .map((entry) => entry.rowStart)
-  );
-
-  const lanes = [...laneMap.values()]
-    .map((lane) => {
-      const entries = lane.entries
-        .sort((a, b) => a.rowStart - b.rowStart)
-        .map((entry) => {
-          const canOverlay =
-            entry.rowSpan > 1 &&
-            Array.from({ length: entry.rowSpan }, (_, index) => entry.rowStart + index)
-              .every((row) => naturallySizedRows.has(row));
-
-          return {
-            ...entry,
-            canOverlay,
-          };
-        });
-
-      const rowStart = Math.min(...entries.map((entry) => entry.rowStart));
-      const rowEnd = Math.max(
-        ...entries.map((entry) => entry.rowStart + entry.rowSpan - 1)
-      );
-
-      return {
-        ...lane,
-        rowStart,
-        rowSpan: rowEnd - rowStart + 1,
-        entries,
-      };
-    })
-    .sort((a, b) => a.columnStart - b.columnStart);
-
-  /*
-   * Une lane représente une bande horizontale indépendante.
-   * Si deux bandes se chevauchent horizontalement, on conserve l'ancien
-   * moteur CSS Grid comme solution de repli.
-   */
-  for (let i = 0; i < lanes.length; i += 1) {
-    const aStart = lanes[i].columnStart;
-    const aEnd = aStart + lanes[i].columnSpan - 1;
-
-    for (let j = i + 1; j < lanes.length; j += 1) {
-      const bStart = lanes[j].columnStart;
-      const bEnd = bStart + lanes[j].columnSpan - 1;
-
-      if (aStart <= bEnd && bStart <= aEnd) {
-        return null;
-      }
-    }
-  }
-
-  return lanes;
-}
-
 function arrangeAtlasGridItems(items) {
   const source = Array.isArray(items) ? items : [];
   const result = [];
@@ -2002,21 +1909,23 @@ export default function CasCliniques() {
     const subcategories = useCategoryGrid
       ? arrangeAtlasGridItems(sourceSubcategories)
       : sourceSubcategories;
-
-    const categoryGridLanes =
-      useCategoryGrid && atlasGridUsesRowSpan(subcategories)
-        ? buildAtlasGridLanes(subcategories, categoryGridColumns)
-        : null;
-    const useCategoryLanes =
-      Array.isArray(categoryGridLanes) && categoryGridLanes.length > 0;
-
     const categoryPlacementHints =
-      useCategoryGrid && atlasGridUsesRowSpan(subcategories) && !useCategoryLanes
+      useCategoryGrid && atlasGridUsesRowSpan(subcategories)
         ? buildAtlasGridPlacementHints(subcategories, categoryGridColumns)
         : null;
 
-    const renderSubcategoryPanel = (subcategory, lanePlacement = null) => {
-          const inAtlasLane = Boolean(lanePlacement);
+    return (
+      <div
+        className={`atlas-ui-subcategory-stack ${
+          useCategoryGrid ? 'atlas-ui-subcategory-stack--grid' : ''
+        }`}
+        style={
+          useCategoryGrid
+            ? { '--atlas-ui-layout-columns': categoryGridColumns }
+            : undefined
+        }
+      >
+        {subcategories.map((subcategory) => {
           const generalItems = Array.isArray(subcategory?.generalItems) ? subcategory.generalItems : [];
           const directItems = Array.isArray(subcategory?.directItems) ? subcategory.directItems : [];
           const subdivisions = Array.isArray(subcategory?.subdivisions) ? subcategory.subdivisions : [];
@@ -2054,33 +1963,23 @@ export default function CasCliniques() {
           const subcategoryUsesFullRow = useCategoryGrid && parentGridSpan >= categoryGridColumns;
 
           const panelStyle = useCategoryGrid
-            ? inAtlasLane
-              ? {
-                  '--atlas-ui-placement-span': parentGridSpan,
-                  ...(parentGridRowSpan !== null
-                    ? { '--atlas-ui-placement-row-span': parentGridRowSpan }
-                    : {}),
-                  '--atlas-ui-lane-row-start': lanePlacement.rowStart,
-                  '--atlas-ui-lane-row-span': lanePlacement.rowSpan,
-                  gridRow: `${lanePlacement.rowStart} / span ${lanePlacement.rowSpan}`,
-                }
-              : {
-                  '--atlas-ui-placement-span': parentGridSpan,
-                  ...(parentGridRowSpan !== null
-                    ? { '--atlas-ui-placement-row-span': parentGridRowSpan }
-                    : {}),
-                  ...(parentGridHint
-                    ? {
-                        gridColumn: `${parentGridHint.columnStart} / span ${parentGridSpan}`,
-                        gridRow: `${parentGridHint.rowStart} / span ${parentGridHint.rowSpan}`,
-                      }
-                    : {
-                        gridColumn: `span ${parentGridSpan}`,
-                        ...(parentGridRowSpan !== null
-                          ? { gridRow: `span ${parentGridRowSpan}` }
-                          : {}),
-                      }),
-                }
+            ? {
+                '--atlas-ui-placement-span': parentGridSpan,
+                ...(parentGridRowSpan !== null
+                  ? { '--atlas-ui-placement-row-span': parentGridRowSpan }
+                  : {}),
+                ...(parentGridHint
+                  ? {
+                      gridColumn: `${parentGridHint.columnStart} / span ${parentGridSpan}`,
+                      gridRow: `${parentGridHint.rowStart} / span ${parentGridHint.rowSpan}`,
+                    }
+                  : {
+                      gridColumn: `span ${parentGridSpan}`,
+                      ...(parentGridRowSpan !== null
+                        ? { gridRow: `span ${parentGridRowSpan}` }
+                        : {}),
+                    }),
+              }
             : undefined;
 
           // En vue Cartes, la fiche générale reste une carte normale : seule la vue
@@ -2103,7 +2002,6 @@ export default function CasCliniques() {
                 data-span={useCategoryGrid ? parentGridSpan : undefined}
                 data-row-span={useCategoryGrid && parentGridRowSpan !== null ? parentGridRowSpan : undefined}
                 data-row-span-mode={useCategoryGrid ? (parentGridRowSpan === null ? 'auto' : 'explicit') : undefined}
-                data-row-span-overlay={inAtlasLane && lanePlacement?.canOverlay ? 'true' : undefined}
                 aria-label={subcategory.label}
               >
                 <div className="atlas-ui-subcategory-heading">
@@ -2264,7 +2162,6 @@ export default function CasCliniques() {
               data-span={useCategoryGrid ? parentGridSpan : undefined}
               data-row-span={useCategoryGrid && parentGridRowSpan !== null ? parentGridRowSpan : undefined}
               data-row-span-mode={useCategoryGrid ? (parentGridRowSpan === null ? 'auto' : 'explicit') : undefined}
-              data-row-span-overlay={inAtlasLane && lanePlacement?.canOverlay ? 'true' : undefined}
               aria-label={subcategory.label}
             >
               <div
@@ -2373,46 +2270,7 @@ export default function CasCliniques() {
               </div>
             </section>
           );
-        };
-
-    return (
-      <div
-        className={`atlas-ui-subcategory-stack ${
-          useCategoryGrid ? 'atlas-ui-subcategory-stack--grid' : ''
-        } ${useCategoryLanes ? 'atlas-ui-subcategory-stack--lanes' : ''}`}
-        style={
-          useCategoryGrid
-            ? { '--atlas-ui-layout-columns': categoryGridColumns }
-            : undefined
-        }
-      >
-        {useCategoryLanes
-          ? categoryGridLanes.map((lane) => (
-              <div
-                key={`lane-${lane.key}`}
-                className="atlas-ui-subcategory-lane"
-                style={{
-                  gridColumn: `${lane.columnStart} / span ${lane.columnSpan}`,
-                  gridRow: `${lane.rowStart} / span ${lane.rowSpan}`,
-                }}
-                data-lane-start={lane.columnStart}
-                data-lane-span={lane.columnSpan}
-                data-lane-row-start={lane.rowStart}
-                data-lane-row-span={lane.rowSpan}
-              >
-                {lane.entries.map((entry) =>
-                  renderSubcategoryPanel(entry.item, {
-                    rowStart: entry.rowStart - lane.rowStart + 1,
-                    rowSpan: entry.rowSpan,
-                    canOverlay: entry.canOverlay,
-                  })
-                )}
-              </div>
-            ))
-          : subcategories.map((subcategory) =>
-              renderSubcategoryPanel(subcategory, false)
-            )}
-
+        })}
       </div>
     );
   };
