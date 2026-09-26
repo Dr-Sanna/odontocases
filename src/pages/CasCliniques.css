@@ -44,7 +44,7 @@
 }
 
 /* Dark mode pagination */
-[data-theme='dark'] .cc-pagination button {
+[data-theme="dark"] .cc-pagination button {
   background: #202226;
   border-color: #2e3036;
   color: #f3f3f3;
@@ -172,24 +172,24 @@
 }
 
 /* thème light : rendu plus net */
-[data-theme='light'] .cc-viewtoggle {
+[data-theme="light"] .cc-viewtoggle {
   background: rgba(0, 0, 0, 0.03);
   border: 1px solid rgba(0, 0, 0, 0.10);
 }
 
-[data-theme='light'] .cc-viewbtn + .cc-viewbtn {
+[data-theme="light"] .cc-viewbtn + .cc-viewbtn {
   border-left: 1px solid rgba(0, 0, 0, 0.10);
 }
 
-[data-theme='light'] .cc-viewbtn:hover {
+[data-theme="light"] .cc-viewbtn:hover {
   background: rgba(0, 0, 0, 0.04);
 }
 
-[data-theme='light'] .cc-viewbtn.active {
+[data-theme="light"] .cc-viewbtn.active {
   background: rgba(0, 0, 0, 0.06);
 }
 
-[data-theme='light'] .cc-viewbtn:focus-visible {
+[data-theme="light"] .cc-viewbtn:focus-visible {
   outline: 2px solid rgba(0, 0, 0, 0.25);
 }
 
@@ -256,22 +256,22 @@
 }
 
 /* dark */
-[data-theme='dark'] .cc-sortbtn {
+[data-theme="dark"] .cc-sortbtn {
   background: rgba(255, 255, 255, 0.04);
   border-color: rgba(255, 255, 255, 0.12);
 }
 
-[data-theme='dark'] .cc-sortbtn:hover {
+[data-theme="dark"] .cc-sortbtn:hover {
   background: rgba(255, 255, 255, 0.06);
   border-color: rgba(255, 255, 255, 0.18);
 }
 
-[data-theme='dark'] .cc-sortbtn.active {
+[data-theme="dark"] .cc-sortbtn.active {
   background: #1f2940;
   border-color: #2a3a5a;
 }
 
-[data-theme='dark'] .cc-sortbtn:disabled:hover {
+[data-theme="dark"] .cc-sortbtn:disabled:hover {
   background: rgba(255, 255, 255, 0.04);
   border-color: rgba(255, 255, 255, 0.12);
 }
@@ -451,11 +451,11 @@
   min-width: 0;
   margin: 0;
 
-  color: var(--ifm-color-emphasis-700);
+  
   font-size: 0.94rem;
   font-weight: 520;
   line-height: 1.35;
-  opacity: 0.92;
+  
 }
 
 .atlas-ui-subcategory-main,
@@ -474,15 +474,7 @@
   display: none;
 }
 
-.atlas-ui-subdivision-title {
-  margin: 0 1px 8px;
 
-  color: var(--ifm-color-emphasis-650);
-  font-size: 0.86rem;
-  font-weight: 620;
-  line-height: 1.3;
-  opacity: 0.82;
-}
 
 /* Nouvelle composition uniquement pour le mode Liste. */
 .atlas-ui-taxonomy--list .atlas-ui-subcategory-panel {
@@ -509,12 +501,12 @@
   min-height: 0;
   aspect-ratio: auto;
 
-  border: 0;
+  
   border-radius: 10px;
   overflow: hidden;
 
   /* La sous-catégorie reste volontairement plus claire que la catégorie. */
-  background: #e8f2fc;
+  
 }
 
 .atlas-ui-taxonomy--list .atlas-ui-subcategory-main {
@@ -616,31 +608,27 @@
 }
 
 .atlas-ui-taxonomy--list .atlas-ui-subcategory-title {
-  color: #315979;
+  
   font-size: 0.94rem;
   font-weight: 680;
   line-height: 1.28;
-  opacity: 1;
+  
 }
 
-[data-theme='dark'] .atlas-ui-taxonomy--list .atlas-ui-subcategory-heading {
-  background: #20344b;
-}
 
-[data-theme='dark'] .atlas-ui-taxonomy--list .atlas-ui-subcategory-title {
-  color: #d7e9f8;
-}
 
-[data-theme='dark'] .atlas-ui-taxonomy--list .atlas-ui-subcategory-subdivision-rail {
+
+
+[data-theme="dark"] .atlas-ui-taxonomy--list .atlas-ui-subcategory-subdivision-rail {
   border-left-color: rgba(215, 233, 248, 0.12);
   background: rgba(255, 255, 255, 0.025);
 }
 
-[data-theme='dark'] .atlas-ui-taxonomy--list .atlas-ui-subcategory-subdivision-segment {
+[data-theme="dark"] .atlas-ui-taxonomy--list .atlas-ui-subcategory-subdivision-segment {
   color: #bad6ec;
 }
 
-[data-theme='dark'] .atlas-ui-taxonomy--list
+[data-theme="dark"] .atlas-ui-taxonomy--list
   .atlas-ui-subcategory-subdivision-segment
   + .atlas-ui-subcategory-subdivision-segment {
   border-top-color: rgba(215, 233, 248, 0.12);
@@ -670,17 +658,13 @@
   min-width: 0;
 }
 
-.atlas-ui-taxonomy--list .atlas-ui-subdivision-title {
-  display: none;
-}
+
 
 .atlas-ui-taxonomy--cards .atlas-ui-subcategory-content {
   gap: 18px;
 }
 
-.atlas-ui-taxonomy--cards .atlas-ui-subdivision-title {
-  display: block;
-}
+
 
 .atlas-ui-category > .display-grid--flat {
   margin-bottom: 16px;
@@ -730,10 +714,7 @@
     margin-bottom: 7px;
   }
 
-  .atlas-ui-taxonomy--list .atlas-ui-subdivision-title {
-    display: block;
-    margin-bottom: 7px;
-  }
+  
 
   .atlas-ui-taxonomy--list .atlas-ui-subcategory-content {
     gap: 14px;
@@ -865,19 +846,19 @@
   text-transform: uppercase;
 }
 
-[data-theme='dark'] .atlas-ui-general-pathology-list {
+[data-theme="dark"] .atlas-ui-general-pathology-list {
   border: 0;
 }
 
-[data-theme='dark'] .atlas-ui-general-pathology-link {
+[data-theme="dark"] .atlas-ui-general-pathology-link {
   border: 0;
   background: #29465f;
   color: #e7f2fb;
   box-shadow: 2px 3px 3px -2px rgba(0, 0, 0, 0.46);
 }
 
-[data-theme='dark'] .atlas-ui-general-pathology-link:hover,
-[data-theme='dark'] .atlas-ui-general-pathology-link:focus-visible {
+[data-theme="dark"] .atlas-ui-general-pathology-link:hover,
+[data-theme="dark"] .atlas-ui-general-pathology-link:focus-visible {
   background: #2f4d68;
   color: #ffffff;
   box-shadow: 2px 3px 4px -2px rgba(0, 0, 0, 0.54);
@@ -947,7 +928,7 @@
   min-height: 48px;
   margin: 0;
   border-radius: 10px;
-  background: #e8f2fc;
+  
 }
 
 .atlas-ui-taxonomy--list
@@ -973,11 +954,7 @@
   gap: 12px;
 }
 
-.atlas-ui-taxonomy--list
-  .atlas-ui-subcategory-panel--grid-item
-  .atlas-ui-subdivision-title {
-  display: block;
-}
+
 
 /* Une sous-catégorie peut disposer ses subdivisions sur sa propre grille. */
 .atlas-ui-taxonomy--list .atlas-ui-subcategory-panel--layout-grid {
@@ -993,7 +970,7 @@
   min-height: 50px;
   margin: 0 0 10px;
   border-radius: 10px;
-  background: #e8f2fc;
+  
 }
 
 .atlas-ui-taxonomy--list
@@ -1038,25 +1015,7 @@
 }
 
 /* L'intitulé de subdivision remplace ici le rail vertical historique. */
-.atlas-ui-taxonomy--list
-  .atlas-ui-subdivision-block--grid-item
-  > .atlas-ui-subdivision-title {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 46px;
-  margin: 0 0 8px;
-  padding: 8px 10px;
-  border-radius: 10px;
 
-  background: #f0f6fc;
-  color: #436987;
-  font-size: 0.82rem;
-  font-weight: 680;
-  line-height: 1.25;
-  text-align: center;
-  opacity: 1;
-}
 
 /* Le span définit à la fois la largeur du groupe et le nombre de cartes que
    celui-ci peut afficher côte à côte. Un span 2 fournit donc deux colonnes de
@@ -1077,24 +1036,9 @@
   gap: 9px;
 }
 
-[data-theme='dark']
-  .atlas-ui-taxonomy--list
-  .atlas-ui-subcategory-panel--layout-grid
-  > .atlas-ui-subcategory-heading,
-[data-theme='dark']
-  .atlas-ui-taxonomy--list
-  .atlas-ui-subcategory-panel--grid-item
-  > .atlas-ui-subcategory-heading {
-  background: #20344b;
-}
 
-[data-theme='dark']
-  .atlas-ui-taxonomy--list
-  .atlas-ui-subdivision-block--grid-item
-  > .atlas-ui-subdivision-title {
-  background: #243a52;
-  color: #bad6ec;
-}
+
+
 
 /* Deux colonnes de structure sur écran intermédiaire. Les blocs configurés
    avec span > 1 prennent toute la largeur disponible. */
@@ -1105,16 +1049,16 @@
   }
 
   .atlas-ui-taxonomy--list
-    .atlas-ui-subcategory-panel--grid-item[data-span='1'],
+    .atlas-ui-subcategory-panel--grid-item[data-span="1"],
   .atlas-ui-taxonomy--list
-    .atlas-ui-subdivision-block--grid-item[data-span='1'] {
+    .atlas-ui-subdivision-block--grid-item[data-span="1"] {
     grid-column: span 1 !important;
   }
 
   .atlas-ui-taxonomy--list
-    .atlas-ui-subcategory-panel--grid-item[data-span]:not([data-span='1']),
+    .atlas-ui-subcategory-panel--grid-item[data-span]:not([data-span="1"]),
   .atlas-ui-taxonomy--list
-    .atlas-ui-subdivision-block--grid-item[data-span]:not([data-span='1']) {
+    .atlas-ui-subdivision-block--grid-item[data-span]:not([data-span="1"]) {
     grid-column: span 2 !important;
   }
 
@@ -1126,20 +1070,20 @@
      Résultat : 2 groupes par ligne × 2 cartes par groupe = 4 cartes par ligne.
      Un groupe qui occupe les 2 colonnes structurelles peut en afficher 4. */
   .atlas-ui-taxonomy--list
-    .atlas-ui-subdivision-block--grid-item[data-span='1']
+    .atlas-ui-subdivision-block--grid-item[data-span="1"]
     > .display-grid--panel.display-grid--list,
   .atlas-ui-taxonomy--list
-    .atlas-ui-subcategory-panel--grid-item[data-span='1']
+    .atlas-ui-subcategory-panel--grid-item[data-span="1"]
     > .atlas-ui-subcategory-content
     > .display-grid--panel.display-grid--list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .atlas-ui-taxonomy--list
-    .atlas-ui-subdivision-block--grid-item[data-span]:not([data-span='1'])
+    .atlas-ui-subdivision-block--grid-item[data-span]:not([data-span="1"])
     > .display-grid--panel.display-grid--list,
   .atlas-ui-taxonomy--list
-    .atlas-ui-subcategory-panel--grid-item[data-span]:not([data-span='1'])
+    .atlas-ui-subcategory-panel--grid-item[data-span]:not([data-span="1"])
     > .atlas-ui-subcategory-content
     > .display-grid--panel.display-grid--list {
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1223,11 +1167,11 @@
   min-height: 0;
   margin: 0 0 18px;
   padding: 0 0 12px;
-  border: 0;
-  border-bottom: 1px solid #cfe0f0;
+  
+  
   border-radius: 0;
-  background: transparent;
-  box-shadow: none;
+  
+  
 }
 
 .atlas-ui-taxonomy--list
@@ -1245,7 +1189,7 @@
   > .atlas-ui-subcategory-heading
   .atlas-ui-subcategory-title {
   width: auto;
-  color: #1f4f7f;
+  
   font-size: 1.1rem;
   font-weight: 760;
   line-height: 1.2;
@@ -1257,31 +1201,9 @@
   gap: 24px 24px;
 }
 
-.atlas-ui-taxonomy--list .atlas-ui-subdivision-block--grid-item {
-  padding-top: 12px;
-  border-top: 1px solid #d9e7f3;
-}
 
-.atlas-ui-taxonomy--list
-  .atlas-ui-subdivision-block--grid-item
-  > .atlas-ui-subdivision-title {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  min-height: 0;
-  margin: 0 0 12px;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  color: #25507d;
-  font-size: 0.98rem;
-  font-weight: 760;
-  line-height: 1.25;
-  text-align: left;
-  letter-spacing: 0;
-  opacity: 1;
-}
+
+
 
 /* Pour les sous-catégories sans subdivisions : même logique minimaliste,
    sans bandeau rempli ; seule la grille de cartes occupe l'espace. */
@@ -1292,35 +1214,13 @@
 }
 
 /* Mode sombre correspondant. */
-[data-theme='dark']
-  .atlas-ui-taxonomy--list
-  .atlas-ui-subcategory-panel--layout-grid
-  > .atlas-ui-subcategory-heading {
-  background: transparent;
-  border-bottom-color: #36526d;
-}
 
-[data-theme='dark']
-  .atlas-ui-taxonomy--list
-  .atlas-ui-subcategory-panel--layout-grid
-  > .atlas-ui-subcategory-heading
-  .atlas-ui-subcategory-title {
-  color: #d3e8f8;
-}
 
-[data-theme='dark']
-  .atlas-ui-taxonomy--list
-  .atlas-ui-subdivision-block--grid-item {
-  border-top-color: #334e68;
-}
 
-[data-theme='dark']
-  .atlas-ui-taxonomy--list
-  .atlas-ui-subdivision-block--grid-item
-  > .atlas-ui-subdivision-title {
-  background: transparent;
-  color: #c9e2f6;
-}
+
+
+
+
 
 @media (max-width: 900px) {
   .atlas-ui-taxonomy--list .atlas-ui-subdivision-grid {
@@ -1345,9 +1245,7 @@
     gap: 16px;
   }
 
-  .atlas-ui-taxonomy--list .atlas-ui-subdivision-block--grid-item {
-    padding-top: 10px;
-  }
+  
 }
 
 
@@ -1370,7 +1268,7 @@
   > .atlas-ui-subcategory-heading {
   margin: 0 0 22px;
   padding: 0;
-  border: 0;
+  
 }
 
 .atlas-ui-taxonomy--list
@@ -1390,10 +1288,10 @@
   .atlas-ui-subcategory-panel--layout-grid
   > .atlas-ui-subcategory-heading
   > .atlas-ui-subcategory-main::after {
-  content: '';
+  content: "";
   flex: 1 1 auto;
   min-width: 32px;
-  border-top: 1px solid #c9d9e8;
+  
   transform: translateY(2px);
 }
 
@@ -1402,7 +1300,7 @@
   > .atlas-ui-subcategory-heading
   .atlas-ui-subcategory-title {
   width: auto;
-  color: #1d4e7d;
+  
   font-size: 1.28rem;
   font-weight: 770;
   line-height: 1.15;
@@ -1415,48 +1313,25 @@
 
 .atlas-ui-taxonomy--list .atlas-ui-subdivision-block--grid-item {
   position: relative;
-  padding-top: 0;
-  border-top: 0;
+  
+  
 }
 
 /* Séparateur vertical entre la colonne gauche et la colonne droite.
    Dans la configuration actuelle des accroissements diffus, les subdivisions
    arrivent naturellement en deux colonnes ; les éléments pairs correspondent
    donc à la colonne de droite. */
-.atlas-ui-taxonomy--list .atlas-ui-subdivision-block--grid-item:nth-child(even) {
-  padding-left: 30px;
-  margin-left: 4px;
-  border-left: 1px solid #d7e4f0;
-}
 
-.atlas-ui-taxonomy--list
-  .atlas-ui-subdivision-block--grid-item
-  > .atlas-ui-subdivision-title {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 14px;
-  min-height: 0;
-  margin: 0 0 14px;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  color: #24527f;
-  font-size: 1.08rem;
-  font-weight: 760;
-  line-height: 1.2;
-  text-align: left;
-  letter-spacing: -0.01em;
-}
+
+
 
 .atlas-ui-taxonomy--list
   .atlas-ui-subdivision-block--grid-item
   > .atlas-ui-subdivision-title::after {
-  content: '';
+  content: "";
   flex: 1 1 auto;
   min-width: 26px;
-  border-top: 1px solid #d7e4f0;
+  
   transform: translateY(2px);
 }
 
@@ -1478,41 +1353,15 @@
 }
 
 /* Mode sombre */
-[data-theme='dark']
-  .atlas-ui-taxonomy--list
-  .atlas-ui-subcategory-panel--layout-grid
-  > .atlas-ui-subcategory-heading
-  > .atlas-ui-subcategory-main::after {
-  border-top-color: #4b6985;
-}
 
-[data-theme='dark']
-  .atlas-ui-taxonomy--list
-  .atlas-ui-subcategory-panel--layout-grid
-  > .atlas-ui-subcategory-heading
-  .atlas-ui-subcategory-title {
-  color: #d8ebf8;
-}
 
-[data-theme='dark']
-  .atlas-ui-taxonomy--list
-  .atlas-ui-subdivision-block--grid-item:nth-child(even) {
-  border-left-color: #3d5872;
-}
 
-[data-theme='dark']
-  .atlas-ui-taxonomy--list
-  .atlas-ui-subdivision-block--grid-item
-  > .atlas-ui-subdivision-title {
-  color: #cfe5f7;
-}
 
-[data-theme='dark']
-  .atlas-ui-taxonomy--list
-  .atlas-ui-subdivision-block--grid-item
-  > .atlas-ui-subdivision-title::after {
-  border-top-color: #3d5872;
-}
+
+
+
+
+
 
 @media (max-width: 900px) {
   .atlas-ui-taxonomy--list
@@ -1532,17 +1381,9 @@
     gap: 22px 22px;
   }
 
-  .atlas-ui-taxonomy--list .atlas-ui-subdivision-block--grid-item:nth-child(even) {
-    padding-left: 22px;
-    margin-left: 0;
-  }
+  
 
-  .atlas-ui-taxonomy--list
-    .atlas-ui-subdivision-block--grid-item
-    > .atlas-ui-subdivision-title {
-    font-size: 1rem;
-    margin-bottom: 12px;
-  }
+  
 }
 
 @media (max-width: 640px) {
@@ -1564,17 +1405,9 @@
     gap: 18px;
   }
 
-  .atlas-ui-taxonomy--list .atlas-ui-subdivision-block--grid-item:nth-child(even) {
-    padding-left: 0;
-    border-left: 0;
-  }
+  
 
-  .atlas-ui-taxonomy--list
-    .atlas-ui-subdivision-block--grid-item
-    > .atlas-ui-subdivision-title {
-    gap: 10px;
-    font-size: 0.96rem;
-  }
+  
 }
 
 
@@ -1628,10 +1461,10 @@
   min-height: 0;
   margin: 0 0 22px;
   padding: 0;
-  border: 0;
+  
   border-radius: 0;
-  background: transparent;
-  box-shadow: none;
+  
+  
 }
 
 .atlas-ui-taxonomy
@@ -1651,10 +1484,10 @@
   .atlas-ui-subcategory-panel--layout-grid
   > .atlas-ui-subcategory-heading
   > .atlas-ui-subcategory-main::after {
-  content: '';
+  content: "";
   flex: 1 1 auto;
   min-width: 32px;
-  border-top: 1px solid #c9d9e8;
+  
   transform: translateY(2px);
 }
 
@@ -1663,12 +1496,12 @@
   > .atlas-ui-subcategory-heading
   .atlas-ui-subcategory-title {
   width: auto;
-  color: #1d4e7d;
+  
   font-size: 1.28rem;
   font-weight: 770;
   line-height: 1.15;
   letter-spacing: -0.01em;
-  opacity: 1;
+  
 }
 
 .atlas-ui-taxonomy
@@ -1697,45 +1530,21 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
-  padding-top: 0;
-  border-top: 0;
+  
+  
 }
 
-.atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item:nth-child(even) {
-  padding-left: 30px;
-  margin-left: 4px;
-  border-left: 1px solid #d7e4f0;
-}
 
-.atlas-ui-taxonomy
-  .atlas-ui-subdivision-block--grid-item
-  > .atlas-ui-subdivision-title {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 14px;
-  min-height: 0;
-  margin: 0 0 14px;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  color: #24527f;
-  font-size: 1.08rem;
-  font-weight: 760;
-  line-height: 1.2;
-  text-align: left;
-  letter-spacing: -0.01em;
-  opacity: 1;
-}
+
+
 
 .atlas-ui-taxonomy
   .atlas-ui-subdivision-block--grid-item
   > .atlas-ui-subdivision-title::after {
-  content: '';
+  content: "";
   flex: 1 1 auto;
   min-width: 26px;
-  border-top: 1px solid #d7e4f0;
+  
   transform: translateY(2px);
 }
 
@@ -1791,49 +1600,17 @@
 }
 
 /* ---------- Dark mode ---------- */
-[data-theme='dark']
-  .atlas-ui-taxonomy
-  .atlas-ui-subcategory-panel--layout-grid
-  > .atlas-ui-subcategory-heading {
-  background: transparent;
-}
 
-[data-theme='dark']
-  .atlas-ui-taxonomy
-  .atlas-ui-subcategory-panel--layout-grid
-  > .atlas-ui-subcategory-heading
-  > .atlas-ui-subcategory-main::after {
-  border-top-color: #4b6985;
-}
 
-[data-theme='dark']
-  .atlas-ui-taxonomy
-  .atlas-ui-subcategory-panel--layout-grid
-  > .atlas-ui-subcategory-heading
-  .atlas-ui-subcategory-title {
-  color: #d8ebf8;
-}
 
-[data-theme='dark']
-  .atlas-ui-taxonomy
-  .atlas-ui-subdivision-block--grid-item:nth-child(even) {
-  border-left-color: #3d5872;
-}
 
-[data-theme='dark']
-  .atlas-ui-taxonomy
-  .atlas-ui-subdivision-block--grid-item
-  > .atlas-ui-subdivision-title {
-  background: transparent;
-  color: #cfe5f7;
-}
 
-[data-theme='dark']
-  .atlas-ui-taxonomy
-  .atlas-ui-subdivision-block--grid-item
-  > .atlas-ui-subdivision-title::after {
-  border-top-color: #3d5872;
-}
+
+
+
+
+
+
 
 /* ---------- Responsive commun Liste / Cartes ---------- */
 @media (max-width: 900px) {
@@ -1852,34 +1629,34 @@
   }
 
   .atlas-ui-taxonomy
-    .atlas-ui-subcategory-panel--grid-item[data-span='1'],
+    .atlas-ui-subcategory-panel--grid-item[data-span="1"],
   .atlas-ui-taxonomy
-    .atlas-ui-subdivision-block--grid-item[data-span='1'] {
+    .atlas-ui-subdivision-block--grid-item[data-span="1"] {
     grid-column: span 1 !important;
   }
 
   .atlas-ui-taxonomy
-    .atlas-ui-subcategory-panel--grid-item[data-span]:not([data-span='1']),
+    .atlas-ui-subcategory-panel--grid-item[data-span]:not([data-span="1"]),
   .atlas-ui-taxonomy
-    .atlas-ui-subdivision-block--grid-item[data-span]:not([data-span='1']) {
+    .atlas-ui-subdivision-block--grid-item[data-span]:not([data-span="1"]) {
     grid-column: span 2 !important;
   }
 
   .atlas-ui-taxonomy
-    .atlas-ui-subdivision-block--grid-item[data-span='1']
+    .atlas-ui-subdivision-block--grid-item[data-span="1"]
     > .display-grid--panel,
   .atlas-ui-taxonomy
-    .atlas-ui-subcategory-panel--grid-item[data-span='1']
+    .atlas-ui-subcategory-panel--grid-item[data-span="1"]
     > .atlas-ui-subcategory-content
     > .display-grid--panel {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .atlas-ui-taxonomy
-    .atlas-ui-subdivision-block--grid-item[data-span]:not([data-span='1'])
+    .atlas-ui-subdivision-block--grid-item[data-span]:not([data-span="1"])
     > .display-grid--panel,
   .atlas-ui-taxonomy
-    .atlas-ui-subcategory-panel--grid-item[data-span]:not([data-span='1'])
+    .atlas-ui-subcategory-panel--grid-item[data-span]:not([data-span="1"])
     > .atlas-ui-subcategory-content
     > .display-grid--panel {
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1891,10 +1668,7 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item:nth-child(even) {
-    padding-left: 22px;
-    margin-left: 0;
-  }
+  
 }
 
 @media (max-width: 640px) {
@@ -1917,11 +1691,7 @@
     grid-column: 1 / -1 !important;
   }
 
-  .atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item:nth-child(even) {
-    padding-left: 0;
-    margin-left: 0;
-    border-left: 0;
-  }
+  
 
   .atlas-ui-taxonomy
     .atlas-ui-subdivision-block--grid-item
@@ -2040,12 +1810,7 @@
 
 /* Une subdivision auto-héritée et pleine largeur ne doit jamais recevoir la
    bordure verticale destinée aux deux colonnes côte à côte. */
-.atlas-ui-taxonomy
-  .atlas-ui-subdivision-block--grid-item.atlas-ui-subdivision-block--full-row {
-  padding-left: 0 !important;
-  margin-left: 0 !important;
-  border-left: 0 !important;
-}
+
 
 /* Dans une sous-catégorie héritée de largeur 2, les subdivisions pleine largeur
    conservent 2 cartes par ligne via --atlas-ui-placement-span: 2. */
@@ -2055,7 +1820,7 @@
   width: 100%;
 }
 
-[data-theme='dark']
+[data-theme="dark"]
   .atlas-ui-taxonomy .atlas-ui-subcategory-stack--grid
   > .atlas-ui-subcategory-panel--grid-item:nth-child(even):not(.atlas-ui-subcategory-panel--full-row) {
   border-left-color: #3d5872;
@@ -2101,10 +1866,10 @@
 .atlas-ui-taxonomy .atlas-ui-subcategory-panel--layout-grid {
   margin-bottom: 12px;
   padding: 18px 18px 16px;
-  border: 1px solid var(--atlas-ui-panel-border);
+  
   border-radius: 18px;
-  background: var(--atlas-ui-panel-bg);
-  box-shadow: var(--atlas-ui-panel-shadow);
+  
+  
 }
 
 .atlas-ui-taxonomy
@@ -2137,34 +1902,13 @@
   gap: 16px;
 }
 
-.atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item {
-  padding: 12px 14px 14px;
-  border: 1px solid var(--atlas-ui-subpanel-border);
-  border-radius: 15px;
-  background: var(--atlas-ui-subpanel-bg);
-  box-shadow: 0 1px 6px rgba(79, 117, 151, 0.04);
-}
 
-.atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item:nth-child(even) {
-  padding-left: 14px;
-  margin-left: 0;
-  border-left: 1px solid var(--atlas-ui-subpanel-border);
-}
 
-.atlas-ui-taxonomy
-  .atlas-ui-subdivision-block--grid-item
-  > .atlas-ui-subdivision-title {
-  margin-bottom: 12px;
-  color: #245b92;
-  font-size: 1.02rem;
-  font-weight: 760;
-}
 
-.atlas-ui-taxonomy
-  .atlas-ui-subdivision-block--grid-item
-  > .atlas-ui-subdivision-title::after {
-  border-top-color: #cfddea;
-}
+
+
+
+
 
 /* Les cartes respirent mieux au sein des fonds colorés. */
 .atlas-ui-taxonomy
@@ -2186,7 +1930,7 @@
 }
 
 /* Dark mode correspondant. */
-[data-theme='dark'] {
+[data-theme="dark"] {
   --atlas-ui-panel-bg: linear-gradient(180deg, rgba(31, 47, 63, 0.92) 0%, rgba(26, 40, 54, 0.94) 100%);
   --atlas-ui-panel-border: #37516a;
   --atlas-ui-panel-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
@@ -2194,22 +1938,11 @@
   --atlas-ui-subpanel-border: #415c74;
 }
 
-[data-theme='dark']
-  .atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item:nth-child(even) {
-  border-left-color: var(--atlas-ui-subpanel-border);
-}
 
-[data-theme='dark']
-  .atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item > .atlas-ui-subdivision-title {
-  color: #d4e8fa;
-}
 
-[data-theme='dark']
-  .atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item > .atlas-ui-subdivision-title::after,
-[data-theme='dark']
-  .atlas-ui-taxonomy .atlas-ui-subcategory-panel--layout-grid > .atlas-ui-subcategory-heading > .atlas-ui-subcategory-main::after {
-  border-top-color: #58748e;
-}
+
+
+
 
 @media (max-width: 900px) {
   .atlas-ui-taxonomy .atlas-ui-subcategory-panel--layout-grid {
@@ -2225,12 +1958,10 @@
     gap: 14px;
   }
 
-  .atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item {
-    padding: 11px 12px 12px;
-  }
+  
 
   .atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item:nth-child(even) {
-    padding-left: 12px;
+    
     border-left-width: 1px;
   }
 }
@@ -2245,11 +1976,7 @@
     margin-bottom: 14px;
   }
 
-  .atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item,
-  .atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item:nth-child(even) {
-    padding: 10px 11px 11px;
-    border-left: 1px solid var(--atlas-ui-subpanel-border);
-  }
+  
 }
 
 
@@ -2295,29 +2022,13 @@
 }
 
 /* Panneaux de subdivision plus lisibles à distance. */
-.atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item {
-  border-color: var(--atlas-ui-subpanel-border);
-  background: var(--atlas-ui-subpanel-bg);
-  box-shadow: var(--atlas-ui-subpanel-shadow);
-}
 
-.atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item:nth-child(even) {
-  border-left-color: var(--atlas-ui-subpanel-border);
-}
 
-.atlas-ui-taxonomy
-  .atlas-ui-subdivision-block--grid-item
-  > .atlas-ui-subdivision-title {
-  color: #20598d;
-  font-size: 1.04rem;
-  font-weight: 770;
-}
 
-.atlas-ui-taxonomy
-  .atlas-ui-subdivision-block--grid-item
-  > .atlas-ui-subdivision-title::after {
-  border-top-color: #bfd4e5;
-}
+
+
+
+
 
 /* Le titre de sous-catégorie reste un cran plus important que celui de
    subdivision, sans augmenter à nouveau le bandeau de catégorie. */
@@ -2325,12 +2036,12 @@
   .atlas-ui-subcategory-panel--layout-grid
   > .atlas-ui-subcategory-heading
   .atlas-ui-subcategory-title {
-  color: #1b4f7f;
+  
   font-weight: 750;
 }
 
 /* Dark mode */
-[data-theme='dark'] {
+[data-theme="dark"] {
   --atlas-ui-panel-bg: linear-gradient(
     180deg,
     rgba(29, 44, 59, 0.96) 0%,
@@ -2346,7 +2057,7 @@
   --atlas-ui-subpanel-shadow: 0 2px 10px rgba(0, 0, 0, 0.16);
 }
 
-[data-theme='dark']
+[data-theme="dark"]
   .atlas-ui-taxonomy .atlas-ui-subcategory-stack--grid
   > .atlas-ui-subcategory-panel--grid-item:nth-child(even):not(.atlas-ui-subcategory-panel--full-row) {
   border-left-color: var(--atlas-ui-panel-border);
@@ -2380,12 +2091,12 @@
 .atlas-ui-taxonomy
   .atlas-ui-subdivision-block--grid-item.atlas-ui-subdivision-block--full-row {
   box-sizing: border-box;
-  padding: 12px 14px 14px !important;
-  margin-left: 0 !important;
-  border: 1px solid var(--atlas-ui-subpanel-border) !important;
-  border-radius: 15px;
-  background: var(--atlas-ui-subpanel-bg);
-  box-shadow: var(--atlas-ui-subpanel-shadow);
+  
+  
+  
+  
+  
+  
 }
 
 /* La grille interne doit rester contenue dans le padding du panneau. */
@@ -2398,17 +2109,11 @@
 }
 
 @media (max-width: 900px) {
-  .atlas-ui-taxonomy
-    .atlas-ui-subdivision-block--grid-item.atlas-ui-subdivision-block--full-row {
-    padding: 11px 12px 12px !important;
-  }
+  
 }
 
 @media (max-width: 640px) {
-  .atlas-ui-taxonomy
-    .atlas-ui-subdivision-block--grid-item.atlas-ui-subdivision-block--full-row {
-    padding: 10px 11px 11px !important;
-  }
+  
 }
 
 
@@ -2451,21 +2156,21 @@
 .atlas-ui-category > .display-section-heading {
   position: relative;
   overflow: hidden;
-  border: 1px solid rgba(166, 199, 224, 0.34);
-  background: linear-gradient(90deg, #dcecf9 0%, #d6e9f9 56%, #dcecf9 100%);
-  box-shadow: 0 2px 7px rgba(46, 84, 116, 0.05);
+  
+  
+  
 }
 
 .atlas-ui-category > .display-section-heading::before {
-  content: '';
+  content: "";
   position: absolute;
   left: 13px;
   top: 50%;
   width: 4px;
   height: 52%;
   border-radius: 999px;
-  background: var(--ifm-color-primary);
-  opacity: 0.82;
+  
+  
   transform: translateY(-50%);
 }
 
@@ -2476,10 +2181,10 @@
 /* ---------- Sous-catégorie : grand panneau calme ---------- */
 .atlas-ui-taxonomy .atlas-ui-subcategory-panel--layout-grid {
   padding: 20px 20px 18px;
-  border-color: var(--atlas-ui-panel-border);
+  
   border-radius: 17px;
-  background: var(--atlas-ui-panel-bg);
-  box-shadow: var(--atlas-ui-panel-shadow);
+  
+  
 }
 
 .atlas-ui-taxonomy .atlas-ui-subcategory-stack--grid {
@@ -2503,63 +2208,30 @@
   .atlas-ui-subcategory-panel--layout-grid
   > .atlas-ui-subcategory-heading
   .atlas-ui-subcategory-title {
-  color: var(--atlas-ui-title);
+  
   font-size: 1.25rem;
   font-weight: 735;
   line-height: 1.18;
   letter-spacing: -0.008em;
 }
 
-.atlas-ui-taxonomy
-  .atlas-ui-subcategory-panel--layout-grid
-  > .atlas-ui-subcategory-heading
-  > .atlas-ui-subcategory-main::after {
-  border-top-color: var(--atlas-ui-rule);
-  opacity: 0.86;
-}
+
 
 /* ---------- Subdivision : zone plus contrastée, mais moins "boîte dans boîte" ---------- */
 .atlas-ui-taxonomy .atlas-ui-subdivision-grid {
   gap: 18px;
 }
 
-.atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item,
-.atlas-ui-taxonomy
-  .atlas-ui-subdivision-block--grid-item.atlas-ui-subdivision-block--full-row {
-  padding: 15px 16px 16px !important;
-  border: 1px solid var(--atlas-ui-subpanel-border) !important;
-  border-radius: 13px;
-  background: var(--atlas-ui-subpanel-bg);
-  box-shadow: var(--atlas-ui-subpanel-shadow);
-}
+
 
 /* Le titre devient une capsule compacte : le fond du panneau suffit à tracer
    les limites, donc on supprime le long trait horizontal répété. */
-.atlas-ui-taxonomy
-  .atlas-ui-subdivision-block--grid-item
-  > .atlas-ui-subdivision-title {
-  display: inline-flex;
-  align-items: center;
-  width: fit-content;
-  max-width: 100%;
-  min-height: 30px;
-  margin: 0 0 13px;
-  padding: 5px 11px 5px;
-  border: 1px solid var(--atlas-ui-pill-border);
-  border-radius: 999px;
-  background: var(--atlas-ui-pill-bg);
-  color: var(--atlas-ui-subtitle);
-  font-size: 0.94rem;
-  font-weight: 720;
-  line-height: 1.15;
-  letter-spacing: 0.01em;
-  box-shadow: none;
-}
+
 
 .atlas-ui-taxonomy
   .atlas-ui-subdivision-block--grid-item
   > .atlas-ui-subdivision-title::after {
-  display: none;
+  
   content: none;
 }
 
@@ -2632,7 +2304,7 @@
 }
 
 /* ---------- Dark mode ---------- */
-[data-theme='dark'] {
+[data-theme="dark"] {
   --atlas-ui-panel-bg: linear-gradient(180deg, rgba(28, 43, 57, 0.97), rgba(24, 38, 51, 0.97));
   --atlas-ui-panel-border: #38546d;
   --atlas-ui-panel-shadow: 0 5px 18px rgba(0, 0, 0, 0.19);
@@ -2646,12 +2318,9 @@
   --atlas-ui-subtitle: #d1e8fa;
 }
 
-[data-theme='dark'] .atlas-ui-category > .display-section-heading {
-  border-color: #39546b;
-  background: linear-gradient(90deg, #223b53, #20384e 58%, #223b53);
-}
 
-[data-theme='dark'] .atlas-ui-taxonomy .display-card-chevron {
+
+[data-theme="dark"] .atlas-ui-taxonomy .display-card-chevron {
   color: #8dafca;
 }
 
@@ -2661,11 +2330,7 @@
     padding: 17px 17px 16px;
   }
 
-  .atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item,
-  .atlas-ui-taxonomy
-    .atlas-ui-subdivision-block--grid-item.atlas-ui-subdivision-block--full-row {
-    padding: 13px 13px 14px !important;
-  }
+  
 
   .atlas-ui-taxonomy .atlas-ui-subcategory-stack--grid,
   .atlas-ui-taxonomy .atlas-ui-subdivision-grid {
@@ -2695,20 +2360,9 @@
     font-size: 1.1rem;
   }
 
-  .atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item,
-  .atlas-ui-taxonomy
-    .atlas-ui-subdivision-block--grid-item.atlas-ui-subdivision-block--full-row {
-    padding: 11px !important;
-    border-radius: 11px;
-  }
+  
 
-  .atlas-ui-taxonomy
-    .atlas-ui-subdivision-block--grid-item
-    > .atlas-ui-subdivision-title {
-    margin-bottom: 10px;
-    padding: 4px 9px;
-    font-size: 0.9rem;
-  }
+  
 
   .atlas-ui-taxonomy .display-card-body {
     padding-right: 29px !important;
@@ -2757,11 +2411,7 @@
 }
 
 /* ---------- Catégorie : bandeau plus léger et plus proche de la maquette ---------- */
-.atlas-ui-category > .display-section-heading {
-  border: 1px solid rgba(154, 192, 223, 0.22);
-  background: linear-gradient(90deg, #e8f4ff 0%, #e2f0fc 100%);
-  box-shadow: 0 1px 4px rgba(64, 101, 132, 0.035);
-}
+
 
 /* La barre d'accent de la v5.11 est supprimée : sans icône, elle surcharge. */
 .atlas-ui-category > .display-section-heading::before {
@@ -2776,10 +2426,10 @@
 /* ---------- Sous-catégorie : grande zone très douce ---------- */
 .atlas-ui-taxonomy .atlas-ui-subcategory-panel--layout-grid {
   padding: 18px 18px 17px;
-  border: 1px solid var(--atlas-ui-panel-border-soft);
+  
   border-radius: 16px;
-  background: var(--atlas-ui-panel-bg-soft);
-  box-shadow: 0 1px 5px rgba(67, 105, 137, 0.035);
+  
+  
 }
 
 .atlas-ui-taxonomy
@@ -2792,69 +2442,31 @@
   .atlas-ui-subcategory-panel--layout-grid
   > .atlas-ui-subcategory-heading
   .atlas-ui-subcategory-title {
-  color: #164f83;
+  
   font-size: 1.23rem;
   font-weight: 715;
   letter-spacing: -0.006em;
 }
 
-.atlas-ui-taxonomy
-  .atlas-ui-subcategory-panel--layout-grid
-  > .atlas-ui-subcategory-heading
-  > .atlas-ui-subcategory-main::after {
-  border-top-color: var(--atlas-ui-rule-soft);
-  opacity: 0.8;
-}
+
 
 /* ---------- Subdivision : fond coloré sans bordure extérieure ---------- */
 .atlas-ui-taxonomy .atlas-ui-subdivision-grid {
   gap: 16px;
 }
 
-.atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item,
-.atlas-ui-taxonomy
-  .atlas-ui-subdivision-block--grid-item.atlas-ui-subdivision-block--full-row {
-  padding: 13px 14px 14px !important;
-  border: 0 !important;
-  border-radius: 13px;
-  background: var(--atlas-ui-subpanel-bg-soft);
-  box-shadow: none;
-}
+
 
 /* Neutralise définitivement les anciennes règles colonne droite/full-row. */
-.atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item:nth-child(even),
-.atlas-ui-taxonomy
-  .atlas-ui-subdivision-block--grid-item.atlas-ui-subdivision-block--full-row {
-  margin-left: 0 !important;
-  border-left: 0 !important;
-}
+
 
 /* Capsule légère, elle aussi sans bordure. */
-.atlas-ui-taxonomy
-  .atlas-ui-subdivision-block--grid-item
-  > .atlas-ui-subdivision-title {
-  display: inline-flex;
-  align-items: center;
-  width: fit-content;
-  max-width: 100%;
-  min-height: 27px;
-  margin: 0 0 11px;
-  padding: 4px 10px 4px;
-  border: 0;
-  border-radius: 999px;
-  background: var(--atlas-ui-pill-bg-soft);
-  color: var(--atlas-ui-pill-text-soft);
-  font-size: 0.92rem;
-  font-weight: 690;
-  line-height: 1.15;
-  letter-spacing: 0.008em;
-  box-shadow: none;
-}
+
 
 .atlas-ui-taxonomy
   .atlas-ui-subdivision-block--grid-item
   > .atlas-ui-subdivision-title::after {
-  display: none;
+  
   content: none;
 }
 
@@ -2864,9 +2476,9 @@
   .atlas-ui-direct-pathology-grid.display-grid--panel {
   box-sizing: border-box;
   padding: 13px 14px 14px;
-  border: 0;
+  
   border-radius: 13px;
-  background: var(--atlas-ui-subpanel-bg-soft);
+  
 }
 
 /* ---------- Cartes : beaucoup plus légères au repos ---------- */
@@ -2911,7 +2523,7 @@
 }
 
 /* ---------- Dark mode ---------- */
-[data-theme='dark'] {
+[data-theme="dark"] {
   --atlas-ui-panel-bg-soft: linear-gradient(180deg, rgba(28, 43, 57, 0.97), rgba(25, 39, 52, 0.97));
   --atlas-ui-panel-border-soft: rgba(94, 132, 163, 0.42);
   --atlas-ui-subpanel-bg-soft: linear-gradient(180deg, rgba(39, 60, 78, 0.96), rgba(34, 53, 70, 0.96));
@@ -2922,10 +2534,7 @@
   --atlas-ui-card-shadow-soft: 0 1px 4px rgba(0, 0, 0, 0.12);
 }
 
-[data-theme='dark'] .atlas-ui-category > .display-section-heading {
-  border-color: rgba(84, 119, 148, 0.42);
-  background: linear-gradient(90deg, #233d54 0%, #20384d 100%);
-}
+
 
 /* ---------- Responsive ---------- */
 @media (max-width: 900px) {
@@ -2933,14 +2542,7 @@
     padding: 16px 15px 15px;
   }
 
-  .atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item,
-  .atlas-ui-taxonomy
-    .atlas-ui-subdivision-block--grid-item.atlas-ui-subdivision-block--full-row,
-  .atlas-ui-taxonomy
-    .atlas-ui-subcategory-panel--layout-grid
-    .atlas-ui-direct-pathology-grid.display-grid--panel {
-    padding: 12px 12px 13px !important;
-  }
+  
 }
 
 @media (max-width: 640px) {
@@ -2949,23 +2551,9 @@
     border-radius: 14px;
   }
 
-  .atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item,
-  .atlas-ui-taxonomy
-    .atlas-ui-subdivision-block--grid-item.atlas-ui-subdivision-block--full-row,
-  .atlas-ui-taxonomy
-    .atlas-ui-subcategory-panel--layout-grid
-    .atlas-ui-direct-pathology-grid.display-grid--panel {
-    padding: 10px 10px 11px !important;
-    border-radius: 11px;
-  }
+  
 
-  .atlas-ui-taxonomy
-    .atlas-ui-subdivision-block--grid-item
-    > .atlas-ui-subdivision-title {
-    margin-bottom: 9px;
-    padding: 4px 9px;
-    font-size: 0.88rem;
-  }
+  
 
   .atlas-ui-taxonomy .display-card-body {
     padding-right: 10px !important;
@@ -3004,10 +2592,10 @@
 
 .atlas-ui-taxonomy .atlas-ui-subcategory-panel--layout-grid {
   padding: 15px 15px 14px;
-  border-color: var(--atlas-ui-panel-border-soft);
+  
   border-radius: 15px;
-  background: var(--atlas-ui-panel-bg-soft);
-  box-shadow: none;
+  
+  
 }
 
 .atlas-ui-taxonomy
@@ -3033,12 +2621,7 @@
   gap: 15px;
 }
 
-.atlas-ui-taxonomy
-  .atlas-ui-subcategory-panel--layout-grid
-  > .atlas-ui-subcategory-heading
-  > .atlas-ui-subcategory-main::after {
-  opacity: 0.68;
-}
+
 
 /* ---------- Sous-catégorie SANS subdivision ----------
    Le panneau parent suffit : pas de deuxième aplat bleu inutile. */
@@ -3046,10 +2629,10 @@
   .atlas-ui-subcategory-panel--layout-grid.atlas-ui-subcategory-panel--no-subdivisions
   .atlas-ui-direct-pathology-grid.display-grid--panel {
   padding: 0 !important;
-  border: 0 !important;
+  
   border-radius: 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
+  
+  
 }
 
 /* ---------- Subdivisions : plus compactes, mais immédiatement lisibles ---------- */
@@ -3057,29 +2640,9 @@
   gap: 14px;
 }
 
-.atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item,
-.atlas-ui-taxonomy
-  .atlas-ui-subdivision-block--grid-item.atlas-ui-subdivision-block--full-row {
-  padding: 11px 12px 12px !important;
-  border: 0 !important;
-  border-radius: 12px;
-  background: var(--atlas-ui-subpanel-bg-soft);
-  box-shadow: none;
-}
 
-.atlas-ui-taxonomy
-  .atlas-ui-subdivision-block--grid-item
-  > .atlas-ui-subdivision-title {
-  min-height: 24px;
-  margin: 0 0 9px;
-  padding: 3px 9px;
-  background: var(--atlas-ui-pill-bg-soft);
-  color: var(--atlas-ui-pill-text-soft);
-  font-size: 0.87rem;
-  font-weight: 690;
-  line-height: 1.16;
-  letter-spacing: 0.012em;
-}
+
+
 
 /* ---------- Densité interne ---------- */
 .atlas-ui-taxonomy
@@ -3117,7 +2680,7 @@
 .atlas-ui-category > .display-section-heading {
   min-height: 54px;
   padding: 10px 17px;
-  box-shadow: none;
+  
 }
 
 .atlas-ui-category > .display-section-heading .display-section-title {
@@ -3126,7 +2689,7 @@
 }
 
 /* ---------- Dark mode ---------- */
-[data-theme='dark'] {
+[data-theme="dark"] {
   --atlas-ui-panel-bg-soft: rgba(27, 42, 56, 0.96);
   --atlas-ui-panel-border-soft: rgba(94, 132, 163, 0.34);
   --atlas-ui-subpanel-bg-soft: linear-gradient(180deg, rgba(39, 60, 78, 0.95), rgba(34, 53, 70, 0.95));
@@ -3134,12 +2697,7 @@
   --atlas-ui-pill-text-soft: #d4eafb;
 }
 
-[data-theme='dark']
-  .atlas-ui-taxonomy
-  .atlas-ui-subcategory-panel--layout-grid.atlas-ui-subcategory-panel--no-subdivisions
-  .atlas-ui-direct-pathology-grid.display-grid--panel {
-  background: transparent !important;
-}
+
 
 /* ---------- Responsive ---------- */
 @media (max-width: 900px) {
@@ -3155,11 +2713,7 @@
     gap: 12px;
   }
 
-  .atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item,
-  .atlas-ui-taxonomy
-    .atlas-ui-subdivision-block--grid-item.atlas-ui-subdivision-block--full-row {
-    padding: 10px 11px 11px !important;
-  }
+  
 }
 
 @media (max-width: 640px) {
@@ -3180,20 +2734,9 @@
     font-size: 1.08rem;
   }
 
-  .atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item,
-  .atlas-ui-taxonomy
-    .atlas-ui-subdivision-block--grid-item.atlas-ui-subdivision-block--full-row {
-    padding: 9px 10px 10px !important;
-  }
+  
 
-  .atlas-ui-taxonomy
-    .atlas-ui-subdivision-block--grid-item
-    > .atlas-ui-subdivision-title {
-    min-height: 22px;
-    margin-bottom: 8px;
-    padding: 3px 8px;
-    font-size: 0.84rem;
-  }
+  
 
   .atlas-ui-category > .display-section-heading {
     min-height: 48px;
@@ -3270,7 +2813,7 @@
   .atlas-ui-general-pathology-link {
   padding: 5px 9px;
   border-radius: 999px;
-  box-shadow: 0 2px 4px -2px rgba(31, 63, 88, 0.28);
+  
   white-space: nowrap;
 }
 
@@ -3352,7 +2895,7 @@
   > .atlas-ui-subcategory-main::after {
   content: none !important;
   display: none !important;
-  border: 0 !important;
+  
 }
 
 /* Sans le trait, le titre n'a plus besoin de réserver un grand espace à droite. */
@@ -3469,24 +3012,9 @@
   gap: 12px;
 }
 
-.atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item,
-.atlas-ui-taxonomy
-  .atlas-ui-subdivision-block--grid-item.atlas-ui-subdivision-block--full-row {
-  padding: 9px 10px 10px !important;
-  border-radius: 11px;
-}
 
-.atlas-ui-taxonomy
-  .atlas-ui-subdivision-block--grid-item
-  > .atlas-ui-subdivision-title {
-  min-height: 22px;
-  margin: 0 0 8px;
-  padding: 3px 8px;
-  font-size: 0.82rem;
-  font-weight: 670;
-  line-height: 1.12;
-  letter-spacing: 0.008em;
-}
+
+
 
 /* Les cartes gardent intégralement leurs dimensions validées. On ne touche
    qu'aux espacements de grille qui les entourent. */
@@ -3539,11 +3067,7 @@
     gap: 11px;
   }
 
-  .atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item,
-  .atlas-ui-taxonomy
-    .atlas-ui-subdivision-block--grid-item.atlas-ui-subdivision-block--full-row {
-    padding: 8px 9px 9px !important;
-  }
+  
 }
 
 @media (max-width: 640px) {
@@ -3567,11 +3091,7 @@
     font-size: 1rem;
   }
 
-  .atlas-ui-taxonomy
-    .atlas-ui-subdivision-block--grid-item
-    > .atlas-ui-subdivision-title {
-    font-size: 0.8rem;
-  }
+  
 
   .atlas-ui-taxonomy
     .atlas-ui-subcategory-panel--layout-grid.atlas-ui-subcategory-panel--no-subdivisions
@@ -3589,10 +3109,10 @@
    ========================================================================== */
 
 .atlas-ui-taxonomy--list .atlas-ui-subcategory-panel--layout-grid {
-  background: #f9fcff;
-  border: 1px solid #dbe8f3;
+  
+  
   border-radius: 18px;
-  box-shadow: none;
+  
 }
 
 .atlas-ui-taxonomy--list
@@ -3615,39 +3135,13 @@
   gap: 18px 18px;
 }
 
-.atlas-ui-taxonomy--list .atlas-ui-subdivision-block--grid-item {
-  padding: 14px 14px 16px;
-  border: 0;
-  border-radius: 16px;
-  background: #eaf4fc;
-  box-shadow: none;
-}
 
-.atlas-ui-taxonomy--list .atlas-ui-subdivision-block--grid-item:nth-child(even) {
-  padding-left: 14px;
-  margin-left: 0;
-  border-left: 0;
-}
+
+
 
 /* Le titre de subdivision n'est plus une puce/capsule : c'est un vrai titre
    textuel aligné au bord du groupe. */
-.atlas-ui-taxonomy--list
-  .atlas-ui-subdivision-block--grid-item
-  > .atlas-ui-subdivision-title {
-  display: block;
-  min-height: 0;
-  margin: 0 0 12px;
-  padding: 0 2px;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  color: #215280;
-  font-size: 1rem;
-  font-weight: 760;
-  line-height: 1.2;
-  letter-spacing: -0.008em;
-}
+
 
 .atlas-ui-taxonomy--list
   .atlas-ui-subdivision-block--grid-item
@@ -3660,8 +3154,8 @@
   .atlas-ui-subcategory-panel--layout-grid.atlas-ui-subcategory-panel--no-subdivisions
   > .atlas-ui-subcategory-content {
   padding: 0;
-  border: 0;
-  background: transparent;
+  
+  
 }
 
 /* Carte interne : un léger alignement pour que le groupe reste aéré. */
@@ -3672,32 +3166,18 @@
 }
 
 /* Mode sombre */
-[data-theme='dark'] .atlas-ui-taxonomy--list .atlas-ui-subcategory-panel--layout-grid {
-  background: #162331;
-  border-color: #2b4257;
-}
 
-[data-theme='dark']
-  .atlas-ui-taxonomy--list
-  .atlas-ui-subdivision-block--grid-item {
-  background: #1b2d3f;
-}
 
-[data-theme='dark']
-  .atlas-ui-taxonomy--list
-  .atlas-ui-subdivision-block--grid-item
-  > .atlas-ui-subdivision-title {
-  color: #d6e9f8;
-}
+
+
+
 
 @media (max-width: 900px) {
   .atlas-ui-taxonomy--list .atlas-ui-subdivision-grid {
     gap: 16px;
   }
 
-  .atlas-ui-taxonomy--list .atlas-ui-subdivision-block--grid-item {
-    padding: 12px 12px 14px;
-  }
+  
 }
 
 @media (max-width: 640px) {
@@ -3705,17 +3185,9 @@
     gap: 14px;
   }
 
-  .atlas-ui-taxonomy--list .atlas-ui-subdivision-block--grid-item,
-  .atlas-ui-taxonomy--list .atlas-ui-subdivision-block--grid-item:nth-child(even) {
-    padding: 12px;
-  }
+  
 
-  .atlas-ui-taxonomy--list
-    .atlas-ui-subdivision-block--grid-item
-    > .atlas-ui-subdivision-title {
-    margin-bottom: 10px;
-    font-size: 0.96rem;
-  }
+  
 }
 
 
@@ -3851,16 +3323,16 @@
    ========================================================================== */
 
 .atlas-ui-taxonomy
-  .atlas-ui-subcategory-panel--grid-item[data-row-span-mode='auto'],
+  .atlas-ui-subcategory-panel--grid-item[data-row-span-mode="auto"],
 .atlas-ui-taxonomy
-  .atlas-ui-subdivision-block--grid-item[data-row-span-mode='auto'] {
+  .atlas-ui-subdivision-block--grid-item[data-row-span-mode="auto"] {
   grid-row: auto;
 }
 
 .atlas-ui-taxonomy
-  .atlas-ui-subcategory-panel--grid-item[data-row-span-mode='explicit'],
+  .atlas-ui-subcategory-panel--grid-item[data-row-span-mode="explicit"],
 .atlas-ui-taxonomy
-  .atlas-ui-subdivision-block--grid-item[data-row-span-mode='explicit'] {
+  .atlas-ui-subdivision-block--grid-item[data-row-span-mode="explicit"] {
   grid-row: span var(--atlas-ui-placement-row-span, 1);
 }
 
@@ -4140,9 +3612,275 @@
   .atlas-ui-subdivision-block--grid-item
   > .atlas-ui-subdivision-title {
   min-width: 0;
-  max-width: 100%;
+  
   white-space: normal !important;
   overflow-wrap: break-word;
   word-break: normal;
   hyphens: auto;
 }
+
+
+/* ==========================================================================
+   v5.44 — étirement des panneaux simples + espacement uniforme de la grille
+   --------------------------------------------------------------------------
+   1) Les sous-catégories SANS rowSpan explicite remplissent désormais
+      réellement toute la hauteur de leur rangée CSS Grid.
+      Cela corrige notamment "Hémopathies malignes" lorsqu'un voisin de la
+      même rangée est naturellement plus haut.
+
+   2) L'espacement vertical entre sous-catégories était visuellement plus grand
+      que l'espacement horizontal, car le `gap` de la grille s'additionnait à
+      un ancien `margin-bottom` porté par les panneaux.
+      On retire ce margin uniquement pour les grid-items et on impose le même
+      gap de 14 px horizontalement et verticalement.
+   ========================================================================== */
+
+/* Même espacement entre panneaux, quelle que soit la direction. */
+.atlas-ui-taxonomy .atlas-ui-subcategory-stack--grid {
+  column-gap: 14px !important;
+  row-gap: 14px !important;
+}
+
+/* Dans une grille, l'espacement appartient au parent via `gap`.
+   Aucun panneau ne doit rajouter sa propre marge verticale. */
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-stack--grid
+  > .atlas-ui-subcategory-panel--grid-item.atlas-ui-subcategory-panel--layout-grid {
+  margin-bottom: 0 !important;
+}
+
+/* Panneaux ordinaires : remplir intégralement la hauteur de la rangée.
+   On ne cible PAS les vrais rowSpan > 1, afin de ne pas modifier le moteur
+   désormais validé pour les dispositions complexes. */
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--grid-item.atlas-ui-subcategory-panel--layout-grid[data-row-span-mode="auto"],
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--grid-item.atlas-ui-subcategory-panel--layout-grid[data-row-span="1"] {
+  align-self: stretch !important;
+  height: 100% !important;
+}
+
+/* Le contenu reste collé en haut même lorsque l'enveloppe s'allonge pour
+   matcher le panneau voisin. */
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--grid-item.atlas-ui-subcategory-panel--layout-grid[data-row-span-mode="auto"]
+  > .atlas-ui-subcategory-content,
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--grid-item.atlas-ui-subcategory-panel--layout-grid[data-row-span="1"]
+  > .atlas-ui-subcategory-content {
+  justify-content: flex-start !important;
+  align-content: start !important;
+}
+
+/* Responsive : retour au dimensionnement naturel. */
+@media (max-width: 900px) {
+  .atlas-ui-taxonomy
+    .atlas-ui-subcategory-panel--grid-item.atlas-ui-subcategory-panel--layout-grid[data-row-span-mode="auto"],
+  .atlas-ui-taxonomy
+    .atlas-ui-subcategory-panel--grid-item.atlas-ui-subcategory-panel--layout-grid[data-row-span="1"] {
+    height: auto !important;
+  }
+}
+
+
+/* ==========================================================================
+   v5.47 — PALETTE TABLEAUX / GRIS + VERT — BLOC CANONIQUE UNIQUE
+   --------------------------------------------------------------------------
+   Les anciens styles visuels de catégorie / sous-catégorie / subdivision
+   ont été nettoyés dans le fichier au lieu d'être simplement surchargés.
+
+   La taxonomie reprend localement les mêmes alias que les tableaux :
+     --cd-table-bg
+     --cd-table-bg-head
+     --cd-table-heading-color
+     --cd-table-border
+     --cd-table-border-soft
+
+   IMPORTANT :
+   - le moteur layout / span / rowSpan v5.44 reste inchangé ;
+   - aucune géométrie de carte pathologie n'est modifiée ;
+   - les subdivisions n'ont PLUS aucune bordure ni traitement pair/impair.
+   ========================================================================== */
+
+/* Les alias `--cd-*` sont normalement définis dans .casedetail.
+   On les expose aussi à l'Atlas avec exactement la même correspondance. */
+.atlas-ui-category,
+.atlas-ui-taxonomy {
+  --cd-table-border: var(--doc-table-border-outer);
+  --cd-table-border-soft: var(--doc-table-border-inner);
+  --cd-table-bg: var(--doc-table-surface);
+  --cd-table-bg-head: var(--doc-table-heading-bg);
+  --cd-table-heading-color: var(--doc-table-heading-color);
+}
+
+/* ---------- CATÉGORIE ----------
+   Gris d'en-tête documentaire, sans mélange avec le vert :
+   le vert reste réservé au texte et n'envoie plus le fond vers le kaki. */
+.atlas-ui-category > .display-section-heading {
+  background: var(--cd-table-bg-head) !important;
+  border: 1px solid var(--cd-table-border-soft) !important;
+  box-shadow: none !important;
+}
+
+.atlas-ui-category > .display-section-heading .display-section-title {
+  color: var(--cd-table-heading-color) !important;
+}
+
+/* Badge fiche générale intégré au bandeau. */
+.atlas-ui-category
+  > .display-section-heading
+  .atlas-ui-general-pathology-link {
+  background: var(--cd-table-bg) !important;
+  color: var(--cd-table-heading-color) !important;
+  border: 1px solid var(--cd-table-border-soft) !important;
+  box-shadow: none !important;
+}
+
+/* ---------- SOUS-CATÉGORIE ----------
+   Fond demandé : exactement le gris d'en-tête des tableaux. */
+.atlas-ui-taxonomy .atlas-ui-subcategory-panel--layout-grid {
+  background: var(--cd-table-bg-head) !important;
+
+  border: 1px solid
+    color-mix(
+      in srgb,
+      var(--cd-table-border-soft) 55%,
+      transparent
+    ) !important;
+
+  border-radius: 16px;
+  box-shadow: none !important;
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading
+  .atlas-ui-subcategory-title {
+  color: var(--cd-table-heading-color) !important;
+}
+
+/* Aucun ancien trait horizontal après les titres. */
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading
+  > .atlas-ui-subcategory-main::after {
+  content: none !important;
+  display: none !important;
+  border: 0 !important;
+}
+
+/* ---------- SUBDIVISION ----------
+   Base demandée : exactement le gris d'en-tête des tableaux.
+   AUCUNE bordure : la subdivision est une zone interne, pas une carte. */
+.atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item,
+.atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item:nth-child(even),
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item.atlas-ui-subdivision-block--full-row {
+  margin-left: 0 !important;
+  padding: 14px 14px 15px !important;
+
+  background: var(--cd-table-bg-head) !important;
+
+  border: 0 !important;
+  border-top: 0 !important;
+  border-right: 0 !important;
+  border-bottom: 0 !important;
+  border-left: 0 !important;
+
+  border-radius: 14px;
+  outline: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Le titre n'est plus une capsule : simple heading dans le panneau gris. */
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item
+  > .atlas-ui-subdivision-title {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  min-height: 0;
+
+  margin: 0 0 12px;
+  padding: 0 2px;
+
+  background: transparent !important;
+  color: var(--cd-table-heading-color) !important;
+
+  border: 0 !important;
+  border-radius: 0;
+  box-shadow: none !important;
+
+  font-size: 1rem;
+  font-weight: 720;
+  line-height: 1.2;
+  letter-spacing: -0.004em;
+  text-align: left;
+
+  white-space: normal !important;
+  overflow-wrap: break-word;
+  word-break: normal;
+  hyphens: auto;
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item
+  > .atlas-ui-subdivision-title::after {
+  content: none !important;
+  display: none !important;
+  border: 0 !important;
+}
+
+/* Une sous-catégorie sans subdivision ne reçoit pas de second aplat interne. */
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid.atlas-ui-subcategory-panel--no-subdivisions
+  > .atlas-ui-subcategory-content {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Responsive : même langage visuel, seulement un padding plus compact. */
+@media (max-width: 900px) {
+  .atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item,
+  .atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item:nth-child(even),
+  .atlas-ui-taxonomy
+    .atlas-ui-subdivision-block--grid-item.atlas-ui-subdivision-block--full-row {
+    margin-left: 0 !important;
+    padding: 12px 12px 13px !important;
+    border: 0 !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item,
+  .atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item:nth-child(even),
+  .atlas-ui-taxonomy
+    .atlas-ui-subdivision-block--grid-item.atlas-ui-subdivision-block--full-row {
+    padding: 11px !important;
+  }
+
+  .atlas-ui-taxonomy
+    .atlas-ui-subdivision-block--grid-item
+    > .atlas-ui-subdivision-title {
+    margin-bottom: 10px;
+    font-size: 0.94rem;
+  }
+}
+
+
+/* ==========================================================================
+   v5.48 — fond des sous-catégories aligné exactement sur les tableaux
+   --------------------------------------------------------------------------
+   Correction ciblée :
+   les panneaux de sous-catégories utilisent désormais directement
+   `var(--cd-table-bg-head)` sans color-mix.
+   ========================================================================== */
