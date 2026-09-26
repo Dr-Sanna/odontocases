@@ -3684,26 +3684,16 @@
 
 
 /* ==========================================================================
-   v5.47 — PALETTE TABLEAUX / GRIS + VERT — BLOC CANONIQUE UNIQUE
+   v5.52 — PALETTE TAXONOMIE : SOUS-CATÉGORIES BLANCHES + SUBDIVISIONS PLUS CONTRASTÉES
    --------------------------------------------------------------------------
-   Les anciens styles visuels de catégorie / sous-catégorie / subdivision
-   ont été nettoyés dans le fichier au lieu d'être simplement surchargés.
-
-   La taxonomie reprend localement les mêmes alias que les tableaux :
-     --cd-table-bg
-     --cd-table-bg-head
-     --cd-table-heading-color
-     --cd-table-border
-     --cd-table-border-soft
-
-   IMPORTANT :
-   - le moteur layout / span / rowSpan v5.44 reste inchangé ;
-   - aucune géométrie de carte pathologie n'est modifiée ;
-   - les subdivisions n'ont PLUS aucune bordure ni traitement pair/impair.
+   Ajustement de couleurs uniquement :
+   - catégorie : inchangée par rapport à v5.50 ;
+   - sous-catégories : surface blanche `var(--cd-table-bg)` ;
+   - subdivisions : reprennent exactement l'ancien fond des sous-catégories,
+     soit `var(--cd-table-bg-head)` ;
+   - bordures / ombres / layout / span / rowSpan inchangés.
    ========================================================================== */
 
-/* Les alias `--cd-*` sont normalement définis dans .casedetail.
-   On les expose aussi à l'Atlas avec exactement la même correspondance. */
 .atlas-ui-category,
 .atlas-ui-taxonomy {
   --cd-table-border: var(--doc-table-border-outer);
@@ -3713,20 +3703,23 @@
   --cd-table-heading-color: var(--doc-table-heading-color);
 }
 
-/* ---------- CATÉGORIE ----------
-   Gris d'en-tête documentaire, sans mélange avec le vert :
-   le vert reste réservé au texte et n'envoie plus le fond vers le kaki. */
+/* CATÉGORIE */
 .atlas-ui-category > .display-section-heading {
-  background: var(--cd-table-bg-head) !important;
-  border: 1px solid var(--cd-table-border-soft) !important;
-  box-shadow: none !important;
+  background:
+    color-mix(
+      in srgb,
+      var(--cd-table-bg-head) 96%,
+      var(--cd-table-heading-color) 4%
+    ) !important;
+
+  border: 0 !important;
+  box-shadow: var(--ifm-alert-shadow) !important;
 }
 
 .atlas-ui-category > .display-section-heading .display-section-title {
   color: var(--cd-table-heading-color) !important;
 }
 
-/* Badge fiche générale intégré au bandeau. */
 .atlas-ui-category
   > .display-section-heading
   .atlas-ui-general-pathology-link {
@@ -3736,20 +3729,12 @@
   box-shadow: none !important;
 }
 
-/* ---------- SOUS-CATÉGORIE ----------
-   Fond demandé : exactement le gris d'en-tête des tableaux. */
+/* SOUS-CATÉGORIE — BLANCHE */
 .atlas-ui-taxonomy .atlas-ui-subcategory-panel--layout-grid {
-  background: var(--cd-table-bg-head) !important;
-
-  border: 1px solid
-    color-mix(
-      in srgb,
-      var(--cd-table-border-soft) 55%,
-      transparent
-    ) !important;
-
+  background: var(--cd-table-bg) !important;
+  border: 1px solid var(--cd-table-border-soft) !important;
   border-radius: 16px;
-  box-shadow: none !important;
+  box-shadow: var(--ifm-alert-shadow) !important;
 }
 
 .atlas-ui-taxonomy
@@ -3767,7 +3752,6 @@
   color: var(--cd-table-heading-color) !important;
 }
 
-/* Aucun ancien trait horizontal après les titres. */
 .atlas-ui-taxonomy
   .atlas-ui-subcategory-panel--layout-grid
   > .atlas-ui-subcategory-heading
@@ -3777,17 +3761,19 @@
   border: 0 !important;
 }
 
-/* ---------- SUBDIVISION ----------
-   Base demandée : exactement le gris d'en-tête des tableaux.
-   AUCUNE bordure : la subdivision est une zone interne, pas une carte. */
+/* SUBDIVISION — ancien fond des sous-catégories */
 .atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item,
 .atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item:nth-child(even),
 .atlas-ui-taxonomy
   .atlas-ui-subdivision-block--grid-item.atlas-ui-subdivision-block--full-row {
   margin-left: 0 !important;
   padding: 14px 14px 15px !important;
-
-  background: var(--cd-table-bg-head) !important;
+  background:
+    color-mix(
+      in srgb,
+      var(--cd-table-bg-head) 82%,
+      var(--cd-table-border-soft) 18%
+    ) !important;
 
   border: 0 !important;
   border-top: 0 !important;
@@ -3800,7 +3786,6 @@
   box-shadow: none !important;
 }
 
-/* Le titre n'est plus une capsule : simple heading dans le panneau gris. */
 .atlas-ui-taxonomy
   .atlas-ui-subdivision-block--grid-item
   > .atlas-ui-subdivision-title {
@@ -3813,7 +3798,13 @@
   padding: 0 2px;
 
   background: transparent !important;
-  color: var(--cd-table-heading-color) !important;
+
+  color:
+    color-mix(
+      in srgb,
+      var(--cd-table-heading-color) 84%,
+      var(--doc-text, #1f2933) 16%
+    ) !important;
 
   border: 0 !important;
   border-radius: 0;
@@ -3839,7 +3830,6 @@
   border: 0 !important;
 }
 
-/* Une sous-catégorie sans subdivision ne reçoit pas de second aplat interne. */
 .atlas-ui-taxonomy
   .atlas-ui-subcategory-panel--layout-grid.atlas-ui-subcategory-panel--no-subdivisions
   > .atlas-ui-subcategory-content {
@@ -3848,7 +3838,6 @@
   box-shadow: none !important;
 }
 
-/* Responsive : même langage visuel, seulement un padding plus compact. */
 @media (max-width: 900px) {
   .atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item,
   .atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item:nth-child(even),
@@ -3857,6 +3846,7 @@
     margin-left: 0 !important;
     padding: 12px 12px 13px !important;
     border: 0 !important;
+    box-shadow: none !important;
   }
 }
 
@@ -3875,12 +3865,3 @@
     font-size: 0.94rem;
   }
 }
-
-
-/* ==========================================================================
-   v5.48 — fond des sous-catégories aligné exactement sur les tableaux
-   --------------------------------------------------------------------------
-   Correction ciblée :
-   les panneaux de sous-catégories utilisent désormais directement
-   `var(--cd-table-bg-head)` sans color-mix.
-   ========================================================================== */
