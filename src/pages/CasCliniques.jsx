@@ -2089,16 +2089,18 @@ export default function CasCliniques() {
                               data-row-span-mode={subdivisionRowSpan === null ? 'auto' : 'explicit'}
                               aria-label={`${subcategory.label} — ${subdivision.label}`}
                             >
-                              <h4 className="atlas-ui-subdivision-title">{subdivision.label}</h4>
+                              <div className="atlas-ui-subdivision-heading-row">
+                                <h4 className="atlas-ui-subdivision-title">{subdivision.label}</h4>
 
-                              {view === 'list' && subdivisionGeneralItems.length > 0 && (
-                                <div
-                                  className="atlas-ui-subdivision-general-pathology-list atlas-ui-subdivision-general-pathology-list--content"
-                                  aria-label="Fiche générale"
-                                >
-                                  {subdivisionGeneralItems.map(renderGeneralPathologyLink)}
-                                </div>
-                              )}
+                                {view === 'list' && subdivisionGeneralItems.length > 0 && (
+                                  <div
+                                    className="atlas-ui-subdivision-general-pathology-list atlas-ui-subdivision-general-pathology-list--content"
+                                    aria-label="Fiche générale"
+                                  >
+                                    {subdivisionGeneralItems.map(renderGeneralPathologyLink)}
+                                  </div>
+                                )}
+                              </div>
 
                               {subdivisionContentItems.length > 0 && (
                                 <div

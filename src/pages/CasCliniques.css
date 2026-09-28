@@ -3684,7 +3684,7 @@
 
 
 /* ==========================================================================
-   v5.52 — PALETTE TAXONOMIE : SOUS-CATÉGORIES BLANCHES + SUBDIVISIONS PLUS CONTRASTÉES
+   v5.57 — PALETTE TAXONOMIE + FINITIONS TITRES
    --------------------------------------------------------------------------
    Ajustement de couleurs uniquement :
    - catégorie : inchangée par rapport à v5.50 ;
@@ -3703,30 +3703,84 @@
   --cd-table-heading-color: var(--doc-table-heading-color);
 }
 
-/* CATÉGORIE */
+/* CATÉGORIE — texte seul
+   --------------------------------------------------------------------------
+   Test volontairement minimal :
+   - aucune surface ;
+   - aucune ombre ;
+   - aucune bordure ;
+   - aucun trait décoratif ;
+   - uniquement le titre de catégorie.
+   -------------------------------------------------------------------------- */
 .atlas-ui-category > .display-section-heading {
-  background:
-    color-mix(
-      in srgb,
-      var(--cd-table-bg-head) 96%,
-      var(--cd-table-heading-color) 4%
-    ) !important;
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
 
+  width: 100%;
+  max-width: 100%;
+  min-height: 0;
+
+  box-sizing: border-box;
+  margin: 0 0 18px;
+  padding: 0;
+
+  background: transparent !important;
   border: 0 !important;
-  box-shadow: var(--ifm-alert-shadow) !important;
+  border-radius: 0;
+
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+.atlas-ui-category > .display-section-heading::before,
+.atlas-ui-category > .display-section-heading::after {
+  content: none !important;
+  display: none !important;
 }
 
 .atlas-ui-category > .display-section-heading .display-section-title {
+  margin: 0;
+  padding: 0 !important;
+
   color: var(--cd-table-heading-color) !important;
+
+  font-size: 1.28rem;
+  font-weight: 740;
+  line-height: 1.16;
+  letter-spacing: -0.008em;
 }
 
+/* Le badge "Fiche générale" reste fonctionnel et discret à côté du titre. */
 .atlas-ui-category
   > .display-section-heading
   .atlas-ui-general-pathology-link {
-  background: var(--cd-table-bg) !important;
+  background: var(--cd-table-bg-head) !important;
   color: var(--cd-table-heading-color) !important;
   border: 1px solid var(--cd-table-border-soft) !important;
   box-shadow: none !important;
+}
+
+@media (max-width: 900px) {
+  .atlas-ui-category > .display-section-heading {
+    margin-bottom: 15px;
+  }
+
+  .atlas-ui-category > .display-section-heading .display-section-title {
+    font-size: 1.17rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .atlas-ui-category > .display-section-heading {
+    margin-bottom: 13px;
+  }
+
+  .atlas-ui-category > .display-section-heading .display-section-title {
+    font-size: 1.08rem;
+  }
 }
 
 /* SOUS-CATÉGORIE — BLANCHE */
@@ -3864,4 +3918,271 @@
     margin-bottom: 10px;
     font-size: 0.94rem;
   }
+}
+
+
+/* ==========================================================================
+   v5.55 — HIÉRARCHIE DES TITRES + FICHE GÉNÉRALE INLINE
+   --------------------------------------------------------------------------
+   1. Catégorie : reste verte.
+   2. Sous-catégorie : titre en couleur de texte normale (noir en thème clair).
+   3. Subdivision : conserve son accent vert.
+   4. "Fiche générale" : reste immédiatement après le titre pour les
+      sous-catégories ET les subdivisions, au lieu d'être repoussée à droite.
+   ========================================================================== */
+
+/* ---------- Sous-catégorie : titre noir / texte courant ---------- */
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading
+  .atlas-ui-subcategory-title {
+  color: var(--ifm-font-color-base, #1f2933) !important;
+}
+
+/* Titre + fiche générale = un même groupe aligné à gauche.
+   Cette règle neutralise les anciens width:100% / flex:1 qui repoussaient
+   la puce jusqu'au bord droit. */
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid.atlas-ui-subcategory-panel--has-general
+  > .atlas-ui-subcategory-heading
+  > .atlas-ui-subcategory-main {
+  display: flex;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  flex-wrap: wrap;
+  column-gap: 9px;
+  row-gap: 6px;
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid.atlas-ui-subcategory-panel--has-general
+  > .atlas-ui-subcategory-heading
+  .atlas-ui-subcategory-title {
+  flex: 0 1 auto !important;
+  width: auto !important;
+  max-width: 100%;
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid.atlas-ui-subcategory-panel--has-general
+  > .atlas-ui-subcategory-heading
+  .atlas-ui-general-pathology-list {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: row;
+  align-items: center;
+  width: auto;
+  margin: 0;
+}
+
+/* ---------- Subdivision : titre + fiche générale sur la même ligne ---------- */
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item
+  > .atlas-ui-subdivision-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  column-gap: 8px;
+  row-gap: 6px;
+
+  min-width: 0;
+  margin: 0 0 12px;
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item
+  > .atlas-ui-subdivision-heading-row
+  > .atlas-ui-subdivision-title {
+  flex: 0 1 auto;
+  width: auto;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0 !important;
+}
+
+/* Dans le layout déclaratif, le bouton est affiché directement dans le
+   heading de subdivision : il n'a plus à attendre le fallback responsive. */
+.atlas-ui-taxonomy--list
+  .atlas-ui-subdivision-block--grid-item
+  > .atlas-ui-subdivision-heading-row
+  > .atlas-ui-subdivision-general-pathology-list--content {
+  display: flex !important;
+  flex: 0 0 auto;
+  flex-direction: row;
+  align-items: center;
+  width: auto;
+  max-width: 100%;
+  margin: 0 !important;
+}
+
+/* La puce garde le même langage compact que dans une sous-catégorie. */
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item
+  > .atlas-ui-subdivision-heading-row
+  .atlas-ui-general-pathology-link {
+  white-space: nowrap;
+}
+
+/* Responsive : le groupe peut naturellement passer sur deux lignes si le
+   titre est trop long, sans jamais pousser la puce à l'extrémité droite. */
+@media (max-width: 640px) {
+  .atlas-ui-taxonomy
+    .atlas-ui-subcategory-panel--layout-grid.atlas-ui-subcategory-panel--has-general
+    > .atlas-ui-subcategory-heading
+    > .atlas-ui-subcategory-main,
+  .atlas-ui-taxonomy
+    .atlas-ui-subdivision-block--grid-item
+    > .atlas-ui-subdivision-heading-row {
+    align-items: flex-start !important;
+  }
+}
+
+
+/* ==========================================================================
+   v5.56 — FINITIONS TYPOGRAPHIQUES DE LA HIÉRARCHIE
+   --------------------------------------------------------------------------
+   - catégorie : vert actuel conservé ;
+   - sous-catégorie : anthracite adouci plutôt que noir franc ;
+   - sous-catégorie légèrement moins grasse ;
+   - subdivision : vert un peu plus sombre / moins saturé ;
+   - "Fiche générale" légèrement plus discrète ;
+   - aucun changement de layout, dimensions, gap, span ou rowSpan.
+   ========================================================================== */
+
+/* ---------- Sous-catégorie : anthracite plus doux ---------- */
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading
+  .atlas-ui-subcategory-title {
+  color: var(--ifm-color-emphasis-800, #34383c) !important;
+  font-weight: 690 !important;
+  line-height: 1.18;
+  letter-spacing: -0.006em;
+}
+
+/* ---------- Subdivision : vert secondaire plus retenu ---------- */
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item
+  > .atlas-ui-subdivision-heading-row
+  > .atlas-ui-subdivision-title,
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item
+  > .atlas-ui-subdivision-title {
+  color:
+    color-mix(
+      in srgb,
+      var(--cd-table-heading-color) 80%,
+      var(--ifm-font-color-base, #1f2933) 20%
+    ) !important;
+  font-weight: 700;
+}
+
+/* ---------- Fiche générale : légèrement moins dominante ---------- */
+.atlas-ui-category
+  .atlas-ui-general-pathology-link,
+.atlas-ui-taxonomy
+  .atlas-ui-general-pathology-link {
+  color:
+    color-mix(
+      in srgb,
+      var(--cd-table-heading-color) 86%,
+      var(--ifm-font-color-base, #1f2933) 14%
+    ) !important;
+
+  border-color:
+    color-mix(
+      in srgb,
+      var(--cd-table-border-soft) 58%,
+      transparent
+    ) !important;
+
+  box-shadow: none !important;
+}
+
+/* Ombre strictement identique sur toutes les sous-catégories. */
+.atlas-ui-taxonomy .atlas-ui-subcategory-panel--layout-grid {
+  box-shadow: var(--ifm-alert-shadow) !important;
+}
+
+
+/* ==========================================================================
+   v5.57 — FINITIONS TITRES : ANTHRACITE + INTERLIGNE SUBDIVISIONS
+   --------------------------------------------------------------------------
+   Correction importante :
+   depuis v5.55, le titre de subdivision est enveloppé dans
+   `.atlas-ui-subdivision-heading-row`. Les anciennes règles typographiques
+   qui ciblaient le titre comme enfant direct ne s'appliquaient donc plus
+   complètement (font-size / line-height notamment).
+
+   Cette version rétablit explicitement la typographie du titre imbriqué et
+   compacte nettement l'interligne sur deux lignes.
+   ========================================================================== */
+
+/* Sous-catégorie : anthracite réellement adouci, adapté au thème. */
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading
+  .atlas-ui-subcategory-title {
+  color:
+    color-mix(
+      in srgb,
+      var(--ifm-font-color-base, #1f2933) 80%,
+      var(--ifm-background-color, #ffffff) 20%
+    ) !important;
+
+  font-weight: 680 !important;
+  line-height: 1.16 !important;
+  letter-spacing: -0.007em;
+}
+
+/* Subdivision : typographie complète pour la structure JSX actuelle. */
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item
+  > .atlas-ui-subdivision-heading-row
+  > .atlas-ui-subdivision-title {
+  display: block;
+
+  min-width: 0;
+  max-width: 100%;
+
+  margin: 0 !important;
+  padding: 0 2px;
+
+  font-size: 1rem !important;
+  font-weight: 690 !important;
+
+  /* Interligne volontairement compact pour les titres sur 2 lignes. */
+  line-height: 1.08 !important;
+  letter-spacing: -0.008em;
+
+  color:
+    color-mix(
+      in srgb,
+      var(--cd-table-heading-color) 80%,
+      var(--ifm-font-color-base, #1f2933) 20%
+    ) !important;
+
+  white-space: normal !important;
+  overflow-wrap: break-word;
+  word-break: normal;
+  hyphens: auto;
+}
+
+/* Même rendu si une ancienne structure sans heading-row subsiste. */
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item
+  > .atlas-ui-subdivision-title {
+  font-size: 1rem !important;
+  font-weight: 690 !important;
+  line-height: 1.08 !important;
+  letter-spacing: -0.008em;
+}
+
+/* Le gap titre → cartes reste distinct de l'interligne interne du titre. */
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item
+  > .atlas-ui-subdivision-heading-row {
+  margin-bottom: 11px;
 }
