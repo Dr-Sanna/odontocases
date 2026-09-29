@@ -242,7 +242,9 @@
 }
 
 [data-theme='dark'] .display-card {
-  --display-card-border-color: rgba(255, 255, 255, 0.13);
+  /* Bordure neutre et discrète en sombre ; les styles Atlas réutilisent
+     cette variable au lieu de conserver une bordure claire du thème light. */
+  --display-card-border-color: rgba(255, 255, 255, 0.09);
 }
 
 .display-card:hover {
@@ -318,7 +320,8 @@
   border-radius: 10px;
   background-color: var(--ifm-background-surface-color);
   box-shadow: var(--card-shadow);
-  transition: var(--card-transition);
+  /* Pas de transition de surface/bordure : le changement de thème est immédiat. */
+  transition: box-shadow 0.15s ease;
 }
 
 .display-card--cards:hover .display-card-thumb {

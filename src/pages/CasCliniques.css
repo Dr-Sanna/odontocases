@@ -1335,12 +1335,13 @@
   transform: translateY(2px);
 }
 
-/* Les cartes du mode grille héritent d'une hiérarchie un peu plus raffinée. */
+/* Les cartes restent lisibles mais passent clairement sous les niveaux
+   catégorie / sous-catégorie / subdivision dans la hiérarchie visuelle. */
 .atlas-ui-taxonomy--list
   .atlas-ui-subcategory-panel--layout-grid
   .display-card-title {
   font-size: 0.96rem;
-  font-weight: 720;
+  font-weight: 600;
   line-height: 1.24;
 }
 
@@ -1586,16 +1587,18 @@
 .atlas-ui-taxonomy
   .atlas-ui-subcategory-panel--layout-grid
   .display-card:not(.display-card--disabled) {
-  transition: var(--card-transition);
+  /* Ne jamais animer les couleurs/surfaces : le changement light/dark doit
+     être immédiat. Seule l'ombre conserve une transition visuelle. */
+  transition: box-shadow 0.15s ease;
 }
 
-/* Typographie des cartes : commune aux deux représentations, sans toucher à
-   leur composition propre. */
+/* Typographie des pathologies : moins grasse pour respecter la hiérarchie
+   visuelle, sans modifier la taille ni la géométrie des cartes. */
 .atlas-ui-taxonomy
   .atlas-ui-subcategory-panel--layout-grid
   .display-card-title {
   font-size: 0.96rem;
-  font-weight: 720;
+  font-weight: 600;
   line-height: 1.24;
 }
 
@@ -3684,7 +3687,7 @@
 
 
 /* ==========================================================================
-   v5.57 — PALETTE TAXONOMIE + FINITIONS TITRES
+   v5.59 — PALETTE TAXONOMIE + CATÉGORIES STRUCTURÉES
    --------------------------------------------------------------------------
    Ajustement de couleurs uniquement :
    - catégorie : inchangée par rapport à v5.50 ;
@@ -4186,3 +4189,482 @@
   > .atlas-ui-subdivision-heading-row {
   margin-bottom: 11px;
 }
+
+
+/* ==========================================================================
+   v5.71 — GRIS VALIDÉ + POINTE v5.67 STABILISÉE + DARK RESTAURÉ
+   --------------------------------------------------------------------------
+   Ajustements retenus :
+   - sous-catégories : gris froid quasi blanc #f9f9fb ;
+   - subdivisions : gris neutre plus marqué #f1f2f4 ;
+   - pathologies : blanc pur ;
+   - subdivisions sans bordure ni ombre ;
+   - trait de catégorie : 2 px constants, mais dégradé et plus élégant ;
+   - hover des pathologies conservé ;
+   - aucun changement au moteur de layout / span / rowSpan.
+   ========================================================================== */
+
+.atlas-ui-category,
+.atlas-ui-taxonomy {
+  --atlas-subcategory-bg: #fafafc;
+  --atlas-subdivision-bg: #f1f2f4;
+  --atlas-subcategory-border: #e4e6ea;
+  --atlas-pathology-card-bg: #ffffff;
+}
+
+/* --------------------------------------------------------------------------
+   CATÉGORIE : cartouche compact + séparateur horizontal dégradé
+   -------------------------------------------------------------------------- */
+.atlas-ui-category > .display-section-heading {
+  display: flex !important;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 10px;
+
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 0;
+
+  margin: 0 0 16px;
+  padding: 0 !important;
+
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+.atlas-ui-category > .display-section-heading::before,
+.atlas-ui-category > .display-section-heading::after {
+  content: none !important;
+  display: none !important;
+}
+
+.atlas-ui-category > .display-section-heading .display-section-title {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 78%;
+
+  margin: 0;
+  padding: 8px 16px 9px !important;
+
+  background:
+    color-mix(
+      in srgb,
+      var(--cd-table-bg) 92%,
+      var(--cd-table-heading-color) 8%
+    ) !important;
+
+  border: 0 !important;
+  border-radius: 999px;
+  box-shadow: none !important;
+
+  color: var(--cd-table-heading-color) !important;
+
+  font-size: 1.28rem;
+  font-weight: 740;
+  line-height: 1.12;
+  letter-spacing: -0.01em;
+  white-space: normal;
+}
+
+/* Séparateur de catégorie — une seule forme CSS, comme la version visuellement validée.
+   L'épaisseur reste 2 px et la pointe reste intégrée au même élément.
+   Le JSX ne dessine rien : il calcule uniquement `--atlas-category-rule-snap-y`
+   pour aligner le trait sur la grille physique de pixels de l'écran. */
+.atlas-ui-category
+  > .display-section-heading
+  > .atlas-ui-category-heading-rule {
+  position: relative;
+  display: block;
+  flex: 1 1 0;
+  align-self: flex-start;
+
+  min-width: 28px;
+  margin-top: 19px;
+
+  height: 2px;
+  min-height: 2px;
+  max-height: 2px;
+  block-size: 2px;
+  min-block-size: 2px;
+  max-block-size: 2px;
+
+  box-sizing: border-box;
+  line-height: 0;
+
+  /* Correction calculée en JSX : généralement quelques dixièmes de px CSS. */
+  top: var(--atlas-category-rule-snap-y, 0px);
+
+  background: #a9c9b6;
+  border: 0;
+  border-radius: 999px;
+
+  /* Pointe intégrée : aucune couture, aucun second élément graphique. */
+  clip-path: polygon(
+    0 0,
+    calc(100% - 16px) 0,
+    100% 50%,
+    calc(100% - 16px) 100%,
+    0 100%
+  );
+}
+
+.atlas-ui-category
+  > .display-section-heading
+  .atlas-ui-category-general-pathology-list {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  width: auto;
+  margin: 0;
+}
+
+.atlas-ui-category
+  > .display-section-heading
+  .atlas-ui-general-pathology-link {
+  background: #f7faf8 !important;
+  color:
+    color-mix(
+      in srgb,
+      var(--cd-table-heading-color) 84%,
+      var(--ifm-font-color-base, #1f2933) 16%
+    ) !important;
+  border: 1px solid #dfe7e2 !important;
+  box-shadow: none !important;
+}
+
+/* --------------------------------------------------------------------------
+   SOUS-CATÉGORIE : gris froid très clair et 100 % opaque
+   -------------------------------------------------------------------------- */
+.atlas-ui-taxonomy .atlas-ui-subcategory-panel--layout-grid {
+  background: var(--atlas-subcategory-bg) !important;
+  background-color: var(--atlas-subcategory-bg) !important;
+  background-image: none !important;
+  opacity: 1 !important;
+
+  border: 1px solid var(--atlas-subcategory-border) !important;
+  box-shadow: var(--ifm-alert-shadow) !important;
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading
+  .atlas-ui-subcategory-title {
+  display: block;
+  flex: 0 1 auto !important;
+  width: auto !important;
+  max-width: 100%;
+
+  margin: 0;
+  padding: 0 !important;
+
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+
+  color: #454a4d !important;
+  font-weight: 680 !important;
+  line-height: 1.14 !important;
+  letter-spacing: -0.007em;
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid.atlas-ui-subcategory-panel--has-general
+  > .atlas-ui-subcategory-heading
+  > .atlas-ui-subcategory-main {
+  justify-content: flex-start !important;
+  align-items: center !important;
+}
+
+/* --------------------------------------------------------------------------
+   SUBDIVISION : gris neutre distinct, sans bordure ni ombre
+   -------------------------------------------------------------------------- */
+.atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item,
+.atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item:nth-child(even),
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item.atlas-ui-subdivision-block--full-row {
+  margin-left: 0 !important;
+  padding: 14px 14px 15px !important;
+
+  background: var(--atlas-subdivision-bg) !important;
+  background-color: var(--atlas-subdivision-bg) !important;
+  background-image: none !important;
+  opacity: 1 !important;
+
+  border: 0 !important;
+  border-top: 0 !important;
+  border-right: 0 !important;
+  border-bottom: 0 !important;
+  border-left: 0 !important;
+
+  border-radius: 14px;
+  outline: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Le titre de subdivision garde le vert, mais sans surface propre. */
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item
+  > .atlas-ui-subdivision-heading-row
+  > .atlas-ui-subdivision-title,
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item
+  > .atlas-ui-subdivision-title {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+
+  color:
+    color-mix(
+      in srgb,
+      var(--cd-table-heading-color) 80%,
+      var(--ifm-font-color-base, #1f2933) 20%
+    ) !important;
+
+  font-size: 1rem !important;
+  font-weight: 690 !important;
+  line-height: 1.08 !important;
+  letter-spacing: -0.008em;
+}
+
+/* --------------------------------------------------------------------------
+   PATHOLOGIES : rendu unifié, avec ou sans layout
+   --------------------------------------------------------------------------
+   Une pathologie ne change plus de graisse, de bordure ou de surface selon
+   qu'elle se trouve dans un layout déclaratif ou dans une grille historique. */
+.atlas-ui-taxonomy .display-card--list,
+.atlas-ui-taxonomy .display-card--cards .display-card-thumb {
+  background: var(--atlas-pathology-card-bg) !important;
+  background-color: var(--atlas-pathology-card-bg) !important;
+  background-image: none !important;
+  opacity: 1 !important;
+
+  /* Pas de !important : hover/focus doit naturellement reprendre la main. */
+  border-color: #e5e7ea;
+  box-shadow: 0 1px 2px rgba(28, 42, 39, 0.022);
+}
+
+.atlas-ui-taxonomy .display-card-title {
+  color: #34393c !important;
+  font-weight: 600 !important;
+}
+
+/* Le changement de thème doit être instantané : on ne transitionne jamais
+   background-color ni border-color sur les cartes de pathologies. */
+.atlas-ui-taxonomy .display-card,
+.atlas-ui-taxonomy .display-card--cards .display-card-thumb {
+  transition: box-shadow 0.15s ease !important;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .atlas-ui-taxonomy
+    .display-card--list:not(.display-card--disabled):hover,
+  .atlas-ui-taxonomy
+    .display-card--list:not(.display-card--disabled):focus-visible {
+    border: var(--card-border-hover);
+    box-shadow: var(--card-shadow-hover);
+  }
+
+  .atlas-ui-taxonomy
+    .display-card--cards:not(.display-card--disabled):hover
+    .display-card-thumb,
+  .atlas-ui-taxonomy
+    .display-card--cards:not(.display-card--disabled):focus-visible
+    .display-card-thumb {
+    border: var(--card-border-hover);
+    box-shadow: var(--card-shadow-hover);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   RESPONSIVE
+   -------------------------------------------------------------------------- */
+@media (max-width: 900px) {
+  .atlas-ui-category > .display-section-heading {
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .atlas-ui-category > .display-section-heading .display-section-title {
+    max-width: 84%;
+    padding: 7px 14px 8px !important;
+    font-size: 1.16rem;
+  }
+
+  .atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item,
+  .atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item:nth-child(even),
+  .atlas-ui-taxonomy
+    .atlas-ui-subdivision-block--grid-item.atlas-ui-subdivision-block--full-row {
+    padding: 12px 12px 13px !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .atlas-ui-category > .display-section-heading {
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+
+  .atlas-ui-category > .display-section-heading .display-section-title {
+    max-width: 100%;
+    padding: 7px 12px 8px !important;
+    font-size: 1.08rem;
+  }
+
+  .atlas-ui-category
+    > .display-section-heading
+    > .atlas-ui-category-heading-rule {
+    flex-basis: 100%;
+    min-width: 100%;
+    height: 2px;
+    min-height: 2px;
+    max-height: 2px;
+    block-size: 2px;
+    min-block-size: 2px;
+    max-block-size: 2px;
+  }
+
+  .atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item,
+  .atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item:nth-child(even),
+  .atlas-ui-taxonomy
+    .atlas-ui-subdivision-block--grid-item.atlas-ui-subdivision-block--full-row {
+    padding: 11px !important;
+  }
+}
+
+
+/* ==========================================================================
+   v5.71 — RESTAURATION DU DARK HISTORIQUE + HOVER + ANCRAGE DU TRAIT
+   --------------------------------------------------------------------------
+   Le thème sombre revient au comportement qui existait avant le passage des
+   panneaux blancs aux gris codés en dur :
+   - sous-catégorie -> `var(--cd-table-bg)`
+   - subdivision -> ancien mélange de `--cd-table-bg-head` / bordure
+   - carte -> `var(--ifm-background-surface-color)`
+   Aucune nouvelle palette dark n'est inventée.
+   ========================================================================== */
+
+/* Ajustement uniquement de la position verticale du séparateur.
+   Sa géométrie de pointe reste celle de v5.67. */
+@media (max-width: 900px) {
+  .atlas-ui-category
+    > .display-section-heading
+    > .atlas-ui-category-heading-rule {
+    align-self: flex-start;
+    margin-top: 17px;
+  }
+}
+
+@media (max-width: 640px) {
+  .atlas-ui-category
+    > .display-section-heading
+    > .atlas-ui-category-heading-rule {
+    margin-top: 0;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   DARK : comportement historique restauré, sans couleurs inventées
+   -------------------------------------------------------------------------- */
+[data-theme="dark"]
+  .atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid {
+  background: var(--cd-table-bg) !important;
+  background-color: var(--cd-table-bg) !important;
+  background-image: none !important;
+
+  border-color: var(--cd-table-border-soft) !important;
+}
+
+[data-theme="dark"]
+  .atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item,
+[data-theme="dark"]
+  .atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item:nth-child(even),
+[data-theme="dark"]
+  .atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item.atlas-ui-subdivision-block--full-row {
+  background:
+    color-mix(
+      in srgb,
+      var(--cd-table-bg-head) 82%,
+      var(--cd-table-border-soft) 18%
+    ) !important;
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+/* Surface et bordure dark unifiées pour toutes les pathologies, qu'elles
+   soient ou non placées dans un layout. La bordure claire codée en dur du
+   thème light ne peut donc plus survivre au changement de thème. */
+[data-theme="dark"] .atlas-ui-taxonomy .display-card--list,
+[data-theme="dark"]
+  .atlas-ui-taxonomy
+  .display-card--cards
+  .display-card-thumb {
+  background: var(--ifm-background-surface-color) !important;
+  background-color: var(--ifm-background-surface-color) !important;
+  background-image: none !important;
+  border-color: var(--display-card-border-color);
+}
+
+/* Les couleurs de texte redeviennent celles du thème, y compris hors layout. */
+[data-theme="dark"]
+  .atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading
+  .atlas-ui-subcategory-title,
+[data-theme="dark"] .atlas-ui-taxonomy .display-card-title {
+  color: var(--ifm-font-color-base) !important;
+}
+
+/* Badge général : même logique adaptative qu'avant. */
+[data-theme="dark"]
+  .atlas-ui-category
+  > .display-section-heading
+  .atlas-ui-general-pathology-link {
+  background: var(--cd-table-bg-head) !important;
+  border-color: var(--cd-table-border-soft) !important;
+}
+
+/* Le hover partagé est volontairement placé tout à la fin : il gagne donc
+   aussi en thème sombre, sans modifier le comportement historique. */
+@media (hover: hover) and (pointer: fine) {
+  .atlas-ui-taxonomy
+    .display-card--list:not(.display-card--disabled):hover,
+  .atlas-ui-taxonomy
+    .display-card--list:not(.display-card--disabled):focus-visible {
+    border: var(--card-border-hover);
+    box-shadow: var(--card-shadow-hover);
+    outline: none;
+  }
+
+  .atlas-ui-taxonomy
+    .display-card--cards:not(.display-card--disabled):hover
+    .display-card-thumb,
+  .atlas-ui-taxonomy
+    .display-card--cards:not(.display-card--disabled):focus-visible
+    .display-card-thumb {
+    border: var(--card-border-hover);
+    box-shadow: var(--card-shadow-hover);
+  }
+}
+
+/* ==========================================================================
+   v5.74 — séparateur pixel-snappé
+   Forme CSS unique conservée ; le JSX corrige uniquement la coordonnée Y
+   sur la grille de pixels physiques (devicePixelRatio + scroll).
+   ========================================================================== */

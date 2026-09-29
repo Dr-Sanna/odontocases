@@ -1,5 +1,5 @@
 // src/pages/CasCliniques.jsx
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import PageTitle from '../components/PageTitle';
 import FilterMenu from '../components/FilterMenu';
@@ -21,6 +21,94 @@ import './CasCliniques.css';
  * - /atlas/:pathologySlug/:caseSlug?
  * - /entrainement/cas/:slug
  */
+
+
+const useIsomorphicLayoutEffect =
+  typeof window !== 'undefined' ? useLayoutEffect : useEffect;
+
+/**
+ * Aligne les séparateurs de catégories sur la grille physique de pixels.
+ *
+ * Le trait reste entièrement dessiné en CSS (même clip-path, même pointe).
+ * On corrige seulement sa coordonnée Y de quelques dixièmes de pixel CSS
+ * afin que son bord supérieur tombe toujours sur un pixel physique entier.
+ *
+ * Cela évite qu'un trait de 2 px soit rasterisé différemment suivant :
+ * - la position verticale de la catégorie ;
+ * - le zoom / devicePixelRatio ;
+ * - une position de scroll fractionnaire.
+ */
+function usePixelSnappedCategoryRules(active) {
+  useIsomorphicLayoutEffect(() => {
+    if (!active || typeof window === 'undefined') return undefined;
+
+    let rafId = 0;
+
+    const snapRules = () => {
+      if (rafId) return;
+
+      rafId = window.requestAnimationFrame(() => {
+        rafId = 0;
+
+        const dpr = window.devicePixelRatio || 1;
+        const rules = document.querySelectorAll(
+          '.atlas-ui-taxonomy .atlas-ui-category-heading-rule'
+        );
+
+        // Mesure toujours depuis la position CSS naturelle.
+        rules.forEach((rule) => {
+          rule.style.setProperty('--atlas-category-rule-snap-y', '0px');
+        });
+
+        rules.forEach((rule) => {
+          const top = rule.getBoundingClientRect().top;
+          const snappedTop = Math.round(top * dpr) / dpr;
+          const correction = snappedTop - top;
+
+          rule.style.setProperty(
+            '--atlas-category-rule-snap-y',
+            `${correction.toFixed(4)}px`
+          );
+        });
+      });
+    };
+
+    snapRules();
+
+    // Important : le scroll peut lui-même être fractionnaire.
+    window.addEventListener('scroll', snapRules, { passive: true });
+    window.addEventListener('resize', snapRules, { passive: true });
+
+    const resizeObserver =
+      typeof ResizeObserver !== 'undefined'
+        ? new ResizeObserver(snapRules)
+        : null;
+
+    if (resizeObserver) {
+      resizeObserver.observe(document.documentElement);
+    }
+
+    const themeObserver =
+      typeof MutationObserver !== 'undefined'
+        ? new MutationObserver(snapRules)
+        : null;
+
+    if (themeObserver) {
+      themeObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['data-theme', 'class'],
+      });
+    }
+
+    return () => {
+      if (rafId) window.cancelAnimationFrame(rafId);
+      window.removeEventListener('scroll', snapRules);
+      window.removeEventListener('resize', snapRules);
+      resizeObserver?.disconnect();
+      themeObserver?.disconnect();
+    };
+  }, [active]);
+}
 
 const ATLAS_KEY = 'atlas';
 const STRAPI_QA_TYPE = 'qa';
@@ -2282,6 +2370,10 @@ export default function CasCliniques() {
   const effectiveLoading = loading || (isAtlasHub && atlasTaxonomyLoading);
   const effectiveError = error || (isAtlasHub ? atlasTaxonomyError : '');
 
+  usePixelSnappedCategoryRules(
+    isAtlasList && atlasGroup === 'category'
+  );
+
   return (
     <>
       {(isAtlasHub || showChips) && (
@@ -2445,6 +2537,11 @@ export default function CasCliniques() {
                                 {categoryGeneralItems.map(renderGeneralPathologyLink)}
                               </div>
                             )}
+
+                            <span
+                              className="atlas-ui-category-heading-rule"
+                              aria-hidden="true"
+                            />
                           </div>
 
                           {categoryContentItems.length > 0 && (
