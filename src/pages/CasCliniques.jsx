@@ -51,24 +51,333 @@ function usePixelSnappedCategoryRules(active) {
         rafId = 0;
 
         const dpr = window.devicePixelRatio || 1;
-        const rules = document.querySelectorAll(
-          '.atlas-ui-taxonomy .atlas-ui-category-heading-rule'
+
+        // Sous-catégories : séparateur pointillé de 3 pixels PHYSIQUES.
+        // Sa largeur est calculée depuis les paddings réels du panneau afin
+        // d'obtenir un retrait fixe de 6 px par rapport aux bords internes.
+        const subcategoryRules = document.querySelectorAll(
+          '.atlas-ui-taxonomy .atlas-ui-subcategory-heading-rule'
         );
 
-        // Mesure toujours depuis la position CSS naturelle.
-        rules.forEach((rule) => {
-          rule.style.setProperty('--atlas-category-rule-snap-y', '0px');
+        const subcategoryRuleThickness = 2 / dpr;
+
+        subcategoryRules.forEach((rule) => {
+          rule.style.setProperty(
+            '--atlas-subcategory-rule-thickness',
+            `${subcategoryRuleThickness.toFixed(4)}px`
+          );
+          rule.style.setProperty('--atlas-subcategory-rule-bleed-left', '0px');
+          rule.style.setProperty('--atlas-subcategory-rule-bleed-right', '0px');
         });
 
-        rules.forEach((rule) => {
-          const top = rule.getBoundingClientRect().top;
-          const snappedTop = Math.round(top * dpr) / dpr;
-          const correction = snappedTop - top;
+        subcategoryRules.forEach((rule) => {
+          const panel = rule.closest('.atlas-ui-subcategory-panel--layout-grid');
+          if (!panel) return;
+
+          const panelStyle = window.getComputedStyle(panel);
+
+          // Le séparateur naît dans la boîte de contenu du panneau.
+          // On utilise donc directement les paddings du panneau comme "bleed".
+          // Contrairement à une mesure du trait lui-même, cette valeur est stable
+          // et ne crée pas de boucle de rétroaction lorsque le trait est déplacé.
+          const bleedLeft =
+            Number.parseFloat(panelStyle.paddingLeft || '0') || 0;
+          const bleedRight =
+            Number.parseFloat(panelStyle.paddingRight || '0') || 0;
 
           rule.style.setProperty(
-            '--atlas-category-rule-snap-y',
-            `${correction.toFixed(4)}px`
+            '--atlas-subcategory-rule-bleed-left',
+            `${bleedLeft.toFixed(4)}px`
           );
+          rule.style.setProperty(
+            '--atlas-subcategory-rule-bleed-right',
+            `${bleedRight.toFixed(4)}px`
+          );
+        });
+
+        const snapGroups = [
+          {
+            selector: '.atlas-ui-taxonomy .atlas-ui-category-heading-rule',
+            variable: '--atlas-category-rule-snap-y',
+          },
+          {
+            selector: '.atlas-ui-taxonomy .atlas-ui-subcategory-heading-rule',
+            variable: '--atlas-subcategory-rule-snap-y',
+          },
+        ];
+
+        snapGroups.forEach(({ selector, variable }) => {
+          const rules = document.querySelectorAll(selector);
+
+          // Mesure toujours depuis la position CSS naturelle.
+          rules.forEach((rule) => {
+            rule.style.setProperty(variable, '0px');
+          });
+
+          rules.forEach((rule) => {
+            const top = rule.getBoundingClientRect().top;
+            const snappedTop = Math.round(top * dpr) / dpr;
+            const correction = snappedTop - top;
+
+            rule.style.setProperty(
+              variable,
+              `${correction.toFixed(4)}px`
+            );
+          });
+        });
+
+        // Séparateurs des subdivisions :
+        // géométrie réelle + alignement sur les pixels PHYSIQUES de l'écran.
+        // Le contenu garde son padding ; les traits peuvent le traverser
+        // horizontalement jusqu'au bord interne du panneau.
+        const subdivisionGrids = document.querySelectorAll(
+          '.atlas-ui-taxonomy .atlas-ui-subdivision-grid'
+        );
+
+        subdivisionGrids.forEach((grid) => {
+          const gridStyle = window.getComputedStyle(grid);
+          const columnGap = Number.parseFloat(gridStyle.columnGap) || 0;
+          const rowGap = Number.parseFloat(gridStyle.rowGap) || 0;
+
+          // Subdivisions : 2 pixels PHYSIQUES.
+          const dividerThickness = 2 / dpr;
+          const halfThickness = dividerThickness / 2;
+
+          grid.style.setProperty(
+            '--atlas-subdivision-divider-thickness',
+            `${dividerThickness.toFixed(4)}px`
+          );
+          grid.style.setProperty(
+            '--atlas-subdivision-half-column-gap',
+            `${(columnGap / 2).toFixed(4)}px`
+          );
+          grid.style.setProperty(
+            '--atlas-subdivision-half-row-gap',
+            `${(rowGap / 2).toFixed(4)}px`
+          );
+
+          const gridRect = grid.getBoundingClientRect();
+          const panel = grid.closest('.atlas-ui-subcategory-panel--layout-grid');
+          const panelRect = panel?.getBoundingClientRect() || gridRect;
+          const panelStyle = panel ? window.getComputedStyle(panel) : null;
+
+          const panelBorderLeft =
+            Number.parseFloat(panelStyle?.borderLeftWidth || '0') || 0;
+          const panelBorderRight =
+            Number.parseFloat(panelStyle?.borderRightWidth || '0') || 0;
+          const panelBorderBottom =
+            Number.parseFloat(panelStyle?.borderBottomWidth || '0') || 0;
+
+          const panelInnerLeft = panelRect.left + panelBorderLeft;
+          const panelInnerRight = panelRect.right - panelBorderRight;
+          const panelInnerBottom = panelRect.bottom - panelBorderBottom;
+
+          grid.style.setProperty(
+            '--atlas-subdivision-outer-left',
+            `${(panelInnerLeft - gridRect.left).toFixed(4)}px`
+          );
+          grid.style.setProperty(
+            '--atlas-subdivision-outer-right',
+            `${(gridRect.right - panelInnerRight).toFixed(4)}px`
+          );
+
+          const items = Array.from(
+            grid.querySelectorAll(':scope > .atlas-ui-subdivision-block--grid-item')
+          );
+
+          items.forEach((item) => {
+            item.removeAttribute('data-divider-right');
+            item.removeAttribute('data-divider-bottom');
+
+            [
+              '--atlas-divider-v-top',
+              '--atlas-divider-v-bottom',
+              '--atlas-divider-h-left',
+              '--atlas-divider-h-right',
+              '--atlas-divider-snap-x',
+              '--atlas-divider-snap-y',
+            ].forEach((property) => item.style.removeProperty(property));
+          });
+
+          const rects = items.map((item) => ({
+            item,
+            rect: item.getBoundingClientRect(),
+          }));
+
+          // Cas mixte : pathologie(s) directement rattachée(s) à la
+          // sous-catégorie, puis une ou plusieurs subdivisions plus bas.
+          // On réutilise la même ligne horizontale comme point de raccord
+          // pour les pointillés verticaux de subdivision.
+          const directGrid =
+            grid.parentElement?.querySelector(
+              ':scope > .atlas-ui-direct-pathology-grid'
+            ) || null;
+
+          let directDividerTop = null;
+
+          if (directGrid) {
+            const directRect = directGrid.getBoundingClientRect();
+            const midpoint =
+              directRect.bottom + (gridRect.top - directRect.bottom) / 2;
+            const naturalTop = midpoint - halfThickness;
+            const snappedTop = Math.round(naturalTop * dpr) / dpr;
+            const relativeTop = snappedTop - gridRect.top;
+
+            directDividerTop = snappedTop;
+
+            grid.setAttribute('data-after-direct-pathologies', '');
+            grid.style.setProperty(
+              '--atlas-direct-subdivision-divider-top',
+              `${relativeTop.toFixed(4)}px`
+            );
+          } else {
+            grid.removeAttribute('data-after-direct-pathologies');
+            grid.style.removeProperty(
+              '--atlas-direct-subdivision-divider-top'
+            );
+          }
+
+          // Lorsque la sous-catégorie possède déjà son propre séparateur
+          // pointillé au-dessus du contenu, les traits verticaux de subdivision
+          // doivent venir s'y raccorder exactement.
+          const headingRule =
+            panel?.querySelector(
+              ':scope > .atlas-ui-subcategory-heading > .atlas-ui-subcategory-heading-rule'
+            ) ||
+            panel?.querySelector('.atlas-ui-subcategory-heading-rule') ||
+            null;
+
+          const headingRuleTop = headingRule
+            ? headingRule.getBoundingClientRect().top
+            : null;
+
+          // Pour l'extrémité basse, on vise le bord interne réel du panneau
+          // de sous-catégorie, et non la fin du dernier bloc de subdivision.
+          // Cela traverse donc aussi le padding inférieur du panneau.
+          const subdivisionContainerBottom = panelInnerBottom;
+
+          const overlap = (a1, a2, b1, b2) =>
+            Math.min(a2, b2) - Math.max(a1, b1);
+
+          const tolerance = 2;
+
+          const relationFor = (rect, other) => {
+            const horizontalOverlap = overlap(
+              rect.left,
+              rect.right,
+              other.left,
+              other.right
+            );
+            const verticalOverlap = overlap(
+              rect.top,
+              rect.bottom,
+              other.top,
+              other.bottom
+            );
+
+            const gapRight = other.left - rect.right;
+            const gapLeft = rect.left - other.right;
+            const gapBottom = other.top - rect.bottom;
+            const gapTop = rect.top - other.bottom;
+
+            return {
+              right:
+                verticalOverlap > tolerance &&
+                gapRight >= -tolerance &&
+                Math.abs(gapRight - columnGap) <= tolerance,
+              left:
+                verticalOverlap > tolerance &&
+                gapLeft >= -tolerance &&
+                Math.abs(gapLeft - columnGap) <= tolerance,
+              bottom:
+                horizontalOverlap > tolerance &&
+                gapBottom >= -tolerance &&
+                Math.abs(gapBottom - rowGap) <= tolerance,
+              top:
+                horizontalOverlap > tolerance &&
+                gapTop >= -tolerance &&
+                Math.abs(gapTop - rowGap) <= tolerance,
+            };
+          };
+
+          rects.forEach(({ item, rect }, index) => {
+            let hasRightNeighbor = false;
+            let hasLeftNeighbor = false;
+            let hasBottomNeighbor = false;
+            let hasTopNeighbor = false;
+
+            rects.forEach(({ rect: other }, otherIndex) => {
+              if (otherIndex === index) return;
+
+              const relation = relationFor(rect, other);
+              hasRightNeighbor ||= relation.right;
+              hasLeftNeighbor ||= relation.left;
+              hasBottomNeighbor ||= relation.bottom;
+              hasTopNeighbor ||= relation.top;
+            });
+
+            const connectorTop =
+              hasTopNeighbor
+                ? -rowGap / 2
+                : directDividerTop !== null
+                  ? directDividerTop - rect.top
+                  : headingRuleTop !== null
+                    ? headingRuleTop - rect.top
+                    : gridRect.top - rect.top;
+
+            const connectorBottom =
+              hasBottomNeighbor
+                ? -rowGap / 2
+                : rect.bottom - subdivisionContainerBottom;
+
+            item.style.setProperty(
+              '--atlas-divider-v-top',
+              `${connectorTop.toFixed(4)}px`
+            );
+            item.style.setProperty(
+              '--atlas-divider-v-bottom',
+              `${connectorBottom.toFixed(4)}px`
+            );
+
+            item.style.setProperty(
+              '--atlas-divider-h-left',
+              hasLeftNeighbor
+                ? `${(-columnGap / 2).toFixed(4)}px`
+                : `${(panelInnerLeft - rect.left).toFixed(4)}px`
+            );
+            item.style.setProperty(
+              '--atlas-divider-h-right',
+              hasRightNeighbor
+                ? `${(-columnGap / 2).toFixed(4)}px`
+                : `${(rect.right - panelInnerRight).toFixed(4)}px`
+            );
+
+            if (hasRightNeighbor) {
+              const naturalLeft =
+                rect.right + columnGap / 2 - halfThickness;
+              const snappedLeft = Math.round(naturalLeft * dpr) / dpr;
+              const correctionX = snappedLeft - naturalLeft;
+
+              item.style.setProperty(
+                '--atlas-divider-snap-x',
+                `${correctionX.toFixed(4)}px`
+              );
+              item.setAttribute('data-divider-right', '');
+            }
+
+            if (hasBottomNeighbor) {
+              const naturalTop =
+                rect.bottom + rowGap / 2 - halfThickness;
+              const snappedTop = Math.round(naturalTop * dpr) / dpr;
+              const correctionY = snappedTop - naturalTop;
+
+              item.style.setProperty(
+                '--atlas-divider-snap-y',
+                `${correctionY.toFixed(4)}px`
+              );
+              item.setAttribute('data-divider-bottom', '');
+            }
+          });
         });
       });
     };
@@ -100,12 +409,26 @@ function usePixelSnappedCategoryRules(active) {
       });
     }
 
+    const taxonomyRoot = document.querySelector('.atlas-ui-taxonomy');
+    const contentObserver =
+      taxonomyRoot && typeof MutationObserver !== 'undefined'
+        ? new MutationObserver(snapRules)
+        : null;
+
+    if (contentObserver) {
+      contentObserver.observe(taxonomyRoot, {
+        childList: true,
+        subtree: true,
+      });
+    }
+
     return () => {
       if (rafId) window.cancelAnimationFrame(rafId);
       window.removeEventListener('scroll', snapRules);
       window.removeEventListener('resize', snapRules);
       resizeObserver?.disconnect();
       themeObserver?.disconnect();
+      contentObserver?.disconnect();
     };
   }, [active]);
 }
@@ -2102,6 +2425,11 @@ export default function CasCliniques() {
                       </div>
                     )}
                   </div>
+
+                  <span
+                    className="atlas-ui-subcategory-heading-rule"
+                    aria-hidden="true"
+                  />
                 </div>
 
                 <div className="atlas-ui-subcategory-content atlas-ui-subcategory-content--layout-grid">

@@ -587,8 +587,8 @@
 }
 
 .atlas-ui-subdivision-general-pathology-list .atlas-ui-general-pathology-link {
-  padding: 5px 7px;
-  border-radius: 8px;
+  padding: 6px 9px;
+  border-radius: 10px;
 }
 
 .atlas-ui-subdivision-general-pathology-list .atlas-ui-general-pathology-kicker {
@@ -3000,7 +3000,7 @@
   .atlas-ui-subcategory-panel--layout-grid.atlas-ui-subcategory-panel--has-general
   > .atlas-ui-subcategory-heading
   .atlas-ui-general-pathology-link {
-  padding: 4px 8px;
+  padding: 6px 9px;
 }
 
 .atlas-ui-taxonomy
@@ -3912,7 +3912,7 @@
   .atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item:nth-child(even),
   .atlas-ui-taxonomy
     .atlas-ui-subdivision-block--grid-item.atlas-ui-subdivision-block--full-row {
-    padding: 11px !important;
+    padding: 0 !important;
   }
 
   .atlas-ui-taxonomy
@@ -4389,27 +4389,27 @@
 }
 
 /* --------------------------------------------------------------------------
-   SUBDIVISION : gris neutre distinct, sans bordure ni ombre
-   -------------------------------------------------------------------------- */
+   SUBDIVISION : niveau plat, sans cartouche
+   --------------------------------------------------------------------------
+   La subdivision n'a plus sa propre surface ni son propre padding.
+   La hiérarchie repose sur le titre coloré + des séparateurs pointillés
+   placés uniquement ENTRE deux subdivisions réellement adjacentes. */
 .atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item,
 .atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item:nth-child(even),
 .atlas-ui-taxonomy
   .atlas-ui-subdivision-block--grid-item.atlas-ui-subdivision-block--full-row {
-  margin-left: 0 !important;
-  padding: 14px 14px 15px !important;
+  position: relative;
 
-  background: var(--atlas-subdivision-bg) !important;
-  background-color: var(--atlas-subdivision-bg) !important;
+  margin-left: 0 !important;
+  padding: 0 !important;
+
+  background: transparent !important;
+  background-color: transparent !important;
   background-image: none !important;
   opacity: 1 !important;
 
   border: 0 !important;
-  border-top: 0 !important;
-  border-right: 0 !important;
-  border-bottom: 0 !important;
-  border-left: 0 !important;
-
-  border-radius: 14px;
+  border-radius: 0 !important;
   outline: 0 !important;
   box-shadow: none !important;
 }
@@ -4461,11 +4461,14 @@
   font-weight: 600 !important;
 }
 
-/* Le changement de thème doit être instantané : on ne transitionne jamais
-   background-color ni border-color sur les cartes de pathologies. */
+/* Le changement de thème doit rester instantané : le background n'est pas
+   animé. En revanche, bordure et ombre suivent la même transition au survol
+   dans les deux thèmes, y compris lors de la sortie de hover. */
 .atlas-ui-taxonomy .display-card,
 .atlas-ui-taxonomy .display-card--cards .display-card-thumb {
-  transition: box-shadow 0.15s ease !important;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease !important;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -4507,7 +4510,7 @@
   .atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item:nth-child(even),
   .atlas-ui-taxonomy
     .atlas-ui-subdivision-block--grid-item.atlas-ui-subdivision-block--full-row {
-    padding: 12px 12px 13px !important;
+    padding: 0 !important;
   }
 }
 
@@ -4588,24 +4591,7 @@
   border-color: var(--cd-table-border-soft) !important;
 }
 
-[data-theme="dark"]
-  .atlas-ui-taxonomy
-  .atlas-ui-subdivision-block--grid-item,
-[data-theme="dark"]
-  .atlas-ui-taxonomy
-  .atlas-ui-subdivision-block--grid-item:nth-child(even),
-[data-theme="dark"]
-  .atlas-ui-taxonomy
-  .atlas-ui-subdivision-block--grid-item.atlas-ui-subdivision-block--full-row {
-  background:
-    color-mix(
-      in srgb,
-      var(--cd-table-bg-head) 82%,
-      var(--cd-table-border-soft) 18%
-    ) !important;
-  background-color: transparent !important;
-  background-image: none !important;
-}
+
 
 /* Surface et bordure dark unifiées pour toutes les pathologies, qu'elles
    soient ou non placées dans un layout. La bordure claire codée en dur du
@@ -4667,4 +4653,1154 @@
    v5.74 — séparateur pixel-snappé
    Forme CSS unique conservée ; le JSX corrige uniquement la coordonnée Y
    sur la grille de pixels physiques (devicePixelRatio + scroll).
+   ========================================================================== */
+
+/* ==========================================================================
+   v5.75 — séparateur interne des sous-catégories
+   --------------------------------------------------------------------------
+   Trait discret sous le titre :
+   - une seule forme CSS ;
+   - retrait à gauche et à droite ;
+   - pointe intégrée aux deux extrémités ;
+   - gris froid neutre ;
+   - position Y pixel-snappée par le même mécanisme JSX que le séparateur
+     principal afin d'éviter les variations d'épaisseur liées aux demi-pixels.
+   ========================================================================== */
+
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+}
+
+/* Titre + éventuelle fiche générale restent sur leur ligne habituelle. */
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading
+  > .atlas-ui-subcategory-main {
+  flex: 0 0 auto;
+  width: 100%;
+}
+
+/* Séparateur de sous-catégorie : pointillé, plus épais que celui des
+   subdivisions et réellement pleine largeur du panneau. */
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading
+  > .atlas-ui-subcategory-heading-rule {
+  position: relative;
+  top: var(--atlas-subcategory-rule-snap-y, 0px);
+
+  display: block;
+  align-self: stretch;
+
+  left: calc((var(--atlas-subcategory-rule-bleed-left, 0px) * -1) + 6px);
+  width:
+    calc(
+      100%
+      + var(--atlas-subcategory-rule-bleed-left, 0px)
+      + var(--atlas-subcategory-rule-bleed-right, 0px)
+      - 12px
+    );
+
+  height: var(--atlas-subcategory-rule-thickness, 2px);
+  min-height: var(--atlas-subcategory-rule-thickness, 2px);
+  max-height: var(--atlas-subcategory-rule-thickness, 2px);
+
+  margin: 10px 0 0;
+
+  background:
+    repeating-linear-gradient(
+      to right,
+      #d3d7db 0 6px,
+      transparent 6px 11px
+    );
+
+  border: 0;
+  border-radius: 0;
+  clip-path: none;
+
+  pointer-events: none;
+}
+
+/* Dark : même géométrie, teinte adaptée au thème. */
+[data-theme="dark"]
+  .atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading
+  > .atlas-ui-subcategory-heading-rule {
+  background:
+    repeating-linear-gradient(
+      to right,
+      color-mix(
+        in srgb,
+        var(--cd-table-border-soft) 72%,
+        transparent
+      ) 0 6px,
+      transparent 6px 11px
+    );
+}
+
+@media (max-width: 640px) {
+  .atlas-ui-taxonomy
+    .atlas-ui-subcategory-panel--layout-grid
+    > .atlas-ui-subcategory-heading
+    > .atlas-ui-subcategory-heading-rule {
+    margin-inline: 0;
+  }
+}
+
+/* ==========================================================================
+   v5.76 — séparateur de sous-catégorie plus large
+   Réduction des retraits latéraux uniquement :
+   8 px desktop / 6 px mobile. Aucun autre style modifié.
+   ========================================================================== */
+
+/* ==========================================================================
+   v5.77 — séparateur de sous-catégorie sans marge latérale
+   Le trait utilise désormais toute la largeur disponible dans le padding
+   interne du conteneur. Aucun autre style modifié.
+   ========================================================================== */
+
+/* ==========================================================================
+   v5.79 — SUBDIVISIONS À PLAT + POINTILLÉS CONNECTÉS ET PIXEL-STABLES
+   --------------------------------------------------------------------------
+   - aucun fond / padding propre aux subdivisions ;
+   - séparateurs prolongés jusqu'au centre exact des gaps ;
+   - les traits horizontaux traversent le padding du panneau parent ;
+   - séparation automatique entre pathologies directes et subdivisions ;
+   - épaisseur = exactement 2 pixels physiques ;
+   - position X/Y alignée sur la grille physique de pixels.
+   ========================================================================== */
+
+.atlas-ui-taxonomy {
+  --atlas-subdivision-divider-color: #d7dade;
+}
+
+.atlas-ui-taxonomy--list .atlas-ui-subdivision-grid {
+  position: relative;
+  gap: 18px 18px !important;
+}
+
+/* Trait vertical ENTRE deux subdivisions. */
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item[data-divider-right]::before {
+  content: "";
+  position: absolute;
+  z-index: 1;
+
+  top: var(--atlas-divider-v-top, 0px);
+  bottom: var(--atlas-divider-v-bottom, 0px);
+
+  left:
+    calc(
+      100%
+      + var(--atlas-subdivision-half-column-gap, 9px)
+      - (var(--atlas-subdivision-divider-thickness, 2px) / 2)
+      + var(--atlas-divider-snap-x, 0px)
+    );
+
+  width: var(--atlas-subdivision-divider-thickness, 2px);
+
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      var(--atlas-subdivision-divider-color) 0 3px,
+      transparent 3px 7px
+    );
+
+  pointer-events: none;
+}
+
+/* Trait horizontal ENTRE deux subdivisions.
+   Il traverse le padding latéral du panneau jusqu'à son bord interne. */
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item[data-divider-bottom]::after {
+  content: "";
+  position: absolute;
+  z-index: 1;
+
+  left: var(--atlas-divider-h-left, 0px);
+  right: var(--atlas-divider-h-right, 0px);
+
+  top:
+    calc(
+      100%
+      + var(--atlas-subdivision-half-row-gap, 9px)
+      - (var(--atlas-subdivision-divider-thickness, 2px) / 2)
+      + var(--atlas-divider-snap-y, 0px)
+    );
+
+  height: var(--atlas-subdivision-divider-thickness, 2px);
+
+  background:
+    repeating-linear-gradient(
+      to right,
+      var(--atlas-subdivision-divider-color) 0 3px,
+      transparent 3px 7px
+    );
+
+  pointer-events: none;
+}
+
+/* Cas mixte : pathologie directe puis subdivision(s). */
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-grid[data-after-direct-pathologies]::before {
+  content: "";
+  position: absolute;
+  z-index: 1;
+
+  left: var(--atlas-subdivision-outer-left, 0px);
+  right: var(--atlas-subdivision-outer-right, 0px);
+  top: var(--atlas-direct-subdivision-divider-top, -9px);
+
+  height: var(--atlas-subdivision-divider-thickness, 2px);
+
+  background:
+    repeating-linear-gradient(
+      to right,
+      var(--atlas-subdivision-divider-color) 0 3px,
+      transparent 3px 7px
+    );
+
+  pointer-events: none;
+}
+
+/* Le titre garde une légère couleur pour matérialiser le niveau hiérarchique. */
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item
+  > .atlas-ui-subdivision-heading-row
+  > .atlas-ui-subdivision-title,
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item
+  > .atlas-ui-subdivision-title {
+  color:
+    color-mix(
+      in srgb,
+      var(--cd-table-heading-color) 80%,
+      var(--ifm-font-color-base, #1f2933) 20%
+    ) !important;
+}
+
+[data-theme="dark"] .atlas-ui-taxonomy {
+  --atlas-subdivision-divider-color:
+    color-mix(
+      in srgb,
+      var(--cd-table-border-soft) 82%,
+      transparent
+    );
+}
+
+[data-theme="dark"]
+  .atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item,
+[data-theme="dark"]
+  .atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item:nth-child(even),
+[data-theme="dark"]
+  .atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item.atlas-ui-subdivision-block--full-row {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+/* ==========================================================================
+   v5.80 — HIÉRARCHIE POINTILLÉE
+   - subdivisions : 2 pixels physiques ;
+   - sous-catégories : 3 pixels physiques ;
+   - séparateur de sous-catégorie pointillé et pleine largeur du panneau,
+     indépendamment de ses paddings.
+   ========================================================================== */
+
+/* ==========================================================================
+   v5.81 — séparateur de sous-catégorie allégé
+   - 2 pixels physiques au lieu de 3 ;
+   - teinte plus claire ;
+   - marge visuelle de 6 px à gauche et à droite ;
+   - séparateurs de subdivisions inchangés.
+   ========================================================================== */
+
+/* ==========================================================================
+   v5.82 — marges latérales du séparateur de sous-catégorie fiabilisées
+   La géométrie visuelle v5.81 est inchangée (2 px, même teinte, retrait 6 px).
+   Le JSX dérive maintenant le débordement depuis les paddings du panneau,
+   sans mesure auto-référente du trait.
+   ========================================================================== */
+
+
+/* ==========================================================================
+   v5.83 — FINITIONS : ESPACEMENTS, PADDING ET TEXTE
+   ========================================================================== */
+
+/* Padding de sous-catégorie strictement uniforme.
+   Cette règle neutralise notamment les anciennes règles `nth-child(even)`
+   qui conservaient un padding-left différent sur certains panneaux. */
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid {
+  padding: 12px 13px 12px !important;
+  padding-left: 13px !important;
+  padding-right: 13px !important;
+}
+
+@media (max-width: 900px) {
+  .atlas-ui-taxonomy
+    .atlas-ui-subcategory-panel--layout-grid {
+    padding: 11px 12px 11px !important;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .atlas-ui-taxonomy
+    .atlas-ui-subcategory-panel--layout-grid {
+    padding: 10px !important;
+  }
+
+  /* Les subdivisions restent bien sans padding propre sur mobile également. */
+  .atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item,
+  .atlas-ui-taxonomy .atlas-ui-subdivision-block--grid-item:nth-child(even),
+  .atlas-ui-taxonomy
+    .atlas-ui-subdivision-block--grid-item.atlas-ui-subdivision-block--full-row {
+    padding: 0 !important;
+  }
+}
+
+/* Le premier titre de subdivision doit être à la même distance du séparateur
+   de sous-catégorie qu'un titre de subdivision situé après un séparateur
+   horizontal entre deux subdivisions.
+   Le row-gap vaut 18 px : le pointillé est au milieu, soit 9 px de chaque côté. */
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid.atlas-ui-subcategory-panel--has-subdivisions
+  > .atlas-ui-subcategory-heading {
+  margin-bottom: 9px !important;
+}
+
+/* Les glyphes descendants (g, p, q, y...) ne doivent plus être mordus par
+   le clipping du line-clamp. On ajoute une petite réserve interne sans
+   modifier la géométrie des cartes. */
+.atlas-ui-taxonomy
+  .display-card--list
+  .display-card-title {
+  padding-bottom: 2px;
+}
+
+/* Sur les cartes étroites, l'interligne précédent était particulièrement
+   serré ; 1.18 évite également les collisions verticales des glyphes. */
+@container atlas-pathology-card (max-width: 345px) {
+  .display-card-title {
+    line-height: 1.18 !important;
+  }
+}
+
+
+/* ==========================================================================
+   v5.84 — PATHOLOGIES DIRECTES + CENTRAGE DES TITRES
+   ========================================================================== */
+
+/* Une pathologie directement rattachée à une sous-catégorie ne doit pas
+   recevoir une seconde zone de padding. Certaines anciennes règles donnaient
+   encore 13/14 px à `.atlas-ui-direct-pathology-grid`, ce qui expliquait le
+   retrait de Xanthome verruciforme dans les panneaux mixtes
+   (pathologie directe + subdivisions). */
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  .atlas-ui-direct-pathology-grid.display-grid--panel {
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Le contenu de la sous-catégorie est déjà positionné par le padding canonique
+   du panneau : aucune indentation horizontale supplémentaire n'est permise. */
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-content {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* Centrage vertical réel des titres en vue Liste.
+   `-webkit-box` est utile au line-clamp, mais sa boîte interne peut donner
+   l'impression qu'un titre sur 3 lignes descend dans la carte.
+   Ici le titre redevient un bloc normal : c'est donc sa hauteur réelle qui
+   est centrée par le flex du `.display-card-body`. */
+@media (min-width: 641px) {
+  .atlas-ui-taxonomy
+    .display-card--list
+    .display-card-body {
+    display: flex !important;
+    flex-direction: column;
+    justify-content: center !important;
+    padding-top: 7px !important;
+    padding-bottom: 7px !important;
+  }
+}
+
+.atlas-ui-taxonomy
+  .display-card--list
+  .display-card-title {
+  display: block !important;
+
+  -webkit-box-orient: initial !important;
+  -webkit-line-clamp: unset !important;
+  line-clamp: unset !important;
+
+  margin: 0 !important;
+  padding: 0 !important;
+
+  overflow: hidden;
+  max-height: 3.72em;
+}
+
+/* Les paliers de taille ont leur max-height accordé au line-height réel. */
+@container atlas-pathology-card (max-width: 390px) {
+  .display-card-title {
+    max-height: 3.54em;
+  }
+}
+
+@container atlas-pathology-card (max-width: 345px) {
+  .display-card-title {
+    max-height: 3.54em;
+  }
+}
+
+@container atlas-pathology-card (max-width: 295px) {
+  .display-card-title {
+    max-height: 3.39em;
+  }
+}
+
+
+/* ==========================================================================
+   v5.85 — FICHE GÉNÉRALE : LANGAGE VISUEL UNIFIÉ
+   --------------------------------------------------------------------------
+   Même construction que le bouton de catégorie :
+   - rectangle compact, rayon 10 px ;
+   - bordure fine ;
+   - aucune ombre ;
+   - palette propre au niveau hiérarchique.
+   ========================================================================== */
+
+/* Sous-catégorie : gris froid / anthracite. */
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading
+  .atlas-ui-general-pathology-link {
+  padding: 6px 9px !important;
+  border-radius: 10px !important;
+
+  background: var(--atlas-subdivision-bg, #f1f2f4) !important;
+  color:
+    color-mix(
+      in srgb,
+      var(--ifm-font-color-base, #30363a) 78%,
+      var(--cd-table-heading-color) 22%
+    ) !important;
+
+  border: 1px solid var(--atlas-subcategory-border, #e1e4e7) !important;
+  box-shadow: none !important;
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading
+  .atlas-ui-general-pathology-link:hover,
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading
+  .atlas-ui-general-pathology-link:focus-visible {
+  background:
+    color-mix(
+      in srgb,
+      var(--atlas-subdivision-bg, #f1f2f4) 88%,
+      var(--ifm-font-color-base, #30363a) 12%
+    ) !important;
+  color: var(--ifm-font-color-base) !important;
+  box-shadow: none !important;
+}
+
+/* Subdivision : même construction, mais légère teinte verte du niveau. */
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item
+  > .atlas-ui-subdivision-heading-row
+  .atlas-ui-general-pathology-link {
+  padding: 6px 9px !important;
+  border-radius: 10px !important;
+
+  background:
+    color-mix(
+      in srgb,
+      var(--atlas-subcategory-bg, #fafafc) 90%,
+      var(--cd-table-heading-color) 10%
+    ) !important;
+
+  color:
+    color-mix(
+      in srgb,
+      var(--cd-table-heading-color) 82%,
+      var(--ifm-font-color-base, #30363a) 18%
+    ) !important;
+
+  border:
+    1px solid
+    color-mix(
+      in srgb,
+      var(--atlas-subcategory-border, #e1e4e7) 78%,
+      var(--cd-table-heading-color) 22%
+    ) !important;
+
+  box-shadow: none !important;
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item
+  > .atlas-ui-subdivision-heading-row
+  .atlas-ui-general-pathology-link:hover,
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item
+  > .atlas-ui-subdivision-heading-row
+  .atlas-ui-general-pathology-link:focus-visible {
+  background:
+    color-mix(
+      in srgb,
+      var(--atlas-subcategory-bg, #fafafc) 84%,
+      var(--cd-table-heading-color) 16%
+    ) !important;
+  box-shadow: none !important;
+}
+
+/* Typographie proche du badge de catégorie, avec une très légère réduction
+   pour préserver la hiérarchie. */
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading
+  .atlas-ui-general-pathology-kicker {
+  font-size: 0.67rem !important;
+  font-weight: 720 !important;
+  line-height: 1.15 !important;
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item
+  > .atlas-ui-subdivision-heading-row
+  .atlas-ui-general-pathology-kicker {
+  font-size: 0.65rem !important;
+  font-weight: 720 !important;
+  line-height: 1.15 !important;
+}
+
+/* Dark : on conserve exactement la même logique de surfaces adaptatives. */
+[data-theme="dark"]
+  .atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading
+  .atlas-ui-general-pathology-link {
+  background: var(--cd-table-bg-head) !important;
+  color: var(--ifm-font-color-base) !important;
+  border-color: var(--cd-table-border-soft) !important;
+}
+
+[data-theme="dark"]
+  .atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item
+  > .atlas-ui-subdivision-heading-row
+  .atlas-ui-general-pathology-link {
+  background:
+    color-mix(
+      in srgb,
+      var(--cd-table-bg-head) 88%,
+      var(--cd-table-heading-color) 12%
+    ) !important;
+  color: var(--cd-table-heading-color) !important;
+  border-color:
+    color-mix(
+      in srgb,
+      var(--cd-table-border-soft) 78%,
+      var(--cd-table-heading-color) 22%
+    ) !important;
+}
+
+
+/* ==========================================================================
+   v5.86 — CENTRAGE OPTIQUE DES TITRES + FICHES GÉNÉRALES COMPACTES
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   FICHE GÉNÉRALE — niveaux sous-catégorie / subdivision
+   Même langage visuel qu'en v5.85, mais format nettement plus compact.
+   -------------------------------------------------------------------------- */
+
+/* Sous-catégorie */
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading
+  .atlas-ui-general-pathology-link {
+  padding: 4px 7px !important;
+  border-radius: 7px !important;
+
+  color:
+    color-mix(
+      in srgb,
+      var(--ifm-font-color-base, #30363a) 62%,
+      var(--atlas-subcategory-bg, #fafafc) 38%
+    ) !important;
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading
+  .atlas-ui-general-pathology-kicker {
+  font-size: 0.60rem !important;
+  font-weight: 700 !important;
+  line-height: 1.08 !important;
+  letter-spacing: 0.025em !important;
+}
+
+/* Subdivision */
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item
+  > .atlas-ui-subdivision-heading-row
+  .atlas-ui-general-pathology-link {
+  padding: 4px 7px !important;
+  border-radius: 7px !important;
+
+  color:
+    color-mix(
+      in srgb,
+      var(--cd-table-heading-color) 62%,
+      var(--atlas-subcategory-bg, #fafafc) 38%
+    ) !important;
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item
+  > .atlas-ui-subdivision-heading-row
+  .atlas-ui-general-pathology-kicker {
+  font-size: 0.58rem !important;
+  font-weight: 700 !important;
+  line-height: 1.08 !important;
+  letter-spacing: 0.025em !important;
+}
+
+/* Dark : même atténuation, sans rendre les libellés trop lumineux. */
+[data-theme="dark"]
+  .atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading
+  .atlas-ui-general-pathology-link {
+  color:
+    color-mix(
+      in srgb,
+      var(--ifm-font-color-base) 78%,
+      var(--cd-table-bg-head) 22%
+    ) !important;
+}
+
+[data-theme="dark"]
+  .atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item
+  > .atlas-ui-subdivision-heading-row
+  .atlas-ui-general-pathology-link {
+  color:
+    color-mix(
+      in srgb,
+      var(--cd-table-heading-color) 78%,
+      var(--cd-table-bg-head) 22%
+    ) !important;
+}
+
+
+/* ==========================================================================
+   v5.87 — CENTRAGE DES TITRES PAR LA GÉOMÉTRIE DE LA CARTE
+   --------------------------------------------------------------------------
+   Aucun calcul JSX, aucune remontée manuelle.
+   Le problème est traité à sa source : la zone texte disposait de trop de
+   padding vertical lorsqu'un titre occupait trois lignes.
+   ========================================================================== */
+
+/* La zone texte conserve son padding horizontal mais presque plus de padding
+   vertical. Le flex centre ensuite la hauteur RÉELLE du titre dans la carte. */
+.atlas-ui-taxonomy
+  .display-card--list
+  .display-card-body {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: stretch !important;
+
+  padding-top: 2px !important;
+  padding-bottom: 2px !important;
+  padding-left: 12px !important;
+  padding-right: 12px !important;
+
+  min-height: 0 !important;
+}
+
+/* Le titre ne possède plus aucun padding/marge susceptible de fausser son
+   centrage vertical. Sa boîte correspond uniquement à ses lignes de texte. */
+.atlas-ui-taxonomy
+  .display-card--list
+  .display-card-title {
+  display: block !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  transform: none !important;
+
+  -webkit-box-orient: initial !important;
+  -webkit-line-clamp: unset !important;
+  line-clamp: unset !important;
+
+  line-height: 1.18 !important;
+  max-height: 3.54em;
+  overflow: hidden;
+}
+
+/* Sur les cartes très étroites on conserve exactement le même principe :
+   pas de déplacement manuel, seulement une boîte de texte compacte. */
+@container atlas-pathology-card (max-width: 295px) {
+  .atlas-ui-taxonomy
+    .display-card--list
+    .display-card-title {
+    line-height: 1.13 !important;
+    max-height: 3.39em;
+  }
+}
+
+
+/* ==========================================================================
+   v5.88 — DESCENDANTES, HYPHÉNATION ET FICHE GÉNÉRALE DE SUBDIVISION
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   TITRES DE PATHOLOGIES
+   --------------------------------------------------------------------------
+   - pas d'hyphénation automatique au milieu des mots ;
+   - les césures existantes dans le mot composé restent utilisables ;
+   - réserve verticale suffisante pour les descendantes (g, p, q, y...).
+   -------------------------------------------------------------------------- */
+.atlas-ui-taxonomy
+  .display-card--list
+  .display-card-title {
+  hyphens: manual !important;
+  -webkit-hyphens: manual !important;
+
+  word-break: normal !important;
+  overflow-wrap: break-word !important;
+
+  /* Un peu plus d'air dans la ligne sans modifier le centrage du bloc. */
+  line-height: 1.20 !important;
+
+  /* Trois lignes + une petite réserve réelle pour les descendantes.
+     Le max-height précédent tombait exactement sur 3 line-boxes et pouvait
+     mordre le bas du "g" selon le rastering de la police. */
+  max-height: calc(3.60em + 3px) !important;
+  overflow: hidden;
+}
+
+/* Cartes très étroites : on garde la même logique avec une typo compacte. */
+@container atlas-pathology-card (max-width: 295px) {
+  .atlas-ui-taxonomy
+    .display-card--list
+    .display-card-title {
+    line-height: 1.15 !important;
+    max-height: calc(3.45em + 3px) !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   FICHE GÉNÉRALE — SUBDIVISION
+   --------------------------------------------------------------------------
+   Taille v5.86 conservée, mais surface et texte un peu plus présents.
+   -------------------------------------------------------------------------- */
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item
+  > .atlas-ui-subdivision-heading-row
+  .atlas-ui-general-pathology-link {
+  background:
+    color-mix(
+      in srgb,
+      var(--atlas-subcategory-bg, #fafafc) 82%,
+      var(--cd-table-heading-color) 18%
+    ) !important;
+
+  color:
+    color-mix(
+      in srgb,
+      var(--cd-table-heading-color) 76%,
+      var(--ifm-font-color-base, #30363a) 24%
+    ) !important;
+
+  border-color:
+    color-mix(
+      in srgb,
+      var(--atlas-subcategory-border, #e1e4e7) 68%,
+      var(--cd-table-heading-color) 32%
+    ) !important;
+}
+
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item
+  > .atlas-ui-subdivision-heading-row
+  .atlas-ui-general-pathology-link:hover,
+.atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item
+  > .atlas-ui-subdivision-heading-row
+  .atlas-ui-general-pathology-link:focus-visible {
+  background:
+    color-mix(
+      in srgb,
+      var(--atlas-subcategory-bg, #fafafc) 75%,
+      var(--cd-table-heading-color) 25%
+    ) !important;
+}
+
+/* Dark : même renforcement relatif. */
+[data-theme="dark"]
+  .atlas-ui-taxonomy
+  .atlas-ui-subdivision-block--grid-item
+  > .atlas-ui-subdivision-heading-row
+  .atlas-ui-general-pathology-link {
+  background:
+    color-mix(
+      in srgb,
+      var(--cd-table-bg-head) 78%,
+      var(--cd-table-heading-color) 22%
+    ) !important;
+
+  color:
+    color-mix(
+      in srgb,
+      var(--cd-table-heading-color) 88%,
+      var(--ifm-font-color-base) 12%
+    ) !important;
+}
+
+
+/* ==========================================================================
+   v5.89 — DESCENDANTES : SUPPRESSION DU CLIPPING SUR LE TITRE
+   --------------------------------------------------------------------------
+   Le problème ne dépend pas du nombre de lignes : c'était `overflow: hidden`
+   directement sur `.display-card-title` qui pouvait rogner les glyphes dont
+   le dessin descend légèrement sous la line-box (g, p, q, y...).
+
+   Le clipping éventuel reste assuré par la carte elle-même (`.display-card`
+   possède déjà `overflow: hidden`), donc le titre n'a pas besoin de se
+   découper lui-même.
+   ========================================================================== */
+
+.atlas-ui-taxonomy
+  .display-card--list
+  .display-card-title {
+  overflow: visible !important;
+  max-height: none !important;
+
+  /* On conserve l'hyphénation corrigée de v5.88. */
+  hyphens: manual !important;
+  -webkit-hyphens: manual !important;
+  word-break: normal !important;
+  overflow-wrap: break-word !important;
+}
+
+/* Les anciens plafonds de hauteur définis dans les container queries ne
+   doivent plus réactiver un clipping local du titre. */
+@container atlas-pathology-card (max-width: 390px) {
+  .atlas-ui-taxonomy
+    .display-card--list
+    .display-card-title {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+}
+
+@container atlas-pathology-card (max-width: 345px) {
+  .atlas-ui-taxonomy
+    .display-card--list
+    .display-card-title {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+}
+
+@container atlas-pathology-card (max-width: 295px) {
+  .atlas-ui-taxonomy
+    .display-card--list
+    .display-card-title {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+}
+
+
+/* ==========================================================================
+   v5.90 — CONNECTEURS VERTICAUX DE SUBDIVISION
+   --------------------------------------------------------------------------
+   Le CSS des pointillés reste inchangé ; la géométrie est désormais pilotée
+   côté JSX pour que les traits verticaux :
+   - rejoignent le séparateur de sous-catégorie lorsqu'il existe ;
+   - rejoignent le séparateur entre pathologies directes et subdivisions ;
+   - descendent jusqu'en bas du conteneur si aucun pointillé horizontal
+     inférieur ne prend le relais ;
+   - n'overshootent pas lorsqu'ils rencontrent déjà un pointillé horizontal
+     de subdivision.
+   ========================================================================== */
+
+/* ==========================================================================
+   v5.91 — RACCORD BAS DES POINTILLÉS VERTICAUX
+   --------------------------------------------------------------------------
+   Lorsqu'aucun séparateur horizontal de subdivision ne prend le relais,
+   le trait vertical va maintenant jusqu'au bord interne inférieur réel du
+   panneau de sous-catégorie, en traversant son padding bas.
+   Les intersections subdivision ↔ subdivision restent inchangées.
+   ========================================================================== */
+
+
+/* ==========================================================================
+   v5.92 — CONTRASTE DARK : POINTILLÉS + CARTES DE PATHOLOGIES
+   --------------------------------------------------------------------------
+   Le thème light est inchangé.
+
+   En dark :
+   - les pointillés de sous-catégorie sont un peu plus présents ;
+   - les pointillés de subdivision gagnent aussi en contraste, mais restent
+     légèrement plus discrets que ceux de sous-catégorie ;
+   - les cartes de pathologies utilisent une surface plus sombre que le
+     panneau de sous-catégorie afin de retrouver la hiérarchie du thème light.
+   ========================================================================== */
+
+/* Sous-catégorie : pointillés plus lisibles, sans changer épaisseur/densité. */
+[data-theme="dark"]
+  .atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading
+  > .atlas-ui-subcategory-heading-rule {
+  background:
+    repeating-linear-gradient(
+      to right,
+      color-mix(
+        in srgb,
+        var(--cd-table-border-soft) 72%,
+        var(--cd-table-heading-color) 28%
+      ) 0 6px,
+      transparent 6px 11px
+    ) !important;
+}
+
+/* Subdivision : contraste renforcé, mais un cran sous la sous-catégorie. */
+[data-theme="dark"] .atlas-ui-taxonomy {
+  --atlas-subdivision-divider-color:
+    color-mix(
+      in srgb,
+      var(--cd-table-border-soft) 84%,
+      var(--cd-table-heading-color) 16%
+    );
+}
+
+/* Dans le thème light, les cartes blanches sont plus claires que le panneau.
+   En dark on inverse naturellement cette relation : elles deviennent un peu
+   plus sombres que `--cd-table-bg`, sans introduire une nouvelle teinte. */
+[data-theme="dark"] .atlas-ui-taxonomy {
+  --atlas-pathology-card-bg:
+    color-mix(
+      in srgb,
+      var(--cd-table-bg) 84%,
+      black 16%
+    );
+}
+
+[data-theme="dark"] .atlas-ui-taxonomy .display-card--list,
+[data-theme="dark"]
+  .atlas-ui-taxonomy
+  .display-card--cards
+  .display-card-thumb {
+  background: var(--atlas-pathology-card-bg) !important;
+  background-color: var(--atlas-pathology-card-bg) !important;
+  background-image: none !important;
+}
+
+/* La bordure suit la nouvelle surface sans toucher au hover/focus existant. */
+[data-theme="dark"] .atlas-ui-taxonomy .display-card--list,
+[data-theme="dark"]
+  .atlas-ui-taxonomy
+  .display-card--cards
+  .display-card-thumb {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--cd-table-border-soft) 80%,
+      black 20%
+    );
+}
+
+
+/* ==========================================================================
+   v5.93 — DARK NEUTRE : CORRECTION DU CONTRASTE
+   --------------------------------------------------------------------------
+   Correction de la v5.92 :
+   - aucun vert dans les séparateurs pointillés ;
+   - cartes de pathologies réellement sombres, plus sombres que le panneau ;
+   - épaisseurs, rythmes, layout et hover inchangés.
+   ========================================================================== */
+
+/* Sous-catégorie : gris neutre plus visible, sans mélange avec le vert du titre. */
+[data-theme="dark"]
+  .atlas-ui-taxonomy
+  .atlas-ui-subcategory-panel--layout-grid
+  > .atlas-ui-subcategory-heading
+  > .atlas-ui-subcategory-heading-rule {
+  background:
+    repeating-linear-gradient(
+      to right,
+      rgba(232, 236, 240, 0.28) 0 6px,
+      transparent 6px 11px
+    ) !important;
+}
+
+/* Subdivision : même gris neutre, légèrement plus discret. */
+[data-theme="dark"] .atlas-ui-taxonomy {
+  --atlas-subdivision-divider-color: rgba(232, 236, 240, 0.20);
+}
+
+/* Les cartes doivent être clairement plus sombres que le panneau parent.
+   Valeur neutre, sans dépendance aux variables vertes de la hiérarchie. */
+[data-theme="dark"] .atlas-ui-taxonomy {
+  --atlas-pathology-card-bg: #181a1e;
+}
+
+[data-theme="dark"] .atlas-ui-taxonomy .display-card--list,
+[data-theme="dark"]
+  .atlas-ui-taxonomy
+  .display-card--cards
+  .display-card-thumb {
+  background: var(--atlas-pathology-card-bg) !important;
+  background-color: var(--atlas-pathology-card-bg) !important;
+  background-image: none !important;
+}
+
+/* Le texte reste piloté par le thème global ; aucune couleur claire forcée ici. */
+
+/* Réaffirme le hover après les règles dark afin qu'aucun override de bordure
+   ajouté précédemment ne puisse neutraliser l'accent vert au survol. */
+@media (hover: hover) and (pointer: fine) {
+  [data-theme="dark"]
+    .atlas-ui-taxonomy
+    .display-card--list:not(.display-card--disabled):hover,
+  [data-theme="dark"]
+    .atlas-ui-taxonomy
+    .display-card--list:not(.display-card--disabled):focus-visible {
+    border: var(--card-border-hover) !important;
+    box-shadow: var(--card-shadow-hover) !important;
+  }
+
+  [data-theme="dark"]
+    .atlas-ui-taxonomy
+    .display-card--cards:not(.display-card--disabled):hover
+    .display-card-thumb,
+  [data-theme="dark"]
+    .atlas-ui-taxonomy
+    .display-card--cards:not(.display-card--disabled):focus-visible
+    .display-card-thumb {
+    border: var(--card-border-hover) !important;
+    box-shadow: var(--card-shadow-hover) !important;
+  }
+}
+
+
+/* ==========================================================================
+   v5.94 — DARK PATHOLOGIES : CORRECTION À LA SOURCE
+   --------------------------------------------------------------------------
+   La surface des cartes est définie dans DisplayShared.css, y compris dans
+   les états hover / disabled / tactile. Les précédentes corrections Atlas
+   tentaient de la surcharger en aval.
+
+   Désormais DisplayShared consomme `--display-card-bg` et l'Atlas fournit
+   cette variable. Tous les états utilisent donc exactement la même surface.
+   ========================================================================== */
+
+.atlas-ui-taxonomy {
+  --display-card-bg: var(--atlas-pathology-card-bg, #ffffff);
+}
+
+[data-theme="dark"] .atlas-ui-taxonomy {
+  /* Surface neutre et réellement sombre, distincte du panneau de sous-catégorie. */
+  --atlas-pathology-card-bg: #181a1e;
+  --display-card-bg: #181a1e;
+}
+
+/* Le corps du lien reste transparent : la surface appartient à la carte. */
+[data-theme="dark"]
+  .atlas-ui-taxonomy
+  .display-card--list
+  .display-card-body {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+/* Réaffirmation finale de la surface pour les anciens blocs CSS accumulés. */
+[data-theme="dark"] .atlas-ui-taxonomy .display-card--list,
+[data-theme="dark"]
+  .atlas-ui-taxonomy
+  .display-card--cards
+  .display-card-thumb {
+  background: var(--display-card-bg) !important;
+  background-color: var(--display-card-bg) !important;
+  background-image: none !important;
+}
+
+/* Les états interactifs ne changent JAMAIS la surface, seulement bordure/ombre. */
+@media (hover: hover) and (pointer: fine) {
+  [data-theme="dark"]
+    .atlas-ui-taxonomy
+    .display-card--list:not(.display-card--disabled):hover,
+  [data-theme="dark"]
+    .atlas-ui-taxonomy
+    .display-card--list:not(.display-card--disabled):focus-visible {
+    background: var(--display-card-bg) !important;
+    background-color: var(--display-card-bg) !important;
+  }
+}
+
+@media (hover: none), (pointer: coarse) {
+  [data-theme="dark"]
+    .atlas-ui-taxonomy
+    .display-card--list:hover {
+    background: var(--display-card-bg) !important;
+    background-color: var(--display-card-bg) !important;
+  }
+}
+
+
+/* ==========================================================================
+   v5.95 — TRANSITION HOVER DARK
+   --------------------------------------------------------------------------
+   Le fond reste volontairement non animé afin que le changement de thème
+   soit instantané. En revanche, bordure et ombre utilisent désormais la même
+   petite transition que le ressenti du thème light.
+   ========================================================================== */
+
+@media (hover: hover) and (pointer: fine) {
+  [data-theme="dark"]
+    .atlas-ui-taxonomy
+    .display-card--list:not(.display-card--disabled),
+  [data-theme="dark"]
+    .atlas-ui-taxonomy
+    .display-card--cards:not(.display-card--disabled)
+    .display-card-thumb {
+    transition-property: border-color, box-shadow !important;
+    transition-duration: 150ms !important;
+    transition-timing-function: ease !important;
+  }
+}
+
+/* ==========================================================================
+   v5.97 — HOVER LIGHT : SORTIE DE BORDURE ANIMÉE
+   --------------------------------------------------------------------------
+   Correction du vieux override Atlas qui imposait encore
+   `transition: box-shadow ... !important` et annulait donc la transition
+   border-color définie dans DisplayShared.
    ========================================================================== */
