@@ -1167,15 +1167,34 @@ function normalizeCreditEntryKey(markdown) {
     .trim();
 }
 
+// Citations textuelles Pandoc prises en charge :
+//   [@citekey]
+//   [@citekey1; @citekey2]
+const INLINE_CITATION_GROUP_RE = /\[((?:\s*@[A-Za-z0-9_:.+\-]+\s*)(?:;\s*@[A-Za-z0-9_:.+\-]+\s*)*)\]/g;
+const INLINE_CITEKEY_RE = /@([A-Za-z0-9_:.+\-]+)/g;
+
+function extractInlineCitationGroupKeys(groupContent) {
+  const out = [];
+  const text = String(groupContent || '');
+  INLINE_CITEKEY_RE.lastIndex = 0;
+  let match;
+
+  while ((match = INLINE_CITEKEY_RE.exec(text))) {
+    const citekey = String(match[1] || '').trim();
+    if (citekey) out.push(citekey);
+  }
+
+  return out;
+}
+
 function extractInlineContentCitationKeys(markdown) {
   const text = String(markdown || '');
   const out = [];
-  const re = /\[@([A-Za-z0-9_:.+\-]+)\]/g;
+  INLINE_CITATION_GROUP_RE.lastIndex = 0;
   let match;
 
-  while ((match = re.exec(text))) {
-    const citekey = String(match[1] || '').trim();
-    if (citekey) out.push(citekey);
+  while ((match = INLINE_CITATION_GROUP_RE.exec(text))) {
+    out.push(...extractInlineCitationGroupKeys(match[1]));
   }
 
   return out;
@@ -1184,11 +1203,16 @@ function extractInlineContentCitationKeys(markdown) {
 function extractOrderedContentReferenceKeys(markdown) {
   const text = String(markdown || '');
   const out = [];
-  const re = /\[@([A-Za-z0-9_:.+\-]+)\]|data-odonto-cite=["']([^"']+)["']/g;
+  const re = /\[((?:\s*@[A-Za-z0-9_:.+\-]+\s*)(?:;\s*@[A-Za-z0-9_:.+\-]+\s*)*)\]|data-odonto-cite=["']([^"']+)["']/g;
   let match;
 
   while ((match = re.exec(text))) {
-    const citekey = String(match[1] || match[2] || '').trim();
+    if (match[1]) {
+      out.push(...extractInlineCitationGroupKeys(match[1]));
+      continue;
+    }
+
+    const citekey = String(match[2] || '').trim();
     if (citekey) out.push(citekey);
   }
 
@@ -1199,13 +1223,23 @@ function renderInlineContentCitations(markdown, numberedCredits) {
   const text = String(markdown || '');
   if (!text || !numberedCredits?.citationNumbers) return text;
 
-  return text.replace(/\[@([A-Za-z0-9_:.+\-]+)\]/g, (whole, citekey) => {
-    const number = numberedCredits.citationNumbers.get(citekey);
-    if (!number) return whole;
-    // Les crochets font partie du texte visible du lien.
-    // En Markdown, [1](...) affiche seulement "1" : il faut donc
-    // échapper les crochets internes pour obtenir visuellement "[1]".
-    return `[\\[${number}\\]](#cd-reference-${number})`;
+  INLINE_CITATION_GROUP_RE.lastIndex = 0;
+  return text.replace(INLINE_CITATION_GROUP_RE, (whole, groupContent) => {
+    const citekeys = extractInlineCitationGroupKeys(groupContent);
+    if (!citekeys.length) return whole;
+
+    const links = citekeys.map((citekey) => {
+      const number = numberedCredits.citationNumbers.get(citekey);
+      if (!number) return null;
+      return `[${number}](#cd-reference-${number})`;
+    });
+
+    // Si une référence du groupe n'a pas pu être résolue, on conserve le groupe
+    // original plutôt que de produire une citation partielle trompeuse.
+    if (links.some((link) => !link)) return whole;
+
+    // Crochets littéraux autour de plusieurs liens Markdown : rendu visuel [1, 2].
+    return `\\[${links.join(', ')}\\]`;
   });
 }
 
