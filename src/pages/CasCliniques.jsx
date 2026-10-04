@@ -572,6 +572,45 @@ let ATLAS_TAXONOMY_CACHE = null;
 let ATLAS_TAXONOMY_CACHE_AT = 0;
 const ATLAS_TAXONOMY_CACHE_STALE_MS = 5 * 60_000;
 
+// Position de lecture des pages de liste.
+// Le cache mémoire suffit pour les navigations SPA Atlas/CaseDetail et
+// Entraînement/CaseDetail. sessionStorage couvre aussi un remontage plus large
+// de l'application dans le même onglet sans transformer cette position en état
+// persistant entre deux sessions du navigateur.
+const LIST_SCROLL_CACHE = new Map();
+const LIST_SCROLL_STORAGE_PREFIX = 'odontocases:list-scroll:';
+
+function readListScroll(key) {
+  if (!key || typeof window === 'undefined') return 0;
+
+  const inMemory = Number(LIST_SCROLL_CACHE.get(key));
+  if (Number.isFinite(inMemory) && inMemory >= 0) return inMemory;
+
+  try {
+    const stored = Number(window.sessionStorage.getItem(`${LIST_SCROLL_STORAGE_PREFIX}${key}`));
+    if (Number.isFinite(stored) && stored >= 0) {
+      LIST_SCROLL_CACHE.set(key, stored);
+      return stored;
+    }
+  } catch {
+    // sessionStorage peut être indisponible dans certains contextes privés/embarqués.
+  }
+
+  return 0;
+}
+
+function writeListScroll(key, value) {
+  if (!key || typeof window === 'undefined') return;
+  const next = Math.max(0, Number(value) || 0);
+  LIST_SCROLL_CACHE.set(key, next);
+
+  try {
+    window.sessionStorage.setItem(`${LIST_SCROLL_STORAGE_PREFIX}${key}`, String(next));
+  } catch {
+    // Le cache mémoire reste disponible même si sessionStorage échoue.
+  }
+}
+
 function readListCache(key) {
   const entry = LIST_CACHE.get(key);
   if (!entry) return null;
@@ -1580,35 +1619,132 @@ function CaseControls({ caseGroup, setCaseGroup, groupLabel = 'Thème' }) {
 
 export default function CasCliniques() {
   const [searchParams] = useSearchParams();
-  const { pathname } = useLocation();
+  const location = useLocation();
+  const { pathname, search } = location;
   const navigate = useNavigate();
 
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [items, setItems] = useState([]);
-  const [total, setTotal] = useState(0);
-  const [refreshToken, setRefreshToken] = useState(0);
-  const [atlasTaxonomy, setAtlasTaxonomy] = useState(null);
-  const [atlasTaxonomyLoading, setAtlasTaxonomyLoading] = useState(false);
-  const [atlasTaxonomyError, setAtlasTaxonomyError] = useState('');
-  const lastFocusAtRef = useRef(Date.now());
-  const handledRefreshRef = useRef(0);
+  const q = searchParams.get('q') || '';
+  const page = Number(searchParams.get('page') || 1);
+  const requestedAtlasTab = searchParams.get('tab') || '';
 
+  const { hub, selection } = getHubAndSelection(pathname);
+
+  const isAtlasHub = hub === 'atlas';
+  const isTrainingHub = hub === 'training';
+
+  // Ancien sélecteur de quatre gros boutons conservé dans le code, mais plus utilisé.
+  const showTypePicker = false;
+  const tab = selection; // 'atlas' | 'qa' | 'quiz' | 'presentation'
+
+  // Important pour les retours depuis CaseDetail : la taxonomie mise en cache est
+  // utilisée dès le PREMIER rendu. On évite ainsi un rendu Atlas intermédiaire vide.
+  const [atlasTaxonomy, setAtlasTaxonomy] = useState(() =>
+    isAtlasHub ? ATLAS_TAXONOMY_CACHE : null
+  );
+  const [atlasTaxonomyLoading, setAtlasTaxonomyLoading] = useState(
+    () => isAtlasHub && !ATLAS_TAXONOMY_CACHE
+  );
+  const [atlasTaxonomyError, setAtlasTaxonomyError] = useState('');
+
+  const atlasTaxonomyIndex = useMemo(
+    () => buildAtlasTaxonomyIndex(atlasTaxonomy),
+    [atlasTaxonomy]
+  );
+
+  // Seuls les tabs publiés sont exposés dans l’Atlas. Les tabs en brouillon
+  // restent présents dans la taxonomie et conservent toutes leurs associations.
+  const atlasTabs = useMemo(
+    () => (atlasTaxonomyIndex?.tabs || []).filter((entry) => entry.enabled !== false),
+    [atlasTaxonomyIndex]
+  );
+  const defaultAtlasTabId =
+    atlasTabs.find((entry) => entry.id === 'tab_medecine_orale')?.id || atlasTabs[0]?.id || '';
+  const activeAtlasTabId = atlasTabs.some((entry) => entry.id === requestedAtlasTab)
+    ? requestedAtlasTab
+    : defaultAtlasTabId;
+
+  const activeAtlasCategoryIds = useMemo(() => {
+    if (!atlasTaxonomyIndex || !activeAtlasTabId) return new Set();
+    return new Set(
+      atlasTaxonomyIndex.categories
+        .filter((category) => category.tabs.includes(activeAtlasTabId))
+        .map((category) => category.id)
+    );
+  }, [atlasTaxonomyIndex, activeAtlasTabId]);
+
+  // Même principe pour la liste : si on revient d'une fiche, les éléments sont
+  // lus synchroniquement depuis LIST_CACHE au lieu d'attendre un useEffect.
+  const listCacheKey = isAtlasHub
+    ? activeAtlasTabId
+      ? `atlas:${activeAtlasTabId}:all:${q}`
+      : ''
+    : isTrainingHub
+      ? `cases:${tab}:${page}:${q}`
+      : '';
+  const initialListCacheRef = useRef(null);
+  if (initialListCacheRef.current === null) {
+    initialListCacheRef.current = listCacheKey ? readListCache(listCacheKey) : false;
+  }
+  const initialListCache = initialListCacheRef.current || null;
+
+  const [loading, setLoading] = useState(() => !initialListCache && !showTypePicker);
+  const [error, setError] = useState('');
+  const [items, setItems] = useState(() => initialListCache?.items || []);
+  const [total, setTotal] = useState(() => initialListCache?.total || 0);
+
+  // Position exacte de cette vue de liste (route + query string).
+  const scrollStateKey = `${pathname}${search || ''}`;
+  const restoredScrollKeyRef = useRef('');
+
+  // Sauvegarde légère pendant le scroll + sauvegarde finale au démontage.
   useEffect(() => {
-    const refreshAfterFocus = () => {
-      if (document.visibilityState === 'hidden') return;
-      const now = Date.now();
-      if (now - lastFocusAtRef.current < 5 * 60_000) return;
-      lastFocusAtRef.current = now;
-      setRefreshToken((v) => v + 1);
+    if (typeof window === 'undefined') return undefined;
+
+    let rafId = 0;
+    const saveScroll = () => {
+      if (rafId) return;
+      rafId = window.requestAnimationFrame(() => {
+        rafId = 0;
+        writeListScroll(scrollStateKey, window.scrollY);
+      });
     };
-    window.addEventListener('focus', refreshAfterFocus);
-    document.addEventListener('visibilitychange', refreshAfterFocus);
+
+    window.addEventListener('scroll', saveScroll, { passive: true });
+
     return () => {
-      window.removeEventListener('focus', refreshAfterFocus);
-      document.removeEventListener('visibilitychange', refreshAfterFocus);
+      if (rafId) window.cancelAnimationFrame(rafId);
+      window.removeEventListener('scroll', saveScroll);
+      writeListScroll(scrollStateKey, window.scrollY);
     };
-  }, []);
+  }, [scrollStateKey]);
+
+  // Restaure la lecture après que la liste existe réellement. useLayoutEffect
+  // évite un flash visible en haut de page. Deux RAF supplémentaires couvrent les
+  // recalculs de layout immédiats (polices/images lazy) sans suivre le scroll ensuite.
+  useIsomorphicLayoutEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    if (showTypePicker || loading || items.length === 0) return undefined;
+    if (restoredScrollKeyRef.current === scrollStateKey) return undefined;
+
+    restoredScrollKeyRef.current = scrollStateKey;
+    const targetY = readListScroll(scrollStateKey);
+    if (!(targetY > 0)) return undefined;
+
+    let raf1 = 0;
+    let raf2 = 0;
+    const restore = () => window.scrollTo({ top: targetY, left: 0, behavior: 'auto' });
+
+    restore();
+    raf1 = window.requestAnimationFrame(() => {
+      restore();
+      raf2 = window.requestAnimationFrame(restore);
+    });
+
+    return () => {
+      if (raf1) window.cancelAnimationFrame(raf1);
+      if (raf2) window.cancelAnimationFrame(raf2);
+    };
+  }, [scrollStateKey, showTypePicker, loading, items.length]);
 
   // toggle Cartes / Liste (persisté)
   const [view, setView] = useState(() => {
@@ -1640,41 +1776,6 @@ export default function CasCliniques() {
   useEffect(() => {
     localStorage.setItem('cases:group', caseGroup);
   }, [caseGroup]);
-
-  const q = searchParams.get('q') || '';
-  const page = Number(searchParams.get('page') || 1);
-  const requestedAtlasTab = searchParams.get('tab') || '';
-
-  const { hub, selection } = getHubAndSelection(pathname);
-
-  const isAtlasHub = hub === 'atlas';
-  const isTrainingHub = hub === 'training';
-
-  // Ancien sélecteur de quatre gros boutons conservé dans le code, mais plus utilisé.
-  const showTypePicker = false;
-  const tab = selection; // 'atlas' | 'qa' | 'quiz' | 'presentation'
-
-  const atlasTaxonomyIndex = useMemo(() => buildAtlasTaxonomyIndex(atlasTaxonomy), [atlasTaxonomy]);
-  // Seuls les tabs publiés sont exposés dans l’Atlas. Les tabs en brouillon
-  // restent présents dans la taxonomie et conservent toutes leurs associations.
-  const atlasTabs = useMemo(
-    () => (atlasTaxonomyIndex?.tabs || []).filter((entry) => entry.enabled !== false),
-    [atlasTaxonomyIndex]
-  );
-  const defaultAtlasTabId =
-    atlasTabs.find((entry) => entry.id === 'tab_medecine_orale')?.id || atlasTabs[0]?.id || '';
-  const activeAtlasTabId = atlasTabs.some((entry) => entry.id === requestedAtlasTab)
-    ? requestedAtlasTab
-    : defaultAtlasTabId;
-
-  const activeAtlasCategoryIds = useMemo(() => {
-    if (!atlasTaxonomyIndex || !activeAtlasTabId) return new Set();
-    return new Set(
-      atlasTaxonomyIndex.categories
-        .filter((category) => category.tabs.includes(activeAtlasTabId))
-        .map((category) => category.id)
-    );
-  }, [atlasTaxonomyIndex, activeAtlasTabId]);
 
   const variants = useMemo(() => (q ? buildVariants(q) : []), [q]);
 
@@ -1763,9 +1864,9 @@ export default function CasCliniques() {
       setAtlasTaxonomyError('');
     }
 
-    // Au premier affichage ou lors d'un retour récent depuis CaseDetail, la copie
-    // mémoire suffit. Un refresh explicite/focus ancien force néanmoins une mise à jour.
-    if (cacheIsFresh && refreshToken === 0) return () => controller.abort();
+    // Une taxonomie fraîche en mémoire suffit. Si elle est devenue ancienne,
+    // on la revalide silencieusement sans vider l'Atlas déjà affiché.
+    if (cacheIsFresh) return () => controller.abort();
 
     async function loadAtlasTaxonomy() {
       if (!cachedTaxonomy) setAtlasTaxonomyLoading(true);
@@ -1798,15 +1899,12 @@ export default function CasCliniques() {
       ignore = true;
       controller.abort();
     };
-  }, [isAtlasHub, refreshToken]);
+  }, [isAtlasHub]);
 
 
   useEffect(() => {
     let ignore = false;
     const controller = new AbortController();
-    const forceRefresh = handledRefreshRef.current !== refreshToken;
-    handledRefreshRef.current = refreshToken;
-
     if (showTypePicker) {
       setItems([]);
       setTotal(0);
@@ -1818,9 +1916,12 @@ export default function CasCliniques() {
     // Pour l'Atlas, la taxonomie est nécessaire avant de connaître les catégories
     // à demander au backend. On évite donc le gros fetch non filtré de l'ancienne version.
     if (isAtlasHub && (!atlasTaxonomyIndex || !activeAtlasTabId)) {
-      setItems([]);
-      setTotal(0);
-      setLoading(Boolean(atlasTaxonomyLoading));
+      // Ne jamais effondrer une liste déjà rendue : sa hauteur doit rester stable
+      // afin de préserver le scroll pendant une éventuelle revalidation.
+      if (items.length === 0) {
+        setTotal(0);
+        setLoading(Boolean(atlasTaxonomyLoading));
+      }
       setError('');
       return () => controller.abort();
     }
@@ -1840,14 +1941,13 @@ export default function CasCliniques() {
     const isBackgroundRefresh = Boolean(cached);
 
     if (cached) {
-      // Stale-while-revalidate : on conserve le contenu déjà affiché pendant
-      // un rafraîchissement (notamment au retour sur l'onglet du navigateur).
-      // Cela évite que la hauteur de la page s'effondre et que le scroll remonte.
+      // Stale-while-revalidate : on conserve toujours le contenu déjà affiché
+      // pendant une revalidation réseau. La hauteur de page reste donc stable.
       setItems(cached.items);
       setTotal(cached.total);
       setLoading(false);
       setError('');
-      if (cached.isFresh && !forceRefresh) return () => controller.abort();
+      if (cached.isFresh) return () => controller.abort();
     }
 
     async function load() {
@@ -2046,7 +2146,7 @@ export default function CasCliniques() {
     activeAtlasTabId,
     activeAtlasCategoryIds,
     caseTypeFilterOnly,
-    refreshToken,
+    items.length,
   ]);
 
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
