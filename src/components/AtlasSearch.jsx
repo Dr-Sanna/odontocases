@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { imgUrl } from '../lib/strapi';
 import {
@@ -9,6 +9,9 @@ import './AtlasSearch.css';
 
 const DEFAULT_MAX_RESULTS = 8;
 const SEARCH_DELAY_MS = 120;
+const PANEL_MAX_HEIGHT = 440;
+const PANEL_BOTTOM_GAP = 12;
+const PANEL_TOP_GAP = 8;
 
 export default function AtlasSearch({
   variant = 'navbar',
@@ -26,8 +29,10 @@ export default function AtlasSearch({
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
+  const [panelMaxHeight, setPanelMaxHeight] = useState(PANEL_MAX_HEIGHT);
 
   const trimmedQuery = query.trim();
+  const showPanel = open && Boolean(trimmedQuery);
 
   useEffect(() => {
     const onPointerDown = (event) => {
@@ -74,6 +79,42 @@ export default function AtlasSearch({
 
     return () => window.clearTimeout(timer);
   }, [trimmedQuery, maxResults]);
+
+  // Le panneau ne dépasse jamais du viewport : sa hauteur disponible est calculée
+  // à partir de la position réelle de la barre. Les résultats gardent leur propre
+  // scrollbar et le bouton « Voir tous » reste visible au bas du panneau.
+  useLayoutEffect(() => {
+    if (!showPanel || typeof window === 'undefined') return undefined;
+
+    let raf = 0;
+
+    const updatePanelHeight = () => {
+      if (raf) window.cancelAnimationFrame(raf);
+      raf = window.requestAnimationFrame(() => {
+        raf = 0;
+        const root = rootRef.current;
+        if (!root) return;
+
+        const rect = root.getBoundingClientRect();
+        const available = Math.max(
+          0,
+          Math.floor(window.innerHeight - rect.bottom - PANEL_TOP_GAP - PANEL_BOTTOM_GAP)
+        );
+
+        setPanelMaxHeight(Math.min(PANEL_MAX_HEIGHT, available));
+      });
+    };
+
+    updatePanelHeight();
+    window.addEventListener('resize', updatePanelHeight, { passive: true });
+    window.addEventListener('scroll', updatePanelHeight, { passive: true });
+
+    return () => {
+      if (raf) window.cancelAnimationFrame(raf);
+      window.removeEventListener('resize', updatePanelHeight);
+      window.removeEventListener('scroll', updatePanelHeight);
+    };
+  }, [showPanel, results.length, loading]);
 
   const goToPathology = (item) => {
     if (!item?.slug) return;
@@ -133,42 +174,60 @@ export default function AtlasSearch({
     }
   };
 
-  const showPanel = open && Boolean(trimmedQuery);
-
   return (
     <div
       ref={rootRef}
       className={`atlas-search atlas-search--${variant} ${className}`.trim()}
     >
       <form className="atlas-search-form" role="search" onSubmit={onSubmit}>
-        <input
-          className="atlas-search-input"
-          type="search"
-          value={query}
-          placeholder={placeholder}
-          autoComplete="off"
-          spellCheck="false"
-          aria-label="Rechercher une pathologie dans l’Atlas"
-          aria-autocomplete="list"
-          aria-expanded={showPanel}
-          aria-controls={showPanel ? listboxId : undefined}
-          aria-activedescendant={
-            activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined
-          }
-          onFocus={() => {
-            primeAtlasSearchIndex().catch(() => {});
-            if (trimmedQuery) setOpen(true);
-          }}
-          onChange={(event) => {
-            setQuery(event.target.value);
-            setOpen(Boolean(event.target.value.trim()));
-          }}
-          onKeyDown={onKeyDown}
-        />
+        <div className="atlas-search-input-shell">
+          {variant === 'navbar' && (
+            <svg className="atlas-search-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="m21 21-4.35-4.35m1.35-5.65a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z"
+              />
+            </svg>
+          )}
+
+          <input
+            className="atlas-search-input"
+            type="search"
+            value={query}
+            placeholder={placeholder}
+            autoComplete="off"
+            spellCheck="false"
+            aria-label="Rechercher une pathologie dans l’Atlas"
+            aria-autocomplete="list"
+            aria-expanded={showPanel}
+            aria-controls={showPanel ? listboxId : undefined}
+            aria-activedescendant={
+              activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined
+            }
+            onFocus={() => {
+              primeAtlasSearchIndex().catch(() => {});
+              if (trimmedQuery) setOpen(true);
+            }}
+            onChange={(event) => {
+              setQuery(event.target.value);
+              setOpen(Boolean(event.target.value.trim()));
+            }}
+            onKeyDown={onKeyDown}
+          />
+        </div>
       </form>
 
-      {showPanel && (
-        <div className="atlas-search-panel" id={listboxId} role="listbox">
+      {showPanel && panelMaxHeight > 0 && (
+        <div
+          className="atlas-search-panel"
+          id={listboxId}
+          role="listbox"
+          style={{ '--atlas-search-panel-max-height': `${panelMaxHeight}px` }}
+        >
           {loading && results.length === 0 ? (
             <div className="atlas-search-status">Recherche…</div>
           ) : results.length > 0 ? (

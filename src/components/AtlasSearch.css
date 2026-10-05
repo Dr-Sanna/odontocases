@@ -8,6 +8,12 @@
   margin: 0;
 }
 
+.atlas-search-input-shell {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
 .atlas-search-input {
   width: 100%;
   box-sizing: border-box;
@@ -33,6 +39,24 @@
   border-color: rgba(255, 255, 255, 0.14);
 }
 
+.atlas-search-icon {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  transform: translateY(-50%);
+  color: var(--ifm-navbar-link-color, currentColor);
+  opacity: 0.58;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.atlas-search-input-shell:focus-within .atlas-search-icon {
+  color: var(--ifm-color-primary, #2563eb);
+  opacity: 0.86;
+}
+
 .atlas-search--hero {
   width: min(620px, 92vw);
 }
@@ -50,7 +74,7 @@
 
 .atlas-search--navbar .atlas-search-input {
   height: 36px;
-  padding: 7px 11px;
+  padding: 7px 11px 7px 34px;
   font-size: 0.9rem;
 }
 
@@ -60,8 +84,12 @@
   left: 0;
   width: max(100%, 320px);
   max-width: min(440px, calc(100vw - 24px));
+  max-height: var(--atlas-search-panel-max-height, 440px);
   overflow: hidden;
   z-index: 1200;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   border: 1px solid rgba(0, 0, 0, 0.12);
   border-radius: 12px;
   background: var(--ifm-background-surface-color, #fff);
@@ -74,7 +102,8 @@
 }
 
 .atlas-search-results {
-  max-height: min(420px, 60vh);
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
 }
@@ -162,13 +191,19 @@
 }
 
 .atlas-search-all {
+  flex: 0 0 auto;
   appearance: none;
   border: 0;
-  background: transparent;
+  border-top: 1px solid rgba(0, 0, 0, 0.07);
+  background: var(--ifm-background-surface-color, #fff);
   color: var(--ifm-color-primary);
   font-weight: 650;
   text-align: left;
   cursor: pointer;
+}
+
+[data-theme='dark'] .atlas-search-all {
+  border-top-color: rgba(255, 255, 255, 0.07);
 }
 
 .atlas-search-all:hover,
@@ -198,7 +233,8 @@
   }
 
   .atlas-search--navbar .atlas-search-input {
-    padding-inline: 9px;
+    padding-right: 9px;
+    padding-left: 32px;
   }
 
   .atlas-search-panel {

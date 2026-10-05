@@ -1,6 +1,7 @@
 import { strapiFetch } from './strapi';
 
 const PATHO_ENDPOINT = import.meta.env.VITE_PATHO_ENDPOINT || '/pathologies';
+const ATLAS_TAXONOMY_ENDPOINT = import.meta.env.VITE_ATLAS_TAXONOMY_ENDPOINT || '/atlas-taxonomy';
 const PUB_STATE = import.meta.env.DEV ? 'preview' : 'live';
 const PAGE_SIZE = 100;
 
@@ -32,6 +33,48 @@ function normalizeAliases(value, title = '') {
       seen.add(key);
       return true;
     });
+}
+
+function normalizeClassifications(value) {
+  return normalizeRelationArray(value)
+    .map((entry) => ({
+      categoryId: String(entry?.categoryId || '').trim(),
+    }))
+    .filter((entry) => entry.categoryId);
+}
+
+function taxonomyPayloadFromResponse(response) {
+  const entity = normalizeNode(response?.data) || normalizeNode(response);
+  const taxonomy = entity?.taxonomy;
+  return taxonomy && typeof taxonomy === 'object' && !Array.isArray(taxonomy) ? taxonomy : null;
+}
+
+function buildPublishedCategoryIds(taxonomy) {
+  if (!taxonomy || typeof taxonomy !== 'object') return new Set();
+
+  // Un ancien JSON dépourvu de `enabled` reste publié par compatibilité.
+  const publishedTabIds = new Set(
+    (Array.isArray(taxonomy.tabs) ? taxonomy.tabs : [])
+      .filter((tab) => tab?.enabled !== false)
+      .map((tab) => String(tab?.id || '').trim())
+      .filter(Boolean)
+  );
+
+  const categoryIds = new Set();
+  for (const category of Array.isArray(taxonomy.categories) ? taxonomy.categories : []) {
+    const categoryId = String(category?.id || '').trim();
+    if (!categoryId) continue;
+
+    const categoryTabs = (Array.isArray(category?.tabs) ? category.tabs : [])
+      .map((tabId) => String(tabId || '').trim())
+      .filter(Boolean);
+
+    if (categoryTabs.some((tabId) => publishedTabIds.has(tabId))) {
+      categoryIds.add(categoryId);
+    }
+  }
+
+  return categoryIds;
 }
 
 export function normalizeSearchText(value) {
@@ -67,6 +110,7 @@ function cookPathology(node) {
     title: String(item.title || item.slug).trim(),
     slug: String(item.slug).trim(),
     aliases: normalizeAliases(item.aliases, item.title),
+    classification: normalizeClassifications(item.classification),
   };
 }
 
@@ -86,6 +130,7 @@ async function fetchIndexPage(page) {
       populate: {
         cover: { fields: ['url', 'formats', 'alternativeText', 'name'] },
         aliases: { fields: ['name'] },
+        classification: { fields: ['categoryId'] },
       },
       sort: 'title:asc,slug:asc',
       pagination: { page, pageSize: PAGE_SIZE },
@@ -93,7 +138,15 @@ async function fetchIndexPage(page) {
   });
 }
 
-async function fetchAtlasSearchIndex() {
+async function fetchPublishedCategoryIds() {
+  const response = await strapiFetch(ATLAS_TAXONOMY_ENDPOINT, {
+    params: { fields: ['taxonomy'] },
+  });
+
+  return buildPublishedCategoryIds(taxonomyPayloadFromResponse(response));
+}
+
+async function fetchAllIndexRows() {
   const first = await fetchIndexPage(1);
   const firstRows = Array.isArray(first?.data) ? first.data : [];
   const pageCount = Math.max(1, Number(first?.meta?.pagination?.pageCount) || 1);
@@ -109,11 +162,29 @@ async function fetchAtlasSearchIndex() {
     if (Array.isArray(response?.data)) rows.push(...response.data);
   });
 
+  return rows;
+}
+
+async function fetchAtlasSearchIndex() {
+  // Taxonomie et index léger sont chargés en parallèle. La taxonomie sert uniquement
+  // à exclure les fiches qui ne sont rattachées qu'à des tabs en brouillon.
+  const [rows, publishedCategoryIds] = await Promise.all([
+    fetchAllIndexRows(),
+    fetchPublishedCategoryIds(),
+  ]);
+
   const byId = new Map();
-  rows.map(cookPathology).filter(Boolean).forEach((item) => {
-    const key = resultIdentity(item) || item.slug;
-    if (!byId.has(key)) byId.set(key, item);
-  });
+
+  rows
+    .map(cookPathology)
+    .filter(Boolean)
+    .filter((item) =>
+      item.classification.some((entry) => publishedCategoryIds.has(entry.categoryId))
+    )
+    .forEach((item) => {
+      const key = resultIdentity(item) || item.slug;
+      if (!byId.has(key)) byId.set(key, item);
+    });
 
   return Array.from(byId.values()).sort(compareTitle);
 }
@@ -171,6 +242,7 @@ function scoreCandidate(item, rawQuery) {
   const aliasTokens = aliases.find((alias) => containsEveryToken(alias, tokens));
   if (aliasTokens) return { score: 70, kind: 'alias', value: aliasTokens };
 
+  // Le slug reste un dernier filet technique, sans être affiché comme champ de recherche.
   if (slug.includes(query)) return { score: 80, kind: 'slug', value: item.slug };
 
   return null;
