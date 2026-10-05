@@ -1,6 +1,6 @@
 // src/pages/CasCliniques.jsx
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Link, useLocation, useNavigate, useNavigationType, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import PageTitle from '../components/PageTitle';
 import FilterMenu from '../components/FilterMenu';
 import { strapiFetch, imgUrl, isAbortError } from '../lib/strapi';
@@ -571,24 +571,6 @@ const LIST_MAX_AGE_MS = Number(import.meta.env.VITE_LIST_CACHE_MAX_AGE_MS) || 5 
 let ATLAS_TAXONOMY_CACHE = null;
 let ATLAS_TAXONOMY_CACHE_AT = 0;
 const ATLAS_TAXONOMY_CACHE_STALE_MS = 5 * 60_000;
-
-// Position de lecture des pages de liste, volontairement conservée uniquement
-// en mémoire. Elle survit à une navigation SPA vers CaseDetail, mais disparaît
-// lors d'un vrai rechargement de page ou lorsque l'application est quittée.
-// Ce n'est donc pas une préférence persistante associée à l'URL.
-const LIST_SCROLL_CACHE = new Map();
-
-function readListScroll(key) {
-  if (!key) return 0;
-  const stored = Number(LIST_SCROLL_CACHE.get(key));
-  return Number.isFinite(stored) && stored >= 0 ? stored : 0;
-}
-
-function writeListScroll(key, value) {
-  if (!key) return;
-  const next = Math.max(0, Number(value) || 0);
-  LIST_SCROLL_CACHE.set(key, next);
-}
 
 function readListCache(key) {
   const entry = LIST_CACHE.get(key);
@@ -1601,7 +1583,6 @@ export default function CasCliniques() {
   const location = useLocation();
   const { pathname, search } = location;
   const navigate = useNavigate();
-  const navigationType = useNavigationType();
 
   const q = searchParams.get('q') || '';
   const page = Number(searchParams.get('page') || 1);
@@ -1672,62 +1653,9 @@ export default function CasCliniques() {
   const [items, setItems] = useState(() => initialListCache?.items || []);
   const [total, setTotal] = useState(() => initialListCache?.total || 0);
 
-  // Position exacte de cette vue de liste (route + query string).
-  const scrollStateKey = `${pathname}${search || ''}`;
-  const restoredScrollKeyRef = useRef('');
-
-  // Sauvegarde légère pendant le scroll + sauvegarde finale au démontage.
-  useEffect(() => {
-    if (typeof window === 'undefined') return undefined;
-
-    let rafId = 0;
-    const saveScroll = () => {
-      if (rafId) return;
-      rafId = window.requestAnimationFrame(() => {
-        rafId = 0;
-        writeListScroll(scrollStateKey, window.scrollY);
-      });
-    };
-
-    window.addEventListener('scroll', saveScroll, { passive: true });
-
-    return () => {
-      if (rafId) window.cancelAnimationFrame(rafId);
-      window.removeEventListener('scroll', saveScroll);
-      writeListScroll(scrollStateKey, window.scrollY);
-    };
-  }, [scrollStateKey]);
-
-  // La position n'est restaurée que lors d'une navigation d'historique (POP),
-  // typiquement le bouton Précédent depuis CaseDetail. Une navigation normale
-  // vers l'Atlas (PUSH/REPLACE) repart donc naturellement en haut de page.
-  // Le cache étant uniquement en mémoire, un rechargement manuel ou une nouvelle
-  // arrivée sur le site ne peut pas réutiliser une ancienne position.
-  useIsomorphicLayoutEffect(() => {
-    if (typeof window === 'undefined') return undefined;
-    if (navigationType !== 'POP') return undefined;
-    if (showTypePicker || loading || items.length === 0) return undefined;
-    if (restoredScrollKeyRef.current === scrollStateKey) return undefined;
-
-    restoredScrollKeyRef.current = scrollStateKey;
-    const targetY = readListScroll(scrollStateKey);
-    if (!(targetY > 0)) return undefined;
-
-    let raf1 = 0;
-    let raf2 = 0;
-    const restore = () => window.scrollTo({ top: targetY, left: 0, behavior: 'auto' });
-
-    restore();
-    raf1 = window.requestAnimationFrame(() => {
-      restore();
-      raf2 = window.requestAnimationFrame(restore);
-    });
-
-    return () => {
-      if (raf1) window.cancelAnimationFrame(raf1);
-      if (raf2) window.cancelAnimationFrame(raf2);
-    };
-  }, [navigationType, scrollStateKey, showTypePicker, loading, items.length]);
+  // Le scroll est volontairement laissé au navigateur. Avec le contenu restauré
+  // synchroniquement depuis les caches mémoire, l'historique natif peut conserver
+  // une position propre à chaque entrée Back/Forward, comme sur une page web classique.
 
   // toggle Cartes / Liste (persisté)
   const [view, setView] = useState(() => {
