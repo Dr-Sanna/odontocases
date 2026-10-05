@@ -121,6 +121,13 @@ img.logo {
   gap: 1rem;
 }
 
+
+.navbar-search-slot {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
 /* GitHub (SVG inline) */
 .github-link {
   display: inline-flex;
@@ -268,4 +275,31 @@ img.logo {
 
 .md-link:hover {
   background: var(--ifm-menu-color-background-hover);
+}
+
+
+@media (max-width: 1180px) {
+  .navbar-right {
+    gap: 0.75rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .navbar {
+    padding-left: max(8px, var(--ifm-navbar-padding-horizontal));
+    padding-right: max(8px, var(--ifm-navbar-padding-horizontal));
+  }
+
+  .navbar-right {
+    gap: 0.55rem;
+  }
+
+  .github-icon {
+    width: 22px;
+    height: 22px;
+  }
+
+  .theme-toggle {
+    font-size: 1.35rem;
+  }
 }

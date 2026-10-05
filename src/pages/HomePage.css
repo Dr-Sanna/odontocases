@@ -49,23 +49,8 @@
 
 /* Barre de recherche */
 .hero-search {
-  margin: 0;
-}
-
-.hero-search input {
   width: min(620px, 92vw);
-  padding: 12px 14px;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  border-radius: 12px;
-  font-size: 16px;
-  outline: none;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: saturate(140%) blur(6px);
-}
-
-.hero-search input:focus {
-  border-color: var(--ifm-color-primary, #2563eb);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  margin: 0;
 }
 
 /* Boutons sous la barre de recherche : grille 2×2 */
@@ -103,7 +88,7 @@
     gap: 18px;
   }
 
-  .hero-search input {
+  .hero-search {
     width: min(620px, 92vw);
   }
 

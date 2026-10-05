@@ -1,24 +1,14 @@
 // src/pages/HomePage.jsx
-import { Link, useNavigate } from 'react-router-dom';
-import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useEffect, useRef } from 'react';
 import { isDocsFresh, primeDocsEssentials } from '../lib/docsPrefetchStore';
+import AtlasSearch from '../components/AtlasSearch';
 import './HomePage.css';
 
 const PUB_STATE = import.meta.env.DEV ? 'preview' : 'live';
 
 export default function HomePage() {
-  const [query, setQuery] = useState('');
-  const navigate = useNavigate();
   const primingRef = useRef(false);
-
-  function onSubmit(e) {
-    e.preventDefault();
-    const q = query.trim();
-
-    // Recherche globale : par défaut on envoie vers /atlas
-    if (q) navigate(`/atlas?q=${encodeURIComponent(q)}`);
-    else navigate('/atlas');
-  }
 
   const primeDocs = ({ userInitiated = false } = {}) => {
     if (primingRef.current) return;
@@ -68,15 +58,12 @@ export default function HomePage() {
             Atlas, cas cliniques interactifs et documentation dédiés aux pathologies orales.
           </p>
 
-          <form onSubmit={onSubmit} className="hero-search">
-            <input
-              type="text"
-              placeholder="Rechercher une pathologie ou un cas…"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              aria-label="Recherche"
-            />
-          </form>
+          <AtlasSearch
+            variant="hero"
+            className="hero-search"
+            placeholder="Rechercher une pathologie…"
+            maxResults={10}
+          />
 
           <nav className="hero-actions">
             <HomeCard title="Atlas" to="/atlas" />

@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-do
 import PageTitle from '../components/PageTitle';
 import FilterMenu from '../components/FilterMenu';
 import { strapiFetch, imgUrl, isAbortError } from '../lib/strapi';
+import { searchAtlasPathologies } from '../lib/atlasSearchStore';
 import { useQuizCount } from '../lib/trainingStatsStore';
 import './DisplayShared.css';
 import './CasCliniques.css';
@@ -563,24 +564,18 @@ const ATLAS_SUBCATEGORY_ORDER = {
 
 
 const LIST_CACHE = new Map();
-const LIST_STALE_MS = Number(import.meta.env.VITE_LIST_CACHE_STALE_MS) || 20_000;
-const LIST_MAX_AGE_MS = Number(import.meta.env.VITE_LIST_CACHE_MAX_AGE_MS) || 5 * 60_000;
 
-// La taxonomie change rarement : on la conserve en mémoire entre Atlas et CaseDetail.
-// Cela évite un nouvel aller-retour réseau à chaque retour vers /atlas.
+// Cache strictement mémoire : tant que la SPA reste ouverte, la liste déjà chargée
+// est réutilisée telle quelle. Un vrai rechargement (F5/Ctrl+R), la fermeture de
+// l'onglet ou une nouvelle session recréent le bundle JavaScript et vident ce cache,
+// ce qui déclenche alors naturellement un nouveau fetch Strapi.
+
+// Même politique pour la taxonomie Atlas : aucune revalidation automatique pendant
+// la navigation interne. Elle sera rechargée lors d'un vrai reload / nouvelle session.
 let ATLAS_TAXONOMY_CACHE = null;
-let ATLAS_TAXONOMY_CACHE_AT = 0;
-const ATLAS_TAXONOMY_CACHE_STALE_MS = 5 * 60_000;
 
 function readListCache(key) {
-  const entry = LIST_CACHE.get(key);
-  if (!entry) return null;
-  const age = Date.now() - entry.at;
-  if (age > LIST_MAX_AGE_MS) {
-    LIST_CACHE.delete(key);
-    return null;
-  }
-  return { ...entry, isFresh: age <= LIST_STALE_MS };
+  return LIST_CACHE.get(key) || null;
 }
 
 function writeListCache(key, items, total) {
@@ -1389,57 +1384,7 @@ function compareByTitleAsc(aNode, bNode) {
   return sa.localeCompare(sb, 'fr', { numeric: true, sensitivity: 'base' });
 }
 
-/* -------- Recherche permissive -------- */
-
-function normalizeSearch(s) {
-  const base = String(s || '').trim().toLowerCase();
-  const noAccents = base.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  return { base, noAccents };
-}
-
-function singularizeFr(word) {
-  let w = String(word || '');
-  if (w.length <= 3) return w;
-  if (w.endsWith('es') && w.length > 4) return w.slice(0, -2);
-  if (w.endsWith('s') && w.length > 3) return w.slice(0, -1);
-  if (w.endsWith('x') && w.length > 3) return w.slice(0, -1);
-  return w;
-}
-
-function buildVariants(q) {
-  const { base, noAccents } = normalizeSearch(q);
-  const baseSing = singularizeFr(base);
-  const noAccSing = singularizeFr(noAccents);
-  return Array.from(new Set([base, noAccents, baseSing, noAccSing].filter(Boolean)));
-}
-
-function buildOrFilterFromVariants(variants) {
-  return variants.flatMap((v) => [
-    { title: { $containsi: v } },
-    { excerpt: { $containsi: v } },
-    { slug: { $containsi: v } },
-  ]);
-}
-
-function normForSearch(s) {
-  return String(s || '')
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, ' ')
-    .trim();
-}
-
-function itemMatchesQuery(item, q) {
-  const nq = normForSearch(q);
-  if (!nq) return true;
-
-  const title = normForSearch(item?.title);
-  const excerpt = normForSearch(item?.excerpt);
-  const slug = normForSearch(item?.slug);
-
-  return title.includes(nq) || excerpt.includes(nq) || slug.includes(nq);
-}
+/* -------- URL helpers -------- */
 
 function buildSearch({ q, page }) {
   const sp = new URLSearchParams();
@@ -1596,14 +1541,18 @@ export default function CasCliniques() {
   // Ancien sélecteur de quatre gros boutons conservé dans le code, mais plus utilisé.
   const showTypePicker = false;
   const tab = selection; // 'atlas' | 'qa' | 'quiz' | 'presentation'
+  const isAtlasSearch = isAtlasHub && tab === ATLAS_KEY && Boolean(q.trim());
+  const atlasSearchCacheKey = isAtlasSearch
+    ? `atlas-search:${q.trim().toLocaleLowerCase('fr')}`
+    : '';
 
   // Important pour les retours depuis CaseDetail : la taxonomie mise en cache est
   // utilisée dès le PREMIER rendu. On évite ainsi un rendu Atlas intermédiaire vide.
   const [atlasTaxonomy, setAtlasTaxonomy] = useState(() =>
-    isAtlasHub ? ATLAS_TAXONOMY_CACHE : null
+    isAtlasHub && !isAtlasSearch ? ATLAS_TAXONOMY_CACHE : null
   );
   const [atlasTaxonomyLoading, setAtlasTaxonomyLoading] = useState(
-    () => isAtlasHub && !ATLAS_TAXONOMY_CACHE
+    () => isAtlasHub && !isAtlasSearch && !ATLAS_TAXONOMY_CACHE
   );
   const [atlasTaxonomyError, setAtlasTaxonomyError] = useState('');
 
@@ -1635,13 +1584,15 @@ export default function CasCliniques() {
 
   // Même principe pour la liste : si on revient d'une fiche, les éléments sont
   // lus synchroniquement depuis LIST_CACHE au lieu d'attendre un useEffect.
-  const listCacheKey = isAtlasHub
-    ? activeAtlasTabId
-      ? `atlas:${activeAtlasTabId}:all:${q}`
-      : ''
-    : isTrainingHub
-      ? `cases:${tab}:${page}:${q}`
-      : '';
+  const listCacheKey = isAtlasSearch
+    ? atlasSearchCacheKey
+    : isAtlasHub
+      ? activeAtlasTabId
+        ? `atlas:${activeAtlasTabId}:all`
+        : ''
+      : isTrainingHub
+        ? `cases:${tab}:${page}`
+        : '';
   const initialListCacheRef = useRef(null);
   if (initialListCacheRef.current === null) {
     initialListCacheRef.current = listCacheKey ? readListCache(listCacheKey) : false;
@@ -1688,16 +1639,11 @@ export default function CasCliniques() {
     localStorage.setItem('cases:group', caseGroup);
   }, [caseGroup]);
 
-  const variants = useMemo(() => (q ? buildVariants(q) : []), [q]);
-
   // La route historique /entrainement devient une entrée directe vers le Quiz.
   useEffect(() => {
     if (pathname !== '/entrainement') return;
-    const params = new URLSearchParams();
-    if (q) params.set('q', q);
-    const suffix = params.toString() ? `?${params.toString()}` : '';
-    navigate(`/entrainement/quiz${suffix}`, { replace: true });
-  }, [pathname, q, navigate]);
+    navigate('/entrainement/quiz', { replace: true });
+  }, [pathname, navigate]);
 
   const goPage = (p) => {
     const base = isAtlasHub
@@ -1727,17 +1673,9 @@ export default function CasCliniques() {
     return f;
   }, [tab]);
 
-  const caseFilters = useMemo(() => {
-    const f = { ...caseTypeFilterOnly };
-    if (q) f.$or = buildOrFilterFromVariants(variants);
-    return f;
-  }, [caseTypeFilterOnly, q, variants]);
-
-  const pathoFilters = useMemo(() => {
-    const f = {};
-    if (q) f.$or = buildOrFilterFromVariants(variants);
-    return f;
-  }, [q, variants]);
+  // La recherche globale est volontairement réservée aux pathologies de l’Atlas.
+  // Les modes d'entraînement ne filtrent donc jamais les cas via ?q=.
+  const caseFilters = useMemo(() => ({ ...caseTypeFilterOnly }), [caseTypeFilterOnly]);
 
   // Atlas : on ne demande à Strapi que les pathologies appartenant aux
   // catégories du tab actif. Le filtrage client reste conservé comme sécurité,
@@ -1754,30 +1692,26 @@ export default function CasCliniques() {
     };
   }, [isAtlasHub, tab, activeAtlasCategoryIds]);
 
-  const atlasPathoFilters = useMemo(() => ({
-    ...atlasCategoryOnlyFilters,
-    ...pathoFilters,
-  }), [atlasCategoryOnlyFilters, pathoFilters]);
+  const atlasPathoFilters = atlasCategoryOnlyFilters;
 
   useEffect(() => {
-    if (!isAtlasHub) return undefined;
+    if (!isAtlasHub || isAtlasSearch) {
+      setAtlasTaxonomyLoading(false);
+      return undefined;
+    }
 
     let ignore = false;
     const controller = new AbortController();
-    const now = Date.now();
     const cachedTaxonomy = ATLAS_TAXONOMY_CACHE;
-    const cacheIsFresh =
-      cachedTaxonomy && now - ATLAS_TAXONOMY_CACHE_AT <= ATLAS_TAXONOMY_CACHE_STALE_MS;
 
     if (cachedTaxonomy) {
       setAtlasTaxonomy(cachedTaxonomy);
       setAtlasTaxonomyLoading(false);
       setAtlasTaxonomyError('');
+      // Pendant la vie de la SPA, la taxonomie en mémoire fait foi.
+      // Un reload réel / nouvelle session remet ATLAS_TAXONOMY_CACHE à null.
+      return () => controller.abort();
     }
-
-    // Une taxonomie fraîche en mémoire suffit. Si elle est devenue ancienne,
-    // on la revalide silencieusement sans vider l'Atlas déjà affiché.
-    if (cacheIsFresh) return () => controller.abort();
 
     async function loadAtlasTaxonomy() {
       if (!cachedTaxonomy) setAtlasTaxonomyLoading(true);
@@ -1794,7 +1728,6 @@ export default function CasCliniques() {
         if (!taxonomy) throw new Error('Taxonomie Atlas absente ou invalide.');
 
         ATLAS_TAXONOMY_CACHE = taxonomy;
-        ATLAS_TAXONOMY_CACHE_AT = Date.now();
         setAtlasTaxonomy(taxonomy);
       } catch (e) {
         if (!ignore && !isAbortError(e) && !cachedTaxonomy) {
@@ -1810,7 +1743,7 @@ export default function CasCliniques() {
       ignore = true;
       controller.abort();
     };
-  }, [isAtlasHub]);
+  }, [isAtlasHub, isAtlasSearch]);
 
 
   useEffect(() => {
@@ -1822,6 +1755,42 @@ export default function CasCliniques() {
       setLoading(false);
       setError('');
       return () => controller.abort();
+    }
+
+    // Recherche Atlas : index léger et dédoublonné, indépendant de la taxonomie.
+    // Une pathologie n'apparaît donc qu'une fois même si elle possède plusieurs classifications.
+    if (isAtlasSearch) {
+      const cachedSearch = readListCache(atlasSearchCacheKey);
+      if (cachedSearch) {
+        setItems(cachedSearch.items);
+        setTotal(cachedSearch.total);
+        setLoading(false);
+        setError('');
+        return () => controller.abort();
+      }
+
+      setLoading(true);
+      setError('');
+
+      searchAtlasPathologies(q)
+        .then((results) => {
+          if (ignore) return;
+          const nextItems = results.map((item) => ({ ...item, __entity: 'pathology' }));
+          setItems(nextItems);
+          setTotal(nextItems.length);
+          writeListCache(atlasSearchCacheKey, nextItems, nextItems.length);
+        })
+        .catch((e) => {
+          if (!ignore) setError(e?.message || 'Erreur de recherche');
+        })
+        .finally(() => {
+          if (!ignore) setLoading(false);
+        });
+
+      return () => {
+        ignore = true;
+        controller.abort();
+      };
     }
 
     // Pour l'Atlas, la taxonomie est nécessaire avant de connaître les catégories
@@ -1846,19 +1815,20 @@ export default function CasCliniques() {
     }
 
     const cacheKey = isAtlasHub
-      ? `atlas:${activeAtlasTabId}:all:${q}`
-      : `cases:${tab}:${page}:${q}`;
+      ? `atlas:${activeAtlasTabId}:all`
+      : `cases:${tab}:${page}`;
     const cached = readListCache(cacheKey);
     const isBackgroundRefresh = Boolean(cached);
 
     if (cached) {
-      // Stale-while-revalidate : on conserve toujours le contenu déjà affiché
-      // pendant une revalidation réseau. La hauteur de page reste donc stable.
+      // Pendant la vie de la SPA, une liste déjà chargée est réutilisée sans
+      // revalidation automatique. Cela préserve exactement l'état visuel et laisse
+      // le navigateur restaurer nativement le scroll lors des Back/Forward.
       setItems(cached.items);
       setTotal(cached.total);
       setLoading(false);
       setError('');
-      if (cached.isFresh) return () => controller.abort();
+      return () => controller.abort();
     }
 
     async function load() {
@@ -1940,19 +1910,6 @@ export default function CasCliniques() {
           let normalized = result.data.map(normalizeNode).filter((it) => it?.slug);
           let nextTotal = result.total;
 
-          // Recherche permissive historique : si le filtre Strapi ne trouve rien,
-          // on charge l'Atlas complet puis on applique la recherche côté client.
-          if (q && normalized.length === 0) {
-            const fallback = await fetchAllPathologies(atlasCategoryOnlyFilters);
-            if (ignore || !fallback) return;
-
-            normalized = fallback.data
-              .map(normalizeNode)
-              .filter((it) => it?.slug)
-              .filter((it) => itemMatchesQuery(it, q));
-            nextTotal = normalized.length;
-          }
-
           const nextItems = normalized.map((it) => ({ ...it, __entity: 'pathology' }));
           setItems(nextItems);
           setTotal(nextTotal);
@@ -1987,32 +1944,7 @@ export default function CasCliniques() {
           let list = Array.isArray(data?.data) ? data.data : [];
           let normalized = list.map(normalizeNode).filter((it) => it?.slug);
 
-          if (q && normalized.length === 0) {
-            const fallback = await strapiFetch(CASES_ENDPOINT, {
-              params: {
-                populate: {
-                  cover: { fields: ['url', 'formats'] },
-                  [CASE_THEME_RELATION]: { fields: ['title', 'slug', 'order'] },
-                },
-                locale: 'all',
-                filters: caseTypeFilterOnly,
-                sort: tab === STRAPI_PRESENTATION_TYPE ? 'title:asc,slug:asc' : 'slug:asc',
-                pagination: { page: 1, pageSize: FALLBACK_PAGE_SIZE },
-                fields: ['title', 'slug', 'type', 'excerpt', 'updatedAt'],
-                publicationState: 'live',
-              },
-              options: { signal: controller.signal },
-            });
-
-            if (ignore) return;
-            const all = Array.isArray(fallback?.data) ? fallback.data : [];
-            normalized = all
-              .map(normalizeNode)
-              .filter((it) => it?.slug)
-              .filter((it) => itemMatchesQuery(it, q));
-          }
-
-          const nextItems = normalized.map((it) => ({ ...it, __entity: 'case' }));
+const nextItems = normalized.map((it) => ({ ...it, __entity: 'case' }));
           const nextTotal = data?.meta?.pagination?.total ?? normalized.length ?? 0;
           setItems(nextItems);
           setTotal(nextTotal);
@@ -2047,9 +1979,9 @@ export default function CasCliniques() {
     tab,
     page,
     q,
-    variants,
+    isAtlasSearch,
+    atlasSearchCacheKey,
     caseFilters,
-    pathoFilters,
     atlasPathoFilters,
     atlasCategoryOnlyFilters,
     atlasTaxonomyIndex,
@@ -2065,6 +1997,9 @@ export default function CasCliniques() {
   // Tri UI (cohérent avec tes règles)
   const sortedItems = useMemo(() => {
     const arr = Array.isArray(items) ? [...items] : [];
+
+    // En recherche, l'ordre vient du score titre/alias du moteur partagé.
+    if (isAtlasSearch) return arr;
 
     // ATLAS => title
     if (isAtlasHub && tab === ATLAS_KEY) {
@@ -2087,7 +2022,7 @@ export default function CasCliniques() {
     // fallback
     arr.sort(compareBySlugAsc);
     return arr;
-  }, [items, isAtlasHub, isTrainingHub, tab]);
+  }, [items, isAtlasHub, isTrainingHub, tab, isAtlasSearch]);
 
   // Atlas : n'afficher que les pathologies appartenant aux catégories du tab actif.
   const atlasVisibleItems = useMemo(() => {
@@ -2186,7 +2121,7 @@ export default function CasCliniques() {
     navigate(`/atlas${suffix}`);
   };
 
-  const renderItem = (attrs, idx) => {
+  const renderItem = (attrs, idx, forcedView = null) => {
     if (!attrs) return null;
 
     const entity = attrs.__entity || (isAtlasHub ? 'pathology' : 'case');
@@ -2203,7 +2138,8 @@ export default function CasCliniques() {
     }
 
     const isPathology = entity === 'pathology';
-    const isListView = view === 'list';
+    const itemView = typeof forcedView === 'string' ? forcedView : view;
+    const isListView = itemView === 'list';
 
     // Les badges complets restent transmis au détail de la pathologie, mais ne sont
     // plus affichés sur les cartes de l'Atlas.
@@ -2705,12 +2641,12 @@ export default function CasCliniques() {
   };
 
   const isAtlasList = isAtlasHub && tab === ATLAS_KEY;
-  const listForEmptyCheck = isAtlasList ? atlasVisibleItems : sortedItems;
-  const effectiveLoading = loading || (isAtlasHub && atlasTaxonomyLoading);
-  const effectiveError = error || (isAtlasHub ? atlasTaxonomyError : '');
+  const listForEmptyCheck = isAtlasSearch ? sortedItems : isAtlasList ? atlasVisibleItems : sortedItems;
+  const effectiveLoading = loading || (isAtlasHub && !isAtlasSearch && atlasTaxonomyLoading);
+  const effectiveError = error || (isAtlasHub && !isAtlasSearch ? atlasTaxonomyError : '');
 
   usePixelSnappedCategoryRules(
-    isAtlasList && atlasGroup === 'category'
+    isAtlasList && !isAtlasSearch && atlasGroup === 'category'
   );
 
   return (
@@ -2730,7 +2666,7 @@ export default function CasCliniques() {
       <div className="container">
         {showTypePicker && <TypePicker />}
 
-        {isAtlasHub && atlasTabs.length > 0 && (
+        {isAtlasHub && !isAtlasSearch && atlasTabs.length > 0 && (
           <section className="cc-toolbar cc-toolbar--top cc-training-toolbar display-tabbar">
             <div className="cc-tabs" role="tablist" aria-label="Sections de l’Atlas">
               {atlasTabs.map((atlasTab) => (
@@ -2830,12 +2766,26 @@ export default function CasCliniques() {
             {/* États globaux */}
             {effectiveLoading && <div className="cc-state">Chargement…</div>}
             {effectiveError && !effectiveLoading && <div className="cc-state error">{effectiveError}</div>}
-            {!effectiveLoading && !effectiveError && listForEmptyCheck.length === 0 && <div className="cc-state">Aucun résultat.</div>}
+            {!effectiveLoading && !effectiveError && listForEmptyCheck.length === 0 && (
+              <div className="cc-state">
+                {isAtlasSearch ? `Aucune pathologie trouvée pour « ${q.trim()} ».` : 'Aucun résultat.'}
+              </div>
+            )}
 
             {/* Rendu */}
             {!effectiveLoading && !effectiveError && listForEmptyCheck.length > 0 && (
               <>
-                {isAtlasList && atlasGroup === 'category' && atlasCategorySections ? (
+                {isAtlasSearch ? (
+                  <section className="atlas-search-page-results" aria-label={`Résultats pour ${q.trim()}`}>
+                    <div className="atlas-search-page-heading">
+                      <h2>Résultats pour « {q.trim()} »</h2>
+                      <span>{sortedItems.length} pathologie{sortedItems.length > 1 ? 's' : ''}</span>
+                    </div>
+                    <div className="display-grid display-grid--flat display-grid--list atlas-search-page-grid">
+                      {sortedItems.map((item, index) => renderItem(item, index, 'list'))}
+                    </div>
+                  </section>
+                ) : isAtlasList && atlasGroup === 'category' && atlasCategorySections ? (
                   <div
                     className={`atlas-ui-taxonomy atlas-ui-taxonomy--${view}`}
                     aria-label="Pathologies par catégorie"

@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import './Navbar.css';
+import AtlasSearch from './AtlasSearch';
 
 import { useMobileDrawer } from '../ui/MobileDrawerContext';
 import { useCaseDetailSidebar } from '../ui/CaseDetailSidebarContext';
@@ -223,6 +224,14 @@ export default function Navbar() {
         </div>
 
         <div className="navbar-right">
+          <div className="navbar-search-slot">
+            <AtlasSearch
+              variant="navbar"
+              placeholder="Rechercher une pathologie…"
+              maxResults={8}
+            />
+          </div>
+
           <a
             className="github-link"
             href="https://github.com/Dr-Sanna"

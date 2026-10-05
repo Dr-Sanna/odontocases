@@ -5804,3 +5804,55 @@
    `transition: box-shadow ... !important` et annulait donc la transition
    border-color définie dans DisplayShared.
    ========================================================================== */
+
+/* =========================================================
+   RECHERCHE ATLAS — résultats plats et dédoublonnés
+   ========================================================= */
+
+.atlas-search-page-results {
+  min-width: 0;
+  padding-top: 24px;
+  padding-bottom: 34px;
+}
+
+.atlas-search-page-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0 0 18px;
+}
+
+.atlas-search-page-heading h2 {
+  min-width: 0;
+  margin: 0;
+  font-size: clamp(1.08rem, 1.4vw, 1.28rem);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.atlas-search-page-heading span {
+  flex: 0 0 auto;
+  font-size: 0.86rem;
+  opacity: 0.62;
+  white-space: nowrap;
+}
+
+/* Le mode recherche utilise volontairement la vue Liste partagée,
+   sans bandeaux de catégorie, sous-catégories ni subdivisions. */
+.atlas-search-page-grid {
+  align-items: stretch;
+}
+
+@media (max-width: 640px) {
+  .atlas-search-page-results {
+    padding-top: 18px;
+  }
+
+  .atlas-search-page-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 14px;
+  }
+}

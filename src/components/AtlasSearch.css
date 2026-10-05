@@ -1,0 +1,207 @@
+.atlas-search {
+  position: relative;
+  min-width: 0;
+  color: var(--ifm-font-color-base);
+}
+
+.atlas-search-form {
+  margin: 0;
+}
+
+.atlas-search-input {
+  width: 100%;
+  box-sizing: border-box;
+  appearance: none;
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  border-radius: 10px;
+  outline: none;
+  color: inherit;
+  background: var(--ifm-background-surface-color, #fff);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.atlas-search-input::-webkit-search-cancel-button {
+  cursor: pointer;
+}
+
+.atlas-search-input:focus {
+  border-color: var(--ifm-color-primary, #2563eb);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ifm-color-primary, #2563eb) 15%, transparent);
+}
+
+[data-theme='dark'] .atlas-search-input {
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.atlas-search--hero {
+  width: min(620px, 92vw);
+}
+
+.atlas-search--hero .atlas-search-input {
+  min-height: 48px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 16px;
+}
+
+.atlas-search--navbar {
+  width: clamp(190px, 21vw, 300px);
+}
+
+.atlas-search--navbar .atlas-search-input {
+  height: 36px;
+  padding: 7px 11px;
+  font-size: 0.9rem;
+}
+
+.atlas-search-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  width: max(100%, 320px);
+  max-width: min(440px, calc(100vw - 24px));
+  overflow: hidden;
+  z-index: 1200;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 12px;
+  background: var(--ifm-background-surface-color, #fff);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);
+}
+
+[data-theme='dark'] .atlas-search-panel {
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.36);
+}
+
+.atlas-search-results {
+  max-height: min(420px, 60vh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.atlas-search-result {
+  width: 100%;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  appearance: none;
+  border: 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.07);
+  padding: 8px 10px;
+  color: inherit;
+  text-align: left;
+  background: transparent;
+  cursor: pointer;
+}
+
+[data-theme='dark'] .atlas-search-result {
+  border-bottom-color: rgba(255, 255, 255, 0.07);
+}
+
+.atlas-search-result:hover,
+.atlas-search-result.is-active {
+  background: var(--ifm-menu-color-background-hover, rgba(0, 0, 0, 0.05));
+}
+
+.atlas-search-result-thumb {
+  width: 46px;
+  height: 36px;
+  overflow: hidden;
+  border-radius: 7px;
+  background: var(--ifm-color-emphasis-100);
+}
+
+.atlas-search-result-thumb img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.atlas-search-result-thumb.is-empty {
+  background: var(--ifm-color-emphasis-200);
+  opacity: 0.65;
+}
+
+.atlas-search-result-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.atlas-search-result-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.9rem;
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+.atlas-search-result-alias {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.76rem;
+  line-height: 1.25;
+  opacity: 0.68;
+}
+
+.atlas-search-all,
+.atlas-search-status {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  font-size: 0.82rem;
+  line-height: 1.3;
+}
+
+.atlas-search-all {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--ifm-color-primary);
+  font-weight: 650;
+  text-align: left;
+  cursor: pointer;
+}
+
+.atlas-search-all:hover,
+.atlas-search-all:focus-visible {
+  background: var(--ifm-menu-color-background-hover, rgba(0, 0, 0, 0.05));
+}
+
+.atlas-search-status {
+  opacity: 0.72;
+}
+
+@media (max-width: 1180px) {
+  .atlas-search--navbar {
+    width: clamp(170px, 19vw, 230px);
+  }
+}
+
+@media (max-width: 980px) {
+  .atlas-search--navbar {
+    width: min(290px, 48vw);
+  }
+}
+
+@media (max-width: 640px) {
+  .atlas-search--navbar {
+    width: min(190px, 44vw);
+  }
+
+  .atlas-search--navbar .atlas-search-input {
+    padding-inline: 9px;
+  }
+
+  .atlas-search-panel {
+    width: min(360px, calc(100vw - 20px));
+  }
+}
